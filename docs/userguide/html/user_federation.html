@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE html
   PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 19. User Federation SPI and LDAP/AD Integration</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="events.html" title="Chapter 18. Events"/><link rel="next" href="kerberos.html" title="Chapter 20. Kerberos brokering"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="events.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="kerberos.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="user_federation"/>Chapter 19. User Federation SPI and LDAP/AD Integration</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="user_federation.html#d4e2269">19.1. LDAP and Active Directory Plugin</a></span></dt><dd><dl><dt><span class="section"><a href="user_federation.html#d4e2274">19.1.1. Edit Mode</a></span></dt><dt><span class="section"><a href="user_federation.html#d4e2290">19.1.2. Other config options</a></span></dt></dl></dd><dt><span class="section"><a href="user_federation.html#d4e2315">19.2. Sync of LDAP users to Keycloak</a></span></dt><dt><span class="section"><a href="user_federation.html#d4e2335">19.3. Writing your own User Federation Provider</a></span></dt></dl></div>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 19. User Federation SPI and LDAP/AD Integration</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="events.html" title="Chapter 18. Events"/><link rel="next" href="kerberos.html" title="Chapter 20. Kerberos brokering"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="events.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="kerberos.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="user_federation"/>Chapter 19. User Federation SPI and LDAP/AD Integration</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="user_federation.html#d4e2318">19.1. LDAP and Active Directory Plugin</a></span></dt><dd><dl><dt><span class="section"><a href="user_federation.html#d4e2324">19.1.1. Edit Mode</a></span></dt><dt><span class="section"><a href="user_federation.html#d4e2340">19.1.2. Other config options</a></span></dt></dl></dd><dt><span class="section"><a href="user_federation.html#d4e2365">19.2. Sync of LDAP users to Keycloak</a></span></dt><dt><span class="section"><a href="user_federation.html#ldap_mappers">19.3. LDAP/Federation mappers</a></span></dt><dt><span class="section"><a href="user_federation.html#d4e2414">19.4. Writing your own User Federation Provider</a></span></dt></dl></div>
     
     <p>
         Keycloak can federate external user databases.  Out of the box we have support for LDAP and Active Directory.
@@ -24,29 +24,30 @@
         Keycloak storage and let Keycloak handle credential validation.  Others might want to handle credential validation
         themselves.  The goal of the Federation SPI is to support all of these scenarios.
     </p>
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2269"/>19.1. LDAP and Active Directory Plugin</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2318"/>19.1. LDAP and Active Directory Plugin</h2></div></div></div>
         
         <p>
-            Keycloak comes with a built-in LDAP/AD plugin.  Currently it is set up only to import username, email, first and last name.
+            Keycloak comes with a built-in LDAP/AD plugin.  By default, it is set up only to import username, email, first and last name, but you are free
+            to configure <a class="link" href="user_federation.html#ldap_mappers" title="19.3. LDAP/Federation mappers">mappers</a> and add more attributes or delete default ones.
             It supports password validation via LDAP/AD protocols and different user metadata synchronization modes.  To configure
             a federated LDAP store go to the admin console.  Click on the <code class="literal">Users</code> menu option to get you
             to the user management page.  Then click on the <code class="literal">Federation</code> submenu option.  When
             you get to this page there is an "Add Provider" select box.  You should see "ldap" within this list.  Selecting
             "ldap" will bring you to the ldap configuration page.
         </p>
-        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e2274"/>19.1.1. Edit Mode</h3></div></div></div>
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e2324"/>19.1.1. Edit Mode</h3></div></div></div>
             
             <p>
                 Edit mode defines various synchronization options with your LDAP store depending on what privileges
                 you have.
                 </p><div class="variablelist"><dl><dt><span class="term">READONLY</span></dt><dd>
                             <p>
-                                Username, email, first and last name will be unchangable.  Keycloak will show an error
+                                Username, email, first and last name and other mapped attributes will be unchangeable.  Keycloak will show an error
                                 anytime anybody tries to update these fields.  Also, password updates will not be supported.
                             </p>
                         </dd><dt><span class="term">WRITABLE</span></dt><dd>
                             <p>
-                                Username, email, first and last name, and passwords can all be updated and will
+                                Username, email, first and last name, other mapped attributes and passwords can all be updated and will
                                 be synchronized automatically with your LDAP store.
                             </p>
                         </dd><dt><span class="term">UNSYNCED</span></dt><dd>
@@ -58,7 +59,7 @@
                         </dd></dl></div><p>
             </p>
         </div>
-        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e2290"/>19.1.2. Other config options</h3></div></div></div>
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e2340"/>19.1.2. Other config options</h3></div></div></div>
             
             <p>
                 </p><div class="variablelist"><dl><dt><span class="term">Display Name</span></dt><dd>
@@ -87,7 +88,7 @@
             </p>
         </div>
     </div>
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2315"/>19.2. Sync of LDAP users to Keycloak</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2365"/>19.2. Sync of LDAP users to Keycloak</h2></div></div></div>
         
         <p>
             LDAP Federation Provider will automatically take care of synchronization (import) of needed LDAP users into Keycloak database.
@@ -118,7 +119,44 @@
         </p>
         <p>In admin console, you can trigger sync directly or you can enable periodic changed or full sync.</p>
     </div>
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2335"/>19.3. Writing your own User Federation Provider</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="ldap_mappers"/>19.3. LDAP/Federation mappers</h2></div></div></div>
+        
+        <p>
+            LDAP mappers are <code class="literal">listeners</code>, which are triggered by LDAP Federation provider at various points and provide
+            another extension point to LDAP integration. They are triggered during import LDAP user into Keycloak, registration Keycloak user back to LDAP or when querying LDAP user from Keycloak.
+            When you create LDAP Federation provider, Keycloak will automatically provide set of builtin <code class="literal">mappers</code> for this provider.
+            You are free to change this set and create new mapper or update/delete existing ones.
+        </p>
+        <p>
+            By default, we have those implementation of LDAP federation mapper:
+            </p><div class="variablelist"><dl><dt><span class="term">User Attribute Mapper</span></dt><dd>
+                        <p>
+                            This allows to specify which LDAP attribute is mapped to which attribute of Keycloak User. So for example you can configure
+                            that LDAP attribute <code class="literal">mail</code> is supposed to be mapped to the UserModel attribute <code class="literal">email</code> in Keycloak database.
+                            For this mapper implementation, there is always one-to-one mapping (one LDAP attribute mapped to one Keycloak UserModel attribute)
+                        </p>
+                    </dd><dt><span class="term">FullName Mapper</span></dt><dd>
+                        <p>
+                            This allows to specify that fullname of user, which is saved in some LDAP attribute (usualy <code class="literal">cn</code> ) will be mapped to
+                            <code class="literal">firstName</code> and <code class="literal">lastname</code> attributes of UserModel. Having <code class="literal">cn</code> to contain full name of user
+                            is common case for some LDAP deployments.
+                        </p>
+                    </dd><dt><span class="term">Role Mapper</span></dt><dd>
+                        <p>
+                            This allows to configure role mappings from LDAP into Keycloak role mappings. One Role mapper can be used to map LDAP roles
+                            (usually groups from particular branch of LDAP tree) into roles corresponding to either realm roles or client roles of specified client.
+                            It's not a problem to configure more Role mappers for same LDAP provider. So for example you can specify that role mappings from groups under
+                            <code class="literal">ou=main,dc=example,dc=org</code> will be mapped to realm role mappings and role mappings from
+                            groups under <code class="literal">ou=finance,dc=example,dc=org</code> will be mapped to client role mappings of client <code class="literal">finance</code> .
+                        </p>
+                    </dd></dl></div><p>
+        </p>
+        <p>By default, there is set of User Attribute mappers to map basic UserModel attributes username, first name, lastname and email to corresponding LDAP attributes. You are free to extend this and provide
+            more attribute mappings (For example to street, postalCode etc), delete firstName/lastname mapper and put fullName mapper instead, add role mappers etc.
+            Admin console provides tooltips, which should help on how to configure corresponding mappers.
+        </p>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2414"/>19.4. Writing your own User Federation Provider</h2></div></div></div>
         
         <p>
             The keycloak examples directory contains an example of a simple User Federation Provider backed by
