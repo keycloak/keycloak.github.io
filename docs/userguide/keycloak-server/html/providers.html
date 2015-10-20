@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 4. Providers and SPIs</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="server-installation.html" title="Chapter 3. Installation and Configuration of Keycloak Server"/><link rel="next" href="openshift.html" title="Chapter 5. Running Keycloak Server on OpenShift"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="server-installation.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="openshift.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="providers"/>Chapter 4. Providers and SPIs</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="providers.html#d4e444">4.1. Implementing a SPI</a></span></dt><dt><span class="section"><a href="providers.html#d4e455">4.2. Registering provider implementations</a></span></dt><dd><dl><dt><span class="section"><a href="providers.html#d4e458">4.2.1. Register a provider using Modules</a></span></dt><dt><span class="section"><a href="providers.html#d4e469">4.2.2. Register a provider using file-system</a></span></dt><dt><span class="section"><a href="providers.html#d4e476">4.2.3. Configuring a provider</a></span></dt></dl></dd><dt><span class="section"><a href="providers.html#d4e482">4.3. Available SPIs</a></span></dt></dl></div>
+    
+
+    <p>
+        Keycloak is designed to cover most use-cases without requiring custom code, but we also want it to be
+        customizable. To achive this Keycloak has a number of SPIs which you can implement your own providers for.
+    </p>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e444"/>4.1. Implementing a SPI</h2></div></div></div>
+        
+        <p>
+            To implement an SPI you need to implement it's ProviderFactory and Provider interfaces. You also need to
+            create a provider-configuration file. For example to implement the Event Listener SPI you need to implement
+            EventListenerProviderFactory and EventListenerProvider and also provide the file
+            <code class="literal">META-INF/services/org.keycloak.events.EventListenerProviderFactory</code>
+        </p>
+        <p>
+            For example to implement the Event Listener SPI you start by implementing EventListenerProviderFactory:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">{
+package org.acme.provider;
+
+import ...
+
+public class MyEventListenerProviderFactory implements EventListenerProviderFactory {
+
+    private List&lt;Event&gt; events;
+
+    public String getId() {
+        return "my-event-listener";
+    }
+
+    public void init(Config.Scope config) {
+        int max = config.getInt("max");
+        events = new MaxList(max);
+    }
+
+    public EventListenerProvider create(KeycloakSession session) {
+        return new MyEventListenerProvider(events);
+    }
+
+    public void close() {
+        events = null;
+    }
+
+}
+}</pre><p>
+            The example uses an imagined MaxList which has a maximum size and is concurrency safe. When the maximum size is reached
+            and new entries are added the oldest entry is removed. Keycloak creates a single instance of
+            EventListenerProviderFactory which makes it possible to store state for multiple requests. EventListenerProvider
+            instances are created by calling create on the factory for each requests so these should be light-weight.
+        </p>
+        <p>
+            Next you would implement EventListenerProvider:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">{
+package org.acme.provider;
+
+import ...
+
+public class MyEventListenerProvider implements EventListenerProvider {
+
+    private List&lt;Event&gt; events;
+
+    public MyEventListenerProvider(List&lt;Event&gt; events) {
+        this.events = events;
+    }
+
+    @Override
+    public void onEvent(Event event) {
+        events.add(event);
+    }
+
+    @Override
+    public void close() {
+
+    }
+
+}
+}</pre><p>
+        </p>
+        <p>
+            The file <code class="literal">META-INF/services/org.keycloak.events.EventListenerProviderFactory</code> should
+            contain the full name of your ProviderFactory implementation:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">org.acme.provider.MyEventListenerProviderFactory</pre><p>
+        </p>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e455"/>4.2. Registering provider implementations</h2></div></div></div>
+        
+        <p>
+            Keycloak can load provider implementations from JBoss Modules or directly from the file-system. Using Modules
+            is recommended as you can control exactly what classes are available to your provider. Any providers loaded
+            from the file-system uses a classloader with the Keycloak classloader as its parent.
+        </p>
+
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e458"/>4.2.1. Register a provider using Modules</h3></div></div></div>
+            
+            <p>
+                To register a provider using Modules first create a module. To do this you can either use the jboss-cli
+                script or manually create a folder inside KEYCLOAK_HOME/modules and add your jar and a <code class="literal">module.xml</code>.
+                For example to add the event listener sysout example provider using the jboss-cli script execute:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">{
+    KEYCLOAK_HOME/bin/jboss-cli.sh --command="module add --name=org.keycloak.examples.event-sysout --resources=target/event-listener-sysout-example.jar --dependencies=org.keycloak.keycloak-core,org.keycloak.keycloak-model-api,org.keycloak.keycloak-events-api"
+}</pre><p>
+                Or to manually create it start by creating the folder <code class="literal">KEYCLOAK_HOME/modules/org/keycloak/examples/event-sysout/main</code>.
+                Then copy <code class="literal">event-listener-sysout-example.jar</code> to this folder and create <code class="literal">module.xml</code>
+                with the following content:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">{
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;module xmlns="urn:jboss:module:1.1" name="org.keycloak.examples.event-sysout"&gt;
+    &lt;resources&gt;
+        &lt;resource-root path="event-listener-sysout-example.jar"/&gt;
+    &lt;/resources&gt;
+    &lt;dependencies&gt;
+        &lt;module name="org.keycloak.keycloak-core"/&gt;
+        &lt;module name="org.keycloak.keycloak-model-api"/&gt;
+        &lt;module name="org.keycloak.keycloak-events-api"/&gt;
+    &lt;/dependencies&gt;
+&lt;/module&gt;
+}</pre><p>
+            </p>
+            <p>
+                Once you've created the module you need to register this module with Keycloak. This is done by editing
+                keycloak-server.json and adding it to the providers:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">{
+    "providers": [
+        ...
+        "module:org.keycloak.examples.event-sysout"
+    ]
+}</pre><p>
+            </p>
+        </div>
+
+
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e469"/>4.2.2. Register a provider using file-system</h3></div></div></div>
+            
+            <p>
+                To register your provider simply copy the JAR including the ProviderFactory and Provider classes and the
+                provider configuration file to <code class="literal">standalone/configuration/providers</code>.
+            </p>
+            <p>
+                You can also define multiple provider class-path if you want to create isolated class-loaders. To do this
+                edit keycloak-server.json and add more classpath entries to the providers array. For example:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">{
+    "providers": [
+        "classpath:provider1.jar;lib-v1.jar",
+        "classpath:provider2.jar;lib-v2.jar"
+    ]
+}</pre><p>
+                The above example will create two separate class-loaders for providers. The classpath entries follow the
+                same syntax as Java classpath, with ';' separating multiple-entries. Wildcard is also supported allowing
+                loading all jars (files with .jar or .JAR extension) in a folder, for example:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">{
+    "providers": [
+        "classpath:/home/user/providers/*"
+    ]
+}</pre><p>
+            </p>
+        </div>
+
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e476"/>4.2.3. Configuring a provider</h3></div></div></div>
+            
+            <p>
+                You can pass configuration options to your provider by setting them in <code class="literal">keycloak-server.json</code>.
+                For example to set the max value for <code class="literal">my-event-listener</code> add:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">{
+    "eventsListener": {
+        "my-event-listener": {
+            "max": 100
+        }
+    }
+}</pre><p>
+            </p>
+        </div>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e482"/>4.3. Available SPIs</h2></div></div></div>
+        
+        <p>
+            Here's a list of the available SPIs and a brief description. For more details on each SPI refer to
+            individual
+            sections.
+            </p><div class="variablelist"><dl><dt><span class="term">Account</span></dt><dd>
+                        Provides the account manage console pages. The default implementation uses FreeMarker templates.
+                    </dd><dt><span class="term">Connections Infinispan</span></dt><dd>
+                        Loads and configures Infinispan connections. The default implementation can load connections
+                        from
+                        the Infinispan subsystem, or alternatively can be manually configured in keycloak-server.json.
+                    </dd><dt><span class="term">Connections Jpa</span></dt><dd>
+                        Loads and configures Jpa connections. The default implementation can load datasources
+                        from
+                        WildFly/EAP, or alternatively can be manually configured in keycloak-server.json.
+                    </dd><dt><span class="term">Connections Jpa Updater</span></dt><dd>
+                        Updates database schema. The default implementation uses Liquibase.
+                    </dd><dt><span class="term">Connections Mongo</span></dt><dd>
+                        Loads and configures MongoDB connections. The default implementation is configured in
+                        keycloak-server.json.
+                    </dd><dt><span class="term">Email</span></dt><dd>
+                        Formats and sends email. The default implementation uses FreeMarker templates and JavaMail.
+                    </dd><dt><span class="term">Events Listener</span></dt><dd>
+                        Listen to user related events for example user login success and failures. Keycloak provides two
+                        implementations out of box. One that logs events to the server log and another that can send
+                        email
+                        notifications to users on certain events.
+                    </dd><dt><span class="term">Events Store</span></dt><dd>
+                        Store user related events so they can be viewed through the admin console and account management
+                        console.
+                        Keycloak provides implementations for Relational Databases and MongoDB.
+                    </dd><dt><span class="term">Export</span></dt><dd>
+                        Exports the Keycloak database. Keycloak provides implementations that export to JSON files
+                        either
+                        as a single file, multiple files in a directory or a encrypted ZIP archive.
+                    </dd><dt><span class="term">Import</span></dt><dd>
+                        Imports an exported Keycloak database. Keycloak provides implementations that import from JSON
+                        files either
+                        as a single file, multiple files in a directory or a encrypted ZIP archive.
+                    </dd><dt><span class="term">Login</span></dt><dd>
+                        Provides the login pages. The default implementation uses FreeMarker templates.
+                    </dd><dt><span class="term">Login Protocol</span></dt><dd>
+                        Provides protocols. Keycloak provides implementations of OpenID Connect and SAML 2.0.
+                    </dd><dt><span class="term">Realm</span></dt><dd>
+                        Provides realm and application meta-data. Keycloak provides implementations for Relational
+                        Databases
+                        and MongoDB.
+                    </dd><dt><span class="term">Realm Cache</span></dt><dd>
+                        Caches realm and application meta-data to improve performance. Keycloak provides a basic
+                        in-memory
+                        cache and a Infinispan cache.
+                    </dd><dt><span class="term">Theme</span></dt><dd>
+                        Allows creating themes to customize look and feel. Keycloak provides implementations that can
+                        load
+                        themes from the file-system or classpath.
+                    </dd><dt><span class="term">Timer</span></dt><dd>
+                        Executes scheduled tasks. Keycloak provides a basic implementation based on java.util.Timer.
+                    </dd><dt><span class="term">User</span></dt><dd>
+                        Provides users and role-mappings. Keycloak provides implementations for Relational Databases
+                        and MongoDB.
+                    </dd><dt><span class="term">User Cache</span></dt><dd>
+                        Caches users and role-mappings to improve performance. Keycloak provides a basic in-memory
+                        cache and a Infinispan cache.
+                    </dd><dt><span class="term">User Federation</span></dt><dd>
+                        Support syncing users from an external source. Keycloak provides implementations for LDAP and
+                        Active Directory.
+                    </dd><dt><span class="term">User Sessions</span></dt><dd>
+                        Provides users session information. Keycloak provides implementations for basic in-memory,
+                        Infinispan,
+                        Relational Databases and MongoDB
+                    </dd></dl></div><p>
+        </p>
+    </div>
+</div><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="server-installation.html"><strong>Prev</strong>Chapter 3. Installation and Configuration of Keyc...</a></li><li class="up"><a accesskey="u" href="#"><strong>Top of page</strong></a></li><li class="home"><a accesskey="h" href="index.html"><strong>Front page</strong></a></li><li class="next"><a accesskey="n" href="openshift.html"><strong>Next</strong>Chapter 5. Running Keycloak Server on OpenShift</a></li></ul></body></html>

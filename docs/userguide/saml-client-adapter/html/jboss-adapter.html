@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 3. JBoss/Wildfly Adapter</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak SAML Client Adapter Reference Guide"/><link rel="up" href="index.html" title="Keycloak SAML Client Adapter Reference Guide"/><link rel="prev" href="adapter-config.html" title="Chapter 2. General Adapter Config"/><link rel="next" href="tomcat-adapter.html" title="Chapter 4. Tomcat 6, 7 and 8 SAML dapters"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="adapter-config.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="tomcat-adapter.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jboss-adapter"/>Chapter 3. JBoss/Wildfly Adapter</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="jboss-adapter.html#jboss-adapter-installation">3.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="jboss-adapter.html#d4e249">3.2. Required Per WAR Configuration</a></span></dt></dl></div>
+    
+    <p>
+        To be able to secure WAR apps deployed on JBoss EAP 6.x or Wildfly, you must install and
+        configure the Keycloak SAML Adapter Subsystem.  You then provide a keycloak
+        config, <code class="literal">/WEB-INF/keycloak-saml</code> file in your WAR and change the auth-method to KEYCLOAK-SAML within web.xml.
+        Both methods are described in this section.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jboss-adapter-installation"/>3.1. Adapter Installation</h2></div></div></div>
+        
+    <p>
+        SAML Adapters are no longer included with the appliance or war distribution.Each adapter is a separate download on
+        the Keycloak download site.  They are also available as a maven artifact.
+    </p>
+    <p>
+        Install on Wildfly 9:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $WILDFLY_HOME
+$ unzip keycloak-saml-wf9-adapter-dist.zip
+</pre><p>
+    </p>
+    <p>
+        Install on JBoss EAP 6.x:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $JBOSS_HOME
+$ unzip keycloak-saml-eap6-adapter-dist.zip
+</pre><p>
+    </p>
+    <p>
+        This zip file creates new JBoss Modules specific to the Wildfly Keycloak SAML Adapter within your Wildfly distro.
+    </p>
+    <p>
+        After adding the Keycloak modules, you must then enable the Keycloak SAML Subsystem within your app server's server configuration:
+        <code class="literal">domain.xml</code> or <code class="literal">standalone.xml</code>.
+    </p>
+    <p>
+        There is a CLI script that will help you modify your server configuration.  Start the server and run the script 
+        from the server's bin directory:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $JBOSS_HOME/bin
+$ jboss-cli.sh -c --file=adapter-install.cli
+</pre><p>
+        The script will add the extension, subsystem, and optional security-domain as described below.
+    </p>
+    <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+&lt;server xmlns="urn:jboss:domain:1.4"&gt;
+
+    &lt;extensions&gt;
+        &lt;extension module="org.keycloak.keycloak-saml-adapter-subsystem"/&gt;
+          ...
+    &lt;/extensions&gt;
+
+    &lt;profile&gt;
+        &lt;subsystem xmlns="urn:jboss:domain:keycloak-saml:1.6"/&gt;
+         ...
+    &lt;/profile&gt;
+
+</pre><p>
+    </p>
+        <p>
+            The keycloak security domain should be used with EJBs and other components when you need the security context created
+            in the secured web tier to be propagated to the EJBs (other EE component) you are invoking.  Otherwise
+            this configuration is optional.
+        </p>
+<pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+&lt;server xmlns="urn:jboss:domain:1.4"&gt;
+ &lt;subsystem xmlns="urn:jboss:domain:security:1.2"&gt;
+    &lt;security-domains&gt;
+...
+      &lt;security-domain name="keycloak"&gt;
+         &lt;authentication&gt;
+           &lt;login-module code="org.keycloak.adapters.jboss.KeycloakLoginModule"
+                         flag="required"/&gt;
+          &lt;/authentication&gt;
+      &lt;/security-domain&gt;
+    &lt;/security-domains&gt;
+
+</pre>
+        <p>
+            For example, if you have a JAX-RS service that is an EJB within your WEB-INF/classes directory, you'll want
+            to annotate it with the @SecurityDomain annotation as follows:
+        </p>
+<pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+import org.jboss.ejb3.annotation.SecurityDomain;
+import org.jboss.resteasy.annotations.cache.NoCache;
+
+import javax.annotation.security.RolesAllowed;
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import java.util.ArrayList;
+import java.util.List;
+
+@Path("customers")
+@Stateless
+@SecurityDomain("keycloak")
+public class CustomerService {
+
+    @EJB
+    CustomerDB db;
+
+    @GET
+    @Produces("application/json")
+    @NoCache
+    @RolesAllowed("db_user")
+    public List&lt;String&gt; getCustomers() {
+        return db.getCustomers();
+    }
+}
+
+</pre>
+        <p>
+            We hope to improve our integration in the future so that you don't have to specify the @SecurityDomain
+            annotation when you want to propagate a keycloak security context to the EJB tier.
+        </p>
+
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e249"/>3.2. Required Per WAR Configuration</h2></div></div></div>
+        
+        <p>
+            This section describes how to secure a WAR directly by adding config and editing files within your WAR package.
+        </p>
+        <p>
+            The first thing you must do is create
+            a <code class="literal">keycloak-saml.xml</code> adapter config file within the <code class="literal">WEB-INF</code> directory
+            of your WAR.  The format of this config file is describe in the <a class="link" href="adapter-config.html" title="Chapter 2. General Adapter Config">general adapter configuration</a>
+            section.
+        </p>
+        <p>
+            Next you must set the <code class="literal">auth-method</code> to <code class="literal">KEYCLOAK-SAML</code> in <code class="literal">web.xml</code>.  You also
+            have to use standard servlet security to specify role-base constraints on your URLs.  Here's an example
+            pulled from one of the examples that comes distributed with Keycloak.
+        </p>
+        <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;web-app xmlns="http://java.sun.com/xml/ns/javaee"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+      version="3.0"&gt;
+
+	&lt;module-name&gt;customer-portal&lt;/module-name&gt;
+
+    &lt;security-constraint&gt;
+        &lt;web-resource-collection&gt;
+            &lt;web-resource-name&gt;Admins&lt;/web-resource-name&gt;
+            &lt;url-pattern&gt;/admin/*&lt;/url-pattern&gt;
+        &lt;/web-resource-collection&gt;
+        &lt;auth-constraint&gt;
+            &lt;role-name&gt;admin&lt;/role-name&gt;
+        &lt;/auth-constraint&gt;
+        &lt;user-data-constraint&gt;
+            &lt;transport-guarantee&gt;CONFIDENTIAL&lt;/transport-guarantee&gt;
+        &lt;/user-data-constraint&gt;
+    &lt;/security-constraint&gt;
+    &lt;security-constraint&gt;
+        &lt;web-resource-collection&gt;
+            &lt;web-resource-name&gt;Customers&lt;/web-resource-name&gt;
+            &lt;url-pattern&gt;/customers/*&lt;/url-pattern&gt;
+        &lt;/web-resource-collection&gt;
+        &lt;auth-constraint&gt;
+            &lt;role-name&gt;user&lt;/role-name&gt;
+        &lt;/auth-constraint&gt;
+        &lt;user-data-constraint&gt;
+            &lt;transport-guarantee&gt;CONFIDENTIAL&lt;/transport-guarantee&gt;
+        &lt;/user-data-constraint&gt;
+    &lt;/security-constraint&gt;
+
+    &lt;login-config&gt;
+        &lt;auth-method&gt;KEYCLOAK-SAML&lt;/auth-method&gt;
+        &lt;realm-name&gt;this is ignored currently&lt;/realm-name&gt;
+    &lt;/login-config&gt;
+
+    &lt;security-role&gt;
+        &lt;role-name&gt;admin&lt;/role-name&gt;
+    &lt;/security-role&gt;
+    &lt;security-role&gt;
+        &lt;role-name&gt;user&lt;/role-name&gt;
+    &lt;/security-role&gt;
+&lt;/web-app&gt;
+
+</pre><p>
+        </p>
+    </div>
+</div><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="adapter-config.html"><strong>Prev</strong>Chapter 2. General Adapter Config</a></li><li class="up"><a accesskey="u" href="#"><strong>Top of page</strong></a></li><li class="home"><a accesskey="h" href="index.html"><strong>Front page</strong></a></li><li class="next"><a accesskey="n" href="tomcat-adapter.html"><strong>Next</strong>Chapter 4. Tomcat 6, 7 and 8 SAML dapters</a></li></ul></body></html>

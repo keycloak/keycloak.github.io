@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 4. Tomcat 6, 7 and 8 SAML dapters</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak SAML Client Adapter Reference Guide"/><link rel="up" href="index.html" title="Keycloak SAML Client Adapter Reference Guide"/><link rel="prev" href="jboss-adapter.html" title="Chapter 3. JBoss/Wildfly Adapter"/><link rel="next" href="jetty9-adapter.html" title="Chapter 5. Jetty 9.x SAML Adapters"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="jboss-adapter.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="jetty9-adapter.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="tomcat-adapter"/>Chapter 4. Tomcat 6, 7 and 8 SAML dapters</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="tomcat-adapter.html#tomcat-adapter-installation">4.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="tomcat-adapter.html#d4e272">4.2. Required Per WAR Configuration</a></span></dt></dl></div>
+    
+    <p>
+        To be able to secure WAR apps deployed on Tomcat 6, 7 and 8 you must install the Keycloak Tomcat 6, 7 or 8 SAML adapter
+        into your Tomcat installation.  You then have to provide some extra configuration in each WAR you deploy to
+        Tomcat.  Let's go over these steps.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="tomcat-adapter-installation"/>4.1. Adapter Installation</h2></div></div></div>
+        
+        <p>
+            Adapters are no longer included with the appliance or war distribution.  Each adapter is a separate download on
+            the Keycloak download site.  They are also available as a maven artifact.
+        </p>
+    <p>
+        You must unzip the adapter distro into Tomcat's <code class="literal">lib/</code> directory.  Including
+        adapter's jars within your WEB-INF/lib directory will not work!  The Keycloak SAML adapter is implemented as a Valve
+        and valve code must reside in Tomcat's main lib/ directory.
+    </p>
+    <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $TOMCAT_HOME/lib
+$ unzip keycloak-saml-tomcat6-adapter-dist.zip
+    or
+$ unzip keycloak-saml-tomcat7-adapter-dist.zip
+    or
+$ unzip keycloak-saml-tomcat8-adapter-dist.zip
+</pre><p>
+    </p>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e272"/>4.2. Required Per WAR Configuration</h2></div></div></div>
+        
+        <p>
+            This section describes how to secure a WAR directly by adding config and editing files within your WAR package.
+        </p>
+        <p>
+            The first thing you must do is create a <code class="literal">META-INF/context.xml</code> file in your WAR package.  This is
+            a Tomcat specific config file and you must define a Keycloak specific Valve.
+        </p>
+        <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;Context path="/your-context-path"&gt;
+    &lt;Valve className="org.keycloak.adapters.saml.tomcat.SamlAuthenticatorValve"/&gt;
+&lt;/Context&gt;
+        </pre>
+        <p>
+            Next you must create
+            a <code class="literal">keycloak-saml.xml</code> adapter config file within the <code class="literal">WEB-INF</code> directory
+            of your WAR.  The format of this config file is describe in the <a class="link" href="adapter-config.html" title="Chapter 2. General Adapter Config">general adapter configuration</a>
+            section.
+        </p>
+        <p>
+            Finally you must specify both a <code class="literal">login-config</code> and use standard servlet security to specify
+            role-base constraints on your URLs.  Here's an example:
+        </p>
+        <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;web-app xmlns="http://java.sun.com/xml/ns/javaee"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+      version="3.0"&gt;
+
+	&lt;module-name&gt;customer-portal&lt;/module-name&gt;
+
+    &lt;security-constraint&gt;
+        &lt;web-resource-collection&gt;
+            &lt;web-resource-name&gt;Customers&lt;/web-resource-name&gt;
+            &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+        &lt;/web-resource-collection&gt;
+        &lt;auth-constraint&gt;
+            &lt;role-name&gt;user&lt;/role-name&gt;
+        &lt;/auth-constraint&gt;
+    &lt;/security-constraint&gt;
+
+    &lt;login-config&gt;
+        &lt;auth-method&gt;BASIC&lt;/auth-method&gt;
+        &lt;realm-name&gt;this is ignored currently&lt;/realm-name&gt;
+    &lt;/login-config&gt;
+
+    &lt;security-role&gt;
+        &lt;role-name&gt;admin&lt;/role-name&gt;
+    &lt;/security-role&gt;
+    &lt;security-role&gt;
+        &lt;role-name&gt;user&lt;/role-name&gt;
+    &lt;/security-role&gt;
+&lt;/web-app&gt;
+
+</pre><p>
+        </p>
+    </div>
+</div><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="jboss-adapter.html"><strong>Prev</strong>Chapter 3. JBoss/Wildfly Adapter</a></li><li class="up"><a accesskey="u" href="#"><strong>Top of page</strong></a></li><li class="home"><a accesskey="h" href="index.html"><strong>Front page</strong></a></li><li class="next"><a accesskey="n" href="jetty9-adapter.html"><strong>Next</strong>Chapter 5. Jetty 9.x SAML Adapters</a></li></ul></body></html>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 5. Jetty 9.x SAML Adapters</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak SAML Client Adapter Reference Guide"/><link rel="up" href="index.html" title="Keycloak SAML Client Adapter Reference Guide"/><link rel="prev" href="tomcat-adapter.html" title="Chapter 4. Tomcat 6, 7 and 8 SAML dapters"/><link rel="next" href="jetty8-adapter.html" title="Chapter 6. Jetty 8.1.x SAML Adapter"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="tomcat-adapter.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="jetty8-adapter.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jetty9-adapter"/>Chapter 5. Jetty 9.x SAML Adapters</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="jetty9-adapter.html#jetty9-adapter-installation">5.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="jetty9-adapter.html#jetty9_per_war">5.2. Required Per WAR Configuration</a></span></dt></dl></div>
+    
+    <p>
+        Keycloak has a separate SAML adapter for Jetty 9.x.  You then have to provide some extra configuration in each WAR you deploy to
+        Jetty.  Let's go over these steps.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jetty9-adapter-installation"/>5.1. Adapter Installation</h2></div></div></div>
+        
+        <p>
+            Adapters are no longer included with the appliance or war distribution.Each adapter is a separate download on
+            the Keycloak download site.  They are also available as a maven artifact.
+        </p>
+        <p>
+            You must unzip the Jetty 9.x  distro into Jetty 9.x's root directory.  Including
+            adapter's jars within your WEB-INF/lib directory will not work!
+        </p>
+    <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $JETTY_HOME
+$ unzip keycloak-saml-jetty92-adapter-dist.zip
+</pre><p>
+    </p>
+    <p>
+        Next, you will have to enable the keycloak module for your jetty.base.
+    </p>
+        <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd your-base
+$ java -jar $JETTY_HOME/start.jar --add-to-startd=keycloak
+</pre><p>
+
+        </p>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jetty9_per_war"/>5.2. Required Per WAR Configuration</h2></div></div></div>
+        
+        <p>
+            This section describes how to secure a WAR directly by adding config and editing files within your WAR package.
+        </p>
+        <p>
+            The first thing you must do is create a <code class="literal">WEB-INF/jetty-web.xml</code> file in your WAR package.  This is
+            a Jetty specific config file and you must define a Keycloak specific authenticator within it.
+        </p>
+        <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd"&gt;
+&lt;Configure class="org.eclipse.jetty.webapp.WebAppContext"&gt;
+    &lt;Get name="securityHandler"&gt;
+        &lt;Set name="authenticator"&gt;
+            &lt;New class="org.keycloak.adapters.saml.jetty.KeycloakSamlAuthenticator"&gt;
+            &lt;/New&gt;
+        &lt;/Set&gt;
+    &lt;/Get&gt;
+&lt;/Configure&gt;
+        </pre>
+        <p>
+            Next you must create
+            a <code class="literal">keycloak-saml.xml</code> adapter config file within the <code class="literal">WEB-INF</code> directory
+            of your WAR.  The format of this config file is describe in the <a class="link" href="adapter-config.html" title="Chapter 2. General Adapter Config">general adapter configuration</a>
+            section.
+        </p>
+        <p>
+            Finally you must specify both a <code class="literal">login-config</code> and use standard servlet security to specify
+            role-base constraints on your URLs.  Here's an example:
+        </p>
+        <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;web-app xmlns="http://java.sun.com/xml/ns/javaee"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+      version="3.0"&gt;
+
+	&lt;module-name&gt;customer-portal&lt;/module-name&gt;
+
+    &lt;security-constraint&gt;
+        &lt;web-resource-collection&gt;
+            &lt;web-resource-name&gt;Customers&lt;/web-resource-name&gt;
+            &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+        &lt;/web-resource-collection&gt;
+        &lt;auth-constraint&gt;
+            &lt;role-name&gt;user&lt;/role-name&gt;
+        &lt;/auth-constraint&gt;
+        &lt;user-data-constraint&gt;
+            &lt;transport-guarantee&gt;CONFIDENTIAL&lt;/transport-guarantee&gt;
+        &lt;/user-data-constraint&gt;
+    &lt;/security-constraint&gt;
+
+    &lt;login-config&gt;
+        &lt;auth-method&gt;BASIC&lt;/auth-method&gt;
+        &lt;realm-name&gt;this is ignored currently&lt;/realm-name&gt;
+    &lt;/login-config&gt;
+
+    &lt;security-role&gt;
+        &lt;role-name&gt;admin&lt;/role-name&gt;
+    &lt;/security-role&gt;
+    &lt;security-role&gt;
+        &lt;role-name&gt;user&lt;/role-name&gt;
+    &lt;/security-role&gt;
+&lt;/web-app&gt;
+
+</pre><p>
+        </p>
+    </div>
+</div><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="tomcat-adapter.html"><strong>Prev</strong>Chapter 4. Tomcat 6, 7 and 8 SAML dapters</a></li><li class="up"><a accesskey="u" href="#"><strong>Top of page</strong></a></li><li class="home"><a accesskey="h" href="index.html"><strong>Front page</strong></a></li><li class="next"><a accesskey="n" href="jetty8-adapter.html"><strong>Next</strong>Chapter 6. Jetty 8.1.x SAML Adapter</a></li></ul></body></html>

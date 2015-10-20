@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 20. Events</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="admin-rest-api.html" title="Chapter 19. Admin REST API"/><link rel="next" href="user_federation.html" title="Chapter 21. User Federation SPI and LDAP/AD Integration"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="admin-rest-api.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="user_federation.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="events"/>Chapter 20. Events</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="events.html#d4e2362">20.1. Event types</a></span></dt><dt><span class="section"><a href="events.html#d4e2384">20.2. Event Listener</a></span></dt><dt><span class="section"><a href="events.html#d4e2395">20.3. Event Store</a></span></dt><dt><span class="section"><a href="events.html#d4e2401">20.4. Configure Events Settings for Realm</a></span></dt></dl></div>
+    
+    <p>
+        Keycloak provides an Events SPI that makes it possible to register listeners for user related events, for example
+        user logins. There are two interfaces that can be implemented, the first is a pure listener, the second is a events
+        store which listens for events, but is also required to store events. An events store provides a way for the admin
+        and account management consoles to view events.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2362"/>20.1. Event types</h2></div></div></div>
+        
+        <p>
+            Login events:
+            </p><div class="itemizedlist"><ul><li>Login - A user has logged in</li><li>Register - A user has registered</li><li>Logout - A user has logged out</li><li>Code to Token - An application/client has exchanged a code for a token</li><li>Refresh Token - An application/client has refreshed a token</li></ul></div><p>
+        </p>
+        <p>
+            Account events:
+            </p><div class="itemizedlist"><ul><li>Social Link - An account has been linked to a social provider</li><li>Remove Social Link - A social provider has been removed from an account</li><li>Update Email - The email address for an account has changed</li><li>Update Profile - The profile for an account has changed</li><li>Send Password Reset - A password reset email has been sent</li><li>Update Password - The password for an account has changed</li><li>Update TOTP - The TOTP settings for an account has changed</li><li>Remove TOTP - TOTP has been removed from an account</li><li>Send Verify Email - A email verification email has been sent</li><li>Verify Email - The email address for an account has been verified</li></ul></div><p>
+        </p>
+        <p>
+            For all events there is a corresponding error event.
+        </p>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2384"/>20.2. Event Listener</h2></div></div></div>
+        
+        <p>
+            Keycloak comes with an Email Event Listener and a JBoss Logging Event Listener. The Email Event Listener
+            sends an email to the users account when an event occurs. The JBoss Logging Event Listener writes to a log
+            file when an events occurs.
+        </p>
+        <p>
+            The Email Event Listener only supports the following events at the moment:
+            </p><div class="itemizedlist"><ul><li>Login Error</li><li>Update Password</li><li>Update TOTP</li><li>Remove TOTP</li></ul></div><p>
+            You can exclude one or more events by editing <code class="literal">standalone/configuration/keycloak-server.json</code>
+            and adding for example:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+"eventListener": {
+    "email": {
+        "exclude-events": [ "UPDATE_TOTP", "REMOVE_TOTP" ]
+    }
+}
+</pre><p>
+        </p>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2395"/>20.3. Event Store</h2></div></div></div>
+        
+        <p>
+            Event Store listen for events and is expected to persist the events to make it possible to query for them
+            later. This is used by the admin console and account management to view events. Keycloak includes providers
+            to persist events to JPA and Mongo.
+        </p>
+        <p>
+            You can specify events to include or exclude by editing <code class="literal">standalone/configuration/keycloak-server.json</code>,
+        and adding for example:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+"eventsStore": {
+    "jpa": {
+        "exclude-events": [ "LOGIN", "REFRESH_TOKEN", "CODE_TO_TOKEN" ]
+    }
+}
+</pre><p>
+        </p>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2401"/>20.4. Configure Events Settings for Realm</h2></div></div></div>
+        
+        <p>
+            To enable persisting of events for a realm you first need to make sure you have a event store provider registered for Keycloak.
+            By default the JPA event store provider is registered. Once you've done that open the admin console, select the
+            realm you're configuring, select <code class="literal">Events</code>. Then click on <code class="literal">Config</code>.
+            You can enable storing events for your realm by toggling <code class="literal">Save Events</code> to ON. You can also set
+            an expiration on events. This will periodically delete events from the database that are older than the specified
+            time.
+        </p>
+        <p>
+            To configure listeners for a realm on the same page as above add one or more event listeners to the
+            <code class="literal">Listeners</code> select box. This will allow you to enable any registered event listeners with the
+            realm.
+        </p>
+    </div>
+</div><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="admin-rest-api.html"><strong>Prev</strong>Chapter 19. Admin REST API</a></li><li class="up"><a accesskey="u" href="#"><strong>Top of page</strong></a></li><li class="home"><a accesskey="h" href="index.html"><strong>Front page</strong></a></li><li class="next"><a accesskey="n" href="user_federation.html"><strong>Next</strong>Chapter 21. User Federation SPI and LDAP/AD Integ...</a></li></ul></body></html>

@@ -1,0 +1,917 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Keycloak SAML Client Adapter Reference Guide</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/></head><body><div class="book" lang="en-US"><div class="titlepage"><div><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><div><h1 class="title"><a id="d4e1"/>Keycloak SAML Client Adapter Reference Guide</h1></div><div><h2 class="subtitle">SAML 2.0 Client Adapters</h2></div><div><p class="releaseinfo">1.6.0.Final</p></div></div><hr/></div><div class="toc"><dl><dt><span class="preface"><a href="#preface">Preface</a></span></dt><dt><span class="chapter"><a href="#d4e12">1. Overview</a></span></dt><dt><span class="chapter"><a href="#adapter-config">2. General Adapter Config</a></span></dt><dd><dl><dt><span class="section"><a href="#d4e23">2.1. SP Element</a></span></dt><dt><span class="section"><a href="#sp_keys">2.2. SP Keys and Key elements</a></span></dt><dd><dl><dt><span class="section"><a href="#keystore">2.2.1. KeyStore element</a></span></dt><dt><span class="section"><a href="#key_pems">2.2.2. Key PEMS</a></span></dt></dl></dd><dt><span class="section"><a href="#d4e94">2.3. SP PrincipalNameMapping element</a></span></dt><dt><span class="section"><a href="#d4e101">2.4. RoleIdentifiers element</a></span></dt><dt><span class="section"><a href="#d4e109">2.5. IDP Element</a></span></dt><dt><span class="section"><a href="#d4e136">2.6. IDP SingleSignOnService sub element</a></span></dt><dt><span class="section"><a href="#d4e170">2.7. IDP SingleSignOnService sub element</a></span></dt><dt><span class="section"><a href="#d4e221">2.8. IDP Keys subelement</a></span></dt></dl></dd><dt><span class="chapter"><a href="#jboss-adapter">3. JBoss/Wildfly Adapter</a></span></dt><dd><dl><dt><span class="section"><a href="#jboss-adapter-installation">3.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="#d4e249">3.2. Required Per WAR Configuration</a></span></dt></dl></dd><dt><span class="chapter"><a href="#tomcat-adapter">4. Tomcat 6, 7 and 8 SAML dapters</a></span></dt><dd><dl><dt><span class="section"><a href="#tomcat-adapter-installation">4.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="#d4e272">4.2. Required Per WAR Configuration</a></span></dt></dl></dd><dt><span class="chapter"><a href="#jetty9-adapter">5. Jetty 9.x SAML Adapters</a></span></dt><dd><dl><dt><span class="section"><a href="#jetty9-adapter-installation">5.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="#jetty9_per_war">5.2. Required Per WAR Configuration</a></span></dt></dl></dd><dt><span class="chapter"><a href="#jetty8-adapter">6. Jetty 8.1.x SAML Adapter</a></span></dt><dd><dl><dt><span class="section"><a href="#jetty8-adapter-installation">6.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="#d4e324">6.2. Required Per WAR Configuration</a></span></dt></dl></dd><dt><span class="chapter"><a href="#d4e328">7. Java Servlet Filter Adapter</a></span></dt><dt><span class="chapter"><a href="#d4e339">8. Logout</a></span></dt></dl></div>
+
+   
+
+   
+
+   <div class="preface" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="preface"/>Preface</h2></div></div></div>
+      
+      <p>
+         In some of the example listings, what is meant to be displayed on one line does not fit
+         inside the available page width. These lines have been broken up. A '\' at the end of a
+         line means that a break has been introduced to fit in the page, with the following lines
+         indented. So:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+Let's pretend to have an extremely \
+long line that \
+does not fit
+This one is short
+</pre><p>
+         Is really:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+Let's pretend to have an extremely long line that does not fit
+This one is short
+</pre><p>
+      </p>
+   </div>
+    <div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e12"/>Chapter 1. Overview</h2></div></div></div>
+    
+    <p>
+        This document describes the Keycloak SAML client adapter and how it can be configured for a variety of platforms.
+        The Keycloak SAML client adapter is a standalone component that provides generic SAML 2.0 support for your web applications.
+        There are no Keycloak server extensions built into it.  As long as the IDP you are talking to supports standard SAML, the
+        Keycloak SAML client adapter should be able to integrate with it.
+    </p>
+</div>
+    <div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="adapter-config"/>Chapter 2. General Adapter Config</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="#d4e23">2.1. SP Element</a></span></dt><dt><span class="section"><a href="#sp_keys">2.2. SP Keys and Key elements</a></span></dt><dd><dl><dt><span class="section"><a href="#keystore">2.2.1. KeyStore element</a></span></dt><dt><span class="section"><a href="#key_pems">2.2.2. Key PEMS</a></span></dt></dl></dd><dt><span class="section"><a href="#d4e94">2.3. SP PrincipalNameMapping element</a></span></dt><dt><span class="section"><a href="#d4e101">2.4. RoleIdentifiers element</a></span></dt><dt><span class="section"><a href="#d4e109">2.5. IDP Element</a></span></dt><dt><span class="section"><a href="#d4e136">2.6. IDP SingleSignOnService sub element</a></span></dt><dt><span class="section"><a href="#d4e170">2.7. IDP SingleSignOnService sub element</a></span></dt><dt><span class="section"><a href="#d4e221">2.8. IDP Keys subelement</a></span></dt></dl></div>
+    
+    <p>
+        Each SAML adapter supported by Keycloak can be configured by a simple XML text file.  This is what one might
+        look like:
+    </p>
+    <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+&lt;keycloak-saml-adapter&gt;
+    &lt;SP entityID="http://localhost:8081/sales-post-sig/"
+        sslPolicy="EXTERNAL"
+        nameIDPolicyFormat="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+        logoutPage="/logout.jsp"
+        forceAuthentication="false"&gt;
+        &lt;Keys&gt;
+            &lt;Key signing="true" &gt;
+                &lt;KeyStore resource="/WEB-INF/keystore.jks" password="store123"&gt;
+                    &lt;PrivateKey alias="http://localhost:8080/sales-post-sig/" password="test123"/&gt;
+                    &lt;Certificate alias="http://localhost:8080/sales-post-sig/"/&gt;
+                &lt;/KeyStore&gt;
+            &lt;/Key&gt;
+        &lt;/Keys&gt;
+        &lt;PrincipalNameMapping policy="FROM_NAME_ID"/&gt;
+        &lt;RoleMapping&gt;
+            &lt;Attribute name="Role"/&gt;
+        &lt;/RoleMapping&gt;
+        &lt;IDP entityID="idp"
+             signaturesRequired="true"&gt;
+        &lt;SingleSignOnService requestBinding="POST"
+                             bindingUrl="http://localhost:8081/auth/realms/demo/protocol/saml"
+                    /&gt;
+
+            &lt;SingleLogoutService
+                    requestBinding="POST"
+                    responseBinding="POST"
+                    postBindingUrl="http://localhost:8081/auth/realms/demo/protocol/saml"
+                    redirectBindingUrl="http://localhost:8081/auth/realms/demo/protocol/saml"
+                    /&gt;
+            &lt;Keys&gt;
+                &lt;Key signing="true"&gt;
+                    &lt;KeyStore resource="/WEB-INF/keystore.jks" password="store123"&gt;
+                        &lt;Certificate alias="demo"/&gt;
+                    &lt;/KeyStore&gt;
+                &lt;/Key&gt;
+            &lt;/Keys&gt;
+        &lt;/IDP&gt;
+     &lt;/SP&gt;
+&lt;/keycloak-saml-adapter&gt;
+
+</pre><p>
+    </p>
+    <p>
+        Some of these configuration switches may be adapter specific and some are common across all adapters.
+        For Java adapters you can use <code class="literal">${...}</code> enclosure as System property replacement.
+        For example <code class="literal">${jboss.server.config.dir}</code>.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e23"/>2.1. SP Element</h2></div></div></div>
+        
+        <p>
+            Here is the explanation of the SP element attributes
+        </p>
+        <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+&lt;SP entityID="sp"
+    sslPolicy="ssl"
+    nameIDPolicyFormat="format"
+    forceAuthentication="true"&gt;
+...
+&lt;/SP&gt;</pre>
+        <p>
+            </p><div class="variablelist"><dl><dt><span class="term">entityID</span></dt><dd>
+                        <p>
+                            This is the identifier for this client.  The IDP needs this value to determine
+                            who the client is that is communicating with it.
+                            <span class="emphasis"><em>REQUIRED.</em></span>
+                        </p>
+                    </dd><dt><span class="term">sslPolicy</span></dt><dd>
+                        <p>
+                            This is the SSL policy the adapter will enforce.  Valid values are:
+                            ALL, EXTERNAL, and NONE.  For ALL, all requests must come in via HTTPS.  For
+                            EXTERNAL, only non-private IP addresses must come over the wire via HTTPS.  For
+                            NONE, no requests are required to come over via HTTPS.  This is
+                            <span class="emphasis"><em>OPTIONAL.</em></span> and defaults to EXTERNAL.
+                        </p>
+                    </dd><dt><span class="term">nameIDPolicyFormat</span></dt><dd>
+                        <p>
+                            SAML clients can request a specific NameID Subject format.  Fill in this value
+                            if you want a specific format.  It must be a standard SAML format identifier, i.e.
+                            <code class="literal">urn:oasis:names:tc:SAML:2.0:nameid-format:transient</code>
+                            <span class="emphasis"><em>OPTIONAL.</em></span>.  By default, no special format is requested.
+                        </p>
+                    </dd><dt><span class="term">forceAuthentication</span></dt><dd>
+                        <p>
+                            SAML clients can request that a user is re-authenticated even if
+                            they are already logged in at the IDP.  Set this to true if you
+                            want this.
+                            <span class="emphasis"><em>OPTIONAL.</em></span>.  Set to <code class="literal">false</code> by default.
+                        </p>
+                    </dd></dl></div><p>
+        </p>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="sp_keys"/>2.2. SP Keys and Key elements</h2></div></div></div>
+        
+        <p>
+            If the IDP requires that the SP sign all of its requests and/or if the IDP will
+            encrypt assertions, you must define the keys used to do this.  For client signed
+            documents you must define both the private and public key or certificate that will
+            be used to sign documents.  For encryption, you only have to define the private key
+            that will be used to decrypt.
+        </p>
+        <p>
+            There are two ways to describe your keys.  Either they are stored within a Java KeyStore
+            or you can cut and paste the keys directly within <code class="literal">keycloak-saml.xml</code>
+            in the PEM format.
+        </p>
+        <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+        &lt;Keys&gt;
+            &lt;Key signing="true" &gt;
+                &lt;KeyStore resource="/WEB-INF/keystore.jks" password="store123"&gt;
+                    &lt;PrivateKey alias="http://localhost:8080/sales-post-sig/" password="test123"/&gt;
+                    &lt;Certificate alias="http://localhost:8080/sales-post-sig/"/&gt;
+                &lt;/KeyStore&gt;
+            &lt;/Key&gt;
+        &lt;/Keys&gt;
+
+        </pre>
+        <p>
+            The <code class="literal">Key</code> element has two optional attributes <code class="literal">signing</code>
+            and <code class="literal">encryption</code>.  When set to true these tell the adapter what the
+            key will be used for.  If both attributes are set to true, then the key will be used for both
+            signing documents and decrypting encrypted assertions.  You must set at least one of these
+            attributes to true.
+        </p>
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="keystore"/>2.2.1. KeyStore element</h3></div></div></div>
+            
+            <p>
+                </p><div class="variablelist"><dl><dt><span class="term">file</span></dt><dd>
+                            <p>
+                                File path to the key store.
+                                <span class="emphasis"><em>OPTIONAL.</em></span>  The file or resource attribute
+                                must be set.
+                            </p>
+                        </dd><dt><span class="term">resource</span></dt><dd>
+                            <p>
+                                WAR resource path to the KeyStore.  This is a path used in method call to ServletContext.getResourceAsStream().
+                                <span class="emphasis"><em>OPTIONAL.</em></span>  The file or resource attribute
+                                must be set.
+                            </p>
+                        </dd><dt><span class="term">password</span></dt><dd>
+                            <p>
+                                The password of the KeyStore
+                                <span class="emphasis"><em>REQUIRED.</em></span>
+                            </p>
+                        </dd></dl></div><p>
+
+            </p>
+            <p>
+                You can and must also specify references to your private keys and certificates within
+                the Java KeyStore.  The <code class="literal">PrivateKey</code> and <code class="literal">Certificate</code>
+                elements do this.  The <code class="literal">alias</code> attribute defines the alias within the
+                KeyStore for the key.  For <code class="literal">PrivateKey</code>, a password is required to access this key
+                specify that value in the <code class="literal">password</code> attribute.
+            </p>
+        </div>
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="key_pems"/>2.2.2. Key PEMS</h3></div></div></div>
+            
+            <p>
+                Within the <code class="literal">Key</code> element you alternatively declare your keys and certificates
+                directly using the sub elements <code class="literal">PrivateKeyPem</code>, <code class="literal">PublicKeyPem</code>, and
+                <code class="literal">CertificatePem</code>.  The values contained in these elements must conform to the
+                PEM key format.  You usually use this option if you are generating keys using <code class="literal">openssl</code>
+            </p>
+        </div>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e94"/>2.3. SP PrincipalNameMapping element</h2></div></div></div>
+        
+        <p>
+            This element is optional.  When creating a Java Principal object that you obtain from
+            methods like HttpServletRequest.getUserPrincipal(), you can define what name that is returned
+            by the Principal.getName() method.  The <code class="literal">policy</code> attribute defines the
+            policy used to populate this value.  The values are <code class="literal">FROM_NAME_ID</code>.  This policy
+            just grabs whatever the SAML subject value is.  The other is <code class="literal">FROM_ATTRIBUTE</code>.  This will
+            pull the value of Principal.getName() from one of the attributes in the SAML assertion received from the server.
+            The default value is <code class="literal">FROM_NAME_ID</code>.
+        </p>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e101"/>2.4. RoleIdentifiers element</h2></div></div></div>
+        
+        <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+&lt;RoleIdentifiers&gt;
+     &lt;Attribute name="Role"/&gt;
+     &lt;Attribute name="member"/&gt;
+     &lt;Attribute name="memberOf"/&gt;
+&lt;/RoleIdentifiers&gt;
+</pre>
+        <p>
+            This element is optional.  It defines which SAML attribute values in the assertion should be
+            mapped to a Java EE role.  By default <code class="literal">Role</code> attribute values are converted
+            to Java EE roles.  Some IDPs send roles via a <code class="literal">member</code> or <code class="literal">memberOf</code>
+            attribute assertion.  You define one or more <code class="literal">Attribute</code> elements to specify
+            which SAML attributes must be converted into roles.
+        </p>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e109"/>2.5. IDP Element</h2></div></div></div>
+        
+        <p>
+            Everything in the IDP element describes the settings for the IDP the SP is communicating
+            with.
+        </p>
+        <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;IDP entityID="idp"
+     signaturesRequired="true"
+     signatureAlgorithm="RSA_SHA1"
+     signatureCanonicalizationMethod="http://www.w3.org/2001/10/xml-exc-c14n#"&gt;
+...
+&lt;/IDP&gt;
+        </pre>
+        <p>
+            </p><div class="variablelist"><dl><dt><span class="term">entityID</span></dt><dd>
+                        <p>
+                            This is the issuer ID of the IDP.
+                            <span class="emphasis"><em>REQUIRED.</em></span>.
+                        </p>
+                    </dd><dt><span class="term">signaturesRequired</span></dt><dd>
+                        <p>
+                            If set to true, the client adapter will sign every document
+                            it sends to the IDP.  Also, the client will expect that the IDP
+                            will be signing an documents sent to it.  This switch sets
+                            the default for all request and response types, but you will see
+                            later that you have some fine grain control over this.
+                            <span class="emphasis"><em>OPTIONAL.</em></span>
+                        </p>
+                    </dd><dt><span class="term">signatureAlgorithm</span></dt><dd>
+                        <p>
+                            This is the signature algorithm that the IDP expects signed documents
+                            to use
+                            <span class="emphasis"><em>OPTIONAL.</em></span>.  The default value is RSA_SHA256, but
+                            you can also use RSA_SHA1, RSA_256, RSA_512, and DSA_SHA1.
+                        </p>
+                    </dd><dt><span class="term">signatureCanonicalizationMethod</span></dt><dd>
+                        <p>
+                            This is the signature canonicalization method that the IDP expects signed documents
+                            to use
+                            <span class="emphasis"><em>OPTIONAL.</em></span>.  The default value is <code class="literal">http://www.w3.org/2001/10/xml-exc-c14n#</code>
+                            and should be good for most IDPs.
+                        </p>
+                    </dd></dl></div><p>
+        </p>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e136"/>2.6. IDP SingleSignOnService sub element</h2></div></div></div>
+        
+        <p>
+            The <code class="literal">SignleSignOnService</code> sub element defines the
+            login SAML endpoint of the IDP.
+        </p>
+        <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+&lt;SingleSignOnService signRequest="true"
+                     validateResponseSignature="true"
+                     requestBinding="post"
+                     bindingUrl="url"/&gt;
+</pre>
+        <p>
+            </p><div class="variablelist"><dl><dt><span class="term">signRequest</span></dt><dd>
+                        <p>
+                            Should the client sign authn requests?
+                            <span class="emphasis"><em>OPTIONAL.</em></span>.  Defaults to whatever the
+                            IDP <code class="literal">signaturesRequired</code> element value is.
+                        </p>
+                    </dd><dt><span class="term">validateResponseSignature</span></dt><dd>
+                        <p>
+                            Should the client expect the IDP to sign the assertion response document
+                            sent back from an auhtn request?
+                            <span class="emphasis"><em>OPTIONAL.</em></span> Defaults to whatever the
+                            IDP <code class="literal">signaturesRequired</code> element value is.
+                        </p>
+                    </dd><dt><span class="term">requestBinding</span></dt><dd>
+                        <p>
+                            This is the SAML binding type used for communicating with the IDP
+                            <span class="emphasis"><em>OPTIONAL.</em></span>.  The default value is POST, but
+                            you can set it to REDIRECT as well.
+                        </p>
+                    </dd><dt><span class="term">responseBinding</span></dt><dd>
+                        <p>
+                            SAML allows the client to request what binding type it wants authn responses
+                            to use.  The values of this can be POST or REDIRECT
+                            <span class="emphasis"><em>OPTIONAL.</em></span>.  The default is that the client will not request
+                            a specific binding type for responses.
+                        </p>
+                    </dd><dt><span class="term">bindingUrl</span></dt><dd>
+                        <p>
+                            This is the URL for the ID login service that the client will send requests to.
+                            <span class="emphasis"><em>REQUIRED.</em></span>.
+                        </p>
+                    </dd></dl></div><p>
+        </p>
+    </div>    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e170"/>2.7. IDP SingleSignOnService sub element</h2></div></div></div>
+    
+    <p>
+        The <code class="literal">SignleSignOnService</code> sub element defines the
+        login SAML endpoint of the IDP.
+    </p>
+    <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+&lt;SingleLogoutService validateRequestSignature="true"
+                     validateResponseSignature="true"
+                     signRequest="true"
+                     signResponse="true"
+                     requestBinding="redirect"
+                     responseBinding="post"
+                     postBindingUrl="posturl"
+                     redirectBindingUrl="redirecturl"&gt;
+</pre>
+    <p>
+        </p><div class="variablelist"><dl><dt><span class="term">signRequest</span></dt><dd>
+                    <p>
+                        Should the client sign logout requests it makes to the IDP?
+                        <span class="emphasis"><em>OPTIONAL.</em></span>.  Defaults to whatever the
+                        IDP <code class="literal">signaturesRequired</code> element value is.
+                    </p>
+                </dd><dt><span class="term">signResponse</span></dt><dd>
+                    <p>
+                        Should the client sign logout responses it sends to the IDP requests?
+                        <span class="emphasis"><em>OPTIONAL.</em></span>.  Defaults to whatever the
+                        IDP <code class="literal">signaturesRequired</code> element value is.
+                    </p>
+                </dd><dt><span class="term">validateRequestSignature</span></dt><dd>
+                    <p>
+                        Should the client expect signed logout request documents from the IDP?
+                        <span class="emphasis"><em>OPTIONAL.</em></span> Defaults to whatever the
+                        IDP <code class="literal">signaturesRequired</code> element value is.
+                    </p>
+                </dd><dt><span class="term">validateResponseSignature</span></dt><dd>
+                    <p>
+                        Should the client expect signed logout response documents from the IDP?
+                        <span class="emphasis"><em>OPTIONAL.</em></span> Defaults to whatever the
+                        IDP <code class="literal">signaturesRequired</code> element value is.
+                    </p>
+                </dd><dt><span class="term">requestBinding</span></dt><dd>
+                    <p>
+                        This is the SAML binding type used for communicating SAML requests to the IDP
+                        <span class="emphasis"><em>OPTIONAL.</em></span>.  The default value is POST, but
+                        you can set it to REDIRECT as well.
+                    </p>
+                </dd><dt><span class="term">responseBinding</span></dt><dd>
+                    <p>
+                        This is the SAML binding type used for communicating SAML responses to the IDP
+                        The values of this can be POST or REDIRECT
+                        <span class="emphasis"><em>OPTIONAL.</em></span>.  The default value is POST, but
+                        you can set it to REDIRECT as well.
+                    </p>
+                </dd><dt><span class="term">postBindingUrl</span></dt><dd>
+                    <p>
+                        This is the URL for the IDP's logout service when using the POST binding.
+                        <span class="emphasis"><em>REQUIRED</em></span> if using the POST binding at all.
+                    </p>
+                </dd><dt><span class="term">redirectBindingUrl</span></dt><dd>
+                    <p>
+                        This is the URL for the IDP's logout service when using the REDIRECT binding.
+                        <span class="emphasis"><em>REQUIRED</em></span> if using the REDIRECT binding at all.
+                    </p>
+                </dd></dl></div><p>
+    </p>
+</div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e221"/>2.8. IDP Keys subelement</h2></div></div></div>
+        
+        <p>
+            The Keys sub element of IDP is only used to define the certificate or
+            public key to use to verify documents signed by the IDP.  It is defined
+            in the same way as the <a class="link" href="#sp_keys" title="2.2. SP Keys and Key elements">SP's Key's element</a>.  But
+            again, you only have to define one certificate or public key reference.
+        </p>
+
+    </div>
+
+</div>
+
+    <div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jboss-adapter"/>Chapter 3. JBoss/Wildfly Adapter</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="#jboss-adapter-installation">3.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="#d4e249">3.2. Required Per WAR Configuration</a></span></dt></dl></div>
+    
+    <p>
+        To be able to secure WAR apps deployed on JBoss EAP 6.x or Wildfly, you must install and
+        configure the Keycloak SAML Adapter Subsystem.  You then provide a keycloak
+        config, <code class="literal">/WEB-INF/keycloak-saml</code> file in your WAR and change the auth-method to KEYCLOAK-SAML within web.xml.
+        Both methods are described in this section.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jboss-adapter-installation"/>3.1. Adapter Installation</h2></div></div></div>
+        
+    <p>
+        SAML Adapters are no longer included with the appliance or war distribution.Each adapter is a separate download on
+        the Keycloak download site.  They are also available as a maven artifact.
+    </p>
+    <p>
+        Install on Wildfly 9:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $WILDFLY_HOME
+$ unzip keycloak-saml-wf9-adapter-dist.zip
+</pre><p>
+    </p>
+    <p>
+        Install on JBoss EAP 6.x:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $JBOSS_HOME
+$ unzip keycloak-saml-eap6-adapter-dist.zip
+</pre><p>
+    </p>
+    <p>
+        This zip file creates new JBoss Modules specific to the Wildfly Keycloak SAML Adapter within your Wildfly distro.
+    </p>
+    <p>
+        After adding the Keycloak modules, you must then enable the Keycloak SAML Subsystem within your app server's server configuration:
+        <code class="literal">domain.xml</code> or <code class="literal">standalone.xml</code>.
+    </p>
+    <p>
+        There is a CLI script that will help you modify your server configuration.  Start the server and run the script 
+        from the server's bin directory:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $JBOSS_HOME/bin
+$ jboss-cli.sh -c --file=adapter-install.cli
+</pre><p>
+        The script will add the extension, subsystem, and optional security-domain as described below.
+    </p>
+    <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+&lt;server xmlns="urn:jboss:domain:1.4"&gt;
+
+    &lt;extensions&gt;
+        &lt;extension module="org.keycloak.keycloak-saml-adapter-subsystem"/&gt;
+          ...
+    &lt;/extensions&gt;
+
+    &lt;profile&gt;
+        &lt;subsystem xmlns="urn:jboss:domain:keycloak-saml:1.6"/&gt;
+         ...
+    &lt;/profile&gt;
+
+</pre><p>
+    </p>
+        <p>
+            The keycloak security domain should be used with EJBs and other components when you need the security context created
+            in the secured web tier to be propagated to the EJBs (other EE component) you are invoking.  Otherwise
+            this configuration is optional.
+        </p>
+<pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+&lt;server xmlns="urn:jboss:domain:1.4"&gt;
+ &lt;subsystem xmlns="urn:jboss:domain:security:1.2"&gt;
+    &lt;security-domains&gt;
+...
+      &lt;security-domain name="keycloak"&gt;
+         &lt;authentication&gt;
+           &lt;login-module code="org.keycloak.adapters.jboss.KeycloakLoginModule"
+                         flag="required"/&gt;
+          &lt;/authentication&gt;
+      &lt;/security-domain&gt;
+    &lt;/security-domains&gt;
+
+</pre>
+        <p>
+            For example, if you have a JAX-RS service that is an EJB within your WEB-INF/classes directory, you'll want
+            to annotate it with the @SecurityDomain annotation as follows:
+        </p>
+<pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+import org.jboss.ejb3.annotation.SecurityDomain;
+import org.jboss.resteasy.annotations.cache.NoCache;
+
+import javax.annotation.security.RolesAllowed;
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import java.util.ArrayList;
+import java.util.List;
+
+@Path("customers")
+@Stateless
+@SecurityDomain("keycloak")
+public class CustomerService {
+
+    @EJB
+    CustomerDB db;
+
+    @GET
+    @Produces("application/json")
+    @NoCache
+    @RolesAllowed("db_user")
+    public List&lt;String&gt; getCustomers() {
+        return db.getCustomers();
+    }
+}
+
+</pre>
+        <p>
+            We hope to improve our integration in the future so that you don't have to specify the @SecurityDomain
+            annotation when you want to propagate a keycloak security context to the EJB tier.
+        </p>
+
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e249"/>3.2. Required Per WAR Configuration</h2></div></div></div>
+        
+        <p>
+            This section describes how to secure a WAR directly by adding config and editing files within your WAR package.
+        </p>
+        <p>
+            The first thing you must do is create
+            a <code class="literal">keycloak-saml.xml</code> adapter config file within the <code class="literal">WEB-INF</code> directory
+            of your WAR.  The format of this config file is describe in the <a class="link" href="#adapter-config" title="Chapter 2. General Adapter Config">general adapter configuration</a>
+            section.
+        </p>
+        <p>
+            Next you must set the <code class="literal">auth-method</code> to <code class="literal">KEYCLOAK-SAML</code> in <code class="literal">web.xml</code>.  You also
+            have to use standard servlet security to specify role-base constraints on your URLs.  Here's an example
+            pulled from one of the examples that comes distributed with Keycloak.
+        </p>
+        <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;web-app xmlns="http://java.sun.com/xml/ns/javaee"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+      version="3.0"&gt;
+
+	&lt;module-name&gt;customer-portal&lt;/module-name&gt;
+
+    &lt;security-constraint&gt;
+        &lt;web-resource-collection&gt;
+            &lt;web-resource-name&gt;Admins&lt;/web-resource-name&gt;
+            &lt;url-pattern&gt;/admin/*&lt;/url-pattern&gt;
+        &lt;/web-resource-collection&gt;
+        &lt;auth-constraint&gt;
+            &lt;role-name&gt;admin&lt;/role-name&gt;
+        &lt;/auth-constraint&gt;
+        &lt;user-data-constraint&gt;
+            &lt;transport-guarantee&gt;CONFIDENTIAL&lt;/transport-guarantee&gt;
+        &lt;/user-data-constraint&gt;
+    &lt;/security-constraint&gt;
+    &lt;security-constraint&gt;
+        &lt;web-resource-collection&gt;
+            &lt;web-resource-name&gt;Customers&lt;/web-resource-name&gt;
+            &lt;url-pattern&gt;/customers/*&lt;/url-pattern&gt;
+        &lt;/web-resource-collection&gt;
+        &lt;auth-constraint&gt;
+            &lt;role-name&gt;user&lt;/role-name&gt;
+        &lt;/auth-constraint&gt;
+        &lt;user-data-constraint&gt;
+            &lt;transport-guarantee&gt;CONFIDENTIAL&lt;/transport-guarantee&gt;
+        &lt;/user-data-constraint&gt;
+    &lt;/security-constraint&gt;
+
+    &lt;login-config&gt;
+        &lt;auth-method&gt;KEYCLOAK-SAML&lt;/auth-method&gt;
+        &lt;realm-name&gt;this is ignored currently&lt;/realm-name&gt;
+    &lt;/login-config&gt;
+
+    &lt;security-role&gt;
+        &lt;role-name&gt;admin&lt;/role-name&gt;
+    &lt;/security-role&gt;
+    &lt;security-role&gt;
+        &lt;role-name&gt;user&lt;/role-name&gt;
+    &lt;/security-role&gt;
+&lt;/web-app&gt;
+
+</pre><p>
+        </p>
+    </div>
+</div>
+    <div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="tomcat-adapter"/>Chapter 4. Tomcat 6, 7 and 8 SAML dapters</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="#tomcat-adapter-installation">4.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="#d4e272">4.2. Required Per WAR Configuration</a></span></dt></dl></div>
+    
+    <p>
+        To be able to secure WAR apps deployed on Tomcat 6, 7 and 8 you must install the Keycloak Tomcat 6, 7 or 8 SAML adapter
+        into your Tomcat installation.  You then have to provide some extra configuration in each WAR you deploy to
+        Tomcat.  Let's go over these steps.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="tomcat-adapter-installation"/>4.1. Adapter Installation</h2></div></div></div>
+        
+        <p>
+            Adapters are no longer included with the appliance or war distribution.  Each adapter is a separate download on
+            the Keycloak download site.  They are also available as a maven artifact.
+        </p>
+    <p>
+        You must unzip the adapter distro into Tomcat's <code class="literal">lib/</code> directory.  Including
+        adapter's jars within your WEB-INF/lib directory will not work!  The Keycloak SAML adapter is implemented as a Valve
+        and valve code must reside in Tomcat's main lib/ directory.
+    </p>
+    <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $TOMCAT_HOME/lib
+$ unzip keycloak-saml-tomcat6-adapter-dist.zip
+    or
+$ unzip keycloak-saml-tomcat7-adapter-dist.zip
+    or
+$ unzip keycloak-saml-tomcat8-adapter-dist.zip
+</pre><p>
+    </p>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e272"/>4.2. Required Per WAR Configuration</h2></div></div></div>
+        
+        <p>
+            This section describes how to secure a WAR directly by adding config and editing files within your WAR package.
+        </p>
+        <p>
+            The first thing you must do is create a <code class="literal">META-INF/context.xml</code> file in your WAR package.  This is
+            a Tomcat specific config file and you must define a Keycloak specific Valve.
+        </p>
+        <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;Context path="/your-context-path"&gt;
+    &lt;Valve className="org.keycloak.adapters.saml.tomcat.SamlAuthenticatorValve"/&gt;
+&lt;/Context&gt;
+        </pre>
+        <p>
+            Next you must create
+            a <code class="literal">keycloak-saml.xml</code> adapter config file within the <code class="literal">WEB-INF</code> directory
+            of your WAR.  The format of this config file is describe in the <a class="link" href="#adapter-config" title="Chapter 2. General Adapter Config">general adapter configuration</a>
+            section.
+        </p>
+        <p>
+            Finally you must specify both a <code class="literal">login-config</code> and use standard servlet security to specify
+            role-base constraints on your URLs.  Here's an example:
+        </p>
+        <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;web-app xmlns="http://java.sun.com/xml/ns/javaee"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+      version="3.0"&gt;
+
+	&lt;module-name&gt;customer-portal&lt;/module-name&gt;
+
+    &lt;security-constraint&gt;
+        &lt;web-resource-collection&gt;
+            &lt;web-resource-name&gt;Customers&lt;/web-resource-name&gt;
+            &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+        &lt;/web-resource-collection&gt;
+        &lt;auth-constraint&gt;
+            &lt;role-name&gt;user&lt;/role-name&gt;
+        &lt;/auth-constraint&gt;
+    &lt;/security-constraint&gt;
+
+    &lt;login-config&gt;
+        &lt;auth-method&gt;BASIC&lt;/auth-method&gt;
+        &lt;realm-name&gt;this is ignored currently&lt;/realm-name&gt;
+    &lt;/login-config&gt;
+
+    &lt;security-role&gt;
+        &lt;role-name&gt;admin&lt;/role-name&gt;
+    &lt;/security-role&gt;
+    &lt;security-role&gt;
+        &lt;role-name&gt;user&lt;/role-name&gt;
+    &lt;/security-role&gt;
+&lt;/web-app&gt;
+
+</pre><p>
+        </p>
+    </div>
+</div>
+    <div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jetty9-adapter"/>Chapter 5. Jetty 9.x SAML Adapters</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="#jetty9-adapter-installation">5.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="#jetty9_per_war">5.2. Required Per WAR Configuration</a></span></dt></dl></div>
+    
+    <p>
+        Keycloak has a separate SAML adapter for Jetty 9.x.  You then have to provide some extra configuration in each WAR you deploy to
+        Jetty.  Let's go over these steps.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jetty9-adapter-installation"/>5.1. Adapter Installation</h2></div></div></div>
+        
+        <p>
+            Adapters are no longer included with the appliance or war distribution.Each adapter is a separate download on
+            the Keycloak download site.  They are also available as a maven artifact.
+        </p>
+        <p>
+            You must unzip the Jetty 9.x  distro into Jetty 9.x's root directory.  Including
+            adapter's jars within your WEB-INF/lib directory will not work!
+        </p>
+    <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $JETTY_HOME
+$ unzip keycloak-saml-jetty92-adapter-dist.zip
+</pre><p>
+    </p>
+    <p>
+        Next, you will have to enable the keycloak module for your jetty.base.
+    </p>
+        <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd your-base
+$ java -jar $JETTY_HOME/start.jar --add-to-startd=keycloak
+</pre><p>
+
+        </p>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jetty9_per_war"/>5.2. Required Per WAR Configuration</h2></div></div></div>
+        
+        <p>
+            This section describes how to secure a WAR directly by adding config and editing files within your WAR package.
+        </p>
+        <p>
+            The first thing you must do is create a <code class="literal">WEB-INF/jetty-web.xml</code> file in your WAR package.  This is
+            a Jetty specific config file and you must define a Keycloak specific authenticator within it.
+        </p>
+        <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd"&gt;
+&lt;Configure class="org.eclipse.jetty.webapp.WebAppContext"&gt;
+    &lt;Get name="securityHandler"&gt;
+        &lt;Set name="authenticator"&gt;
+            &lt;New class="org.keycloak.adapters.saml.jetty.KeycloakSamlAuthenticator"&gt;
+            &lt;/New&gt;
+        &lt;/Set&gt;
+    &lt;/Get&gt;
+&lt;/Configure&gt;
+        </pre>
+        <p>
+            Next you must create
+            a <code class="literal">keycloak-saml.xml</code> adapter config file within the <code class="literal">WEB-INF</code> directory
+            of your WAR.  The format of this config file is describe in the <a class="link" href="#adapter-config" title="Chapter 2. General Adapter Config">general adapter configuration</a>
+            section.
+        </p>
+        <p>
+            Finally you must specify both a <code class="literal">login-config</code> and use standard servlet security to specify
+            role-base constraints on your URLs.  Here's an example:
+        </p>
+        <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+&lt;web-app xmlns="http://java.sun.com/xml/ns/javaee"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+      version="3.0"&gt;
+
+	&lt;module-name&gt;customer-portal&lt;/module-name&gt;
+
+    &lt;security-constraint&gt;
+        &lt;web-resource-collection&gt;
+            &lt;web-resource-name&gt;Customers&lt;/web-resource-name&gt;
+            &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+        &lt;/web-resource-collection&gt;
+        &lt;auth-constraint&gt;
+            &lt;role-name&gt;user&lt;/role-name&gt;
+        &lt;/auth-constraint&gt;
+        &lt;user-data-constraint&gt;
+            &lt;transport-guarantee&gt;CONFIDENTIAL&lt;/transport-guarantee&gt;
+        &lt;/user-data-constraint&gt;
+    &lt;/security-constraint&gt;
+
+    &lt;login-config&gt;
+        &lt;auth-method&gt;BASIC&lt;/auth-method&gt;
+        &lt;realm-name&gt;this is ignored currently&lt;/realm-name&gt;
+    &lt;/login-config&gt;
+
+    &lt;security-role&gt;
+        &lt;role-name&gt;admin&lt;/role-name&gt;
+    &lt;/security-role&gt;
+    &lt;security-role&gt;
+        &lt;role-name&gt;user&lt;/role-name&gt;
+    &lt;/security-role&gt;
+&lt;/web-app&gt;
+
+</pre><p>
+        </p>
+    </div>
+</div>
+    <div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jetty8-adapter"/>Chapter 6. Jetty 8.1.x SAML Adapter</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="#jetty8-adapter-installation">6.1. Adapter Installation</a></span></dt><dt><span class="section"><a href="#d4e324">6.2. Required Per WAR Configuration</a></span></dt></dl></div>
+    
+    <p>
+        Keycloak has a separate SAML adapter for Jetty 8.1.x that you will have to install into your Jetty
+        installation.  You then have to provide some extra configuration in each WAR you deploy to
+        Jetty.  Let's go over these steps.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="jetty8-adapter-installation"/>6.1. Adapter Installation</h2></div></div></div>
+        
+        <p>
+            Adapters are no longer included with the appliance or war distribution.Each adapter is a separate download on
+            the Keycloak download site.  They are also available as a maven artifact.
+        </p>
+    <p>
+        You must unzip the Jetty 8.1.x  distro into Jetty 8.1.x's root directory.  Including
+        adapter's jars within your WEB-INF/lib directory will not work!
+    </p>
+    <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+$ cd $JETTY_HOME
+$ unzip keycloak-saml-jetty81-adapter-dist.zip
+</pre><p>
+    </p>
+    <p>
+        Next, you will have to enable the keycloak option.  Edit start.ini and add keycloak to the options
+    </p>
+        <p>
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+#===========================================================
+# Start classpath OPTIONS.
+# These control what classes are on the classpath
+# for a full listing do
+#   java -jar start.jar --list-options
+#-----------------------------------------------------------
+OPTIONS=Server,jsp,jmx,resources,websocket,ext,plus,annotations,keycloak
+
+</pre><p>
+
+        </p>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e324"/>6.2. Required Per WAR Configuration</h2></div></div></div>
+        
+        <p>
+            Enabling Keycloak for your WARs is the same as the Jetty 9.x adapter.  See <a class="link" href="#jetty9_per_war" title="5.2. Required Per WAR Configuration">Required Per WAR Configuration</a>
+        </p>
+     </div>
+</div>
+    <div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e328"/>Chapter 7. Java Servlet Filter Adapter</h2></div></div></div>
+    
+    <p>
+        If you want to use  SAML with a Java servlet application that doesn't have an adapter for that servlet
+        platform, you can opt to use the servlet filter adapter that Keycloak has.  This adapter works a little
+        differently than the other adapters.  You do not define security constraints in web.xml.  Instead you define
+        a filter mapping using the Keycloak servlet filter adapter to secure the url patterns you want to secure.
+    </p>
+    <div xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="warning"><h2>Warning</h2>
+        <p>
+            Backchannel logout works a bit differently than the standard adapters.  Instead of invalidating the http session
+            it instead marks the session id as logged out.  There's just no way of arbitrarily invalidating an http session
+            based on a session id.
+        </p>
+    </div>
+    <div xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="warning"><h2>Warning</h2>
+        <p>
+            Backchannel logout does not currently work when you have a clustered application that uses the SAML filter.
+        </p>
+    </div>
+    <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+        
+&lt;web-app xmlns="http://java.sun.com/xml/ns/javaee"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+      version="3.0"&gt;
+
+	&lt;module-name&gt;customer-portal&lt;/module-name&gt;
+
+    &lt;filter&gt;
+        &lt;filter-name&gt;Keycloak Filter&lt;/filter-name&gt;
+        &lt;filter-class&gt;org.keycloak.adapters.saml.servlet.SamlFilter&lt;/filter-class&gt;
+    &lt;/filter&gt;
+    &lt;filter-mapping&gt;
+        &lt;filter-name&gt;Keycloak Filter&lt;/filter-name&gt;
+        &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+    &lt;/filter-mapping&gt;
+&lt;/web-app&gt;
+
+    </pre>
+    <p>
+        The Keycloak filter has the same configuration parameters available as the other adapters except you must define
+        them as filter init params instead of context params.
+    </p>
+    <p>
+        To use this filter, include this maven artifact in your WAR poms
+    </p>
+    <pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+           &lt;dependency&gt;
+                &lt;groupId&gt;org.keycloak&lt;/groupId&gt;
+                &lt;artifactId&gt;keycloak-saml-servlet-filter-adapter&lt;/artifactId&gt;
+                &lt;version&gt;&amp;project.version;&lt;/version&gt;
+            &lt;/dependency&gt;
+</pre>
+</div>
+    <div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e339"/>Chapter 8. Logout</h2></div></div></div>
+    
+    <p>
+        There are multiple ways you can logout from a web application.  For Java EE servlet containers, you can call
+        HttpServletRequest.logout().
+        For any other browser application, you can point the browser at any url of your web application that has
+        a security constraing and pass in a query parameter GLO, i.e. <code class="literal">http://myapp?GLO=true</code>.
+        This will log you out if you have an SSO session with your browser.
+    </p>
+</div>
+
+
+
+</div></body></html>

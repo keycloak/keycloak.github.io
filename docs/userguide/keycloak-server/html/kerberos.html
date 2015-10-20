@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 22. Kerberos brokering</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="user_federation.html" title="Chapter 21. User Federation SPI and LDAP/AD Integration"/><link rel="next" href="export-import.html" title="Chapter 23. Export and Import"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="user_federation.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="export-import.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="kerberos"/>Chapter 22. Kerberos brokering</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="kerberos.html#d4e2555">22.1. Setup of Kerberos server</a></span></dt><dt><span class="section"><a href="kerberos.html#d4e2570">22.2. Setup and configuration of Keycloak server</a></span></dt><dt><span class="section"><a href="kerberos.html#d4e2599">22.3. Setup and configuration of client machines</a></span></dt><dt><span class="section"><a href="kerberos.html#d4e2606">22.4. Example setups</a></span></dt><dd><dl><dt><span class="section"><a href="kerberos.html#d4e2609">22.4.1. Keycloak and FreeIPA docker image</a></span></dt><dt><span class="section"><a href="kerberos.html#d4e2615">22.4.2. ApacheDS testing Kerberos server</a></span></dt></dl></dd><dt><span class="section"><a href="kerberos.html#d4e2620">22.5. Credential delegation</a></span></dt><dt><span class="section"><a href="kerberos.html#d4e2636">22.6. Troubleshooting</a></span></dt></dl></div>
+    
+    <p>
+        Keycloak supports login with Kerberos ticket through SPNEGO. SPNEGO (Simple and Protected GSSAPI Negotiation Mechanism) is used
+        to authenticate transparently through the web browser after the user has been authenticated when logging-in his session.
+        For non-web cases or when ticket is not available during login, Keycloak also supports login with Kerberos username/password.
+    </p>
+    <p>
+        A typical use case for web authentication is the following:
+        </p><div xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="orderedlist"><ol><li>
+                <p>
+                    User logs into his desktop (Such as a Windows machine in Active Directory domain or Linux machine with Kerberos integration enabled).
+                </p>
+            </li><li>
+                <p>
+                    User then uses his browser (IE/Firefox/Chrome) to access a web application secured by Keycloak.
+                </p>
+            </li><li>
+                <p>
+                    Application redirects to Keycloak login.
+                </p>
+            </li><li>
+                <p>
+                    Keycloak sends HTML login screen together with status 401 and HTTP header <code class="literal">WWW-Authenticate: Negotiate</code>
+                </p>
+            </li><li>
+                <p>
+                    In case that browser has Kerberos ticket from desktop login, it transfers the desktop sign on information to the
+                    Keycloak in header <code class="literal">Authorization: Negotiate 'spnego-token'</code> . Otherwise it just displays login screen.
+                </p>
+            </li><li>
+                <p>
+                    Keycloak validates token from browser and authenticate user. It provisions user data from LDAP (in case of
+                    LDAPFederationProvider with Kerberos authentication support) or let user to update his profile and prefill data
+                    (in case of KerberosFederationProvider).
+                </p>
+            </li><li>
+                <p>
+                    Keycloak returns back to the application. Communication between Keycloak and application happens through OpenID
+                    Connect or SAML messages. The fact that Keycloak was authenticated through Kerberos is hidden from the application.
+                    So Keycloak acts as broker to Kerberos/SPNEGO login.
+                </p>
+            </li></ol></div><p>
+    </p>
+    <p>
+        For setup there are 3 main parts:
+        </p><div xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="orderedlist"><ol><li>
+                <p>
+                    Setup and configuration of Kerberos server (KDC)
+                </p>
+            </li><li>
+                <p>
+                    Setup and configuration of Keycloak server
+                </p>
+            </li><li>
+                <p>
+                    Setup and configuration of client machines
+                </p>
+            </li></ol></div><p>
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2555"/>22.1. Setup of Kerberos server</h2></div></div></div>
+        
+        <p>
+            This is platform dependent. Exact steps depend on your OS and the Kerberos vendor you're going to use.
+            Consult Windows Active Directory, MIT Kerberos and your OS documentation for how exactly to setup and configure Kerberos server.
+        </p>
+        <p>
+            At least you will need to:
+            </p><div class="itemizedlist"><ul><li>
+                    <p>
+                        Add some user principals to your Kerberos database. You can also integrate your Kerberos with LDAP,
+                        which means that user accounts will be provisioned from LDAP server.
+                    </p>
+                </li><li>
+                    <p>
+                        Add service principal for "HTTP" service. For example if your Keycloak server will be running on
+                        <code class="literal">www.mydomain.org</code> you may need to add principal <code class="literal">HTTP/www.mydomain.org@MYDOMAIN.ORG</code>
+                        assuming that MYDOMAIN.ORG will be your Kerberos realm.
+                    </p>
+                    <p>
+                        For example on MIT Kerberos you can run "kadmin" session. If you are on same machine where is MIT Kerberos, you can simply use command:
+                        </p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+sudo kadmin.local
+</pre><p>
+                        Then add HTTP principal and export his key to keytab file with the commands like:
+                        </p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+addprinc -randkey HTTP/www.mydomain.org@MYDOMAIN.ORG
+ktadd -k /tmp/http.keytab HTTP/www.mydomain.org@MYDOMAIN.ORG
+</pre><p>
+                        Keytab file <code class="literal">/tmp/http.keytab</code> will need to be accessible on the host where keycloak server will be running.
+                    </p>
+                </li></ul></div><p>
+        </p>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2570"/>22.2. Setup and configuration of Keycloak server</h2></div></div></div>
+        
+        <div class="itemizedlist"><ul><li>
+                <p>
+                    Install kerberos client. This is again platform dependent. If you are on Fedora, Ubuntu or RHEL, you can install package <code class="literal">freeipa-client</code>,
+                    which contains Kerberos client and bunch of other stuff.
+                </p>
+            </li><li>
+                <p>
+                    Configure kerberos client (on linux it's in file <code class="literal">/etc/krb5.conf</code> ). You need to put your Kerberos realm and at least
+                    configure the Http domains your server will be running on. For the example realm MYDOMAIN.ORG you may configure <code class="literal">domain_realm</code> section like this:
+                    </p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+[domain_realm]
+  .mydomain.org = MYDOMAIN.ORG
+  mydomain.org = MYDOMAIN.ORG
+</pre><p>
+                </p>
+            </li><li>
+                <p>
+                    Export keytab file with HTTP principal and make sure the file is accessible to the process under which Keycloak
+                    server is running. For production, it's ideal if it's readable just by this process and not by someone else.
+                    For MIT Kerberos example above, we already exported keytab to <code class="literal">/tmp/http.keytab</code> . If your KDC and Keycloak
+                    are running on same host, you have file already available.
+                </p>
+            </li><li>
+                <p>
+                    Finally run Keycloak server and configure SPNEGO/Kerberos authentication in Keycloak admin console. Keycloak supports Kerberos authentication
+                    through <a class="link" href="user_federation.html" title="Chapter 21. User Federation SPI and LDAP/AD Integration">Federation provider SPI</a> . We have 2 federation providers with Kerberos authentication support:
+                    </p><div class="variablelist"><dl><dt><span class="term">Kerberos</span></dt><dd>
+                                <p>
+                                    This provider is useful if you want to authenticate with Kerberos <code class="literal">NOT</code> backed by LDAP server.
+                                    In this case, users are usually created to Keycloak database after first successful SPNEGO/Kerberos login
+                                    and they may need to update profile after first login, as Kerberos protocol itself doesn't provision
+                                    any data like first name, last name or email.
+                                </p>
+                                <p>
+                                    You can also choose if users can authenticate with classic username/password. In this case, if user doesn't have SPNEGO ticket available,
+                                    Keycloak will display login screen and user can fill his Kerberos username and password on login screen. Username/password works also for non-web flows like
+                                    <a class="link" href="direct-access-grants.html" title="Chapter 15. Direct Access Grants">Direct Access grants</a>.
+                                </p>
+                            </dd><dt><span class="term">LDAP</span></dt><dd>
+                                <p>
+                                    This provider is useful if you want to authenticate with Kerberos backed by LDAP server.
+                                    In this case, data about users are provisioned from LDAP server after successful Kerberos authentication.
+                                </p>
+                            </dd></dl></div><p>
+                </p>
+            </li></ul></div>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2599"/>22.3. Setup and configuration of client machines</h2></div></div></div>
+        
+        <p>
+            Clients need to install kerberos client and setup krb5.conf as described above. Additionally they need to enable SPNEGO login support in their browser.
+            See for example <a class="ulink" href="http://www.microhowto.info/howto/configure_firefox_to_authenticate_using_spnego_and_kerberos.html">this</a>
+            for more info about Firefox. URI <code class="literal">.mydomain.org</code> must be allowed in <code class="literal">network.negotiate-auth.trusted-uris</code> config option.
+        </p>
+        <p>
+            In windows domain, clients usually don't need to configure anything special as IE is already able to participate in SPNEGO authentication for the windows domain.
+        </p>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2606"/>22.4. Example setups</h2></div></div></div>
+        
+        <p>
+            For easier testing with Kerberos, we provided some example setups to test.
+        </p>
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e2609"/>22.4.1. Keycloak and FreeIPA docker image</h3></div></div></div>
+            
+            <p>
+                Once you install <a class="ulink" href="https://www.docker.com/">docker</a>, you can run docker image with <a class="ulink" href="http://www.freeipa.org/">FreeIPA</a>
+                server installed. FreeIPA provides integrated security solution with MIT Kerberos and 389 LDAP server among other things . The image provides
+                also Keycloak server configured with LDAP Federation provider and enabled SPNEGO/Kerberos authentication against the FreeIPA server.
+                See details <a class="ulink" href="https://github.com/mposolda/keycloak-freeipa-docker/blob/master/README.md">here</a> .
+            </p>
+        </div>
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e2615"/>22.4.2. ApacheDS testing Kerberos server</h3></div></div></div>
+            
+            <p>
+                For quick testing and unit tests, we use very simple <a class="ulink" href="http://directory.apache.org/apacheds/">ApacheDS</a> Kerberos server.
+                You need to build Keycloak from sources and then run Kerberos server with maven-exec-plugin from our testsuite. See details
+                <a class="ulink" href="https://github.com/keycloak/keycloak/blob/master/misc/Testsuite.md#kerberos-server">here</a> .
+            </p>
+        </div>
+    </div>
+
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2620"/>22.5. Credential delegation</h2></div></div></div>
+        
+        <p>
+            One scenario supported by Kerberos 5 is credential delegation. In this case when user receives forwardable TGT and authenticates to the web server,
+            then web server might be able to reuse the ticket and forward it to another service secured by Kerberos (for example LDAP server or IMAP server).
+        </p>
+        <p>
+            The scenario is supported by Keycloak, but there is tricky thing that SPNEGO authentication is done by Keycloak server but
+            GSS credential will need to be used by your application. So you need to enable built-in <code class="literal">gss delegation credential</code> protocol mapper
+            in admin console for your application. This will cause that Keycloak will deserialize GSS credential and transmit it to the application
+            in access token. Application will need to deserialize it and use it for further GSS calls against other services. We have an example, which is showing it in details. It's in <code class="literal">examples/kerberos</code>
+            in the Keycloak example distribution or demo distribution download. You can also check the example sources directly <a class="ulink" href="https://github.com/keycloak/keycloak/blob/master/examples/kerberos">here</a> .
+        </p>
+        <p>
+            Once you deserialize the credential from the access token to the GSSCredential object, then GSSContext will need to
+            be created with this credential passed to the method <code class="literal">GSSManager.createContext</code> for example like this:
+            </p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+GSSContext context = gssManager.createContext(serviceName, krb5Oid,
+    deserializedGssCredFromKeycloakAccessToken, GSSContext.DEFAULT_LIFETIME);
+</pre><p>
+        </p>
+        <p>
+            Note that you also need to configure <code class="literal">forwardable</code> kerberos tickets in <code class="literal">krb5.conf</code> file
+            and add support for delegated credentials to your browser. For details, see the kerberos example from Keycloak examples set as mentioned above.
+        </p>
+        <div xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="warning"><h2>Warning</h2>
+            <p>
+                Credential delegation has some security implications. So enable the protocol claim and support in browser just if you really need it.
+                It's highly recommended to use it together with HTTPS. See for example
+                <a class="ulink" href="http://www.microhowto.info/howto/configure_firefox_to_authenticate_using_spnego_and_kerberos.html#idp27072">this article</a>
+                for details.
+            </p>
+        </div>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2636"/>22.6. Troubleshooting</h2></div></div></div>
+        
+        <p>
+            If you have issues, we recommend to enable more logging by:
+            </p><div class="itemizedlist"><ul><li>
+                    <p>
+                        Enable <code class="literal">Debug</code> flag in admin console for Kerberos or LDAP federation providers
+                    </p>
+                </li><li>
+                    <p>
+                        Enable TRACE logging for category <code class="literal">org.keycloak</code> in logging section of <code class="literal">$WILDFLY_HOME/standalone/configuration/standalone.xml</code>
+                        to receive more info <code class="literal">$WILDFLY_HOME/standalone/log/server.log</code>
+                    </p>
+                </li><li>
+                    <p>
+                        Add system properties <code class="literal">-Dsun.security.krb5.debug=true</code> and <code class="literal">-Dsun.security.spnego.debug=true</code>
+                    </p>
+                </li></ul></div><p>
+        </p>
+    </div>
+</div><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="user_federation.html"><strong>Prev</strong>Chapter 21. User Federation SPI and LDAP/AD Integ...</a></li><li class="up"><a accesskey="u" href="#"><strong>Top of page</strong></a></li><li class="home"><a accesskey="h" href="index.html"><strong>Front page</strong></a></li><li class="next"><a accesskey="n" href="export-import.html"><strong>Next</strong>Chapter 23. Export and Import</a></li></ul></body></html>

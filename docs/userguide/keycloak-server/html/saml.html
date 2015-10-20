@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 26. SAML SSO</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="server_cache.html" title="Chapter 25. Server Cache"/><link rel="next" href="security_vulnerabilities.html" title="Chapter 27. Security Vulnerabilities"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="server_cache.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="security_vulnerabilities.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="saml"/>Chapter 26. SAML SSO</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="saml.html#d4e2804">26.1. SAML Entity Descriptor</a></span></dt><dt><span class="section"><a href="saml.html#d4e2811">26.2. IDP Initiated Login</a></span></dt></dl></div>
+    
+    <p>
+        Keycloak supports SAML 2.0 for registered applications.  Both POST and Redirect bindings are supported.  You can choose
+        to require client signature validation and can have the server sign and/or encrypt responses as well.  We do not
+        yet support logout via redirects.  All logouts happen via a background POST binding request to the application
+        that will be logged out.  We do not support SAML 1.1 either.  If you want support for either of those, please
+        log a JIRA request and we'll schedule it.
+    </p>
+    <p>
+        When you create an application in the admin console, you can choose which protocol the application will log in with.
+        In the application create screen, choose <code class="literal">saml</code> from the protocol list.  After that there
+        are a bunch of configuration options.  Here is a description of each item:
+    </p>
+    <p>
+        </p><div class="variablelist"><dl><dt><span class="term">Include AuthnStatement</span></dt><dd>
+                    <p>
+                        SAML login responses may specify the authentication method used (password, etc.) as well as
+                        a timestamp of the login.  Setting this to on will include that statement in the response document.
+                    </p>
+                </dd><dt><span class="term">Multi-valued Roles</span></dt><dd>
+                    <p>
+                        If this switch is off, any user role mappings will have a corresponding attribute created for it.
+                        If this switch is turn on, only one role attribute will be created, but it will have
+                        multiple values within in.
+                    </p>
+                </dd><dt><span class="term">Sign Documents</span></dt><dd>
+                    <p>
+                        When turned on, Keycloak will sign the document using the realm's private key.
+                    </p>
+                </dd><dt><span class="term">Sign Assertions</span></dt><dd>
+                    <p>
+                        With the <code class="literal">Sign Documents</code> switch signs the whole document.  With this setting
+                        you just assign the assertions of the document.
+                    </p>
+                </dd><dt><span class="term">Signature Algorithm</span></dt><dd>
+                    <p>
+                        Choose between a variety of algorithms for signing SAML documents.
+                    </p>
+                </dd><dt><span class="term">Encrypt Assertions</span></dt><dd>
+                    <p>
+                        Encrypt assertions in SAML documents with the realm's private key.  The AES algorithm is used
+                        with a key size of 128 bits.
+                    </p>
+                </dd><dt><span class="term">Client Signature Required</span></dt><dd>
+                    <p>
+                        Expect that documents coming from a client are signed.  Keycloak will validate this signature
+                        using the client keys set up in the <code class="literal">Application Keys</code> submenu item.
+                    </p>
+                </dd><dt><span class="term">Force POST Binding</span></dt><dd>
+                    <p>
+                        By default, Keycloak will respond using the initial SAML binding of the original request.  By turning
+                        on this switch, you will force Keycloak to always respond using the SAML POST Binding even if the
+                        original request was the Redirect binding.
+                    </p>
+                </dd><dt><span class="term">Front Channel Logout</span></dt><dd>
+                    <p>
+                        If true, this application requires a browser redirect to be able to perform a logout.  For example,
+                        the application may require a cookie to be reset which could only be done by a done via a redirect.
+                        If this switch is false, then Keycloak will invoke a background SAML request to logout the application.
+                    </p>
+                </dd><dt><span class="term">Force Name ID Format</span></dt><dd>
+                    <p>
+                        If the request has a name ID policy, ignore it and used the value configured in the admin console
+                        under Name ID Format
+                    </p>
+                </dd><dt><span class="term">Name ID Format</span></dt><dd>
+                    <p>
+                        Name ID Format for the subject.  If no name ID policy is specified in the request or if the
+                        Force Name ID Format attribute is true, this value is used.
+                    </p>
+                </dd><dt><span class="term">Master SAML Processing URL</span></dt><dd>
+                    <p>
+                        This URL will be used for all SAML requests and responsed directed to the SP.  It will be used
+                        as the Assertion Consumer Service URL and the Single Logout Service URL.  If a login request
+                        contains the Assertion Consumer Service URL, that will take precedence, but this URL must be valided
+                        by a registered Valid Redirect URI pattern
+                    </p>
+                </dd><dt><span class="term">Assertion Consumer Service POST Binding URL</span></dt><dd>
+                    <p>
+                        POST Binding URL for the Assertion Consumer Service.
+                    </p>
+                </dd><dt><span class="term">Assertion Consumer Service Redirect Binding URL</span></dt><dd>
+                    <p>
+                        Redirect Binding URL for the Assertion Consumer Service.
+                    </p>
+                </dd><dt><span class="term">Logout Service POST Binding URL</span></dt><dd>
+                    <p>
+                        POST Binding URL for the Logout Service.
+                    </p>
+                </dd><dt><span class="term">Logout Service Redirect Binding URL</span></dt><dd>
+                    <p>
+                        Redirect Binding URL for the Logout Service.
+                    </p>
+                </dd></dl></div><p>
+    </p>
+    <p>
+        For login to work, Keycloak needs to be able to resolve the URL for the Assertion Consumer Service of the SP.  If
+        you are relying on the SP to provide this URL in the login request, then you must register valid redirect uri patterns
+        so that this URL can be validated.  You can set the Master SAML Processing URL as well, or alternatively, you can
+        specify the Assertion Consumer Service URL per binding.
+    </p>
+    <p>
+        For logout to work, you must specify a Master SAML Processing URL, or the Loging Service URL for the binding
+        you want Keycloak to use.
+    </p>
+    <p>
+        One thing to note is that roles are not treated as a hierarchy.  So, any role mappings will just be added
+        to the role attributes in the SAML document using their basic name.  So, if you have multiple application roles
+        you might have name collisions.  You can use the Scope Mapping menu item to control which role mappings are set
+        in the response.
+    </p>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2804"/>26.1. SAML Entity Descriptor</h2></div></div></div>
+        
+        <p>
+            If you go into the admin console in the application list menu page you will see an <code class="literal">Import</code>
+            button.  If you click on that you can import SAML Service Provider definitions using the <a class="ulink" href="http://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf">Entity Descriptor</a>
+            format described in SAML 2.0.  You should review all the information there to make sure everything is set up correctly.
+        </p>
+        <p>
+            Each realm has a URL where you can view the XML entity descriptor for the IDP.  <code class="literal">root/auth/realms/{realm}/protocol/saml/descriptor</code>
+        </p>
+    </div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e2811"/>26.2. IDP Initiated Login</h2></div></div></div>
+        
+        <p>
+            IDP Initiated Login is a feature that where you can set up a URL on the Keycloak server that will log you into a specific application/client.  To set this up
+            go to the client page in the admin console of the client you want to set this up for.  Specify the <code class="literal">IDP Initiated SSO URL Name</code>.  This is a simple string
+            with no whitespace in it.  After this you can reference your client at the following URL:  <code class="literal">root/auth/realms/{realm}/protocol/saml/clients/{url-name}</code>
+        </p>
+        <p>
+            If your client requires a special relay state, you can also configure this in the admin console.  Alternatively, you can specify the relay state in a
+            <code class="literal">RelayState</code> query parameter, i.e. :  <code class="literal">root/auth/realms/{realm}/protocol/saml/clients/{url-name}?RelayState=thestate</code>
+        </p>
+    </div>
+</div><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="server_cache.html"><strong>Prev</strong>Chapter 25. Server Cache</a></li><li class="up"><a accesskey="u" href="#"><strong>Top of page</strong></a></li><li class="home"><a accesskey="h" href="index.html"><strong>Front page</strong></a></li><li class="next"><a accesskey="n" href="security_vulnerabilities.html"><strong>Next</strong>Chapter 27. Security Vulnerabilities</a></li></ul></body></html>
