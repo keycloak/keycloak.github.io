@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE html
   PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 29. Clustering</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="security_vulnerabilities.html" title="Chapter 28. Security Vulnerabilities"/><link rel="next" href="applicationClustering.html" title="Chapter 30. Application Clustering"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="security_vulnerabilities.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="applicationClustering.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="clustering"/>Chapter 29. Clustering</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="clustering.html#d4e3289">29.1. Configure a shared database</a></span></dt><dt><span class="section"><a href="clustering.html#d4e3292">29.2. Configure Infinispan</a></span></dt><dt><span class="section"><a href="clustering.html#d4e3312">29.3. Start in HA mode</a></span></dt><dt><span class="section"><a href="clustering.html#d4e3320">29.4. Enabling cluster security</a></span></dt><dt><span class="section"><a href="clustering.html#d4e3331">29.5. Troubleshooting</a></span></dt></dl></div>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 29. Clustering</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="security_vulnerabilities.html" title="Chapter 28. Security Vulnerabilities"/><link rel="next" href="applicationClustering.html" title="Chapter 30. Application Clustering"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="security_vulnerabilities.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="applicationClustering.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="clustering"/>Chapter 29. Clustering</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="clustering.html#d4e3292">29.1. Configure a shared database</a></span></dt><dd><dl><dt><span class="section"><a href="clustering.html#d4e3295">29.1.1. DB lock</a></span></dt></dl></dd><dt><span class="section"><a href="clustering.html#d4e3303">29.2. Configure Infinispan</a></span></dt><dt><span class="section"><a href="clustering.html#d4e3323">29.3. Start in HA mode</a></span></dt><dt><span class="section"><a href="clustering.html#d4e3331">29.4. Enabling cluster security</a></span></dt><dt><span class="section"><a href="clustering.html#d4e3342">29.5. Troubleshooting</a></span></dt></dl></div>
     
 
     <p>To improve availability and scalability Keycloak can be deployed in a cluster.</p>
@@ -30,16 +30,39 @@
             </li></ul></div><p>
     </p>
 
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3289"/>29.1. Configure a shared database</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3292"/>29.1. Configure a shared database</h2></div></div></div>
         
         <p>
             Keycloak doesn't replicate realms and users, but instead relies on all nodes using the same
             database. This can be a relational database or Mongo. To make sure your database doesn't become a single
             point of failure you may also want to deploy your database to a cluster.
         </p>
+        <div class="section" lang="en-US"><div class="titlepage"><div><div><h3 class="title"><a id="d4e3295"/>29.1.1. DB lock</h3></div></div></div>
+            
+            <p>Note that Keycloak supports concurrent startup by more cluster nodes at the same. This is ensured by DB lock, which prevents that some
+                startup actions (migrating database from previous version, importing realms at startup, initial bootstrap of admin user) are always executed just by one
+                cluster node at a time and other cluster nodes need to wait until the current node finishes startup actions and release the DB lock.
+            </p>
+            <p>
+                By default, the maximum timeout for lock is 900 seconds, so in case that second node is not able to acquire the lock within 900 seconds, it fails to start.
+                The lock checking is done every 2 seconds by default. Typically you won't need to increase/decrease the default value, but just in case
+                it's possible to configure it in <code class="literal">standalone/configuration/keycloak-server.json</code>:
+</p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
+
+"dblock": {
+    "jpa": {
+        "lockWaitTimeout": 900,
+        "lockRecheckTime": 2
+    }
+}
+
+</pre><p>
+                or similarly if you're using Mongo (just by replace <code class="literal">jpa</code> with <code class="literal">mongo</code>)
+            </p>
+        </div>
     </div>
 
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3292"/>29.2. Configure Infinispan</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3303"/>29.2. Configure Infinispan</h2></div></div></div>
         
         <p>
             Keycloak uses <a class="ulink" href="http://www.infinispan.org/">Infinispan</a> caches to share information between nodes.
@@ -78,7 +101,7 @@
         </p>
     </div>
 
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3312"/>29.3. Start in HA mode</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3323"/>29.3. Start in HA mode</h2></div></div></div>
         
         <p>
             To start the server in HA mode, start it with:
@@ -92,7 +115,7 @@
         </p>
     </div>
 
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3320"/>29.4. Enabling cluster security</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3331"/>29.4. Enabling cluster security</h2></div></div></div>
         
         <p>
             By default there's nothing to prevent unauthorized nodes from joining the cluster and sending potentially malicious
@@ -160,7 +183,7 @@
         </p>
     </div>
 
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3331"/>29.5. Troubleshooting</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3342"/>29.5. Troubleshooting</h2></div></div></div>
         
         <p>
             Note that when you run cluster, you should see message similar to this in the log of both cluster nodes:
