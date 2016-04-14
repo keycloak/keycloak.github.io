@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE html
   PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 25. Export and Import</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="kerberos.html" title="Chapter 24. Kerberos brokering"/><link rel="next" href="server_cache.html" title="Chapter 26. Server Cache"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="kerberos.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="server_cache.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="export-import"/>Chapter 25. Export and Import</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="export-import.html#d4e3016">25.1. Startup export/import</a></span></dt><dt><span class="section"><a href="export-import.html#d4e3066">25.2. Admin console export/import</a></span></dt></dl></div>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory">Chapter 25. Export and Import</title><link rel="stylesheet" href="css/jbossorg.css" type="text/css"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" name="generator" content="DocBook XSL-NS Stylesheets V1.74.0"/><meta xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="home" href="index.html" title="Keycloak Reference Guide"/><link rel="up" href="index.html" title="Keycloak Reference Guide"/><link rel="prev" href="kerberos.html" title="Chapter 24. Kerberos brokering"/><link rel="next" href="server_cache.html" title="Chapter 26. Server Cache"/></head><body><p xmlns:d="http://docbook.org/ns/docbook" id="title"><a href="http://www.jboss.org" class="site_href"><strong>JBoss.org</strong></a><a href="http://docs.jboss.org/" class="doc_href"><strong>Community Documentation</strong></a></p><ul xmlns:d="http://docbook.org/ns/docbook" class="docnav"><li class="previous"><a accesskey="p" href="kerberos.html"><strong>Prev</strong></a></li><li class="next"><a accesskey="n" href="server_cache.html"><strong>Next</strong></a></li></ul><div class="chapter" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="export-import"/>Chapter 25. Export and Import</h2></div></div></div><div class="toc"><dl><dt><span class="section"><a href="export-import.html#d4e3055">25.1. Startup export/import</a></span></dt><dt><span class="section"><a href="export-import.html#d4e3108">25.2. Admin console export/import</a></span></dt></dl></div>
     
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3016"/>25.1. Startup export/import</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3055"/>25.1. Startup export/import</h2></div></div></div>
         
         <p>
             Export/import is useful especially if you want to migrate your whole Keycloak database from one environment to another or migrate to different database (For example from MySQL to Oracle).
@@ -19,12 +19,21 @@
             </p><div class="itemizedlist"><ul><li>{REALM_NAME}-realm.json, such as "acme-roadrunner-affairs-realm.json" for the realm named "acme-roadrunner-affairs"</li><li>{REALM_NAME}-users-{INDEX}.json, such as "acme-roadrunner-affairs-users-0.json" for the first users file of the realm named "acme-roadrunner-affairs"</li></ul></div><p>
         </p>
         <p>
-            If you import to Directory, you can specify also the number of users to be stored in each JSON file. So if you have
-            very large amount of users in your database, you likely don't want to import them into single file as the file might be very big.
-            Processing of each file is done in separate transaction as exporting/importing all users at once could also lead to memory issues.
+            If you import to Directory, you can specify also the number of users to be stored in each JSON file.
         </p>
+        <div xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="warning"><h2>Warning</h2>
+            <p>
+                If you have bigger amount of users in your database (500 or more), it's higly recommended to export into directory rather than to single file.
+                Exporting into single file may lead to the very big file. Also the directory provider is using separate transaction for each "page" (file with users),
+                which leads to much better performance. Default count of users per file (and transaction) is 50, which showed us best performance, but you have possibility to override (See below).
+            </p>
+            <p>
+                Exporting to single file is using one transaction per whole export and one per whole import, which leads to
+                bad performance with large amount of users - time increases exponentially with number of users.
+            </p>
+        </div>
         <p>
-            To export into unencrypted directory you can use:
+            To export into the directory you can use:
             </p><pre xmlns="" xmlns:d="http://docbook.org/ns/docbook" xmlns:rf="java:org.jboss.highlight.XhtmlRendererFactory" class="">
 bin/standalone.sh -Dkeycloak.migration.action=export
 -Dkeycloak.migration.provider=dir -Dkeycloak.migration.dir=&lt;DIR TO EXPORT TO&gt;
@@ -62,7 +71,7 @@ bin/standalone.sh -Dkeycloak.migration.action=import
                     </dd><dt><span class="term">-Dkeycloak.migration.usersPerFile</span></dt><dd>
                         <p>
                             can be used to specify number of users per file (and also per DB transaction).
-                            It's 5000 by default. It's used only if usersExportStrategy is DIFFERENT_FILES
+                            It's 50 by default. It's used only if usersExportStrategy is DIFFERENT_FILES
                         </p>
                     </dd><dt><span class="term">-Dkeycloak.migration.strategy</span></dt><dd>
                         <p>
@@ -82,7 +91,7 @@ bin/standalone.sh -Dkeycloak.migration.action=import
             </p><div class="itemizedlist"><ul><li>-Dkeycloak.import=/tmp/realm1.json</li><li>-Dkeycloak.import=/tmp/realm1.json,/tmp/realm2.json</li></ul></div><p>
         </p>
     </div>
-    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3066"/>25.2. Admin console export/import</h2></div></div></div>
+    <div class="section" lang="en-US"><div class="titlepage"><div><div><h2 class="title"><a id="d4e3108"/>25.2. Admin console export/import</h2></div></div></div>
         
         <p>
             Import of most resources can be performed from the admin console.
