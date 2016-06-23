@@ -23,7 +23,7 @@
             for details.
         </p>
 
-        <hr/>
+        <hr class="divider"/>
 
         <h2>Single-Sign On</h2>
 
@@ -48,7 +48,7 @@
             they log on to the workstation.
         </p>
 
-        <hr/>
+        <hr class="divider"/>
 
         <h2>Identity Brokering and Social Login</h2>
 
@@ -64,7 +64,7 @@
             just a matter of configuring the Identity Provider through the admin console.
         </p>
 
-        <hr/>
+        <hr class="divider"/>
 
         <h2>User Federation</h2>
 
@@ -75,7 +75,7 @@
             provider if you have users in other stores, such as a relational database.
         </p>
 
-        <hr/>
+        <hr class="divider"/>
 
         <h2>Client Adapters</h2>
 
@@ -90,8 +90,7 @@
             You can also opt to use a proxy to secure your applications which removes the need to modify your application at all.
         </p>
 
-        <hr/>
-
+        <hr class="divider"/>
 
         <h2>Admin Console</h2>
 
@@ -114,7 +113,7 @@
             They can also manage users, including permissions and sessions.
         </p>
 
-        <hr/>
+        <hr class="divider"/>
 
         <h2>Account Management Console</h2>
 
@@ -134,7 +133,7 @@
             providers to allow them to authenticate to the same account with different identity providers.
         </p>
 
-        <hr/>
+        <hr class="divider"/>
 
         <h2>Standard Protocols</h2>
 
@@ -144,7 +143,7 @@
             Keycloak is based on standard protocols and provides support for OpenID Connect, OAuth 2.0, and SAML.
         </p>
 
-        <hr/>
+        <hr class="divider"/>
 
         <h2>Authorization Services</h2>
 

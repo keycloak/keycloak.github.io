@@ -1,7 +1,7 @@
 <#include "../templates/header.ftl">
 <#include "../templates/menu.ftl">
 
-<div class="page-section marquee-section">
+<div class="marquee-section">
     <div class="container-fluid">
         <div class="row marquee-slide-row">
             <div class="col-xs-12">
@@ -12,7 +12,7 @@
     </div>
 </div>
 
-<div class="page-section main-banner">
+<div class="main-banner">
     <div class="container">
         <div class="row">
             <div class="col-sm-7 col-xs-12 left-col">
@@ -47,7 +47,7 @@
     </div>
 </div>
 
-<div class="page-section features-section">
+<div class="features-section">
     <div class="container features-area">
         <div class="features-flex-container">
 
