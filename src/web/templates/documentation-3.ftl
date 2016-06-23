@@ -54,7 +54,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/server-developer-guide/content/v/${version.versionShorter}/" target="_blank">
+            <a href="https://keycloak.gitbooks.io/authorization-services-guide/content/v/${version.versionShorter}/" target="_blank">
                 Authorization Services Guide
             </a>
         </td>
