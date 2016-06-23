@@ -1,0 +1,2 @@
+<p>Documentation for this release is no longer hosted online, but you can download an archive of documentation for the release.</p>
+<p><a href="https://downloads.jboss.org/keycloak/${version.version}/keycloak-docs-${version.version}.zip" target="_blank">Download documentation</a></p>
