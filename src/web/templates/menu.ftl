@@ -18,7 +18,7 @@
                     <li><a href="documentation.html">Docs</a></li>
                     <li><a href="downloads.html">Downloads</a></li>
                     <li><a href="community.html">Community</a></li>
-                    <li><a href="${config.urls.issues}" target="_blank">Issues <i class="fa fa-external-link" aria-hidden="true"></i></a></li>
+                    <li><a href="search.html">Search</a></li>
                     <li><a href="${config.urls.source}" target="_blank">Source <i class="fa fa-external-link" aria-hidden="true"></i></a></li>
                     <li><a href="${config.urls.blog}" target="_blank">Blog <i class="fa fa-external-link" aria-hidden="true"></i></a></li>
                 </ul>
