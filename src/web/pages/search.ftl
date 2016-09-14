@@ -1,4 +1,4 @@
-<#assign title = "Community">
+<#assign title = "Search">
 
 <#include "../templates/header.ftl">
 <#include "../templates/menu.ftl">
