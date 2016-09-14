@@ -74,16 +74,23 @@
 
         <h2>Thanks</h2>
 
-        <div style="float: left; width: 400px; padding: 10px 10px 10px 0;">
+        <div style="float: left; width: 300px; padding: 10px 10px 10px 0;">
+            <img style="float: left; margin-right: 15px;" src="resources/images/github.png"></img>
+            <span style="float: left; width: 200px;">
+                Thanks to <a href="https://github.com/keycloak/keycloak/graphs/contributors">everyone</a> that has
+            contributed to the project.</span>
+        </div>
+
+        <div style="float: left; width: 300px; padding: 10px 10px 10px 0;">
             <img style="float: left; margin-right: 15px;" src="resources/images/intellij.png"></img>
-            <span style="float: left; width: 300px;">
+            <span style="float: left; width: 200px;">
                 Thanks to <a href="https://www.jetbrains.com/">JetBrains</a> for providing free
                 <a href="https://www.jetbrains.com/idea/">IntelliJ IDEA</a> licenses to core team members.</span>
         </div>
 
-        <div style="float: left; width: 400px; padding: 10px 10px 10px 0;">
+        <div style="float: left; width: 300px; padding: 10px 10px 10px 0;">
             <img style="float: left; margin-right: 15px;" src="resources/images/jprofiler.png"></img>
-            <span style="float: left; width:300px;">
+            <span style="float: left; width:200px;">
                 Thanks to <a href="https://www.ej-technologies.com/">ej-technologies</a> for providing free
                 <a href="https://www.ej-technologies.com/products/jprofiler/overview.html">JProfiler</a> licenses to
                 core team members.
