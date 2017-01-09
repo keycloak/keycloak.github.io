@@ -4,7 +4,7 @@
     <tbody>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/getting-started-tutorials/content/v/${version.version}/" target="_blank">
+            <a href="https://keycloak.gitbooks.io/getting-started-tutorials/content/v/${version.documentationVersion}/" target="_blank">
                 Getting Started Tutorials
             </a>
         </td>
@@ -14,7 +14,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/server-installation-and-configuration/content/v/${version.version}/" target="_blank">
+            <a href="https://keycloak.gitbooks.io/server-installation-and-configuration/content/v/${version.documentationVersion}/" target="_blank">
                 Server Installation and Configuration Guide
             </a>
         </td>
@@ -24,7 +24,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/securing-client-applications-guide/content/v/${version.version}/" target="_blank">
+            <a href="https://keycloak.gitbooks.io/securing-client-applications-guide/content/v/${version.documentationVersion}/" target="_blank">
                 Securing Applications and Services Guide
             </a>
         </td>
@@ -34,7 +34,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/server-adminstration-guide/content/v/${version.version}/" target="_blank">
+            <a href="https://keycloak.gitbooks.io/server-adminstration-guide/content/v/${version.documentationVersion}/" target="_blank">
                 Server Administration Guide
             </a>
         </td>
@@ -44,7 +44,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/server-developer-guide/content/v/${version.version}/" target="_blank">
+            <a href="https://keycloak.gitbooks.io/server-developer-guide/content/v/${version.documentationVersion}/" target="_blank">
                 Server Developer Guide
             </a>
         </td>
@@ -54,7 +54,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/authorization-services-guide/content/v/${version.version}/" target="_blank">
+            <a href="https://keycloak.gitbooks.io/authorization-services-guide/content/v/${version.documentationVersion}/" target="_blank">
                 Authorization Services Guide
             </a>
         </td>
