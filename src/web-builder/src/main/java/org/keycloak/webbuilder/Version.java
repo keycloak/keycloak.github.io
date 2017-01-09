@@ -11,7 +11,7 @@ public class Version implements  Comparable<Version> {
 
     private String downloadTemplate;
 
-    private String documentationVersion;
+    private boolean latest;
 
     public boolean isFinal() {
         return version.endsWith(".Final");
@@ -52,11 +52,11 @@ public class Version implements  Comparable<Version> {
     }
 
     public String getDocumentationVersion() {
-        return documentationVersion != null ? documentationVersion : version;
+        return latest ? "" : "v/" + version + "/";
     }
 
-    public void setDocumentationVersion(String documentationVersion) {
-        this.documentationVersion = documentationVersion;
+    public void setLatest(boolean latest) {
+        this.latest = latest;
     }
 
     @Override

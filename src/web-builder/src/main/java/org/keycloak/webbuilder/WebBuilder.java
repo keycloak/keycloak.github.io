@@ -75,7 +75,7 @@ public class WebBuilder {
         Collections.sort(versions);
         map.put("versions", versions);
 
-        versions.get(0).setDocumentationVersion("latest");
+        versions.get(0).setLatest(true);
 
         map.put("version", versions.get(0));
 
