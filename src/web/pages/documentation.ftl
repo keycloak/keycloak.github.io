@@ -5,7 +5,7 @@
 
 <div class="page-section">
     <div class="container">
-        <h1>Documentation - ${version.version}</h1>
+        <h1>Documentation - ${version.versionShorter}</h1>
 
         <p>
         <#if !version.final>

@@ -13,8 +13,8 @@
         </ol>
 
         <ul>
-        <#list versions as version>
-            <li><a href="archive/documentation-${version.versionShort}.html">${version.versionShort}</a></li>
+        <#list versionsShorter as version>
+            <li><a href="archive/documentation-${version.versionShorter}.html">${version.versionShorter}</a></li>
         </#list>
         </ul>
     </div>

@@ -4,7 +4,7 @@
     <tbody>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/getting-started-tutorials/content/${version.documentationVersion}" target="_blank">
+            <a href="${root}docs/${version.versionShorter}/getting-started-tutorials/index.html" target="_blank">
                 Getting Started Tutorials
             </a>
         </td>
@@ -14,7 +14,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/server-installation-and-configuration/content/${version.documentationVersion}" target="_blank">
+            <a href="${root}docs/${version.versionShorter}/server_installation_guide/index.html" target="_blank">
                 Server Installation and Configuration Guide
             </a>
         </td>
@@ -24,7 +24,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/securing-client-applications-guide/content/${version.documentationVersion}" target="_blank">
+            <a href="${root}docs/${version.versionShorter}/securing_apps_guide/index.html" target="_blank">
                 Securing Applications and Services Guide
             </a>
         </td>
@@ -34,7 +34,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/server-adminstration-guide/content/${version.documentationVersion}" target="_blank">
+            <a href="${root}docs/${version.versionShorter}/server_admin_guide/index.html" target="_blank">
                 Server Administration Guide
             </a>
         </td>
@@ -44,7 +44,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/server-developer-guide/content/${version.documentationVersion}" target="_blank">
+            <a href="${root}docs/${version.versionShorter}/server_development_guide/index.html" target="_blank">
                 Server Developer Guide
             </a>
         </td>
@@ -54,7 +54,7 @@
     </tr>
     <tr>
         <td>
-            <a href="https://keycloak.gitbooks.io/authorization-services-guide/content/${version.documentationVersion}" target="_blank">
+            <a href="${root}docs/${version.versionShorter}/authorization_services_guide/index.html" target="_blank">
                 Authorization Services Guide
             </a>
         </td>
@@ -71,7 +71,7 @@
     <tbody>
     <tr>
         <td>
-            <a href="http://keycloak.github.io/docs/javadocs/index.html" target="_blank">
+            <a href="${root}docs-api/${version.versionShorter}/javadocs/index.html" target="_blank">
                 JavaDoc
             </a>
         </td>
@@ -81,7 +81,7 @@
     </tr>
     <tr>
         <td>
-            <a href="http://keycloak.github.io/docs/rest-api/index.html" target="_blank">
+            <a href="${root}docs-api/${version.versionShorter}/rest-api/index.html" target="_blank">
                 Administration REST API
             </a>
         </td>

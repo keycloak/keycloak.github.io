@@ -28,6 +28,7 @@ public class WebBuilder {
     private final File targetDir;
     private Map<String, Object> map;
     private List<Version> versions;
+    private List<Version> versionsShorter;
     private List<News> news;
 
     public static void main(String[] args) throws Exception {
@@ -87,6 +88,9 @@ public class WebBuilder {
         Collections.sort(versions);
         map.put("versions", versions);
 
+        versionsShorter = getVersionsShorter(versions);
+        map.put("versionsShorter", versionsShorter);
+
         versions.get(0).setLatest(true);
 
         map.put("version", versions.get(0));
@@ -128,17 +132,26 @@ public class WebBuilder {
         }
 
         map.put("root", "../");
+
+        File archiveDir = new File(targetDir, "archive");
+        if (!archiveDir.isDirectory()) {
+            archiveDir.mkdir();
+        }
+
+        // Download archive
         for (Version version : versions) {
             HashMap<String, Object> versionMap = new HashMap<>(map);
             versionMap.put("version", version);
 
-            File archiveDir = new File(targetDir, "archive");
-            if (!archiveDir.isDirectory()) {
-                archiveDir.mkdir();
-            }
-
             writeFile(versionMap, "templates/downloads-archive-version.ftl", archiveDir, "downloads-" + version.getVersionShort() + ".html");
-            writeFile(versionMap, "templates/documentation-archive-version.ftl", archiveDir, "documentation-" + version.getVersionShort() + ".html");
+        }
+
+        // Documentation archive
+        for (Version version : versionsShorter) {
+            HashMap<String, Object> versionMap = new HashMap<>(map);
+            versionMap.put("version", version);
+
+            writeFile(versionMap, "templates/documentation-archive-version.ftl", archiveDir, "documentation-" + version.getVersionShorter() + ".html");
         }
     }
 
@@ -149,6 +162,18 @@ public class WebBuilder {
         downloadTemplate.process(map, out);
 
         System.out.println("\t- created: " + output);
+    }
+
+    private List<Version> getVersionsShorter(List<Version> versions) {
+        Map<String, Version> map = new HashMap<>();
+        for (Version v : versions) {
+            if (!map.containsKey(v.getVersionShorter())) {
+                map.put(v.getVersionShorter(), v);
+            }
+        }
+        LinkedList<Version> versionsShorter = new LinkedList<>(map.values());
+        Collections.sort(versionsShorter);
+        return versionsShorter;
     }
 
 }
