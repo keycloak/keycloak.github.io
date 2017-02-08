@@ -6,9 +6,7 @@ import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import org.apache.commons.io.FileUtils;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.Writer;
+import java.io.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -34,6 +32,9 @@ public class WebBuilder {
 
     public static void main(String[] args) throws Exception {
         WebBuilder builder = new WebBuilder(new File("src/web"));
+
+        builder.clean();
+        System.out.println("");
         builder.copyAssets();
         System.out.println("");
         builder.createPages();
@@ -58,11 +59,22 @@ public class WebBuilder {
         loadConfig();
     }
 
+    public void clean() throws IOException {
+        for (File f : targetDir.listFiles((dir, name) -> name.endsWith(".html"))) {
+            f.delete();
+        }
+
+        FileUtils.deleteDirectory(new File(targetDir, "resources"));
+
+        System.out.println("Removed previous build");
+    }
+
     private void loadConfig() throws Exception {
         map = new HashMap<>();
 
         ObjectMapper mapper = new ObjectMapper();
         Config config = mapper.readValue(new File(webDir, "config.json"), Config.class);
+        map.put("root", "");
         map.put("config", config);
 
         File[] versionFiles = versionsDir.listFiles((dir, name) -> {
@@ -112,19 +124,25 @@ public class WebBuilder {
         });
 
         for (File pageFile : pageFiles) {
-            writeFile(map, "pages/" + pageFile.getName(), pageFile.getName().replace(".ftl", ".html"));
+            writeFile(map, "pages/" + pageFile.getName(), targetDir, pageFile.getName().replace(".ftl", ".html"));
         }
 
+        map.put("root", "../");
         for (Version version : versions) {
             HashMap<String, Object> versionMap = new HashMap<>(map);
             versionMap.put("version", version);
 
-            writeFile(versionMap, "templates/downloads-archive-version.ftl", "downloads-" + version.getVersionShort() + ".html");
-            writeFile(versionMap, "templates/documentation-archive-version.ftl", "documentation-" + version.getVersionShort() + ".html");
+            File archiveDir = new File(targetDir, "archive");
+            if (!archiveDir.isDirectory()) {
+                archiveDir.mkdir();
+            }
+
+            writeFile(versionMap, "templates/downloads-archive-version.ftl", archiveDir, "downloads-" + version.getVersionShort() + ".html");
+            writeFile(versionMap, "templates/documentation-archive-version.ftl", archiveDir, "documentation-" + version.getVersionShort() + ".html");
         }
     }
 
-    private void writeFile(Map<String, Object> map, String template, String output) throws Exception {
+    private void writeFile(Map<String, Object> map, String template, File targetDir, String output) throws Exception {
         Template downloadTemplate = cfg.getTemplate(template);
 
         Writer out = new FileWriter(new File(targetDir, output));

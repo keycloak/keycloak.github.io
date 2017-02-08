@@ -14,7 +14,7 @@
 
         <ul>
         <#list versions as version>
-            <li><a href="documentation-${version.versionShort}.html">${version.versionShort}</a></li>
+            <li><a href="archive/documentation-${version.versionShort}.html">${version.versionShort}</a></li>
         </#list>
         </ul>
     </div>

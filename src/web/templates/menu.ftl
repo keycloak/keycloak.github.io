@@ -8,17 +8,17 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a href="index.html" title="Keycloak" class="keycloak-logo-a">
-                    <img class="keycloak-logo" src="resources/images/keycloak_logo_480x108.png" border="0" alt="Keycloak"/>
+                <a href="${root}index.html" title="Keycloak" class="keycloak-logo-a">
+                    <img class="keycloak-logo" src="${root}resources/images/keycloak_logo_480x108.png" border="0" alt="Keycloak"/>
                 </a>
             </div>
             <div id="mainBtnTarget" class="col-md-9 col-sm-9 col-xs-12 collapse navbar-collapse">
                 <ul class="nav navbar-nav">
-                    <li><a href="about.html">About</a></li>
-                    <li><a href="documentation.html">Docs</a></li>
-                    <li><a href="downloads.html">Downloads</a></li>
-                    <li><a href="community.html">Community</a></li>
-                    <li><a href="search.html">Search</a></li>
+                    <li><a href="${root}about.html">About</a></li>
+                    <li><a href="${root}documentation.html">Docs</a></li>
+                    <li><a href="${root}downloads.html">Downloads</a></li>
+                    <li><a href="${root}community.html">Community</a></li>
+                    <li><a href="${root}search.html">Search</a></li>
                     <li><a href="${config.urls.source}" target="_blank">Source <i class="fa fa-external-link" aria-hidden="true"></i></a></li>
                     <li><a href="${config.urls.blog}" target="_blank">Blog <i class="fa fa-external-link" aria-hidden="true"></i></a></li>
                 </ul>

@@ -8,8 +8,8 @@
         <h1>Documentation - ${version.version}</h1>
 
         <ol class="breadcrumb">
-            <li><a href="documentation.html">Documentation</a></li>
-            <li><a href="documentation-archive.html">Archive</a></li>
+            <li><a href="${root}documentation.html">Documentation</a></li>
+            <li><a href="${root}documentation-archive.html">Archive</a></li>
             <li class="active">${version.versionShort}</li>
         </ol>
 

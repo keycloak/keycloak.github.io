@@ -8,8 +8,8 @@
         <h1>Downloads - ${version.version}</h1>
 
         <ol class="breadcrumb">
-            <li><a href="downloads.html">Downloads</a></li>
-            <li><a href="downloads-archive.html">Archive</a></li>
+            <li><a href="${root}downloads.html">Downloads</a></li>
+            <li><a href="${root}downloads-archive.html">Archive</a></li>
             <li class="active">${version.versionShort}</li>
         </ol>
 
