@@ -34,13 +34,6 @@
         ga('send', 'pageview');
 
     </script>
-    <script>
-        var version = '${version.version}';
-        function dl(category, label) {
-            console.debug(category + '-' + label + '-' + version);
-            ga('send', 'event', category, category + '-' + label, category + '-' + label + '-' + version);
-        }
-    </script>
 </head>
 <body onload="prettyPrint()">
 <div id="wrap">
