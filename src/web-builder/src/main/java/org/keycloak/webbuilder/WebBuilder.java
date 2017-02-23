@@ -120,6 +120,8 @@ public class WebBuilder {
     }
 
     public void createPages() throws Exception {
+        map.put("archive", false);
+
         System.out.println("Creating pages");
         System.out.println("");
 
@@ -132,6 +134,8 @@ public class WebBuilder {
         }
 
         map.put("root", "../");
+
+        map.put("archive", true);
 
         File archiveDir = new File(targetDir, "archive");
         if (!archiveDir.isDirectory()) {
