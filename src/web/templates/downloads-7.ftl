@@ -165,6 +165,12 @@
                     <td>
                         <table class="table-downloads-inner">
                             <tr>
+                                <td>9.4</td>
+                                <td>
+                                    <@download category="adapter" label="jetty9.4" file="adapters/keycloak-oidc/keycloak-jetty94-adapter-dist-${version.version}" tar=true />
+                                </td>
+                            </tr>
+                            <tr>
                                 <td>9.3</td>
                                 <td>
                                     <@download category="adapter" label="jetty9.3" file="adapters/keycloak-oidc/keycloak-jetty93-adapter-dist-${version.version}" tar=true />
@@ -272,6 +278,12 @@
                     <td>Jetty</td>
                     <td>
                         <table class="table-downloads-inner">
+                            <tr>
+                                <td>9.4</td>
+                                <td>
+                                    <@download category="adapter-saml" label="jetty9.4" file="adapters/saml/keycloak-saml-jetty94-adapter-dist-${version.version}" tar=true />
+                                </td>
+                            </tr>
                             <tr>
                                 <td>9.3</td>
                                 <td>
