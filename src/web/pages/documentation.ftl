@@ -9,7 +9,7 @@
 
         <p>
         <#if !version.final>
-            This is a <b>release candidate</b>. The latest final release is <a href="documentation-${versions[1].versionShort}.html">${versions[1].versionShort}</a>.
+            This is a <b>release candidate</b>. The latest final release is <a href="archive/documentation-${versions[1].versionShorter}.html">${versions[1].versionShorter}</a>.
         </#if>
             For older releases go <a href="documentation-archive.html">here</a>.
         </p>

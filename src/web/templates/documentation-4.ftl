@@ -1,6 +1,6 @@
 <h2>Guides</h2>
 
-<#if archive>
+<#if archive || true>
     <#assign docRoot = "${root}docs/${version.versionShorter}">
 <#else>
     <#assign docRoot = "https://keycloak.gitbooks.io/documentation">
