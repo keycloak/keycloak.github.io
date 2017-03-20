@@ -22,21 +22,21 @@
         <td style="width: 100px;">Server</td>
         <td>Standalone server distribution</td>
         <td style="width: 280px;">
-            <@download category="server" label="standalone" file="keycloak-${version.version}.zip" tar=true />
+            <@download category="server" label="standalone" file="keycloak-${version.version}" tar=true />
         </td>
     </tr>
     <tr>
         <td>Overlay</td>
         <td>Server add-on for WildFly. Not recommended in production.</td>
         <td>
-            <@download category="overlay" label="standalone" file="keycloak-overlay-${version.version}.zip" tar=true />
+            <@download category="overlay" label="standalone" file="keycloak-overlay-${version.version}" tar=true />
         </td>
     </tr>
     <tr>
         <td>Demo</td>
         <td>Demo distribution. Not recommended in production.</td>
         <td>
-            <@download category="demo" label="demo" file="keycloak-demo-${version.version}.zip" tar=true />
+            <@download category="demo" label="demo" file="keycloak-demo-${version.version}" tar=true />
         </td>
     </tr>
     </tbody>
@@ -51,7 +51,7 @@
     <tr>
         <td>Examples distribution</td>
         <td style="width: 280px;">
-            <@download category="examples" label="examples" file="keycloak-examples-${version.version}.zip" tar=false />
+            <@download category="examples" label="examples" file="keycloak-examples-${version.version}" tar=false />
         </td>
     </tr>
     </tbody>
@@ -77,7 +77,7 @@
                             <tr>
                                 <td>&nbsp;</td>
                                 <td>
-                                    <@download category="proxy" label="proxy" file="keycloak-proxy-${version.version}.zip" tar=false />
+                                    <@download category="proxy" label="proxy" file="keycloak-proxy-${version.version}" tar=false />
                                 </td>
                             </tr>
                         </table>
