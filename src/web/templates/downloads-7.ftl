@@ -8,7 +8,7 @@
 <span class="space"></span>
 <a onclick="dl('${category}', '${label}');" href="https://downloads.jboss.org/keycloak/${version.version}/${file}.tar.gz" target="_blank">
     <i class="fa fa-download" aria-hidden="true"></i>
-    ZIP
+    TAR.GZ
 </a>
 (<a href="https://downloads.jboss.org/keycloak/${version.version}/${file}.tar.gz.md5" target="_blank">md5</a>)
 </#if>
