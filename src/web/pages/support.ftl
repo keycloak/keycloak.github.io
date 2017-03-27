@@ -25,7 +25,7 @@
                     RH-SSO 7.1
                 </td>
                 <td>
-                    Derived from Keycloak 2.5.4
+                    Derived from Keycloak 2.5.5
                 </td>
             </tr>
             <tr>
