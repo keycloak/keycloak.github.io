@@ -3,7 +3,7 @@
 <#if archive>
     <#assign docRoot = "${root}docs/${version.versionShorter}">
 <#else>
-    <#assign docRoot = "https://keycloak.gitbooks.io/documentation">
+    <#assign docRoot = "${root}docs/${version.versionShorter}">
 </#if>
 
 <table class="table table-bordered table-striped">
