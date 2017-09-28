@@ -3,7 +3,7 @@
 <#if archive>
     <#assign docRoot = "${root}docs/${version.versionShorter}">
 <#else>
-    <#assign docRoot = "${root}docs/${version.versionShorter}">
+    <#assign docRoot = "${root}docs/latest">
 </#if>
 
 <table class="table table-bordered table-striped">
