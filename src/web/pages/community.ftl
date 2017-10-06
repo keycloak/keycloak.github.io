@@ -21,24 +21,9 @@
         <h3>Reporting security vulnerabilities</h3>
 
         <p>
-            When reporting a security vulnerability please do not disclose the details publicly. This includes our
-            user mailing lists. Instead create a JIRA issue and mark it as security sensitive. The Keycloak team will
-            then follow-up through the JIRA issue.
+            If you've found a security vulnerability, please look at the <a href="security.html">instructions on how to properly report it</a>.
         </p>
 
-        <p>
-            To report a security vulnerability:
-        </p>
-
-        <ul>
-            <li>
-                Go to <a href="https://issues.jboss.org/browse/KEYCLOAK" target="_blank">JIRA</a> and create a new issue
-            </li>
-            <li>
-                Before saving the issue make sure the <b>This issue is security relevant</b> checkbox is checked. This
-                makes the details in the issue only visible to the core Keycloak team and yourself.
-            </li>
-        </ul>
 
         <h3>Reporting bugs and feature requests</h3>
 
