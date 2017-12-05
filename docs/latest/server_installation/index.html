@@ -672,9 +672,30 @@ span.image img {
 <li><a href="#_clustered-domain-example">3.3.5. Clustered Domain Example</a></li>
 </ul>
 </li>
+<li><a href="#crossdc-mode">3.4. Cross-Datacenter Replication Mode</a>
+<ul class="sectlevel3">
+<li><a href="#prerequisites">3.4.1. Prerequisities</a></li>
+<li><a href="#technicaldetails">3.4.2. Technical details</a></li>
+<li><a href="#requestprocessing">3.4.3. Request processing</a></li>
+<li><a href="#modes">3.4.4. Modes</a></li>
+<li><a href="#database">3.4.5. Database</a></li>
+<li><a href="#cache">3.4.6. Infinispan caches</a></li>
+<li><a href="#communication">3.4.7. Communication details</a></li>
+<li><a href="#setup">3.4.8. Basic setup</a></li>
+<li><a href="#jdgsetup">3.4.9. Infinispan server setup</a></li>
+<li><a href="#serversetup">3.4.10. Keycloak servers setup</a></li>
+<li><a href="#administration">3.4.11. Administration of Cross DC deployment</a></li>
+<li><a href="#onoffline">3.4.12. Bringing sites offline and online</a></li>
+<li><a href="#statetransfer">3.4.13. State transfer</a></li>
+<li><a href="#clearcache">3.4.14. Clear caches</a></li>
+<li><a href="#tuningcache">3.4.15. Tuning the JDG cache configuration</a></li>
+<li><a href="#backups">3.4.16. SYNC or ASYNC backups</a></li>
+<li><a href="#troubleshooting">3.4.17. Troubleshooting</a></li>
 </ul>
 </li>
-<li><a href="#_manage_config">4. Manage Subsystem Configuration</a>
+</ul>
+</li>
+<li><a href="#manage-subsystem-configuration">4. Manage Subsystem Configuration</a>
 <ul class="sectlevel2">
 <li><a href="#_config_spi_providers">4.1. Configure SPI Providers</a></li>
 <li><a href="#_start_cli">4.2. Start the WildFly CLI</a></li>
@@ -753,7 +774,7 @@ span.image img {
 <li><a href="#securing-cluster-communication">8.6. Securing Cluster Communication</a></li>
 <li><a href="#_clustering_db_lock">8.7. Serialized Cluster Startup</a></li>
 <li><a href="#booting-the-cluster">8.8. Booting the Cluster</a></li>
-<li><a href="#troubleshooting">8.9. Troubleshooting</a></li>
+<li><a href="#troubleshooting-2">8.9. Troubleshooting</a></li>
 </ul>
 </li>
 <li><a href="#server-cache-configuration">9. Server Cache Configuration</a>
@@ -873,27 +894,27 @@ system property on startup to <code>file:/dev/urandom</code>.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>'keycloak-3.4.0.CR1.[zip|tar.gz]'</p>
+<p>'keycloak-3.4.1.CR1.[zip|tar.gz]'</p>
 </li>
 <li>
-<p>'keycloak-overlay-3.4.0.CR1.[zip|tar.gz]'</p>
+<p>'keycloak-overlay-3.4.1.CR1.[zip|tar.gz]'</p>
 </li>
 <li>
-<p>'keycloak-demo-3.4.0.CR1.[zip|tar.gz]'</p>
+<p>'keycloak-demo-3.4.1.CR1.[zip|tar.gz]'</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-3.4.0.CR1.[zip|tar.gz]' file is the server only distribution.  It contains nothing other than the scripts and binaries
+<p>The 'keycloak-3.4.1.CR1.[zip|tar.gz]' file is the server only distribution.  It contains nothing other than the scripts and binaries
 to run the Keycloak Server.  To unpack this file just run your operating system&#8217;s <code>unzip</code> or <code>gunzip</code> and <code>tar</code> utilities.</p>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-overlay-3.4.0.CR1.[zip|tar.gz]' file is a Wildfly add-on that allows you to install Keycloak Server on top of an existing
+<p>The 'keycloak-overlay-3.4.1.CR1.[zip|tar.gz]' file is a Wildfly add-on that allows you to install Keycloak Server on top of an existing
 WildFly distribution.  We do not support users that want to run their applications and Keycloak on the same server instance.  To install the Keycloak Service Pack, just unzip it in the root directory
 of your WildFly distribution, open the bin directory in a shell and run <code>./jboss-cli.[sh|bat] --file=keycloak-install.cli</code>.</p>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-demo-3.4.0.CR1.[zip|tar.gz]' contains the server binaries, all documentation and all examples.  It is preconfigured with both the
+<p>The 'keycloak-demo-3.4.1.CR1.[zip|tar.gz]' contains the server binaries, all documentation and all examples.  It is preconfigured with both the
 OIDC and SAML client application adapters and can deploy any of the distribution examples out of the box with no configuration.  This distribution is only
 recommended for those that want to test drive Keycloak.  We do not support users that run the demo distribution in production.</p>
 </div>
@@ -1468,10 +1489,1084 @@ The add-user.sh does not add user to Keycloak server but to the underlying JBoss
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="crossdc-mode"><a class="anchor" href="#crossdc-mode"></a>3.4. Cross-Datacenter Replication Mode</h3>
+<div class="paragraph">
+<p>Cross-Datacenter Replication mode is for when you want to run Keycloak in a cluster across multiple data centers, most typically using data center sites that are in different geographic regions. When using this mode, each data center will have its own cluster of Keycloak servers.</p>
+</div>
+<div class="paragraph">
+<p>This documentation will refer the following example architecture diagram to illustrate and describe a simple Cross-Datacenter Replication use case.</p>
+</div>
+<div id="archdiagram" class="paragraph">
+<div class="title">Example Architecture Diagram</div>
+<p><span class="image"><img src="./keycloak-images/cross-dc-architecture.png" alt="cross dc architecture"></span></p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites"><a class="anchor" href="#prerequisites"></a>3.4.1. Prerequisities</h4>
+<div class="paragraph">
+<p>As this is an advanced topic, we recommend you first read the following, which provide valuable background knowledge:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="http://www.keycloak.org/docs/3.4/server_installation/#_clustering">Clustering with Keycloak</a>
+When setting up for Cross-Datacenter Replication, you will use more independent Keycloak clusters, so you must understand how a cluster works and the basic concepts and requirements such as load balancing, shared databases, and multicasting.</p>
+</li>
+<li>
+<p><a href="https://access.redhat.com/documentation/en-us/red_hat_jboss_data_grid/7.1/html/administration_and_configuration_guide/set_up_cross_datacenter_replication">JBoss Data Grid Cross-Datacenter Replication</a>
+Keycloak uses JBoss Data Grid (JDG) for the replication of Infinispan data between the data centers. We use the <code>Remote Client-Server Mode</code> described in the JDG documentation in  <a href="https://access.redhat.com/documentation/en-us/red_hat_jboss_data_grid/7.1/html/administration_and_configuration_guide/set_up_cross_datacenter_replication#configure_cross_datacenter_replication_remote_client_server_mode">Configure Cross-Datacenter Replication</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="technicaldetails"><a class="anchor" href="#technicaldetails"></a>3.4.2. Technical details</h4>
+<div class="paragraph">
+<p>This section provides an introduction to the concepts and details of how Keycloak Cross-Datacenter Replication is accomplished.</p>
+</div>
+<div class="paragraph">
+<div class="title">Data</div>
+<p>Keycloak is stateful application. It uses the following as data sources:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A database is used to persist permanent data, such as user information.</p>
+</li>
+<li>
+<p>An Infinispan cache is used to cache persistent data from the database and also to save some short-lived and frequently-changing metadata, such as for user sessions.
+Infinispan is usually much faster then a database, however the data saved using Infinispan are not permanent and is not expected to persist across cluster restarts.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In our example architecture, there are two data centers called <code>site1</code> and <code>site2</code>. For Cross-Datacenter Replication, we must make sure that both sources of data work reliably and that Keycloak
+servers from <code>site1</code> are eventually able to read the data saved by Keycloak servers on <code>site2</code> .</p>
+</div>
+<div class="paragraph">
+<p>Based on the environment, you have the option to decide if you prefer:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Reliability - which is typically used in Active/Active mode. Data written on <code>site1</code> must be visible immediately on <code>site2</code>.</p>
+</li>
+<li>
+<p>Performance - which is typically used in Active/Passive mode. Data written on <code>site1</code> does not need to be visible immediately on <code>site2</code>.
+In some cases, the data may not be visible on <code>site2</code> at all.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more details, see <a href="#modes">Modes</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="requestprocessing"><a class="anchor" href="#requestprocessing"></a>3.4.3. Request processing</h4>
+<div class="paragraph">
+<p>An end user&#8217;s browser sends an HTTP request to the <a href="http://www.keycloak.org/docs/3.4/server_installation/#_setting-up-a-load-balancer-or-proxy">front end load balancer</a>. This load balancer is usually HTTPD or WildFly with mod_cluster, NGINX, HA Proxy, or perhaps some other kind of software or hardware load balancer.</p>
+</div>
+<div class="paragraph">
+<p>The load balancer then forwards the HTTP requests it receives to the underlying Keycloak instances, which can be spread among multiple data centers. Load balancers typically offer support for <a href="http://www.keycloak.org/docs/3.4/server_installation/#sticky-sessions">sticky sessions</a>, which means that the load balancer is able to always forward all HTTP requests from the same user to the same Keycloak instance in same data center.</p>
+</div>
+<div class="paragraph">
+<p>HTTP requests that are sent from client applications to the load balancer are called <code>backchannel requests</code>.
+These are not seen by an end user&#8217;s browser and therefore can not be part of a sticky session between the user and the load balancer. For backchannel requests, the loadbalancer can forward the HTTP request to any Keycloak instance in any data center. This is challenging as some OpenID Connect and some SAML flows require multiple HTTP requests from both the user and the application. Because we can not reliably depend on sticky sessions to force all the related requests to be sent to the same Keycloak instance in the same data center, we must instead replicate some data across data centers, so the data are seen by subsequent HTTP requests during a particular flow.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="modes"><a class="anchor" href="#modes"></a>3.4.4. Modes</h4>
+<div class="paragraph">
+<p>According your requirements, there are two basic operating modes for Cross-Datacenter Replication:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Active/Passive - Here the users and client applications send the requests just to the Keycloak nodes in just a single data center.
+The second data center is used just as a <code>backup</code> for saving the data. In case of the failure in the main data center, the data can be usually restored from the second data center.</p>
+</li>
+<li>
+<p>Active/Active - Here the users and client applications send the requests to the Keycloak nodes in both data centers.
+It means that data need to be visible immediately on both sites and available to be consumed immediately from Keycloak servers on both sites. This is especially true if Keycloak server writes some data on <code>site1</code>, and it is required that the data are available immediately for reading by Keycloak servers on <code>site2</code> immediately after the write on <code>site1</code> is finished.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The active/passive mode is better for performance. For more information about how to configure caches for either mode, see: <a href="#backups">SYNC or ASYNC backups</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="database"><a class="anchor" href="#database"></a>3.4.5. Database</h4>
+<div class="paragraph">
+<p>Keycloak uses a relational database management system (RDBMS) to persist some metadata about realms, clients, users, and so on. See <a href="http://www.keycloak.org/docs/3.4/server_installation/#_database">this chapter</a> of the server installation guide for more details. In a Cross-Datacenter Replication setup, we assume that either both data centers talk to the same database or that every data center has its own database node and both database nodes are synchronously replicated across the data centers. In both cases, it is required that when a Keycloak server on <code>site1</code> persists some data and commits the transaction, those data are immediately visible by subsequent DB transactions on <code>site2</code>.</p>
+</div>
+<div class="paragraph">
+<p>Details of DB setup are out-of-scope for Keycloak, however many RDBMS vendors like MariaDB and Oracle offer replicated databases and synchronous replication. We test Keycloak with these vendors:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Oracle Database 12c Release 1 (12.1) RAC</p>
+</li>
+<li>
+<p>Galera 3.12 cluster for MariaDB server version 10.1.19-MariaDB</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="cache"><a class="anchor" href="#cache"></a>3.4.6. Infinispan caches</h4>
+<div class="paragraph">
+<p>This section begins with a high level description of the Infinispan caches. More details of the cache setup follow.</p>
+</div>
+<div class="paragraph">
+<div class="title">Authentication sessions</div>
+<p>In Keycloak we have the concept of authentication sessions. There is a separate Infinispan cache called <code>authenticationSessions</code> used to save data during authentication of particular user. Requests from this cache usually involve only a browser and the Keycloak server, not the application. Here we can rely on sticky sessions and the <code>authenticationSessions</code> cache content does not need to be replicated across data centers, even if you are in Active/Active mode.</p>
+</div>
+<div class="paragraph">
+<div class="title">Action tokens</div>
+<p>We also have the concept of <a href="http://www.keycloak.org/docs/3.4/server_development/#_action_token_spi">action tokens</a>, which are used typically for scenarios when the user needs to confirm an action asynchronously by email. For example, during the <code>forget password</code> flow the <code>actionTokens</code> Infinispan cache is used to track metadata about related action tokens, such as which action token was already used, so it can&#8217;t be reused second time. This usually needs to be replicated across data centers.</p>
+</div>
+<div class="paragraph">
+<div class="title">Caching and invalidation of persistent data</div>
+<p>Keycloak uses Infinispan to cache persistent data to avoid many unecessary requests to the database.
+Caching improves performance, however it adds an additional challenge. When some Keycloak server updates any data, all other Keycloak servers in all data centers need to be aware of it, so they invalidate particular data from their caches. Keycloak uses local Infinispan caches called <code>realms</code>, <code>users</code>, and <code>authorization</code> to cache persistent data.</p>
+</div>
+<div class="paragraph">
+<p>We use a separate cache, <code>work</code>, which is replicated across all data centers. The work cache itself does not cache
+any real data. It is used only for sending invalidation messages between cluster nodes and data centers.
+In other words, when data is updated, such as the user <code>john</code>, the Keycloak node sends the invalidation message to all other cluster nodes in the same data center and also to all other data centers. After receiving the invalidation notice, every node then invalidates the appropriate data from their local cache.</p>
+</div>
+<div class="paragraph">
+<div class="title">User sessions</div>
+<p>There are Infinispan caches called <code>sessions</code>, <code>clientSessions</code>, <code>offlineSessions</code>, and <code>offlineClientSessions</code>,
+all of which usually need to be replicated across data centers. These caches are used to save data about user
+sessions, which are valid for the length of a user&#8217;s browser session. The caches must handle the HTTP requests from the end user and from the application. As described above, sticky sessions can not be reliably used in this instance, but we still want to ensure that subsequent HTTP requests can see the latest data. For this reason, the data are usually replicated across data centers.</p>
+</div>
+<div class="paragraph">
+<div class="title">Brute force protection</div>
+<p>Finally the <code>loginFailures</code> cache is used to track data about failed logins, such as how many times the user <code>john</code>
+entered a bad password. The details are described <a href="http://www.keycloak.org/docs/3.4/server_admin/#password-guess-brute-force-attacks">here</a>. It is up to the admin whether this cache should be replicated across data centers. To have an accurate count of login failures, the replication is needed. On the other hand, not replicating this data can save some performance. So if performance is more important then accurate counts of login failures, the replication can be avoided.</p>
+</div>
+<div class="paragraph">
+<p>For more detail about how caches can be configured see <a href="#tuningcache">Tuning the JDG cache configuration</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="communication"><a class="anchor" href="#communication"></a>3.4.7. Communication details</h4>
+<div class="paragraph">
+<p>Keycloak uses multiple, separate clusters of Infinispan caches. Every Keycloak node is in the cluster with the other Keycloak nodes in same data center, but not with the Keycloak nodes in different data centers. A Keycloak node does not communicate directly with the Keycloak nodes from different data centers. Keycloak nodes use external JDG (actually Infinispan servers) for communication across data centers. This is done using the <a href="http://infinispan.org/docs/8.2.x/user_guide/user_guide.html#using_hot_rod_server">Infinispan HotRod protocol</a>.</p>
+</div>
+<div class="paragraph">
+<p>The Infinispan caches on the Keycloak side must be configured with the <a href="http://infinispan.org/docs/8.2.x/user_guide/user_guide.html#remote_store">remoteStore</a> to ensure that data are saved to the remote cache. There is separate Infinispan cluster between JDG servers, so the data saved on JDG1 on <code>site1</code> are replicated to JDG2 on <code>site2</code> .</p>
+</div>
+<div class="paragraph">
+<p>Finally, the receiving JDG server notifies the Keycloak servers in its cluster through the Client Listeners, which are a feature of the HotRod protocol. Keycloak nodes on <code>site2</code> then update their Infinispan caches and the particular user session is also visible on Keycloak nodes on <code>site2</code>.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="#archdiagram">Example Architecture Diagram</a> for more details.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="setup"><a class="anchor" href="#setup"></a>3.4.8. Basic setup</h4>
+<div class="paragraph">
+<p>For this example, we describe using two data centers, <code>site1</code> and <code>site2</code>. Each data center consists of 1 Infinispan server and 2 Keycloak servers. We will end up with 2 Infinispan servers and 4 Keycloak servers in total.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Site1</code> consists of Infinispan server, <code>jdg1</code>, and 2 Keycloak servers, <code>node11</code> and <code>node12</code> .</p>
+</li>
+<li>
+<p><code>Site2</code> consists of Infinispan server, <code>jdg2</code>, and 2 Keycloak servers, <code>node21</code> and <code>node22</code> .</p>
+</li>
+<li>
+<p>Infinispan servers <code>jdg1</code> and <code>jdg2</code> are connected to each other through the RELAY2 protocol and <code>backup</code> based Infinispan caches in a similar way as described in the <a href="https://access.redhat.com/documentation/en-us/red_hat_jboss_data_grid/7.1/html-single/administration_and_configuration_guide/#configure_cross_datacenter_replication_remote_client_server_mode">JDG documentation</a>.</p>
+</li>
+<li>
+<p>Keycloak servers <code>node11</code> and <code>node12</code> form a cluster with each other, but they do not communicate directly with any server in <code>site2</code>.
+They communicate with the Infinispan server <code>jdg1</code> using the HotRod protocol (Remote cache). See <a href="#communication">Communication details</a> for the details.</p>
+</li>
+<li>
+<p>The same details apply for <code>node21</code> and <code>node22</code>. They cluster with each other and communicate only with <code>jdg2</code> server using the HotRod protocol.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Our example setup assumes all that all 4 Keycloak servers talk to the same database. In production, it is recommended to use separate synchronously replicated databases across data centers as described in <a href="#database">Database</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="jdgsetup"><a class="anchor" href="#jdgsetup"></a>3.4.9. Infinispan server setup</h4>
+<div class="paragraph">
+<p>Follow these steps to set up the Infinispan server:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Download Infinispan 8.2.8 server and unzip to a directory you choose. This location will be referred in later steps as <code>JDG1_HOME</code> .</p>
+</li>
+<li>
+<p>Change those things in the <code>JDG1_HOME/standalone/configuration/clustered.xml</code> in the configuration of JGroups subsystem:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Add the <code>xsite</code> channel, which will use <code>tcp</code> stack, under <code>channels</code> element:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;channels</span> <span class="attribute-name">default</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">cluster</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;channel</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">cluster</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;channel</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">xsite</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">stack</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">tcp</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/channels&gt;</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add a <code>relay</code> element to the end of the <code>udp</code> stack. We will configure it in a way that our site is <code>site1</code> and the other site, where we will backup, is <code>site2</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;stack</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">udp</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    ...
+    <span class="tag">&lt;relay</span> <span class="attribute-name">site</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">site1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;remote-site</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">site2</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">channel</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">xsite</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">relay_multicasts</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>false<span class="tag">&lt;/property&gt;</span>
+    <span class="tag">&lt;/relay&gt;</span>
+<span class="tag">&lt;/stack&gt;</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the <code>tcp</code> stack to use <code>TCPPING</code> protocol instead of <code>MPING</code>. Remove the <code>MPING</code> element and replace it with the <code>TCPPING</code>. The <code>initial_hosts</code> element points to the hosts <code>jdg1</code> and <code>jdg2</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;stack</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">tcp</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;transport</span> <span class="attribute-name">type</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">TCP</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">jgroups-tcp</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;protocol</span> <span class="attribute-name">type</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">TCPPING</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">initial_hosts</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>jdg1[7600],jdg2[7600]<span class="tag">&lt;/property&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ergonomics</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>false<span class="tag">&lt;/property&gt;</span>
+    <span class="tag">&lt;/protocol&gt;</span>
+    <span class="tag">&lt;protocol</span> <span class="attribute-name">type</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">MERGE3</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+    ...
+<span class="tag">&lt;/stack&gt;</span></code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This is just an example setup to have things quickly running. In production, you are not required to use <code>tcp</code> stack for the JGroups <code>RELAY2</code>, but you can configure any other stack. For example, you could use the default udp stack, if the network between your data centers is able to support multicast. Just make sure that the Infinispan and Keycloak clusters are mutually indiscoverable. Similarly, you are not required to use <code>TCPPING</code> as discovery protocol. And in production, you probably won&#8217;t use <code>TCPPING</code> due it&#8217;s static nature. Finally, site names are also configurable.
+Details of this more-detailed setup are out-of-scope of the Keycloak documentation. See the Infinispan documentation and JGroups documentation for more details.
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Add this into <code>JDG1_HOME/standalone/configuration/clustered.xml</code> under cache-container named <code>clustered</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;cache-container</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">clustered</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">default-cache</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">statistics</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        ...
+        <span class="tag">&lt;replicated-cache-configuration</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions-cfg</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">mode</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">SYNC</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">start</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">EAGER</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">batching</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+            <span class="tag">&lt;transaction</span> <span class="attribute-name">mode</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">NON_DURABLE_XA</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">locking</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">PESSIMISTIC</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+            <span class="tag">&lt;locking</span> <span class="attribute-name">acquire-timeout</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">0</span><span class="delimiter">&quot;</span></span> <span class="tag">/&gt;</span>
+            <span class="tag">&lt;backups&gt;</span>
+                <span class="tag">&lt;backup</span> <span class="attribute-name">site</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">site2</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">failure-policy</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">FAIL</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">strategy</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">SYNC</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+                    <span class="tag">&lt;take-offline</span> <span class="attribute-name">min-wait</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">60000</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">after-failures</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">3</span><span class="delimiter">&quot;</span></span> <span class="tag">/&gt;</span>
+                <span class="tag">&lt;/backup&gt;</span>
+            <span class="tag">&lt;/backups&gt;</span>
+        <span class="tag">&lt;/replicated-cache-configuration&gt;</span>
+
+        <span class="tag">&lt;replicated-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">work</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">configuration</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions-cfg</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;replicated-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">configuration</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions-cfg</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;replicated-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">clientSessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">configuration</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions-cfg</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;replicated-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">offlineSessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">configuration</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions-cfg</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;replicated-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">offlineClientSessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">configuration</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions-cfg</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;replicated-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">actionTokens</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">configuration</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions-cfg</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;replicated-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">loginFailures</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">configuration</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions-cfg</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+
+<span class="tag">&lt;/cache-container&gt;</span></code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Details about the configuration options inside <code>replicated-cache-configuration</code> are explained in <a href="#tuningcache">Tuning the JDG cache configuration</a>, which includes information about tweaking some of those options.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Copy the server into the second location, which will be referred to later as <code>JDG2_HOME</code>.</p>
+</li>
+<li>
+<p>In the <code>JDG2_HOME/standalone/configuration/clustered.xml</code> exchange <code>site1</code> with <code>site2</code> and viceversa in the configuration of <code>relay</code> in the JGroups subsystem and in configuration of <code>backups</code> in the cache-subsystem. For example:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>The <code>relay</code> element should look like this:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;relay</span> <span class="attribute-name">site</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">site2</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;remote-site</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">site1</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">channel</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">xsite</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">relay_multicasts</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>false<span class="tag">&lt;/property&gt;</span>
+<span class="tag">&lt;/relay&gt;</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The <code>backups</code> element like this:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml">            <span class="tag">&lt;backups&gt;</span>
+                <span class="tag">&lt;backup</span> <span class="attribute-name">site</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">site1</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">....</span>
+                <span class="attribute-name">...</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is currently required to have different configuration files for the JDG servers on both sites as the Infinispan subsystem does not support replacing site names with expressions. See <a href="https://issues.jboss.org/browse/WFLY-9458">this issue</a> for more details.</p>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Start server <code>jdg1</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>cd JDG1_HOME/bin
+./standalone.sh -c clustered.xml -Djava.net.preferIPv4Stack=true \
+-Djboss.default.multicast.address=234.56.78.99 \
+-Djboss.node.name=jdg1</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start server <code>jdg2</code>. There is a different multicast address, so the <code>jdg1</code> and <code>jdg2</code> servers are not directly clustered with each other; rather, they are just connected through the RELAY2 protocol, and the TCP JGroups stack is used for communication between them. The start up command looks like this:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>cd JDG2_HOME/bin
+./standalone.sh -c clustered.xml -Djava.net.preferIPv4Stack=true \
+-Djboss.default.multicast.address=234.56.78.100 \
+-Djboss.node.name=jdg2</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To verify that channel works at this point, you may need to use JConsole and connect either to the running <code>JDG1</code> or the <code>JDG2</code> server. When you use the MBean <code>jgroups:type=protocol,cluster="cluster",protocol=RELAY2</code> and operation <code>printRoutes</code>, you should see output like this:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>site1 --&gt; _jdg1:site1
+site2 --&gt; _jdg2:site2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you use the MBean <code>jgroups:type=protocol,cluster="cluster",protocol=GMS</code>, you should see that the attribute member contains just single member:</p>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>On <code>JDG1</code> it should be like this:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>(1) jdg1</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>And on JDG2 like this:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>(1) jdg2</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In production, you can have more Infinispan servers in every data center. You just need to ensure that Infinispan servers in same data center are using the same multicast address (In other words, the same <code>jboss.default.multicast.address</code> during startup). Then in jconsole in <code>GMS</code> protocol view, you will see all the members of current cluster.
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="serversetup"><a class="anchor" href="#serversetup"></a>3.4.10. Keycloak servers setup</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Unzip Keycloak server distribution to a location you choose. It will be referred to later as <code>NODE11</code>.</p>
+</li>
+<li>
+<p>Configure a shared database for KeycloakDS datasource. It is recommended to use MySQL or MariaDB for testing purposes. See <a href="#database">Database</a> for more details.</p>
+<div class="paragraph">
+<p>In production you will likely need to have a separate database server in every data center and both database servers should be synchronously replicated to each other. In the example setup, we just use a single database and connect all 4 Keycloak servers to it.</p>
+</div>
+</li>
+<li>
+<p>Edit <code>NODE11/standalone/configuration/standalone-ha.xml</code> :</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Add the attribute <code>site</code> to the JGroups UDP protocol:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml">                  <span class="tag">&lt;stack</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">udp</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+                      <span class="tag">&lt;transport</span> <span class="attribute-name">type</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">UDP</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">jgroups-udp</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">site</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${jboss.site.name}</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add this <code>module</code> attribute under <code>cache-container</code> element of name <code>keycloak</code> :</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"> <span class="tag">&lt;cache-container</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">keycloak</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">jndi-name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">infinispan/Keycloak</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">module</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.keycloak.keycloak-model-infinispan</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the <code>remote-store</code> under <code>work</code> cache:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;replicated-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">work</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">mode</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">SYNC</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;remote-store</span> <span class="attribute-name">cache</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">work</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">remote-servers</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">remote-cache</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">passivation</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">fetch-state</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">purge</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">preload</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">shared</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">rawValues</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>true<span class="tag">&lt;/property&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">marshaller</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>org.keycloak.cluster.infinispan.KeycloakHotRodMarshallerFactory<span class="tag">&lt;/property&gt;</span>
+    <span class="tag">&lt;/remote-store&gt;</span>
+<span class="tag">&lt;/replicated-cache&gt;</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the <code>remote-store</code> like this under <code>sessions</code> cache:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;distributed-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">mode</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">SYNC</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">owners</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;remote-store</span> <span class="attribute-name">cache</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">sessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">remote-servers</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">remote-cache</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">passivation</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">fetch-state</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">purge</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">preload</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">shared</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">rawValues</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>true<span class="tag">&lt;/property&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">marshaller</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>org.keycloak.cluster.infinispan.KeycloakHotRodMarshallerFactory<span class="tag">&lt;/property&gt;</span>
+    <span class="tag">&lt;/remote-store&gt;</span>
+<span class="tag">&lt;/distributed-cache&gt;</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Do the same for <code>offlineSessions</code>, <code>clientSessions</code>, <code>offlineClientSessions</code>, <code>loginFailures</code>, and <code>actionTokens</code> caches (the only difference from <code>sessions</code> cache is that <code>cache</code> property value are different):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;distributed-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">offlineSessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">mode</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">SYNC</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">owners</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;remote-store</span> <span class="attribute-name">cache</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">offlineSessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">remote-servers</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">remote-cache</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">passivation</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">fetch-state</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">purge</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">preload</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">shared</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">rawValues</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>true<span class="tag">&lt;/property&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">marshaller</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>org.keycloak.cluster.infinispan.KeycloakHotRodMarshallerFactory<span class="tag">&lt;/property&gt;</span>
+    <span class="tag">&lt;/remote-store&gt;</span>
+<span class="tag">&lt;/distributed-cache&gt;</span>
+
+<span class="tag">&lt;distributed-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">clientSessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">mode</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">SYNC</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">owners</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;remote-store</span> <span class="attribute-name">cache</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">clientSessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">remote-servers</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">remote-cache</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">passivation</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">fetch-state</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">purge</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">preload</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">shared</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">rawValues</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>true<span class="tag">&lt;/property&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">marshaller</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>org.keycloak.cluster.infinispan.KeycloakHotRodMarshallerFactory<span class="tag">&lt;/property&gt;</span>
+    <span class="tag">&lt;/remote-store&gt;</span>
+<span class="tag">&lt;/distributed-cache&gt;</span>
+
+<span class="tag">&lt;distributed-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">offlineClientSessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">mode</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">SYNC</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">owners</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;remote-store</span> <span class="attribute-name">cache</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">offlineClientSessions</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">remote-servers</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">remote-cache</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">passivation</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">fetch-state</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">purge</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">preload</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">shared</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">rawValues</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>true<span class="tag">&lt;/property&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">marshaller</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>org.keycloak.cluster.infinispan.KeycloakHotRodMarshallerFactory<span class="tag">&lt;/property&gt;</span>
+    <span class="tag">&lt;/remote-store&gt;</span>
+<span class="tag">&lt;/distributed-cache&gt;</span>
+
+<span class="tag">&lt;distributed-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">loginFailures</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">mode</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">SYNC</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">owners</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;remote-store</span> <span class="attribute-name">cache</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">loginFailures</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">remote-servers</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">remote-cache</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">passivation</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">fetch-state</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">purge</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">preload</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">shared</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">rawValues</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>true<span class="tag">&lt;/property&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">marshaller</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>org.keycloak.cluster.infinispan.KeycloakHotRodMarshallerFactory<span class="tag">&lt;/property&gt;</span>
+    <span class="tag">&lt;/remote-store&gt;</span>
+<span class="tag">&lt;/distributed-cache&gt;</span>
+
+<span class="tag">&lt;distributed-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">actionTokens</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">mode</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">SYNC</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">owners</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">2</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;eviction</span> <span class="attribute-name">max-entries</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">-1</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">strategy</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">NONE</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;expiration</span> <span class="attribute-name">max-idle</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">-1</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">interval</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">300000</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;remote-store</span> <span class="attribute-name">cache</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">actionTokens</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">remote-servers</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">remote-cache</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">passivation</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">fetch-state</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">purge</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">preload</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">shared</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">rawValues</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>true<span class="tag">&lt;/property&gt;</span>
+        <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">marshaller</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>org.keycloak.cluster.infinispan.KeycloakHotRodMarshallerFactory<span class="tag">&lt;/property&gt;</span>
+    <span class="tag">&lt;/remote-store&gt;</span>
+<span class="tag">&lt;/distributed-cache&gt;</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add outbound socket binding for the remote store into <code>socket-binding-group</code> element configuration:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;outbound-socket-binding</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">remote-cache</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;remote-destination</span> <span class="attribute-name">host</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${remote.cache.host:localhost}</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">port</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${remote.cache.port:11222}</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/outbound-socket-binding&gt;</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The configuration of distributed cache <code>authenticationSessions</code> and other caches is left unchanged.</p>
+</li>
+<li>
+<p>Optionally enable DEBUG logging under the <code>logging</code> subsystem:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;logger</span> <span class="attribute-name">category</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.keycloak.cluster.infinispan</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;level</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">DEBUG</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/logger&gt;</span>
+<span class="tag">&lt;logger</span> <span class="attribute-name">category</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.keycloak.connections.infinispan</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;level</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">DEBUG</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/logger&gt;</span>
+<span class="tag">&lt;logger</span> <span class="attribute-name">category</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.keycloak.models.cache.infinispan</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;level</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">DEBUG</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/logger&gt;</span>
+<span class="tag">&lt;logger</span> <span class="attribute-name">category</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.keycloak.models.sessions.infinispan</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;level</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">DEBUG</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/logger&gt;</span></code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Copy the <code>NODE11</code> to 3 other directories referred later as <code>NODE12</code>, <code>NODE21</code> and <code>NODE22</code>.</p>
+</li>
+<li>
+<p>Start <code>NODE11</code> :</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>cd NODE11/bin
+./standalone.sh -c standalone-ha.xml -Djboss.node.name=node11 -Djboss.site.name=site1 \
+-Djboss.default.multicast.address=234.56.78.1 -Dremote.cache.host=jdg1 -Djava.net.preferIPv4Stack=true</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start <code>NODE12</code> :</p>
+<div class="paragraph">
+<p><code><code>`
+cd NODE12/bin
+./standalone.sh -c standalone-ha.xml -Djboss.node.name=node12 -Djboss.site.name=site1 \
+-Djboss.default.multicast.address=234.56.78.1 -Dremote.cache.host=jdg1 -Djava.net.preferIPv4Stack=true
+</code>`</code></p>
+</div>
+<div class="paragraph">
+<p>The cluster nodes should be connected. Something like this should be in the log of both NODE11 and NODE12:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>Received new cluster view for channel keycloak: [node11|1] (2) [node11, node12]</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The channel name in the log might be different.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Start <code>NODE21</code> :</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>cd NODE21/bin
+./standalone.sh -c standalone-ha.xml -Djboss.node.name=node21 -Djboss.site.name=site2 \
+-Djboss.default.multicast.address=234.56.78.2 -Dremote.cache.host=jdg2 -Djava.net.preferIPv4Stack=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It shouldn&#8217;t be connected to the cluster with <code>NODE11</code> and <code>NODE12</code>, but to separate one:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>Received new cluster view for channel keycloak: [node21|0] (1) [node21]</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start <code>NODE22</code> :</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>cd NODE22/bin
+./standalone.sh -c standalone-ha.xml -Djboss.node.name=node22 -Djboss.site.name=site2 \
+-Djboss.default.multicast.address=234.56.78.2 -Dremote.cache.host=jdg2 -Djava.net.preferIPv4Stack=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It should be in cluster with <code>NODE21</code> :</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>Received new cluster view for channel keycloak: [node21|1] (2) [node21, node22]</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The channel name in the log might be different.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Test:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Go to <code><a href="http://node11:8080/auth/" class="bare">http://node11:8080/auth/</a></code> and create the initial admin user.</p>
+</li>
+<li>
+<p>Go to <code><a href="http://node11:8080/auth/admin" class="bare">http://node11:8080/auth/admin</a></code> and login as admin to admin console.</p>
+</li>
+<li>
+<p>Open a second browser and go to any of nodes <code><a href="http://node12:8080/auth/admin" class="bare">http://node12:8080/auth/admin</a></code> or <code><a href="http://node21:8080/auth/admin" class="bare">http://node21:8080/auth/admin</a></code> or <code><a href="http://node22:8080/auth/admin" class="bare">http://node22:8080/auth/admin</a></code>. After login, you should be able to see
+the same sessions in tab <code>Sessions</code> of particular user, client or realm on all 4 servers.</p>
+</li>
+<li>
+<p>After doing any change in Keycloak admin console (eg. update some user or some realm), the update
+should be immediately visible on any of 4 nodes as caches should be properly invalidated everywhere.</p>
+</li>
+<li>
+<p>Check server.logs if needed. After login or logout, the message like this should be on all the nodes <code>NODEXY/standalone/log/server.log</code> :</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>2017-08-25 17:35:17,737 DEBUG [org.keycloak.models.sessions.infinispan.remotestore.RemoteCacheSessionListener] (Client-Listener-sessions-30012a77422542f5) Received event from remote store.
+Event 'CLIENT_CACHE_ENTRY_REMOVED', key '193489e7-e2bc-4069-afe8-f1dfa73084ea', skip 'false'</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="administration"><a class="anchor" href="#administration"></a>3.4.11. Administration of Cross DC deployment</h4>
+<div class="paragraph">
+<p>This section contains some tips and options related to Cross-Datacenter Replication.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>When you run the Keycloak server inside a data center, it is required that the database referenced in <code>KeycloakDS</code> datasource is already running and available in that data center. It is also necessary that the Infinispan server referenced by the <code>outbound-socket-binding</code>, which is referenced from the Infinispan cache <code>remote-store</code> element, is already running. Otherwise the Keycloak server will fail to start.</p>
+</li>
+<li>
+<p>Every data center can have more database nodes if you want to support database failover and better reliability. Refer to the documentation of your database and JDBC driver for the details how to set this up on the database side and how the <code>KeycloakDS</code> datasource on Keycloak side needs to be configured.</p>
+</li>
+<li>
+<p>Every datacenter can have more Infinispan servers running in the cluster. This is useful if you want some failover and better fault tolerance. The HotRod protocol used for communication between Infinispan servers and Keycloak servers has a feature that Infinispan servers will automatically send new topology to the Keycloak servers about the change in the Infinispan cluster, so the remote store on Keycloak side will know to which Infinispan servers it can connect. Read the Infinispan and Wildfly documentation for more details.</p>
+</li>
+<li>
+<p>It is highly recommended that a master Infinispan server is running in every site before the Keycloak servers in <strong>any</strong> site are started. As in our example, we started both <code>jdg1</code> and <code>jdg2</code> first, before all Keycloak servers. If you still need to run the Keycloak server and the backup site is offline, it is recommended to manually switch the backup site offline on the Infinispan servers on your site, as described in <a href="#onoffline">Bringing sites offline and online</a>. If you do not manually switch the unavailable site offline, the first startup may fail or they may be some exceptions during startup until the backup site is taken offline automatically due the configured count of failed operations.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="onoffline"><a class="anchor" href="#onoffline"></a>3.4.12. Bringing sites offline and online</h4>
+<div class="paragraph">
+<p>For example, assume this scenario:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Site <code>site2</code> is entirely offline from the <code>site1</code> perspective. This means that all Infinispan servers on <code>site2</code> are off <strong>or</strong> the network between <code>site1</code> and <code>site2</code> is broken.</p>
+</li>
+<li>
+<p>You run Keycloak servers and Infinispan server <code>jdg1</code> in site <code>site1</code></p>
+</li>
+<li>
+<p>Someone logs in on a Keycloak server on <code>site1</code>.</p>
+</li>
+<li>
+<p>The Keycloak server from <code>site1</code> will try to write the session to the remote cache on <code>jdg1</code> server, which is supposed to backup data to the <code>jdg2</code> server in the <code>site2</code>. See <a href="#communication">Communication details</a> for more information.</p>
+</li>
+<li>
+<p>Server <code>jdg2</code> is offline or unreachable from <code>jdg1</code>. So the backup from <code>jdg1</code> to <code>jdg2</code> will fail.</p>
+</li>
+<li>
+<p>The exception is thrown in <code>jdg1</code> log and the failure will be propagated from <code>jdg1</code> server to Keycloak servers as well because the default <code>FAIL</code> backup failure policy is configured. See <a href="#backupfailure">Backup failure policy</a> for details around the backup policies.</p>
+</li>
+<li>
+<p>The error will happen on Keycloak side too and user may not be able to finish his login.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>According to your environment, it may be more or less probable that the network between sites is unavailable or temporarily broken (split-brain). In case this happens, it is good that Infinispan servers on <code>site1</code> are aware of the fact that Infinispan servers on <code>site2</code> are unavailable, so they will stop trying to reach the servers in the <code>jdg2</code> site and the backup failures won&#8217;t happen. This is called <code>Take site offline</code> .</p>
+</div>
+<div class="paragraph">
+<div class="title">Take site offline</div>
+<p>There are 2 ways to take the site offline.</p>
+</div>
+<div class="paragraph">
+<p><strong>Manually by admin</strong> - Admin can use the <code>jconsole</code> or other tool and run some JMX operations to manually take the particular site offline.
+This is useful especially if the outage is planned. With <code>jconsole</code> or CLI, you can connect to the <code>jdg1</code> server and take the <code>site2</code> offline.
+More details about this are available in the <a href="https://access.redhat.com/documentation/en-us/red_hat_jboss_data_grid/7.1/html/administration_and_configuration_guide/set_up_cross_datacenter_replication#taking_a_site_offline">JDG documentation</a>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This has turned off the backup to <code>site2</code> for the cache <code>sessions</code>. The same steps usually need to be done for all the other Keycloak caches mentioned in <a href="#backups">SYNC or ASYNC backups</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><strong>Automatically</strong> - After some amount of failed backups, the <code>site2</code> will usually be taken offline automatically. This is done due the configuration of <code>take-offline</code> element inside the cache configuration as configured in <a href="#jdgsetup">Infinispan server setup</a>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>&lt;take-offline min-wait="60000" after-failures="3" /&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This example shows that the site will be taken offline automatically for the particular single cache if there are at least 3 subsequent failed backups and there is no any successful backup within 60 seconds.</p>
+</div>
+<div class="paragraph">
+<p>Automatically taking a site offline is useful especially if the broken network between sites is unplanned. The disadvantage is that there will be some failed backups until the network outage is detected, which could also mean  failures on the application side.
+For example, there will be failed logins for some users or big login timeouts. Especially if <code>failure-policy</code> with value <code>FAIL</code> is used.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The tracking of whether a site is offline is tracked separately for every cache.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">Take site online</div>
+<p>Once your network is back and <code>site1</code> and <code>site2</code> can talk to each other, you may need to put the site online. This needs to be done manually through JMX or CLI in similar way as taking a site offline.
+Again, you may need to check all the caches and bring them online.</p>
+</div>
+<div class="paragraph">
+<p>Once the sites are put online, it&#8217;s usually good to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Do the <a href="#statetransfer">State transfer</a>.</p>
+</li>
+<li>
+<p>Manually <a href="#clearcache">Clear caches</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="statetransfer"><a class="anchor" href="#statetransfer"></a>3.4.13. State transfer</h4>
+<div class="paragraph">
+<p>State transfer is a required, manual step. Infinispan does not do this automatically, for example during split-brain, it is only the admin who may decide which site has preference and hence if state transfer needs to be done bidirectionally between both sites or just unidirectionally, as in only from <code>site1</code> to <code>site2</code>, but not from <code>site2</code> to <code>site1</code>.</p>
+</div>
+<div class="paragraph">
+<p>A bidirectional state transfer will ensure that entities which were created <strong>after</strong> split-brain on <code>site1</code> will be transferred to <code>site2</code>. This is not an issue as they do not yet exist on <code>site2</code>. Similarly, entities created <strong>after</strong> split-brain on <code>site2</code> will be transferred to <code>site1</code>. Possibly problematic parts are those entities which exist <strong>before</strong> split-brain on both sites and which were updated during split-brain on both sites. When this happens, one of the sites will <strong>win</strong> and will overwrite the updates done during split-brain by the second site.</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately, there is no any universal solution to this. Split-brains and network outages are just state, which is usually impossible to be handled 100% correctly with 100% consistent data between sites. In the case of Keycloak, it typically is not a critical issue. In the worst case, users will need to re-login again to their clients, or have the improper count of loginFailures tracked for brute force protection. See the Infinispan/JGroups documentation for more tips how to deal with split-brain.</p>
+</div>
+<div class="paragraph">
+<p>The state transfer can be also done on the Infinispan side through JMX. The operation name is <code>pushState</code>. There are few other operations to monitor status, cancel push state, and so on.
+More info about state transfer is available in the <a href="https://access.redhat.com/documentation/en-us/red_hat_jboss_data_grid/7.1/html/administration_and_configuration_guide/set_up_cross_datacenter_replication#state_transfer_between_sites">Infinispan docs</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="clearcache"><a class="anchor" href="#clearcache"></a>3.4.14. Clear caches</h4>
+<div class="paragraph">
+<p>After split-brain it is safe to manually clear caches in the Keycloak admin console. This is because there might be some data changed in the database on <code>site1</code> and because of the event, that the cache should be invalidated wasn&#8217;t transferred during split-brain to <code>site2</code>. Hence Keycloak nodes on <code>site2</code> may still have some stale data in their caches.</p>
+</div>
+<div class="paragraph">
+<p>To clear the caches, see <a href="http://www.keycloak.org/docs/3.4/server_admin/#_clear-cache">Clearing Server Caches</a>.</p>
+</div>
+<div class="paragraph">
+<p>When the network is back, it is sufficient to clear the cache just on one Keycloak node on any random site. The cache invalidation event will be sent to all the other Keycloak nodes in all sites. However, it needs to be done for all the caches (realms, users, keys). See <a href="http://www.keycloak.org/docs/3.4/server_admin/#_clear-cache">Clearing Server Caches</a> for more information.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tuningcache"><a class="anchor" href="#tuningcache"></a>3.4.15. Tuning the JDG cache configuration</h4>
+<div class="paragraph">
+<p>This section contains tips and options for configuring your JDG cache.</p>
+</div>
+<div id="backupfailure" class="paragraph">
+<div class="title">Backup failure policy</div>
+<p>By default, the configuration of backup <code>failure-policy</code> in the Infinispan cache configuration in the JDG <code>clustered.xml</code> file is configured as <code>FAIL</code>. You may change it to <code>WARN</code> or <code>IGNORE</code>, as you prefer.</p>
+</div>
+<div class="paragraph">
+<p>The difference between <code>FAIL</code> and <code>WARN</code> is that when <code>FAIL</code> is used and the Infinispan server tries to back data up to the other site and the backup fails then the failure will be propagated back to the caller (the Keycloak server). The backup might fail because the second site is temporarily unreachable or there is a concurrent transaction which is trying to update same entity. In this case, the Keycloak server will then retry the operation a few times. However, if the retry fails, then the user might see the error after a longer timeout.</p>
+</div>
+<div class="paragraph">
+<p>When using <code>WARN</code>, the failed backups are not propagated from the Infinispan server to the Keycloak server. The user won&#8217;t see the error and the failed backup will be just ignored. There will be a shorter timeout, typically 10 seconds as that&#8217;s the default timeout for backup. It can be changed by the attribute <code>timeout</code> of <code>backup</code> element. There won&#8217;t be retries. There will just be a WARNING message in the Infinispan server log.</p>
+</div>
+<div class="paragraph">
+<p>The potential issue is, that in some cases, there may be just some a short network outage between sites, where the retry (usage of the <code>FAIL</code> policy) may help, so with <code>WARN</code> (without retry), there will be some data inconsistencies across sites. This can also happen if there is an attempt to update the same entity concurrently on both sites.</p>
+</div>
+<div class="paragraph">
+<p>How bad are these inconsistencies? Usually only means that a user will need to re-authenticate.</p>
+</div>
+<div class="paragraph">
+<p>When using the <code>WARN</code> policy, it may happen that the single-use cache, which is provided by the <code>actionTokens</code> cache and which handles that particular key is really single use, but may "successfully" write the same key twice. But, for example, the OAuth2 specification <a href="https://tools.ietf.org/html/rfc6749#section-10.5">mentions</a> that code must be single-use. With the <code>WARN</code> policy, this may not be strictly guaranteed and the same code could be written twice if there is an attempt to write it concurrently in both sites.</p>
+</div>
+<div class="paragraph">
+<p>If there is a longer network outage or split-brain, then with both <code>FAIL</code> and <code>WARN</code>, the other site will be taken offline after some time and failures as described in <a href="#onoffline">Bringing sites offline and online</a>. With the default 1 minute timeout, it is usually 1-3 minutes until all the involved caches are taken offline. After that, all the operations will work fine from an end user perspective.
+You only need to manually restore the site when it is back online as mentioned in <a href="#onoffline">Bringing sites offline and online</a>.</p>
+</div>
+<div class="paragraph">
+<p>In summary, if you expect frequent, longer outages between sites and it is acceptable for you to have some data inconsistencies and a not 100% accurate single-use cache, but you never want end-users to see the errors and long timeouts, then switch to <code>WARN</code>.</p>
+</div>
+<div class="paragraph">
+<p>The difference between <code>WARN</code> and <code>IGNORE</code> is, that with <code>IGNORE</code> warnings are not written in the JDG log. See more details in the Infinispan documentation.</p>
+</div>
+<div class="paragraph">
+<div class="title">Lock acquisition timeout</div>
+<p>The default configuration is using transaction in NON_DURABLE_XA mode with acquire timeout 0. This means that transaction will fail-fast if there is another transaction in progress for the same key.</p>
+</div>
+<div class="paragraph">
+<p>The reason to switch this to 0 instead of default 10 seconds was to avoid possible deadlock issues. With Keycloak, it can happen that the same entity (typically session entity or loginFailure) is updated concurrently from both sites. This can cause deadlock under some circumstances, which will cause the transaction to be blocked for 10 seconds. See <a href="https://issues.jboss.org/browse/JDG-1318">this JIRA report</a> for details.</p>
+</div>
+<div class="paragraph">
+<p>With timeout 0, the transaction will immediately fail and then will be retried from Keycloak if backup <code>failure-policy</code> with the value <code>FAIL</code> is configured. As long as the second concurrent transaction is finished, the retry will usually be successful and the entity will have applied updates from both concurrent transactions.</p>
+</div>
+<div class="paragraph">
+<p>We see very good consistency and results for concurrent transaction with this configuration, and it is recommended to keep it.</p>
+</div>
+<div class="paragraph">
+<p>The only (non-functional) problem is the exception in the Infinispan log, which happens every time when the lock is not immediately available.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="backups"><a class="anchor" href="#backups"></a>3.4.16. SYNC or ASYNC backups</h4>
+<div class="paragraph">
+<p>An important part of the <code>backup</code> element is the <code>strategy</code> attribute. You must decide whether it needs to be <code>SYNC</code> or <code>ASYNC</code>. We have 7 caches which might be Cross-Datacenter Replication aware, and these can be configured in 3 different modes regarding cross-dc:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>SYNC backup</p>
+</li>
+<li>
+<p>ASYNC backup</p>
+</li>
+<li>
+<p>No backup at all</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>If the <code>SYNC</code> backup is used, then the backup is synchronous and operation is considered finished on the caller (Keycloak server) side once the backup is processed on the second site. This has worse performance than <code>ASYNC</code>, but on the other hand, you are sure that subsequent reads of the particular entity, such as user session, on <code>site2</code> will see the updates from <code>site1</code>. Also, it is needed if you want data consistency. As with <code>ASYNC</code> the caller is not notified at all if backup to the other site failed.</p>
+</div>
+<div class="paragraph">
+<p>For some caches, it is even possible to not backup at all and completely skip writing data to the Infinispan server. To set this up, do not use the <code>remote-store</code> element for the particular cache on the Keycloak side (file <code>KEYCLOAK_HOME/standalone/configuration/standalone-ha.xml</code>) and then the particular <code>replicated-cache</code> element is also not needed on the Infinispan side.</p>
+</div>
+<div class="paragraph">
+<p>By default, all 7 caches are configured with <code>SYNC</code> backup, which is the safest option. Here are a few things to consider:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If you are using active/passive mode (all Keycloak servers are in single site <code>site1</code> and the Infinispan server in <code>site2</code> is used purely as backup. More details [here](#modes)), then it is usually fine to use <code>ASYNC</code> strategy for all the caches to save the performance.</p>
+</li>
+<li>
+<p>The <code>work</code> cache is used mainly to send some messages, such as cache invalidation events, to the other site. It is also used to ensure that some special events, such as userStorage synchronizations, happen only on single site. It is recommended to keep this set to <code>SYNC</code>.</p>
+</li>
+<li>
+<p>The <code>actionTokens</code> cache is used as single-use cache to track that some tokens/tickets were used just once. For example <a href="#cache">Infinispan caches</a> or OAuth2 codes. It is possible to set this to <code>ASYNC</code> to slightly improved performance, but then it is not guaranteed that particular ticket is really single-use. For example, if there is concurrent request for same ticket in both sites, then it is possible that both requests will be successful with the <code>ASYNC</code> strategy. So what you set here will depend on whether you prefer better security (<code>SYNC</code> strategy) or better performance (<code>ASYNC</code> strategy).</p>
+</li>
+<li>
+<p>The <code>loginFailures</code> cache may be used in any of the 3 modes. If there is no backup at all, it means that count of login failures for a user will be counted separately for every site (See <a href="#cache">Infinispan caches</a> for details). This has some security implications, however it has some performance advantages. Also it mitigates the possible risk of denial of service (DoS) attacks. For example, if an attacker simulates 1000 concurrent requests using the username and password of the user on both sites, it will mean lots of messages being passed between the sites, which may result in network congestion. The <code>ASYNC</code> strategy might be even worse as the attacker requests won&#8217;t be blocked by waiting for the backup to the other site, resulting in potentially even more congested network traffic.
+The count of login failures also will not be accurate with the <code>ASYNC</code> strategy.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For the environments with slower network between data centers and probability of DoS, it is recommended to not backup the <code>loginFailures</code> cache at all.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>It is recommended to keep the <code>sessions</code> and <code>clientSessions</code> caches in <code>SYNC</code>. Switching them to <code>ASYNC</code> is possible only if you are sure that user requests and backchannel requests (requests from client applications to Keycloak as described in <a href="#requestprocessing">Request processing</a>) will be always processed on same site. This is true, for example, if:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>You use active/passive mode as described <a href="#modes">Modes</a>.</p>
+</li>
+<li>
+<p>All your client applications are using the Keycloak <a href="http://www.keycloak.org/docs/latest/securing_apps/index.html#_javascript_adapter">Javascript Adapter</a>. The Javascript adapter sends the backchannel requests within the browser and hence they participate on the browser sticky session and will end on same cluster node (hence on same site) as the other browser requests of this user.</p>
+</li>
+<li>
+<p>Your load balancer is able to serve the requests based on client IP address (location) and the client applications are deployed on both sites.</p>
+<div class="paragraph">
+<p>For example you have 2 sites LON and NYC. As long as your applications are deployed in both LON and NYC sites too, you can ensure that all the user requests from London users will be redirected to the applications in LON site and also to the Keycloak servers in LON site. Backchannel requests from the LON site client deployments will end on Keycloak servers in LON site too. On the other hand, for the American users, all the Keycloak requests, application requests and backchannel requests will be processed on NYC site.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>For <code>offlineSessions</code> and <code>offlineClientSessions</code> it is similar, with the difference that you even don&#8217;t need to backup them at all if you never plan to use offline tokens for any of your client applications.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Generally, if you are in doubt and performance is not a blocker for you, it&#8217;s safer to keep the caches in <code>SYNC</code> strategy.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Regarding the switch to SYNC/ASYNC backup, make sure that you edit the <code>strategy</code> attribute of the the <code>backup</code> element. For example like this:
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;backup</span> <span class="attribute-name">site</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">site2</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">failure-policy</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">FAIL</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">strategy</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ASYNC</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the <code>mode</code> attribute of cache-configuration element.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="troubleshooting"><a class="anchor" href="#troubleshooting"></a>3.4.17. Troubleshooting</h4>
+<div class="paragraph">
+<p>The following tips are intended to assist you should you need to troubleshoot:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>It is recommended to go through the <a href="#setup">Basic setup</a> and have this one working first, so that you have some understanding of how things work. It is also wise to read this entire document to have some understanding of things.</p>
+</li>
+<li>
+<p>Check in jconsole cluster status (GMS) and the JGroups status (RELAY) of Infinispan as described in <a href="#jdgsetup">Infinispan server setup</a>. If things do not look as expected, then the issue is likely in the setup of Infinispan servers.</p>
+</li>
+<li>
+<p>For the Keycloak servers, you should see a message like this during the server startup:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>18:09:30,156 INFO  [org.keycloak.connections.infinispan.DefaultInfinispanConnectionProviderFactory] (ServerService Thread Pool -- 54)
+Node name: node11, Site name: site1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check that the site name and the node name looks as expected during the startup of Keycloak server.</p>
+</div>
+</li>
+<li>
+<p>Check that Keycloak servers are in cluster as expected, including that only the Keycloak servers from the same data center are in cluster with each other.
+This can be also checked in JConsole through the GMS view. See <a href="http://www.keycloak.org/docs/3.4/server_installation/#troubleshooting">cluster troubleshooting</a> for additional details.</p>
+</li>
+<li>
+<p>If there are exceptions during startup of Keycloak server like this:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>17:33:58,605 ERROR [org.infinispan.client.hotrod.impl.operations.RetryOnFailureOperation] (ServerService Thread Pool -- 59) ISPN004007: Exception encountered. Retry 10 out of 10: org.infinispan.client.hotrod.exceptions.TransportException:: Could not fetch transport
+...
+Caused by: org.infinispan.client.hotrod.exceptions.TransportException:: Could not connect to server: 127.0.0.1:12232
+	at org.infinispan.client.hotrod.impl.transport.tcp.TcpTransport.&lt;init&gt;(TcpTransport.java:82)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>it usually means that Keycloak server is not able to reach the Infinispan server in his own datacenter. Make sure that firewall is set as expected and Infinispan server is possible to connect.</p>
+</div>
+</li>
+<li>
+<p>If there are exceptions during startup of Keycloak server like this:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>16:44:18,321 WARN  [org.infinispan.client.hotrod.impl.protocol.Codec21] (ServerService Thread Pool -- 57) ISPN004005: Error received from the server: javax.transaction.RollbackException: ARJUNA016053: Could not commit transaction.
+ ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>then check the log of corresponding Infinispan server of your site and check if has failed to backup to the other site. If the backup site is unavailable, then it is recommended to switch it offline, so that Infinispan server won&#8217;t try to backup to the offline site causing the operations to pass successfully on Keycloak server side as well. See <a href="#administration">Administration of Cross DC deployment</a> for more information.</p>
+</div>
+</li>
+<li>
+<p>Check the Infinispan statistics, which are available through JMX. For example, try to login and then see if the new session was successfully written to both Infinispan servers and is available in the <code>sessions</code> cache there. This can be done indirectly by checking the count of elements in the <code>sessions</code> cache for the MBean <code>jboss.datagrid-infinispan:type=Cache,name="sessions(repl_sync)",manager="clustered",component=Statistics</code> and attribute <code>numberOfEntries</code>. After login, there should be one more entry for <code>numberOfEntries</code> on both Infinispan servers on both sites.</p>
+</li>
+<li>
+<p>Enable DEBUG logging as described <a href="#serversetup">Keycloak servers setup</a>. For example, if you log in and you think that the new session is not available on the second site, it&#8217;s good to check the Keycloak server logs and check that listeners were triggered as described in the <a href="#serversetup">Keycloak servers setup</a>. If you do not know and want to ask on keycloak-user mailing list, it is helpful to send the log files from Keycloak servers on both datacenters in the email. Either add the log snippets to the mails or put the logs somewhere and reference them in the email.</p>
+</li>
+<li>
+<p>If you updated the entity, such as <code>user</code>, on Keycloak server on <code>site1</code> and you do not see that entity updated on the Keycloak server on <code>site2</code>, then the issue can be either in the replication of the synchronous database itself or that Keycloak caches are not properly invalidated. You may try to temporarily disable the Keycloak caches as described <a href="http://www.keycloak.org/docs/3.4/server_installation/#disabling-caching">here</a> to nail down if the issue is at the database replication level. Also it may help to manually connect to the database and check if data are updated as expected. This is specific to every database, so you will need to consult the documentation for your database.</p>
+</li>
+<li>
+<p>Sometimes you may see the exceptions related to locks like this in Infinispan log:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>(HotRodServerHandler-6-35) ISPN000136: Error executing command ReplaceCommand,
+writing keys [[B0x033E243034396234..[39]]: org.infinispan.util.concurrent.TimeoutException: ISPN000299: Unable to acquire lock after
+0 milliseconds for key [B0x033E243034396234..[39] and requestor GlobalTx:jdg1:4353. Lock is held by GlobalTx:jdg1:4352</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Those exceptions are not necessarily an issue. They may happen anytime when concurrent edit of same entity is triggered on both DCs. This can be the often case in a deployment. Usually the Keycloak server is notified about the failed operation and will retry it, so from the user&#8217;s point of view, there is usually not any issue.</p>
+</div>
+</li>
+<li>
+<p>If you try to authenticate with Keycloak to your application, but it failed with the infinite number
+of redirects in your browser and you see the errors like this in the Keycloak server log:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>2017-11-27 14:50:31,587 WARN  [org.keycloak.events] (default task-17) type=LOGIN_ERROR, realmId=master, clientId=null, userId=null, ipAddress=aa.bb.cc.dd, error=expired_code, restart_after_timeout=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>it probably means that your load balancer needs to be set to support sticky sessions. Make sure that the provided route name used during startup of Keycloak server (Property <code>jboss.node.name</code>) contains the correct name used by the load balancer server to identify the current server.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_manage_config"><a class="anchor" href="#_manage_config"></a>4. Manage Subsystem Configuration</h2>
+<h2 id="manage-subsystem-configuration"><a class="anchor" href="#manage-subsystem-configuration"></a>4. Manage Subsystem Configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Low-level configuration of Keycloak is done by editing the
@@ -1834,7 +2929,7 @@ are considered less mature. It is however possible to disable individual feature
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>bin/standalone.sh|bat -Dkeycloak.profile.feature.&lt;feature name&gt;=disabled</code></pre>
+<pre class="CodeRay highlight"><code>bin/standalone.sh|bat -Dkeycloak.profile.feature.&lt;feature name&gt;=enabled</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -3390,7 +4485,7 @@ $ bin/domain.sh --host-config=host-slave.xml</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="troubleshooting"><a class="anchor" href="#troubleshooting"></a>8.9. Troubleshooting</h3>
+<h3 id="troubleshooting-2"><a class="anchor" href="#troubleshooting-2"></a>8.9. Troubleshooting</h3>
 <div class="paragraph">
 <p>Note that when you run cluster, you should see message similar to this in the log of both cluster nodes:</p>
 </div>
@@ -3924,7 +5019,7 @@ This token can be used to make bearer token requests.             Header field n
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-11-08 15:22:31 UTC
+Last updated 2017-12-05 07:30:31 UTC
 </div>
 </div>
 <ul id="globalnav">
