@@ -1656,7 +1656,7 @@ own applications.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>keycloak-demo-3.4.1.Final.[zip|tar.gz]</strong></p>
+<p><strong>keycloak-demo-3.4.2.Final.[zip|tar.gz]</strong></p>
 </li>
 </ul>
 </div>
@@ -1669,7 +1669,7 @@ own applications.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>Or you can get them from <a href="https://github.com/keycloak/keycloak/tree/3.4.1.Final/examples/authz">GitHub</a>.</p>
+<p>Or you can get them from <a href="https://github.com/keycloak/keycloak/tree/3.4.2.Final/examples/authz">GitHub</a>.</p>
 </div>
 <div class="paragraph">
 <p>Each example has a <code>README</code> file with instructions about how to build, deploy, and test the example.</p>
@@ -1691,15 +1691,15 @@ own applications.</p>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/keycloak/keycloak/tree/3.4.1.Final/examples/authz/hello-world-authz-service">hello-world-authz-service</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/keycloak/keycloak/tree/3.4.2.Final/examples/authz/hello-world-authz-service">hello-world-authz-service</a></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">A single-page application that is protected by a policy enforcer that decides whether a user can access that page based on the permissions obtained from a Keycloak Server.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/keycloak/keycloak/tree/3.4.1.Final/examples/authz/photoz">photoz</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/keycloak/keycloak/tree/3.4.2.Final/examples/authz/photoz">photoz</a></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">A simple application based on HTML5+AngularJS+JAX-RS that demonstrates how to enable fine-grained permissions to RESTFul based services and HTML5 clients.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/keycloak/keycloak/tree/3.4.1.Final/examples/authz/servlet-authz">servlet-authz</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/keycloak/keycloak/tree/3.4.2.Final/examples/authz/servlet-authz">servlet-authz</a></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">A simple Servlet-based application that demonstrates how to enable fine-grained authorization to a JBoss/Wildfly Servlet Application.</p></td>
 </tr>
 </tbody>
@@ -2365,20 +2365,35 @@ obtained from the execution context:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>You can also use role-based access control (RBAC):</p>
+<p>You can also use Role-Based Access Control (RBAC) in your policies. In the example below, we check if an user is granted with a <code>keycloak_user</code> <strong>realm</strong> role:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="javascript"><span class="keyword">var</span> context = <span class="predefined">$evaluation</span>.getContext();
 <span class="keyword">var</span> identity = context.getIdentity();
 
-<span class="keyword">if</span> (identity.hasRole(<span class="string"><span class="delimiter">'</span><span class="content">keycloak_user</span><span class="delimiter">'</span></span>)) {
+<span class="keyword">if</span> (identity.hasRealmRole(<span class="string"><span class="delimiter">'</span><span class="content">keycloak_user</span><span class="delimiter">'</span></span>)) {
     <span class="predefined">$evaluation</span>.grant();
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Or a combination of several access control mechanisms:</p>
+<p>Or you can check if an user is granted with a <code>my-client-role</code> <strong>client</strong> role, where <code>my-client</code> is the client id of the client application:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="javascript"><span class="keyword">var</span> context = <span class="predefined">$evaluation</span>.getContext();
+<span class="keyword">var</span> identity = context.getIdentity();
+
+<span class="keyword">if</span> (identity.hasClientRole(<span class="string"><span class="delimiter">'</span><span class="content">my-client</span><span class="delimiter">'</span></span>, <span class="string"><span class="delimiter">'</span><span class="content">my-client-role</span><span class="delimiter">'</span></span>)) {
+    <span class="predefined">$evaluation</span>.grant();
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also use a combination of several access control mechanisms. The example below shows how roles(RBAC) and
+claims/attributes(ABAC) checks can be used within the same policy. In this case we check if user is granted with <code>admin</code> role
+or has an e-mail from <code>keycloak.org</code> domain:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -2387,13 +2402,22 @@ obtained from the execution context:</p>
 <span class="keyword">var</span> attributes = identity.getAttributes();
 <span class="keyword">var</span> email = attributes.getValue(<span class="string"><span class="delimiter">'</span><span class="content">email</span><span class="delimiter">'</span></span>).asString(<span class="integer">0</span>);
 
-<span class="keyword">if</span> (identity.hasRole(<span class="string"><span class="delimiter">'</span><span class="content">admin</span><span class="delimiter">'</span></span>) || email.endsWith(<span class="string"><span class="delimiter">'</span><span class="content">@keycloak.org</span><span class="delimiter">'</span></span>)) {
+<span class="keyword">if</span> (identity.hasRealmRole(<span class="string"><span class="delimiter">'</span><span class="content">admin</span><span class="delimiter">'</span></span>) || email.endsWith(<span class="string"><span class="delimiter">'</span><span class="content">@keycloak.org</span><span class="delimiter">'</span></span>)) {
     <span class="predefined">$evaluation</span>.grant();
 }</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>When writing your own rules, keep in mind that the <strong>$evaluation</strong> object is an object implementing <strong>org.keycloak.authorization.policy.evaluation.Evaluation</strong>. For more information about what you can access from this interface, see the <a href="#_policy_evaluation_api">Evaluation API</a>.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When writing your own rules, keep in mind that the <strong>$evaluation</strong> object is an object implementing <strong>org.keycloak.authorization.policy.evaluation.Evaluation</strong>. For more information about what you can access from this interface, see the <a href="#_policy_evaluation_api">Evaluation API</a>.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -4736,7 +4760,7 @@ It is strongly recommended that you enable TLS/HTTPS when accessing the Keycloak
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-12-08 12:19:59 UTC
+Last updated 2017-12-21 14:54:40 UTC
 </div>
 </div>
 <ul id="globalnav">

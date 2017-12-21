@@ -767,7 +767,8 @@ span.image img {
 </li>
 <li><a href="#sticky-sessions">8.4. Sticky sessions</a>
 <ul class="sectlevel3">
-<li><a href="#example-cluster-setup-with-mod_cluster">8.4.1. Example cluster setup with mod_cluster</a></li>
+<li><a href="#disable-adding-the-route">8.4.1. Disable adding the route</a></li>
+<li><a href="#_example-setup-with-mod-cluster">8.4.2. Example cluster setup with mod_cluster</a></li>
 </ul>
 </li>
 <li><a href="#multicast-network-setup">8.5. Multicast Network Setup</a></li>
@@ -894,27 +895,27 @@ system property on startup to <code>file:/dev/urandom</code>.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>'keycloak-3.4.1.Final.[zip|tar.gz]'</p>
+<p>'keycloak-3.4.2.Final.[zip|tar.gz]'</p>
 </li>
 <li>
-<p>'keycloak-overlay-3.4.1.Final.[zip|tar.gz]'</p>
+<p>'keycloak-overlay-3.4.2.Final.[zip|tar.gz]'</p>
 </li>
 <li>
-<p>'keycloak-demo-3.4.1.Final.[zip|tar.gz]'</p>
+<p>'keycloak-demo-3.4.2.Final.[zip|tar.gz]'</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-3.4.1.Final.[zip|tar.gz]' file is the server only distribution.  It contains nothing other than the scripts and binaries
+<p>The 'keycloak-3.4.2.Final.[zip|tar.gz]' file is the server only distribution.  It contains nothing other than the scripts and binaries
 to run the Keycloak Server.  To unpack this file just run your operating system&#8217;s <code>unzip</code> or <code>gunzip</code> and <code>tar</code> utilities.</p>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-overlay-3.4.1.Final.[zip|tar.gz]' file is a Wildfly add-on that allows you to install Keycloak Server on top of an existing
+<p>The 'keycloak-overlay-3.4.2.Final.[zip|tar.gz]' file is a Wildfly add-on that allows you to install Keycloak Server on top of an existing
 WildFly distribution.  We do not support users that want to run their applications and Keycloak on the same server instance.  To install the Keycloak Service Pack, just unzip it in the root directory
 of your WildFly distribution, open the bin directory in a shell and run <code>./jboss-cli.[sh|bat] --file=keycloak-install.cli</code>.</p>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-demo-3.4.1.Final.[zip|tar.gz]' contains the server binaries, all documentation and all examples.  It is preconfigured with both the
+<p>The 'keycloak-demo-3.4.2.Final.[zip|tar.gz]' contains the server binaries, all documentation and all examples.  It is preconfigured with both the
 OIDC and SAML client application adapters and can deploy any of the distribution examples out of the box with no configuration.  This distribution is only
 recommended for those that want to test drive Keycloak.  We do not support users that run the demo distribution in production.</p>
 </div>
@@ -1847,8 +1848,8 @@ Details about the configuration options inside <code>replicated-cache-configurat
 <div class="content">
 <pre class="CodeRay highlight"><code>cd JDG1_HOME/bin
 ./standalone.sh -c clustered.xml -Djava.net.preferIPv4Stack=true \
--Djboss.default.multicast.address=234.56.78.99 \
--Djboss.node.name=jdg1</code></pre>
+  -Djboss.default.multicast.address=234.56.78.99 \
+  -Djboss.node.name=jdg1 -b <em>PUBLIC_IP_ADDRESS</em></code></pre>
 </div>
 </div>
 </li>
@@ -1858,8 +1859,8 @@ Details about the configuration options inside <code>replicated-cache-configurat
 <div class="content">
 <pre class="CodeRay highlight"><code>cd JDG2_HOME/bin
 ./standalone.sh -c clustered.xml -Djava.net.preferIPv4Stack=true \
--Djboss.default.multicast.address=234.56.78.100 \
--Djboss.node.name=jdg2</code></pre>
+  -Djboss.default.multicast.address=234.56.78.100 \
+  -Djboss.node.name=jdg2 -b <em>PUBLIC_IP_ADDRESS</em></code></pre>
 </div>
 </div>
 </li>
@@ -2057,18 +2058,20 @@ In production, you can have more Infinispan servers in every data center. You ju
 <div class="content">
 <pre class="CodeRay highlight"><code>cd NODE11/bin
 ./standalone.sh -c standalone-ha.xml -Djboss.node.name=node11 -Djboss.site.name=site1 \
--Djboss.default.multicast.address=234.56.78.1 -Dremote.cache.host=jdg1 -Djava.net.preferIPv4Stack=true</code></pre>
+  -Djboss.default.multicast.address=234.56.78.1 -Dremote.cache.host=jdg1 \
+  -Djava.net.preferIPv4Stack=true -b <em>PUBLIC_IP_ADDRESS</em></code></pre>
 </div>
 </div>
 </li>
 <li>
 <p>Start <code>NODE12</code> :</p>
-<div class="paragraph">
-<p><code><code>`
-cd NODE12/bin
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>cd NODE12/bin
 ./standalone.sh -c standalone-ha.xml -Djboss.node.name=node12 -Djboss.site.name=site1 \
--Djboss.default.multicast.address=234.56.78.1 -Dremote.cache.host=jdg1 -Djava.net.preferIPv4Stack=true
-</code>`</code></p>
+  -Djboss.default.multicast.address=234.56.78.1 -Dremote.cache.host=jdg1 \
+  -Djava.net.preferIPv4Stack=true -b <em>PUBLIC_IP_ADDRESS</em></code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>The cluster nodes should be connected. Something like this should be in the log of both NODE11 and NODE12:</p>
@@ -2097,7 +2100,8 @@ The channel name in the log might be different.
 <div class="content">
 <pre class="CodeRay highlight"><code>cd NODE21/bin
 ./standalone.sh -c standalone-ha.xml -Djboss.node.name=node21 -Djboss.site.name=site2 \
--Djboss.default.multicast.address=234.56.78.2 -Dremote.cache.host=jdg2 -Djava.net.preferIPv4Stack=true</code></pre>
+  -Djboss.default.multicast.address=234.56.78.2 -Dremote.cache.host=jdg2 \
+  -Djava.net.preferIPv4Stack=true -b <em>PUBLIC_IP_ADDRESS</em></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -2115,7 +2119,8 @@ The channel name in the log might be different.
 <div class="content">
 <pre class="CodeRay highlight"><code>cd NODE22/bin
 ./standalone.sh -c standalone-ha.xml -Djboss.node.name=node22 -Djboss.site.name=site2 \
--Djboss.default.multicast.address=234.56.78.2 -Dremote.cache.host=jdg2 -Djava.net.preferIPv4Stack=true</code></pre>
+  -Djboss.default.multicast.address=234.56.78.2 -Dremote.cache.host=jdg2 \
+  -Djava.net.preferIPv4Stack=true -b <em>PUBLIC_IP_ADDRESS</em></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -3675,11 +3680,11 @@ the keystore and enable HTTPS.  (See <a href="#_operating-mode">operating mode</
 </div>
 </div>
 <div class="paragraph">
-<p>Find the element <code>server name="default-server"</code> (it&#8217;s a child element of <code>subsystem xmlns="urn:jboss:domain:undertow:3.1"</code>) and add:</p>
+<p>Find the element <code>server name="default-server"</code> (it&#8217;s a child element of <code>subsystem xmlns="urn:jboss:domain:undertow:4.0"</code>) and add:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:3.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:4.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
    <span class="tag">&lt;buffer-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
    <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
       <span class="tag">&lt;https-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">security-realm</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">UndertowRealm</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
@@ -3980,12 +3985,12 @@ any black or white listing of IP addresses.</p>
 If your proxy is forwarding requests via the HTTP protocol, then you need to configure Keycloak to pull the client&#8217;s
 IP address from the <code>X-Forwarded-For</code> header rather than from the network packet.
 To do this, open up the profile configuration file (<em>standalone.xml</em>, <em>standalone-ha.xml</em>, or <em>domain.xml</em> depending on your
-<a href="#_operating-mode">operating mode</a>) and look for the <code>urn:jboss:domain:undertow:3.1</code> XML block.</p>
+<a href="#_operating-mode">operating mode</a>) and look for the <code>urn:jboss:domain:undertow:4.0</code> XML block.</p>
 </div>
 <div class="listingblock">
 <div class="title"><code>X-Forwarded-For</code> HTTP Config</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:3.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:4.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
    <span class="tag">&lt;buffer-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
    <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
       <span class="tag">&lt;ajp-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ajp</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ajp</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
@@ -4008,7 +4013,7 @@ pull this information from the AJP packets.</p>
 <div class="listingblock">
 <div class="title"><code>X-Forwarded-For</code> AJP Config</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:3.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:4.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
      <span class="tag">&lt;buffer-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
      <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
          <span class="tag">&lt;ajp-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ajp</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ajp</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
@@ -4036,7 +4041,7 @@ pull this information from the AJP packets.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:3.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:4.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
     ...
     <span class="tag">&lt;http-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">http</span><span class="delimiter">&quot;</span></span>
         <span class="attribute-name">proxy-address-forwarding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">redirect-socket</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">proxy-https</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
@@ -4120,7 +4125,7 @@ file and go to the undertow configuration in the <code>load-balancer</code> prof
 <div class="listingblock">
 <div class="title">domain.xml reverse-proxy config</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:3.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:4.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
   ...
   <span class="tag">&lt;handlers&gt;</span>
       <span class="tag">&lt;reverse-proxy</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">lb-handler</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
@@ -4255,13 +4260,44 @@ and hence Infinispan can lookup this session locally. After authentication is fi
 over the <code>AUTH_SESSION_ID</code> cookie. How exactly do this is dependent on your loadbalancer.</p>
 </div>
 <div class="paragraph">
-<p>Some loadbalancers can be configured to add the route information by themselves instead of rely on the backend Keycloak node. However adding the route by
-the Keycloak is more clever as Keycloak knows, who is the owner of particular session entity and can route it to that node, which is not necessarily the local node.
-We plan to support the setup where the route info won&#8217;t be added to AUTH_SESSION_ID cookie by the Keycloak server, but instead by the load balancer. However
-adding the cookie by Keycloak would be still the preferred option.</p>
+<p>It is recommended on the Keycloak side to use the system property <code>jboss.node.name</code> during startup, with the value corresponding
+to the name of your route. For example, <code>-Djboss.node.name=node1</code> will use <code>node1</code> to identify the route. This route will be used by
+Infinispan caches and will be attached to the AUTH_SESSION_ID cookie when the node is the owner of the particular key. An example of the
+start up command with this system property can be seen in <a href="#_example-setup-with-mod-cluster">Mod Cluster Example</a>.</p>
+</div>
+<div class="paragraph">
+<p>Typically, the route name be the same name as your backend host, but it is not necessary. You can use a different route name,
+for example if you want to hide the host name of your Keycloak server inside your private network.</p>
 </div>
 <div class="sect3">
-<h4 id="example-cluster-setup-with-mod_cluster"><a class="anchor" href="#example-cluster-setup-with-mod_cluster"></a>8.4.1. Example cluster setup with mod_cluster</h4>
+<h4 id="disable-adding-the-route"><a class="anchor" href="#disable-adding-the-route"></a>8.4.1. Disable adding the route</h4>
+<div class="paragraph">
+<p>Some load balancers can be configured to add the route information by themselves instead of relying on the back end Keycloak node.
+However, as described above, adding the route by the Keycloak is recommended. This is because when done this way performance improves,
+since Keycloak is aware of the entity that is the owner of particular session and can route to that node, which is not necessarily the local node.</p>
+</div>
+<div class="paragraph">
+<p>You are permitted to disable adding route information to the AUTH_SESSION_ID cookie by Keycloak, if you prefer, by adding the following
+into your <code>RHSSO_HOME/standalone/configuration/standalone-ha.xml</code> file in the Keycloak subsystem configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:keycloak-server:1.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+  ...
+    <span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">stickySessionEncoder</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">infinispan</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+            <span class="tag">&lt;properties&gt;</span>
+                <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">shouldAttachRoute</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+            <span class="tag">&lt;/properties&gt;</span>
+        <span class="tag">&lt;/provider&gt;</span>
+    <span class="tag">&lt;/spi&gt;</span>
+
+<span class="tag">&lt;/subsystem&gt;</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_example-setup-with-mod-cluster"><a class="anchor" href="#_example-setup-with-mod-cluster"></a>8.4.2. Example cluster setup with mod_cluster</h4>
 <div class="paragraph">
 <p>In the example, we will use <a href="http://mod-cluster.jboss.org/">Mod Cluster</a> as load balancer. One of the key features of mod cluster is, that there is not much
 configuration on the load balancer side. Instead it requires support on the backend node side. Backend nodes communicate with the load balancer through the
@@ -4482,6 +4518,10 @@ depends on your <a href="#_operating-mode">operating mode</a>.</p>
 <pre class="CodeRay highlight"><code>$ bin/domain.sh --host-config=host-master.xml
 $ bin/domain.sh --host-config=host-slave.xml</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>You may need to use additional parameters or system properties. For example, the parameter <code>-b</code> for the binding host or the system property
+<code>jboss.node.name</code> to specify the name of the route, as described in <a href="#sticky-sessions">Sticky Sessions</a> section.</p>
 </div>
 </div>
 <div class="sect2">
@@ -5019,7 +5059,7 @@ This token can be used to make bearer token requests.             Header field n
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-12-08 12:20:00 UTC
+Last updated 2017-12-21 14:54:40 UTC
 </div>
 </div>
 <ul id="globalnav">
