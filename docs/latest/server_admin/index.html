@@ -790,7 +790,8 @@ span.image img {
 <ul class="sectlevel2">
 <li><a href="#oidc-clients">8.1. OIDC Clients</a>
 <ul class="sectlevel3">
-<li><a href="#_client-credentials">8.1.1. Confidential Client Credentials</a></li>
+<li><a href="#advanced-settings">8.1.1. Advanced Settings</a></li>
+<li><a href="#_client-credentials">8.1.2. Confidential Client Credentials</a></li>
 </ul>
 </li>
 <li><a href="#_service_accounts">8.2. Service Accounts</a></li>
@@ -803,7 +804,16 @@ span.image img {
 <li><a href="#client-links">8.4. Client Links</a></li>
 <li><a href="#_protocol-mappers">8.5. OIDC Token and SAML Assertion Mappings</a></li>
 <li><a href="#generating-client-adapter-config">8.6. Generating Client Adapter Config</a></li>
-<li><a href="#_client_templates">8.7. Client Templates</a></li>
+<li><a href="#_client_scopes">8.7. Client Scopes</a>
+<ul class="sectlevel3">
+<li><a href="#protocol">8.7.1. Protocol</a></li>
+<li><a href="#consent-related-settings">8.7.2. Consent related settings</a></li>
+<li><a href="#_client_scopes_linking">8.7.3. Link Client Scope with the Client</a></li>
+<li><a href="#evaluating-client-scopes">8.7.4. Evaluating Client Scopes</a></li>
+<li><a href="#realm-default-client-scopes">8.7.5. Realm Default Client Scopes</a></li>
+<li><a href="#scopes-explained">8.7.6. Scopes explained</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#roles">9. Roles</a>
@@ -813,10 +823,10 @@ span.image img {
 <li><a href="#_composite-roles">9.3. Composite Roles</a></li>
 <li><a href="#user-role-mappings">9.4. User Role Mappings</a>
 <ul class="sectlevel3">
-<li><a href="#default-roles">9.4.1. Default Roles</a></li>
+<li><a href="#_default_roles">9.4.1. Default Roles</a></li>
 </ul>
 </li>
-<li><a href="#_client_scope">9.5. Client Scope</a></li>
+<li><a href="#_role_scope_mappings">9.5. Role Scope Mappings</a></li>
 </ul>
 </li>
 <li><a href="#groups">10. Groups</a>
@@ -868,7 +878,7 @@ span.image img {
 <li><a href="#google">12.4.5. Google</a></li>
 <li><a href="#linkedin">12.4.6. LinkedIn</a></li>
 <li><a href="#microsoft">12.4.7. Microsoft</a></li>
-<li><a href="#openshift">12.4.8. Openshift</a></li>
+<li><a href="#openshift">12.4.8. OpenShift</a></li>
 <li><a href="#paypal">12.4.9. PayPal</a></li>
 <li><a href="#stackoverflow">12.4.10. StackOverflow</a></li>
 <li><a href="#twitter">12.4.11. Twitter</a></li>
@@ -1187,10 +1197,11 @@ has a number of adapters for different platforms that you can download.  There a
 After a user provides their credentials, Keycloak will pop up a screen identifying the client requesting a login and what identity
 information is requested of the user.  User can decide whether or not to grant the request.</p>
 </dd>
-<dt class="hdlist1">client templates</dt>
+<dt class="hdlist1">client scopes</dt>
 <dd>
-<p>When a client is registered you need to enter configuration information about that client.  It is often useful to store a template
-to make create new clients easier.  Keycloak provides the concept of a client template for this.</p>
+<p>When a client is registered, you must define protocol mappers and role scope mappings for that client. It is often useful to store
+a client scope, to make creating new clients easier by sharing some common settings. This is also useful for requesting some
+claims or roles to be conditionally based on the value of <code>scope</code> parameter. Keycloak provides the concept of a client scope for this.</p>
 </dd>
 <dt class="hdlist1">client role</dt>
 <dd>
@@ -1551,7 +1562,7 @@ item and click the <code>Email</code> tab.</p>
 </dd>
 <dt class="hdlist1">From Display Name</dt>
 <dd>
-<p><code>From Display Name</code> allows to configure an user friendly email address aliases (optional). If not set the plain <code>From</code> email address will be displayed in email clients.</p>
+<p><code>From Display Name</code> allows to configure a user friendly email address aliases (optional). If not set the plain <code>From</code> email address will be displayed in email clients.</p>
 </dd>
 <dt class="hdlist1">Reply To</dt>
 <dd>
@@ -1559,7 +1570,7 @@ item and click the <code>Email</code> tab.</p>
 </dd>
 <dt class="hdlist1">Reply To Display Name</dt>
 <dd>
-<p><code>Reply To Display Name</code> allows to configure an user friendly email address aliases (optional). If not set the plain <code>Reply To</code> email address will be displayed.</p>
+<p><code>Reply To Display Name</code> allows to configure a user friendly email address aliases (optional). If not set the plain <code>Reply To</code> email address will be displayed.</p>
 </dd>
 <dt class="hdlist1">Envelope From</dt>
 <dd>
@@ -2576,7 +2587,7 @@ ktadd -k /tmp/http.keytab HTTP/www.mydomain.org@MYDOMAIN.ORG</code></pre>
 <div class="paragraph">
 <p>You need to install a kerberos client on your machine.  This is also platform dependent.
 If you are on Fedora, Ubuntu or RHEL, you can install the package <code>freeipa-client</code>, which contains a Kerberos client and several other utilities.
-Configure the kerberos client (on linux it&#8217;s in file <code>/etc/krb5.conf</code> ). You need to put your Kerberos realm and at least configure the HTTP domains your server will be running on.
+Configure the kerberos client (on Linux it&#8217;s in file <code>/etc/krb5.conf</code> ). You need to put your Kerberos realm and at least configure the HTTP domains your server will be running on.
 For the example realm MYDOMAIN.ORG you may configure the <code>domain_realm</code> section like this:</p>
 </div>
 <div class="listingblock">
@@ -2916,13 +2927,13 @@ Please notice that if we disable <code>Login with email</code> at realm settings
 <div class="sect3">
 <h4 id="enable-x-509-client-certificate-user-authentication"><a class="anchor" href="#enable-x-509-client-certificate-user-authentication"></a>6.6.2. Enable X.509 Client Certificate User Authentication</h4>
 <div class="paragraph">
-<p>The following sections describe how to configure Wildfly/Undertow and the Keycloak Server to enable X.509 client certificate authentication.</p>
+<p>The following sections describe how to configure WildFly/Undertow and the Keycloak Server to enable X.509 client certificate authentication.</p>
 </div>
-<div class="dlist">
+<div id="_enable-mtls-wildfly" class="dlist">
 <dl>
 <dt class="hdlist1">Enable mutual SSL in WildFly</dt>
 <dd>
-<p>See <a href="https://docs.jboss.org/author/display/WFLY10/Admin+Guide#AdminGuide-EnableSSL">Enable SSL</a> and <a href="https://docs.jboss.org/author/display/WFLY10/Admin+Guide#AdminGuide-%7B%7B%3Cssl%2F%3E%7D%7D">SSL</a> for the instructions how to enable SSL in Wildfly.</p>
+<p>See <a href="https://docs.jboss.org/author/display/WFLY10/Admin+Guide#AdminGuide-EnableSSL">Enable SSL</a> and <a href="https://docs.jboss.org/author/display/WFLY10/Admin+Guide#AdminGuide-%7B%7B%3Cssl%2F%3E%7D%7D">SSL</a> for the instructions how to enable SSL in WildFly.</p>
 <div class="ulist">
 <ul>
 <li>
@@ -2997,7 +3008,7 @@ Please notice that if we disable <code>Login with email</code> at realm settings
 </dd>
 <dt class="hdlist1">Enable https listener</dt>
 <dd>
-<p>See <a href="https://docs.jboss.org/author/display/WFLY10/Admin+Guide#AdminGuide-HTTPSlistener">HTTPS Listener</a> for the instructions how to enable HTTPS in Wildfly.</p>
+<p>See <a href="https://docs.jboss.org/author/display/WFLY10/Admin+Guide#AdminGuide-HTTPSlistener">HTTPS Listener</a> for the instructions how to enable HTTPS in WildFly.</p>
 <div class="ulist">
 <ul>
 <li>
@@ -3045,7 +3056,7 @@ Please notice that if we disable <code>Login with email</code> at realm settings
 <p>Make a copy of the built-in "Browser" flow. You may want to give the new flow a distinctive name, i.e. "X.509 Browser"</p>
 </li>
 <li>
-<p>Using the drop down, select the copied flow, and click on "Add Execution"</p>
+<p>Using the drop down, select the copied flow, and click on "Add execution"</p>
 </li>
 <li>
 <p>Select "X509/Validate User Form" using the drop down and click on "Save"</p>
@@ -3143,10 +3154,10 @@ Please notice that if we disable <code>Login with email</code> at realm settings
 <p>Make a copy of the build-in "Direct Grant" flow. You may want to give the new flow a distinctive name, i.e. "X509 Direct Grant",</p>
 </li>
 <li>
-<p>Delete "Validate Username" and "Password" authenticators,</p>
+<p>Delete "Username Validation" and "Password" authenticators,</p>
 </li>
 <li>
-<p>Click on "Execution" and add "X509/Validate Username" and click on "Save" to add the execution step to the parent flow.</p>
+<p>Click on "Add execution" and add "X509/Validate Username" and click on "Save" to add the execution step to the parent flow.</p>
 </li>
 </ul>
 </div>
@@ -3477,7 +3488,7 @@ that works by exchanging XML documents between the authentication server and the
 is used to verify requests and responses.</p>
 </div>
 <div class="paragraph">
-<p>There is really two types of use cases when using SAML.  The first is an application that asks the Keycloak server to authenticate
+<p>There are really two types of use cases when using SAML.  The first is an application that asks the Keycloak server to authenticate
 a user for them.  After a successful login, the application will receive an XML document that contains
 something called a SAML assertion that specify various attributes about the user.  This XML document is digitally signed by
 the realm and contains access information (like user role mappings) that the application can use to determine what resources the user
@@ -3706,8 +3717,6 @@ and work best with HTML5/JavaScript applications.</p>
 <p>Enter in the <code>Client ID</code> of the client.  This should be a simple
 alpha-numeric string that will be used in requests and in the Keycloak database to identify the client.
 Next select <code>openid-connect</code> in the <code>Client Protocol</code> drop down box.
-Ignore the <code>Client Template</code> listbox for now,
-we&#8217;ll go over that later in this chapter.
 Finally enter in the base URL of your
 application in the <code>Root URL</code> field and click <code>Save</code>.  This will create the client and bring you to the client <code>Settings</code>
 tab.</p>
@@ -3851,7 +3860,62 @@ See <a href="https://www.keycloak.org/docs/4.0/securing_apps/">Securing Applicat
 Remember that you still have to click the <code>Save</code> button!</p>
 </div>
 <div class="sect3">
-<h4 id="_client-credentials"><a class="anchor" href="#_client-credentials"></a>8.1.1. Confidential Client Credentials</h4>
+<h4 id="advanced-settings"><a class="anchor" href="#advanced-settings"></a>8.1.1. Advanced Settings</h4>
+<div id="_mtls-client-certificate-bound-tokens" class="paragraph">
+<p><strong>OAuth 2.0 Mutual TLS Client Certificate Bound Access Token</strong></p>
+</div>
+<div class="paragraph">
+<p>Mutual TLS binds an access token and a refresh token with a client certificate exchanged during TLS handshake. This prevents an attacker who finds a way to steal these tokens from exercising the tokens. The type of token is called a holder-of-key token. Unlike bearer tokens, the recipient of a holder-of-key token can verify whether the sender of the token is legitimate.</p>
+</div>
+<div class="paragraph">
+<p>If the following conditions are satisfied on a token request, Keycloak will bind an access token and a refresh token with a client certificate and issue them as holder-of-key tokens. If all conditions are not met, Keycloak rejects the token request.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The feature is turned on</p>
+</li>
+<li>
+<p>A token request is sent to the token endpoint in an authorization code flow or a hybrid flow</p>
+</li>
+<li>
+<p>On TLS handshake, Keycloak requests a client certificate and a client send its client certificate</p>
+</li>
+<li>
+<p>On TLS handshake, Keycloak successfully verifies the client certificate</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To enable mutual TLS in Keycloak, see <a href="#_enable-mtls-wildfly">Enable mutual SSL in WildFly</a>.</p>
+</div>
+<div class="paragraph">
+<p>In the following cases, Keycloak will verify the client sending the access token or the refresh token; if verification fails, Keycloak rejects the token.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A token refresh request is sent to the token endpoint with a holder-of-key refresh token</p>
+</li>
+<li>
+<p>A UserInfo request is sent to UserInfo endpoint with a holder-of-key access token</p>
+</li>
+<li>
+<p>A logout request is sent to Logout endpoint with a holder-of-key refresh token</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Please see <a href="https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-3">Mutual TLS Client Certificate Bound Access Tokens</a> in the OAuth 2.0 Mutual TLS Client Authentication and Certificate Bound Access Tokens for more details.</p>
+</div>
+<div class="paragraph">
+<p>WARNING:
+None of the keycloak client adapters currently support holder-of-key token verification.
+Instead, keycloak adapters currently treat access and refresh tokens as bearer tokens.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_client-credentials"><a class="anchor" href="#_client-credentials"></a>8.1.2. Confidential Client Credentials</h4>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/clients/oidc/confidential.adoc" target="_blank">Edit this section</a>
@@ -3955,7 +4019,18 @@ configured your <a href="#_client-credentials">client credentials</a>.</p>
 <div class="paragraph">
 <p>To use it you must have registered a valid <code>confidential</code> Client and you need to check the switch <code>Service Accounts Enabled</code> in Keycloak admin console for this client.
 In tab <code>Service Account Roles</code> you can configure the roles available to the service account retrieved on behalf of this client.
-Don&#8217;t forget that you need those roles to be available in Scopes of this client as well (unless you have <code>Full Scope Allowed</code> on). As in normal login, roles from access token are the intersection of scopes and the service account roles.</p>
+Remember that you must have the roles available in Role Scope Mappings (tab <code>Scope</code>) of this client as well, unless you
+have <code>Full Scope Allowed</code> on. As in a normal login, roles from access token are the intersection of:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Role scope mappings of particular client combined with the role scope mappings inherited from linked client scopes</p>
+</li>
+<li>
+<p>Service account roles</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>The REST URL to invoke on is <code>/auth/realms/{realm-name}/protocol/openid-connect/token</code>.
@@ -4031,8 +4106,6 @@ You can choose to require client signature validation and can have the server si
 <div class="paragraph">
 <p>Enter in the <code>Client ID</code> of the client.  This is often a URL and will be the expected <code>issuer</code> value in SAML requests sent
 by the application.  Next select <code>saml</code> in the <code>Client Protocol</code> drop down box.
-Ignore the <code>Client Template</code> listbox for now,
-we&#8217;ll go over that later in this chapter.
 Finally enter in the <code>Client SAML Endpoint</code> URL.  Enter the
 URL you want the Keycloak server to send SAML requests and responses to.  Usually applications have only one URL for processing SAML requests.
 If your application has different URLs for its bindings, don&#8217;t worry, you can fix this in the <code>Settings</code> tab of the client.
@@ -4325,7 +4398,8 @@ an OIDC based client.</p>
 <p><span class="image"><img src="./keycloak-images/mappers-oidc.png" alt="mappers oidc"></span></p>
 </div>
 <div class="paragraph">
-<p>Each client has several built-in mappers that are created for it by default.  They map things like, for example, email address to
+<p>The new client does not have any built-in mappers, however it usually inherits some mappers from the client scopes as described
+in the <a href="#_client_scopes">client scopes section</a>. Protocol mappers map things like, for example, email address to
 a specific claim in the identity and access token.  Their function should each be self explanatory from their name.  There
 are additional pre-configured mappers that are not attached to the client that you can add
 by clicking the <code>Add Builtin</code> button.</p>
@@ -4339,23 +4413,7 @@ next to one of the mappers in the list to get to the config screen.</p>
 <p><span class="image"><img src="./keycloak-images/mapper-config.png" alt="mapper config"></span></p>
 </div>
 <div class="paragraph">
-<p>The best way to learn about a config option is to hover over its tooltip.  There are a few config options that
-are common to all mappers:</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Consent Required</dt>
-<dd>
-<p>If your client requires consent, this mapper will be displayed on the consent screen shown to the user.</p>
-</dd>
-<dt class="hdlist1">Consent Text</dt>
-<dd>
-<p>If your client requires consent and the <code>Consent</code> switch is on, this is the text that will be displayed by the user.
-The value for this text is localizable by specifying a substitution variable with <code>${var-name}</code> strings.  The
-localized value is then configured within property files in your theme.  See the <a href="https://www.keycloak.org/docs/4.0/server_development/">Server Developer Guide</a>
-for more information on localization.</p>
-</dd>
-</dl>
+<p>The best way to learn about a config option is to hover over its tooltip.</p>
 </div>
 <div class="paragraph">
 <p>Most OIDC mappers also allow you to control where the claim gets put.  You can opt to include or exclude the claim from both the
@@ -4395,33 +4453,247 @@ are supported.  The mod-auth-mellon Apache HTTPD adapter for SAML is supported a
 </div>
 </div>
 <div class="sect2">
-<h3 id="_client_templates"><a class="anchor" href="#_client_templates"></a>8.7. Client Templates</h3>
+<h3 id="_client_scopes"><a class="anchor" href="#_client_scopes"></a>8.7. Client Scopes</h3>
 <div class="sidebarblock page-links">
 <div class="content">
-<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/clients/client-templates.adoc" target="_blank">Edit this section</a>
-<a href="https://issues.jboss.org/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/clients/client-templates.adoc" target="_blank">Report an issue</a>
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/clients/client-scopes.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.jboss.org/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/clients/client-scopes.adoc" target="_blank">Report an issue</a>
 </div>
 </div>
 <div class="paragraph">
-<p>If you have a lot of applications you need to secure and register within your organization it can become quite tedious
-to configure the <a href="#_protocol-mappers">protocol mappers</a>
-and <a href="#_client_scope">scope</a> for each of these clients.  Keycloak allows you to define shared client configuration in an entity called a <em>client template</em>.</p>
+<p>If you have many applications you need to secure and register within your organization, it can become tedious to configure the
+<a href="#_protocol-mappers">protocol mappers</a> and <a href="#_role_scope_mappings">role scope mappings</a> for each of these clients. Keycloak allows
+you to define a shared client configuration in an entity called a <em>client scope</em>.</p>
 </div>
 <div class="paragraph">
-<p>To create a client template, go to the <code>Client Templates</code> left menu item.  This initial screen shows you a list of currently defined templates.</p>
+<p>Client scopes also provide support for the OAuth 2 <code>scope</code> parameter, which allows a client application to request more or fewer
+claims or roles in the access token, according to the application needs.</p>
 </div>
 <div class="paragraph">
-<p>To create a template click the <code>Create</code> button.  This brings you to a simple screen in which you name the template and hit save.
-A <em>client template</em> will have similar tabs to regular clients.  You&#8217;ll be able to define <a href="#_protocol-mappers">protocol mappers</a>
-and <a href="#_client_scope">scope</a> which can be inherited by other clients.</p>
+<p>To create a client scope, follow these steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Go to the <code>Client Scopes</code> left menu item. This initial screen shows you a list of currently defined client scopes.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>Having a client inherit from a template is as simple as choosing the template from the <code>Client Template</code> drop down list on either the
-<code>Add Client</code> or client <code>Settings</code> tab.  You will see the <code>Mappers</code> and <code>Scope</code> tabs get additional switches which allow you
-to turn on or off inheriting from the parent template.</p>
+<div class="title">Client Scopes List</div>
+<p><span class="image"><img src="./keycloak-images/client-scopes-list.png" alt="client scopes list"></span></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Click the <code>Create</code> button. Name the client scope and save. A <em>client scope</em> will have similar tabs to a regular clients. You can
+define <a href="#_protocol-mappers">protocol mappers</a> and <a href="#_role_scope_mappings">role scope mappings</a>, which can be inherited by other clients,
+and which are configured to inherit from this client scope.</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="protocol"><a class="anchor" href="#protocol"></a>8.7.1. Protocol</h4>
+<div class="paragraph">
+<p>When you are creating the client scope, you must choose the <code>Protocol</code>. Only the clients which use same protocol can then be linked
+with this client scope.</p>
 </div>
 <div class="paragraph">
-<p>Future versions of client templating may get more inheritable configuration options, but for now, that&#8217;s all there is to talk about.</p>
+<p>Once you have created new realm, you can see that there is a list of pre-defined (builtin) client scopes in the menu.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>For the SAML protocol, there is one builtin client scope, <code>roles_list</code>, which contains one protocol mapper for showing the roles
+list in the SAML assertion.</p>
+</li>
+<li>
+<p>For the OpenID Connect protocol, there are client scopes <code>profile</code>, <code>email</code>, <code>address</code>, <code>phone</code> and <code>offline_access</code> .</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The client scope, <code>offline_access</code>, is useful when client wants to obtain offline tokens. Learn about offline tokens in the
+<a href="#_offline-access">Offline Access section</a> or in the <a href="http://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess">OpenID Connect specification</a>,
+where scope parameter is defined with the value <code>offline_access</code>.</p>
+</div>
+<div class="paragraph">
+<p>The client scopes <code>profile</code>, <code>email</code>, <code>address</code> and <code>phone</code> are also defined in the <a href="http://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims">OpenID Connect specification</a>.
+These client scopes do not have any role scope mappings defined, but they have some protocol mappers defined, and these mappers correspond
+to the claims defined in the OpenID Connect specification.</p>
+</div>
+<div class="paragraph">
+<p>For example, when you click to open the <code>phone</code> client scope and open the <code>Mappers</code> tab, you will see the protocol mappers, which
+correspond to the claims defined in the specification for the scope <code>phone</code>.</p>
+</div>
+<div class="paragraph">
+<div class="title">Client Scope Mappers</div>
+<p><span class="image"><img src="./keycloak-images/client-scopes-phone.png" alt="client scopes phone"></span></p>
+</div>
+<div class="paragraph">
+<p>When the <code>phone</code> client scope is linked to a client, that client automatically inherits all the protocol mappers defined in the
+<code>phone</code> client scope. Access tokens issued for this client will contain the phone number information about the user, assuming that
+the user has a defined phone number.</p>
+</div>
+<div class="paragraph">
+<p>Builtin client scopes contain exactly the protocol mappers as defined per the specification,
+however you are free to edit client scopes and create/update/remove any protocol mappers (or role scope mappings).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="consent-related-settings"><a class="anchor" href="#consent-related-settings"></a>8.7.2. Consent related settings</h4>
+<div class="paragraph">
+<p>Client scope contains options related to the consent screen. Those options are useful only if the linked client is configured to
+require consent (if the <code>Consent Required</code> switch is enabled on the client).</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Display On Consent Screen</dt>
+<dd>
+<p>If on, and if this client scope is added to a client with consent required, then the text specified by <code>Consent Screen Text</code> will
+be displayed on the consent screen, which is shown once the user is authenticated and right before he is redirected from Keycloak
+to the client. If the switch is off, then this client scope will not be displayed on the consent screen.</p>
+</dd>
+<dt class="hdlist1">Consent Screen Text</dt>
+<dd>
+<p>The text shown on the consent screen when this client scope is added to some client with consent required defaults to
+the name of client scope. The value for this text is localizable by specifying a substitution variable
+with <code>${var-name}</code> strings. The localized value is then configured within property files in your theme. See the
+<a href="https://www.keycloak.org/docs/4.0/server_development/">Server Developer Guide</a> for more information on localization.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_client_scopes_linking"><a class="anchor" href="#_client_scopes_linking"></a>8.7.3. Link Client Scope with the Client</h4>
+<div class="paragraph">
+<p>Linking between client scope and client is configured in the <code>Client Scopes</code> tab of the particular client. There are 2 ways of
+linking between client scope and client.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Default Client Scopes</dt>
+<dd>
+<p>This is applicable for both OpenID Connect and SAML clients. Default client scopes are always applied when issuing OpenID Connect tokens
+or SAML assertions for this client. The client will inherit Protocol mappers and Role Scope Mappings defined on the client
+scope. For the OpenID Connect Protocol, the Mappers and Role Scope Mappings are always applied, regardless of value of used for the scope
+parameter in the OpenID Connect authorization request.</p>
+</dd>
+<dt class="hdlist1">Optional Client Scopes</dt>
+<dd>
+<p>This is applicable only for OpenID Connect clients. Optional client scopes are applied when issuing tokens for this client,
+but only when they are requested by the <code>scope</code> parameter in the OpenID Connect authorization request.</p>
+</dd>
+</dl>
+</div>
+<div class="sect4">
+<h5 id="example"><a class="anchor" href="#example"></a>Example</h5>
+<div class="paragraph">
+<p>For this example, we assume that the client has <code>profile</code> and <code>email</code> linked as default client scopes, and <code>phone</code> and <code>address</code>
+are linked as optional client scopes. The client will use the value of the scope parameter when sending a request to the OpenID Connect authorization
+endpoint:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>scope=openid phone</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The scope parameter contains the string, with the scope values divided by space (which is also the reason why a client scope name
+cannot contain a space character in it). The value <code>openid</code> is the meta-value used for all OpenID Connect requests, so we will ignore
+it for this example. The token will contain mappers and role scope mappings from the client scopes <code>profile</code>, <code>email</code> (which are
+default scopes) and <code>phone</code> (an optional client scope requested by the scope parameter).</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="evaluating-client-scopes"><a class="anchor" href="#evaluating-client-scopes"></a>8.7.4. Evaluating Client Scopes</h4>
+<div class="paragraph">
+<p>The tabs <code>Mappers</code> and <code>Scope</code> of the client contain the protocol mappers and role scope mappings declared solely for this client.
+They do not contain the mappers and scope mappings inherited from client scopes. However, it may be useful to see what the
+effective protocol mappers will be (protocol mappers defined on the client itself as well as inherited from the linked client scopes)
+and the effective role scope mappings used when you generate the token for the particular client.</p>
+</div>
+<div class="paragraph">
+<p>You can see all of these when you click the <code>Client Scopes</code> tab for the client and then open the sub-tab <code>Evaluate</code>. From here you
+can select the optional client scopes that you want to apply. This will also show you the value of the <code>scope</code> parameter, which needs to
+be sent from the application to the Keycloak OpenID Connect authorization endpoint.</p>
+</div>
+<div class="paragraph">
+<div class="title">Evaluating Client Scopes</div>
+<p><span class="image"><img src="./keycloak-images/client-scopes-evaluate.png" alt="client scopes evaluate"></span></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you want to see how you can send a custom value for a <code>scope</code> parameter from your application, see the
+<a href="https://www.keycloak.org/docs/4.0/securing_apps/#_params_forwarding">parameters forwarding section</a>, if your application uses the servlet adapter, or the
+<a href="https://www.keycloak.org/docs/4.0/securing_apps/#_javascript_adapter">javascript adapter section</a>, if your application uses the javascript adapter.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect4">
+<h5 id="generating-example-tokens"><a class="anchor" href="#generating-example-tokens"></a>Generating Example Tokens</h5>
+<div class="paragraph">
+<p>To see an example of a real access token, generated for the particular user and issued for the particular client, with the specified
+value of <code>scope</code> parameter, select the user from the <code>Evaluate</code> screen. This will generate an example token that includes all of the
+claims and role mappings used.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="realm-default-client-scopes"><a class="anchor" href="#realm-default-client-scopes"></a>8.7.5. Realm Default Client Scopes</h4>
+<div class="paragraph">
+<p>The <code>Realm Default Client Scopes</code> allow you to define set of client scopes, which will be automatically linked to newly created clients.</p>
+</div>
+<div class="paragraph">
+<p>Open the left menu item <code>Client Scopes</code> and then select <code>Default Client Scopes</code>.</p>
+</div>
+<div class="paragraph">
+<p>From here, select the client scopes that you want to add as <code>Default Client Scopes</code> to newly created clients and <code>Optional Client Scopes</code>
+to newly created clients.</p>
+</div>
+<div class="paragraph">
+<div class="title">Default Client Scopes</div>
+<p><span class="image"><img src="./keycloak-images/client-scopes-default.png" alt="client scopes default"></span></p>
+</div>
+<div class="paragraph">
+<p>Once the client is created, you can unlink the default client scopes, if needed. This is similar to how you
+remove <a href="#_default_roles">Default Roles</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="scopes-explained"><a class="anchor" href="#scopes-explained"></a>8.7.6. Scopes explained</h4>
+<div class="paragraph">
+<p>The term <code>scope</code> is used in Keycloak on few places. Various occurences of scopes are related to each other, but may have
+a different context and meaning. To clarify, here we explain the various <code>scopes</code> used in Keycloak.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Client scope</dt>
+<dd>
+<p>Referenced in this chapter. Client scopes are entities in Keycloak, which are configured at the realm level and they can be
+linked to clients. The client scopes are referenced by their name when a request is sent to the Keycloak authorization endpoint
+with a corresponding value of the <code>scope</code> parameter. The details are described in the <a href="#_client_scopes_linking">section about
+client scopes linking</a>.</p>
+</dd>
+<dt class="hdlist1">Role scope mapping</dt>
+<dd>
+<p>This can be seen when you open tab <code>Scope</code> of a client or client scope. Role scope mapping allows you to limit the roles which can
+be used in the access tokens. The details are described in the <a href="#_role_scope_mappings">Role Scope Mappings section</a>.</p>
+</dd>
+<dt class="hdlist1">Authorization scopes</dt>
+<dd>
+<p>This is used by the Authorization feature. The <code>Authorization Scope</code> is the action which can be done in the application.
+More details in the <a href="https://www.keycloak.org/docs/4.0/authorization_services/">Authorization Services Guide</a>.</p>
+</dd>
+</dl>
+</div>
 </div>
 </div>
 </div>
@@ -4465,13 +4737,9 @@ dedicated namespace where roles can be defined.</p>
 <p><span class="image"><img src="./keycloak-images/role.png" alt="role"></span></p>
 </div>
 <div class="paragraph">
-<p>The value for the <code>description</code> field is localizable by specifying a substitution variable with <code>${var-name}</code> strings. The localized value is then configured within property files in your theme. See the <a href="https://www.keycloak.org/docs/4.0/server_development/">Server Developer Guide</a> for more information on localization. If a client requires user <em>consent</em>, this description string is displayed on the consent page for the user.</p>
-</div>
-<div class="paragraph">
-<p>If the client has to explicitly request for a realm role, set <code>Scope Param Required</code> to true. The role then has to be specified using the <code>scope</code> parameter when requesting a token. Multiple realm roles are separated by space:</p>
-</div>
-<div class="paragraph">
-<p><code>scope=admin user</code></p>
+<p>The value for the <code>description</code> field is localizable by specifying a substitution variable with <code>${var-name}</code> strings. The localized
+value is then configured within property files in your theme. See the <a href="https://www.keycloak.org/docs/4.0/server_development/">Server Developer Guide</a> for more information
+on localization.</p>
 </div>
 </div>
 <div class="sect2">
@@ -4484,17 +4752,6 @@ dedicated namespace where roles can be defined.</p>
 </div>
 <div class="paragraph">
 <p>Client roles are basically a namespace dedicated to a client. Each client gets its own namespace. Client roles are managed under the <code>Roles</code> tab under each individual client. You interact with this UI the same way you do for realm-level roles.</p>
-</div>
-<div class="paragraph">
-<p>If the client has to explicitly request another client&#8217;s role, the role has to be prefixed with the client ID when performing a request using the scope parameter. For example, if the client ID is <code>account</code> and the role is <code>admin</code>, the scope parameter is:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>`scope=account/admin`</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>As noted in the realm roles section, multiple roles are separated by spaces.</p>
 </div>
 </div>
 <div class="sect2">
@@ -4566,7 +4823,7 @@ chapter.</p>
 <code>Effective Roles</code> are all roles that are explicitly assigned to the user as well as any roles that are inherited from composites.</p>
 </div>
 <div class="sect3">
-<h4 id="default-roles"><a class="anchor" href="#default-roles"></a>9.4.1. Default Roles</h4>
+<h4 id="_default_roles"><a class="anchor" href="#_default_roles"></a>9.4.1. Default Roles</h4>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/roles/user-role-mappings/default-roles.adoc" target="_blank">Edit this section</a>
@@ -4588,11 +4845,11 @@ To specify default roles go to the <code>Roles</code> left menu item, and click 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_client_scope"><a class="anchor" href="#_client_scope"></a>9.5. Client Scope</h3>
+<h3 id="_role_scope_mappings"><a class="anchor" href="#_role_scope_mappings"></a>9.5. Role Scope Mappings</h3>
 <div class="sidebarblock page-links">
 <div class="content">
-<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/roles/client-scope.adoc" target="_blank">Edit this section</a>
-<a href="https://issues.jboss.org/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/roles/client-scope.adoc" target="_blank">Report an issue</a>
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/roles/role-scope-mappings.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.jboss.org/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/roles/role-scope-mappings.adoc" target="_blank">Report an issue</a>
 </div>
 </div>
 <div class="paragraph">
@@ -4601,10 +4858,10 @@ within the token or assertion.  Applications use this information to make access
 application.  In Keycloak, access tokens are digitally signed and can actually be re-used by the application
 to invoke on other remotely secured REST services.  This means that if an application gets compromised or there is a rogue
 client registered with the realm, attackers can get access tokens that have a broad range of permissions and your whole
-network is compromised.  This is where <em>client scope</em> becomes important.</p>
+network is compromised.  This is where <em>role scope mappings</em> becomes important.</p>
 </div>
 <div class="paragraph">
-<p><em>Client scope</em> is a way to limit the roles that get declared inside an access token.  When a client requests that a user
+<p><em>Role Scope Mappings</em> is a way to limit the roles that get declared inside an access token.  When a client requests that a user
 be authenticated, the access token they receive back will only contain the role mappings you&#8217;ve explicitly specified
 for the client&#8217;s scope.  This allows you to limit the permissions each individual access token has rather than giving the
 client access to all of the user&#8217;s permissions.  By default, each client gets all the role mappings of the user.
@@ -4617,8 +4874,8 @@ You can view this in the <code>Scope</code> tab of each client.</p>
 <div class="paragraph">
 <p>You can see from the picture that the effective roles of the scope are every declared role in the realm.
 To change this default behavior, you must explicitly turn off the <code>Full Scope Allowed</code> switch and declare the specific roles you want in each individual
-client.  Alternatively, you can also use <a href="#_client_templates">client templates</a>
-to define the scope for a whole set of clients.</p>
+client.  Alternatively, you can also use <a href="#_client_scopes">client scopes</a>
+to define the same role scope mappings for a whole set of clients.</p>
 </div>
 <div class="paragraph">
 <div class="title">Partial Scope</div>
@@ -5036,7 +5293,7 @@ the <code>Authorization</code> link shown in the above image. Then click on the 
 <div class="paragraph">
 <p>There&#8217;s a pull down menu on this page called <code>Create policy</code>.  There&#8217;s a multitude of policies
 you can define.  You can define a policy that is associated with a role or a group or even define
-rules in Javascript.  For this simple example, we&#8217;re going to create a <code>User Policy</code>.</p>
+rules in JavaScript.  For this simple example, we&#8217;re going to create a <code>User Policy</code>.</p>
 </div>
 <div class="paragraph">
 <div class="title">User Policy</div>
@@ -6345,7 +6602,7 @@ Go back to Keycloak and specify those items.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="openshift"><a class="anchor" href="#openshift"></a>12.4.8. Openshift</h4>
+<h4 id="openshift"><a class="anchor" href="#openshift"></a>12.4.8. OpenShift</h4>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/identity-broker/social/openshift.adoc" target="_blank">Edit this section</a>
@@ -6359,14 +6616,14 @@ Go back to Keycloak and specify those items.</p>
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Openshift Online is currently in the developer preview mode. This documentation has been based on on-premise installations and local <code>minishift</code> development environment.
+OpenShift Online is currently in the developer preview mode. This documentation has been based on on-premise installations and local <code>minishift</code> development environment.
 </td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
 <p>There are a just a few steps you have to complete to be able to login to OpenShift.  First, go to the <code>Identity Providers</code> left menu item
-and select <code>Openshift</code> from the <code>Add provider</code> drop down list.  This will bring you to the <code>Add identity provider</code> page.</p>
+and select <code>OpenShift</code> from the <code>Add provider</code> drop down list.  This will bring you to the <code>Add identity provider</code> page.</p>
 </div>
 <div class="paragraph">
 <div class="title">Add Identity Provider</div>
@@ -6419,7 +6676,7 @@ grantMethod: prompt <i class="conum" data-value="4"></i><b>(4)</b>
 Go back to Keycloak and specify those items.</p>
 </div>
 <div class="paragraph">
-<p>Please refer to <a href="https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#oauth">official Openshift documentation</a> for more detailed guides.</p>
+<p>Please refer to <a href="https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html#oauth">official OpenShift documentation</a> for more detailed guides.</p>
 </div>
 </div>
 <div class="sect3">
@@ -7308,7 +7565,8 @@ Offline tokens can also be revoked by setting a <a href="#_revocation-policy">re
 </div>
 <div class="paragraph">
 <p>To be able to issue an offline token, users need to have the role mapping for the realm-level role <code>offline_access</code>.
-Clients also need to have that role in their scope.</p>
+Clients also need to have that role in their scope. Finally, the client needs to have an <code>offline_access</code> client scope added as an <code>Optional
+client scope</code> to it, which is done by default.</p>
 </div>
 <div class="paragraph">
 <p>The client can request an offline token by adding the parameter <code>scope=offline_access</code> when sending authorization request to Keycloak.
@@ -7345,7 +7603,7 @@ runtime.  This common user model can then be mapped to OIDC token claims and SAM
 <p>External user databases rarely have every piece of data need to support all the features that Keycloak has.
 In this case, the User Storage Provider can opt to store some things locally in the Keycloak user store.
 Some providers even import the user locally and sync periodically with the external store.  All this depends on the capabilities of the provider and how its configured.  For example, your
-external user store may not support OTP.  Depending on the provider, this OTP support can be handled and stored by Keycloak</p>
+external user store may not support OTP.  Depending on the provider, this OTP can be handled and stored by Keycloak.</p>
 </div>
 <div class="sect2">
 <h3 id="adding-a-provider"><a class="anchor" href="#adding-a-provider"></a>14.1. Adding a Provider</h3>
@@ -7357,7 +7615,7 @@ external user store may not support OTP.  Depending on the provider, this OTP su
 <p><span class="image"><img src="./keycloak-images/user-federation.png" alt="user federation"></span></p>
 </div>
 <div class="paragraph">
-<p>On the right side, there is an <code>Add Provider</code> list box.  Choose the provider type you want to add and you will be brought to the configuration page of that provider.</p>
+<p>On the center, there is an <code>Add Provider</code> list box.  Choose the provider type you want to add and you will be brought to the configuration page of that provider.</p>
 </div>
 </div>
 <div class="sect2">
@@ -7424,7 +7682,7 @@ The benefit to this approach is that you do not have the overhead of importing a
 Keycloak user database.</p>
 </div>
 <div class="paragraph">
-<p>This storage mode is controled by the <code>Import Enabled</code> switch.  Set to <code>On</code> to import users.</p>
+<p>This storage mode is controled by the <code>Import Users</code> switch.  Set to <code>On</code> to import users.</p>
 </div>
 </div>
 <div class="sect3">
@@ -7465,7 +7723,7 @@ updates of user metadata on a read-only LDAP server.  This option only applies w
 </dd>
 <dt class="hdlist1">Priority</dt>
 <dd>
-<p>The priority of this provider when looking up users or for adding registrations.</p>
+<p>The priority of this provider when looking up users or adding a user.</p>
 </dd>
 <dt class="hdlist1">Sync Registrations</dt>
 <dd>
@@ -8721,6 +8979,9 @@ registered redirect URIs as specific as feasible.</p>
 Short lifespans (minutes) for access tokens for clients and applications to refresh their access tokens after a short amount of time. If an admin detects a leak, they can logout all user sessions to invalidate these refresh tokens or set up a revocation policy. Making sure refresh tokens always stay private to the client and are never transmitted ever is very important as well.</p>
 </div>
 <div class="paragraph">
+<p>You can also mitigate against leaked access tokens and refresh tokens by issuing these tokens as holder-of-key tokens. See <a href="#_mtls-client-certificate-bound-tokens">OAuth 2.0 Mutual TLS Client Certificate Bound Access Token</a> to learn how.</p>
+</div>
+<div class="paragraph">
 <p>If an access token or refresh token is compromised, the first thing you should do is go to the admin console and push a not-before revocation policy to all applications. This will enforce that any tokens issued prior to that date are now invalid. Pushing new not-before policy will also ensure that application will be forced to download new public keys from Keycloak, hence it is also useful for the case, when you think that realm signing key was compromised.
 More info in the  <a href="#realm_keys">keys chapter</a>.</p>
 </div>
@@ -8789,10 +9050,10 @@ It is up to you to decide how serious you want to be to protect your password da
 </div>
 </div>
 <div class="paragraph">
-<p>By default, each new client application has an unlimited scope.  This means that every access token that is created
+<p>By default, each new client application has an unlimited <code>role scope mappings</code>.  This means that every access token that is created
 for that client will contain all the permissions the user has.  If the client gets compromised and the access token
 is leaked, then each system that the user has permission to access is now also compromised.  It is highly suggested
-that you limit the roles an access token is assigned by using the <a href="#_client_scope">Scope menu</a> for each client.</p>
+that you limit the roles an access token is assigned by using the <a href="#_role_scope_mappings">Scope menu</a> for each client.</p>
 </div>
 </div>
 <div class="sect2">
@@ -8965,7 +9226,7 @@ c:\&gt; kcadm get clients/%CID%/installation/providers/keycloak-oidc-keycloak-js
 <div class="sect2">
 <h3 id="authenticating"><a class="anchor" href="#authenticating"></a>19.3. Authenticating</h3>
 <div class="paragraph">
-<p>When you log in with the Admin CLI, you specify a server endpoint URL and a realm, and then you specify a user name. Another option is to specify only a clientId, which results in using a special "service account." When you log in using a user name, you must use a password for the specified user. When you log in using a clientId, you only need the client secret, not the user password. You could also use <code class="command">Signed JWT</code> instead of the client secret.</p>
+<p>When you log in with the Admin CLI, you specify a server endpoint URL and a realm, and then you specify a user name. Another option is to specify only a clientId, which results in using a special "service account". When you log in using a user name, you must use a password for the specified user. When you log in using a clientId, you only need the client secret, not the user password. You could also use <code class="command">Signed JWT</code> instead of the client secret.</p>
 </div>
 <div class="paragraph">
 <p>Make sure the account used for the session has the proper permissions to invoke Admin REST API operations. For example, the <code>realm-admin</code> role of the <code>realm-management</code> client allows the user to administer the realm within which the user is defined.</p>
@@ -9002,7 +9263,7 @@ c:\&gt; kcadm get clients/%CID%/installation/providers/keycloak-oidc-keycloak-js
 <div class="sect2">
 <h3 id="_working_with_alternative_configurations"><a class="anchor" href="#_working_with_alternative_configurations"></a>19.4. Working with alternative configurations</h3>
 <div class="paragraph">
-<p>By default, the Admin CLI automatically maintains a configuration file called [filename]kcadm.config located under the user&#8217;s home directory. In Linux-based systems, the full path name is [filename]$HOME/.keycloak/kcadm.config. On Windows, the full path name is [filename]%HOMEPATH%\.keycloak\kcadm.config. You can use the <code class="command">--config</code> option to point to a different file or location so you can maintain multiple authenticated sessions in parallel.</p>
+<p>By default, the Admin CLI automatically maintains a configuration file called <code class="filename">kcadm.config</code> located under the user&#8217;s home directory. In Linux-based systems, the full path name is <code class="filename">$HOME/.keycloak/kcadm.config</code>. On Windows, the full path name is <code class="filename">%HOMEPATH%\.keycloak\kcadm.config</code>. You can use the <code class="command">--config</code> option to point to a different file or location so you can maintain multiple authenticated sessions in parallel.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -9997,7 +10258,7 @@ $ kcadm.sh create clear-keys-cache -r demorealm -s realm=demorealm</pre>
 <pre class="nowrap">$ kcadm.sh get clients/c7b8547f-e748-4333-95d0-410b76b3f4a3/installation/providers/keycloak-oidc-keycloak-json -r demorealm</pre>
 </div>
 </div>
-<h4 id="getting-a-wildfly-subsystem-adapter-configuration-for-a-specific-client" class="discrete">Getting a Wildfly subsystem adapter configuration for a specific client</h4>
+<h4 id="getting-a-wildfly-subsystem-adapter-configuration-for-a-specific-client" class="discrete">Getting a WildFly subsystem adapter configuration for a specific client</h4>
 <div class="paragraph">
 <p>Use a client&#8217;s ID to construct an endpoint URI that targets a specific client, such as <code class="filename">clients/ID/installation/providers/keycloak-oidc-jboss-subsystem</code>.</p>
 </div>
@@ -10310,7 +10571,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh add-roles --username testuser --rolename user -r demorealm</pre>
+<pre class="nowrap">$ kcadm.sh add-roles --uusername testuser --rolename user -r demorealm</pre>
 </div>
 </div>
 <h4 id="removing-realm-roles-from-a-user" class="discrete">Removing realm roles from a user</h4>
@@ -10322,7 +10583,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh remove-roles --username testuser --rolename user -r demorealm</pre>
+<pre class="nowrap">$ kcadm.sh remove-roles --uusername testuser --rolename user -r demorealm</pre>
 </div>
 </div>
 <h4 id="adding-client-roles-to-a-user" class="discrete">Adding client roles to a user</h4>
@@ -11055,7 +11316,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </li>
 </ol>
 </div>
-<h4 id="adding-an-user-attribute-ldap-mapper" class="discrete">Adding an user attribute LDAP mapper</h4>
+<h4 id="adding-a-user-attribute-ldap-mapper" class="discrete">Adding a user attribute LDAP mapper</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -11340,7 +11601,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-05-24 13:49:06 UTC
+Last updated 2018-06-13 21:41:16 UTC
 </div>
 </div>
 <ul id="globalnav">
@@ -11351,6 +11612,7 @@ Last updated 2018-05-24 13:49:06 UTC
     <li><a href="../server_development/index.html">Server Development</a></li>
     <li><a href="../authorization_services/index.html">Authorization Services</a></li>
     <li><a href="../upgrading/index.html">Upgrading</a></li>
+    <li><a href="../release_notes/index.html">Release Notes</a></li>
 </ul>
 </body>
 </html>

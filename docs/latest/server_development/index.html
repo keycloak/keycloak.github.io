@@ -2849,7 +2849,7 @@ For example:</p>
 <p>This services/ file is used by Keycloak to scan the providers it has to load into the system.</p>
 </div>
 <div class="paragraph">
-<p>To deploy this jar, just copy it to the providers directory.</p>
+<p>To deploy this jar, just copy it to the <code>standalone/deployments</code> directory.</p>
 </div>
 </div>
 <div class="sect3">
@@ -3144,7 +3144,7 @@ org.keycloak.authentication.forms.RegistrationRecaptcha</code></pre>
 <p>This services/ file is used by Keycloak to scan the providers it has to load into the system.</p>
 </div>
 <div class="paragraph">
-<p>To deploy this jar, just copy it to the providers directory.</p>
+<p>To deploy this jar, just copy it to the <code>standalone/deployments</code> directory.</p>
 </div>
 </div>
 <div class="sect3">
@@ -3157,7 +3157,7 @@ I&#8217;m hoping the UI is intuitive enough so that you can figure out for yours
 </div>
 <div class="paragraph">
 <p>Basically you&#8217;ll have to copy the registration flow.
-Then click Actions menu to the right of the Registration Form, and pick "Add Execution" to add a new execution.
+Then click Actions menu to the right of the Registration Form, and pick "Add execution" to add a new execution.
 You&#8217;ll pick the FormAction from the selection list.
 Make sure your FormAction comes after "Registration User Creation" by using the down errors to move it if your FormAction isn&#8217;t already listed after "Registration User Creation".  You want your FormAction to come after user creation because the success() method of Regsitration User Creation is responsible for creating the new UserModel.</p>
 </div>
@@ -3351,7 +3351,7 @@ using action token SPI, details of which are described in the text below.</p>
 <div class="paragraph">
 <p>When an action token is passed to a Keycloak endpoint
 <code><em>KEYCLOAK_ROOT</em>/auth/realms/master/login-actions/action-token</code> via <code>key</code> parameter, it is validated and a proper action
-token handler is executed. The processing always takes place in a context of an authentication session, either a fresh
+token handler is executed. <strong>The processing always takes place in a context of an authentication session</strong>, either a fresh
 one or the action token service joins an existing authentication session (details are described below). The action token
 handler can perform actions prescribed by the token (often it alters the authentication session) and results into an HTTP
 response (e.g. it can continue in authentication or display an information/error page). These steps are detailed below.</p>
@@ -3395,6 +3395,69 @@ action token is invalidated.</p>
 above), it can be serialized and signed as such using Keycloak&#8217;s <code>JWSBuilder</code> class. This way has been already
 implemented in <code>serialize(session, realm, uriInfo)</code> method of <code>org.keycloak.authentication.actiontoken.DefaultActionToken</code>
 and can be leveraged by implementors by using that class for tokens instead of plain <code>JsonWebToken</code>.</p>
+</div>
+<div class="paragraph">
+<p>The following example shows the implementation of a simple action token. Note that the class must have a private constructor without any arguments.
+This is necessary to deserialize the token class from JWT.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="java"><span class="keyword">import</span> <span class="include">org.keycloak.authentication.actiontoken.DefaultActionToken</span>;
+
+<span class="directive">public</span> <span class="type">class</span> <span class="class">DemoActionToken</span> <span class="directive">extends</span> DefaultActionToken {
+
+    <span class="directive">public</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> TOKEN_TYPE = <span class="string"><span class="delimiter">&quot;</span><span class="content">my-demo-token</span><span class="delimiter">&quot;</span></span>;
+
+    <span class="directive">public</span> DemoActionToken(<span class="predefined-type">String</span> userId, <span class="type">int</span> absoluteExpirationInSecs, <span class="predefined-type">String</span> compoundAuthenticationSessionId) {
+        <span class="local-variable">super</span>(userId, TOKEN_TYPE, absoluteExpirationInSecs, <span class="predefined-constant">null</span>, compoundAuthenticationSessionId);
+    }
+
+    <span class="directive">private</span> DemoActionToken() {
+        <span class="comment">// Required to deserialize from JWT</span>
+        <span class="local-variable">super</span>();
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the action token you are implementing contains any custom fields that should be serializabled to JSON fields, you
+should consider implementing a descendant of <code>org.keycloak.representations.JsonWebToken</code> class that would implement
+<code>org.keycloak.models.ActionTokenKeyModel</code> interface. In that case, you can take advantage of the existing
+<code>org.keycloak.authentication.actiontoken.DefaultActionToken</code> class as it already satisfies both these conditions,
+and either use it directly or implement its child, the fields of which can be annotated with appropriate Jackson
+annotations, e.g. <code>com.fasterxml.jackson.annotation.JsonProperty</code> to serialize them to JSON.</p>
+</div>
+<div class="paragraph">
+<p>The following example extends the <code>DemoActionToken</code> from the previous example with the field <code>demo-id</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="java"><span class="keyword">import</span> <span class="include">com.fasterxml.jackson.annotation.JsonProperty</span>;
+<span class="keyword">import</span> <span class="include">org.keycloak.authentication.actiontoken.DefaultActionToken</span>;
+
+<span class="directive">public</span> <span class="type">class</span> <span class="class">DemoActionToken</span> <span class="directive">extends</span> DefaultActionToken {
+
+    <span class="directive">public</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> TOKEN_TYPE = <span class="string"><span class="delimiter">&quot;</span><span class="content">my-demo-token</span><span class="delimiter">&quot;</span></span>;
+
+    <span class="directive">private</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> JSON_FIELD_DEMO_ID = <span class="string"><span class="delimiter">&quot;</span><span class="content">demo-id</span><span class="delimiter">&quot;</span></span>;
+
+    <span class="annotation">@JsonProperty</span>(value = JSON_FIELD_DEMO_ID)
+    <span class="directive">private</span> <span class="predefined-type">String</span> demoId;
+
+    <span class="directive">public</span> DemoActionToken(<span class="predefined-type">String</span> userId, <span class="type">int</span> absoluteExpirationInSecs, <span class="predefined-type">String</span> compoundAuthenticationSessionId, <span class="predefined-type">String</span> demoId) {
+        <span class="local-variable">super</span>(userId, TOKEN_TYPE, absoluteExpirationInSecs, <span class="predefined-constant">null</span>, compoundAuthenticationSessionId);
+        <span class="local-variable">this</span>.demoId =  demoId;
+    }
+
+    <span class="directive">private</span> DemoActionToken() {
+        <span class="comment">// you must have this private constructor for deserializer</span>
+    }
+
+    <span class="directive">public</span> <span class="predefined-type">String</span> getDemoId() {
+        <span class="keyword">return</span> demoId;
+    }
+}</code></pre>
+</div>
 </div>
 </div>
 <div class="sect3">
@@ -3446,14 +3509,6 @@ field in the action token.</p>
 <p>Note that you have to register the custom <code>ActionTokenHandlerFactory</code> implementation as explained in the
 <a href="#_providers">Service Provider Interfaces</a> section of this guide.</p>
 </div>
-</li>
-<li>
-<p>If the action token you are implementing contains any custom fields that should be serializabled to JSON fields, you
-should consider implementing a descendant of <code>org.keycloak.representations.JsonWebToken</code> class that would implement
-<code>org.keycloak.models.ActionTokenKeyModel</code> interface. In that case, you can take advantage of the existing
-<code>org.keycloak.authentication.actiontoken.DefaultActionToken</code> class as it already satisfies both these conditions,
-and either use it directly or implement its child, the fields of which can be annotated with appropriate Jackson
-annotations, e.g. <code>com.fasterxml.jackson.annotation.JsonProperty</code> to serialize them to JSON.</p>
 </li>
 </ul>
 </div>
@@ -3917,7 +3972,7 @@ org.keycloak.examples.federation.properties.FilePropertiesStorageFactory</pre>
 <div class="sect4">
 <h5 id="credentialinputupdater-implementation"><a class="anchor" href="#credentialinputupdater-implementation"></a>CredentialInputUpdater Implementation</h5>
 <div class="paragraph">
-<p>As noted before, the only reason we implement the <code>CredentialInputUpdater</code> interface in this example is to forbid modifications of user passwords. The reason we have to do this is because otherwise the runtime would allow the password to be overriden in Keycloak local storage. We&#8217;ll talk more about this later in this chapter.</p>
+<p>As noted before, the only reason we implement the <code>CredentialInputUpdater</code> interface in this example is to forbid modifications of user passwords. The reason we have to do this is because otherwise the runtime would allow the password to be overridden in Keycloak local storage. We&#8217;ll talk more about this later in this chapter.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -5238,7 +5293,7 @@ before upgrading Keycloak. This will remove linked local imported copies of any 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-05-24 13:49:08 UTC
+Last updated 2018-06-13 21:41:18 UTC
 </div>
 </div>
 <ul id="globalnav">
@@ -5249,6 +5304,7 @@ Last updated 2018-05-24 13:49:08 UTC
     <li><a href="../server_development/index.html">Server Development</a></li>
     <li><a href="../authorization_services/index.html">Authorization Services</a></li>
     <li><a href="../upgrading/index.html">Upgrading</a></li>
+    <li><a href="../release_notes/index.html">Release Notes</a></li>
 </ul>
 </body>
 </html>
