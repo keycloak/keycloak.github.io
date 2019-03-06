@@ -80,6 +80,69 @@
 <div class="page-section">
     <div class="container">
         <a style="float: right;" href="rss.xml"><img src="resources/images/rss.png"/></a>
+                <h1><a href="2019/03/w3c-web-authentication-(webauthn).html">W3C Web Authentication (WebAuthn)</a></h1>
+
+                <p class="blog-date">Wednesday, March 06 2019, posted by Stian Thorgersen</p>
+
+                <div class="blog blog-container">
+
+<p>
+W3C Web Authentication (WebAuthn) was recently made an official web standard. This is a great step towards making a safer and
+simpler authentication experience for users.
+</p>
+
+<p>
+Where traditional authentication, such as password and OTP, rely on having shared secrets between the user and the
+web application, this is not the case with WebAuthn. WebAuthn uses public key-based credentials resulting in the web
+application not having access to the users secrets anymore. The keys are also unique per web application which eliminates
+the risk of phishing attacks.
+</p>
+
+<p>
+WebAuthn provides a standard protocol for web applications to authenticate via a number of devices through a relatively
+simple challenge/response. All major browser vendors now have support for WebAuthn and FIDO2, where FIDO2 is the specification
+that enables the browser to communicate with different hardware devices.
+</p>
+
+<p>
+WebAuthn can be used both as a two factor mechanism as well as enable passwordless authentication. There are already
+an healthy amount of devices that can be used together with WebAuthn. There are a number of security keys like
+<a href="https://www.yubico.com/">YubiKey</a>, <a href="https://thinc.ensurity.com/">ThinC</a> and
+<a href="https://cloud.google.com/titan-security-key/">Titan</a>. A lot of new laptops also come with built-in
+fingerprint scanners, and it Android also recently made it possible to use the fingerprint scanners on Android 7+ devices with WebAuthn.
+</p>
+
+<p>
+We are of course planning on bringing WebAuthn support to Keycloak in the near future. The team behind <a href="https://github.com/webauthn4j/webauthn4j">webauthn4j</a>
+has been hard at work greating a quality Java library for WebAuthn and will hopefully soon have an extension to
+Keycloak ready.
+</p>
+
+<p>
+We will first focus on two-factor authentication with WebAuth and as part of this we will bring a number of improvements
+to Keycloak around two-factor authentication. For more details check the
+<a href="https://github.com/keycloak/keycloak-community/blob/master/design/web-authn-two-factor.md">design document</a>.
+</p>
+
+<p>
+Later, we will also bring the passwordless experience to Keycloak. This will also introduce Keycloak to the identity
+first login flows. By asking for the users identity first Keycloak can provide smarter decisions on how to authenticate
+a user based on the users preferences. For example requesting the user to press the button on their security key instead
+of asking for a password.
+</p>
+
+<p>
+Resources:
+<ul>
+<li><a href="https://www.w3.org/TR/webauthn/">W3C Specification</a></li>
+<li><a href="https://fidoalliance.org/w3c-and-fido-alliance-finalize-web-standard-for-secure-passwordless-logins/">W3C and FIDO Alliance Finalize Web Standard for Secure, Passwordless Logins</a></li>
+<li><a href="https://www.wired.com/story/android-passwordless-login-fido2/">Android is helping kill passwords on a billion devices</a></li>
+</ul>
+</p>
+                </div>
+
+
+
                 <h1><a href="2019/03/keycloak-500-released.html">Keycloak 5.0.0 released</a></h1>
 
                 <p class="blog-date">Wednesday, March 06 2019</p>
@@ -197,147 +260,6 @@ This will be included in Keycloak 4.1.0.Final which will be released soon. In th
 
 
                 </div>
-
-
-
-
-                <h1><a href="2018/05/keycloak-on-openshift.html">Keycloak on OpenShift</a></h1>
-
-                <p class="blog-date">Thursday, May 31 2018, posted by Stian Thorgersen</p>
-
-                <div class="blog blog-container">
-
-
-<p>
-In this post you'll see how to deploy Keycloak on OpenShift. You'll also learn how to deploy a Node.js based REST service and an HTML5 application to OpenShift and secure these with Keycloak.
-</p>
-
-<p>
-There is also a screencast showing this example at <a href="https://youtu.be/9zUWqbK3BqI">https://youtu.be/9zUWqbK3BqI</a>.
-</p>
-
-<p>
-If you don't already have OpenShift available a good place to start is by using <a href="https://github.com/minishift/minishift">MiniShift</a>.
-
-<h2>Deploying Keycloak</h2>
-
-<p>
-First of all create a new project in OpenShift with oc by running:
-<pre>
-oc new-project keycloak
-</pre>
-</p>
-
-<p>
-The next thing to do is to import the Keycloak template into OpenShift, by running:
-<pre>
-oc replace --force -f "https://raw.githubusercontent.com/jboss-dockerfiles/keycloak"\
-"/master/openshift-examples/keycloak-https.json"
-</pre>
-</p>
-
-<p>
-Now open the OpenShift console and open the keycloak project.
-</p>
-
-<p>
-Click on Add to Project and Browse Catalog. In the catalog you should find Keycloak. Click on it.
-</p>
-
-<p>
-Click next on the information. Under configuration set a username and password that you can remember in the Keycloak Administrator Username and Keycloak Administrator Password fields. Then click on create. Click on Continue to project overview.
-</p>
-
-<p>
-Wait for the deployment to complete then click on the link to the application. Your browser will complain about the certificate as it is a self-signed certificate. Ignore this and proceed. Click on Administration Console, then login with the username and password you entered previously. Keep this tab open as you will need it later.
-</p>
-
-<p>
-You have now deployed Keycloak onto OpenShift.
-</p>
-
-<h2>Configure Clients in Keycloak</h2>
-
-<p>
-We need to create clients for the service and the application we will secure.
-</p>
-
-<p>
-Open the tab with the Keycloak admin console. Click on Clients and Create. For Client ID enter service and click Save. Under Access Type select bearer-only and click on Save.
-</p>
-
-<p>
-Click on Clients then Create again. For Client ID enter app and click Save. For Valid Redirect URIs and Web Origins enter *. In production environment it is very important that you enter the correct URL for your application, but since this is a demonstration we will simply allow all URLs for simplicity. You can easily update these to the correct URLs for the application after it has been deployed.
-</p>
-
-<p>
-Keep the Keycloak admin console tab open as again you will need it later.
-</p>
-
-<h2>Deploy the Service</h2>
-
-<p>
-Go back to the tab with the OpenShift console and click on Add to Project and Browse Catalog again. This time click on Node.js. Click next on Information, then click on advanced options under Configuration.
-</p>
-
-<p>
-Make the following changes:
-<ul>
-<li>Name: service</li>
-<li>Git Repository URL: https://github.com/stianst/misc.git</li>
-<li>Context Dir: openshift/service
-<li>Secure route: enable
-<li>TLS Termination: Edge
-<li>Insecure Traffic: Redirect
-<li>
-Deployment Config
-<ul><li>KEYCLOAK_URL=https://secure-keycloak-keycloak.192.168.42.52.nip.io/auth</li></ul>
-</li>
-</ul>
-
-Replace the value for KEYCLOAK_URL with the URL for Keycloak. You can find this by going back to the tab with the Keycloak admin console (copy the URL up to and including "/auth").
-</p>
-
-<p>
-Click on Create then Continue to the project overview. Wait for the build and deployment to complete then click on the link to the application. You should see "Not found!". Add "/service/public" to the url and you should see "message: public" in JSON.
-</p>
-
-<p>
-You have now deployed and secured the service. Keep this tab open as well as you need it later.
-</p>
-
-<h2>Deploy the Application</h2>
-
-<p>
-Go back to the tab with the OpenShift console and click on Add to Project and Browse Catalog again. This time click on PHP. Click next on Information, then click on advanced options under Configuration.
-</p>
-
-<p>
-Make the following changes:
-<ul>
-<li>Name: app</li>
-<li>Git Repository URL: https://github.com/stianst/misc.git</li>
-<li>Context Dir: openshift/app
-<li>Secure route: enable
-<li>TLS Termination: Edge
-<li>Insecure Traffic: Redirect
-<li>
-Deployment Config
-<ul><li>KEYCLOAK_URL=https://secure-keycloak-keycloak.192.168.42.52.nip.io/auth</li></ul>
-<ul><li>SERVICE_URL=https://service-keycloak.192.168.42.240.nip.io/service</li></ul>
-</li>
-</ul>
-
-Replace the value for KEYCLOAK_URL with the URL for Keycloak. You can find this by going back to the tab with the Keycloak admin console (copy the URL up to and including "/auth"). Also, replace the value for SERVICE_URL with the URL for the Service. You can find this by going back to the tab with the service (copy the URL up to and including "/service").
-</p>
-
-<p>
-Click on Create then Continue to the project overview. Wait for the build and deployment to complete then click on the link to the application. You should already be logged-in. You can now invoke the service by clicking on Invoke Public to invoke the unsecured endpoint or Invoke Admin to invoke the endpoint secured with the admin role. If you click on Invoke Secured it will fail as the admin user you are logged in with does not have the user role. To be able to invoke this endpoint as well go back to the Keycloak admin console. Create a realm role named user. Then go to users find your admin user and under role mappings add the user role to the user.
-</p>
-
-<p>
-You have now deployed and secured the application as well as seen how the application can securely invoke the service you deployed previously.
-</p>                </div>
 
 
 
