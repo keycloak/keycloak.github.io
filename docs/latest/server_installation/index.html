@@ -818,23 +818,6 @@ span.image img {
 <li><a href="#clearing-caches-at-runtime">9.4. Clearing Caches at Runtime</a></li>
 </ul>
 </li>
-<li><a href="#_proxy">10. Keycloak Security Proxy</a>
-<ul class="sectlevel2">
-<li><a href="#proxy-install-and-run">10.1. Proxy Install and Run</a></li>
-<li><a href="#proxy-configuration">10.2. Proxy Configuration</a>
-<ul class="sectlevel3">
-<li><a href="#basic-config">10.2.1. Basic Config</a></li>
-</ul>
-</li>
-<li><a href="#application-config">10.3. Application Config</a>
-<ul class="sectlevel3">
-<li><a href="#constraint-config">10.3.1. Constraint Config</a></li>
-<li><a href="#header-names-config">10.3.2. Header Names Config</a></li>
-</ul>
-</li>
-<li><a href="#_identity_headers">10.4. Keycloak Identity Headers</a></li>
-</ul>
-</li>
 </ul>
 </div>
 </div>
@@ -957,27 +940,27 @@ system property on startup to <code>file:/dev/urandom</code>.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>'keycloak-6.0.0.[zip|tar.gz]'</p>
+<p>'keycloak-6.0.1.[zip|tar.gz]'</p>
 </li>
 <li>
-<p>'keycloak-overlay-6.0.0.[zip|tar.gz]'</p>
+<p>'keycloak-overlay-6.0.1.[zip|tar.gz]'</p>
 </li>
 <li>
-<p>'keycloak-demo-6.0.0.[zip|tar.gz]'</p>
+<p>'keycloak-demo-6.0.1.[zip|tar.gz]'</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-6.0.0.[zip|tar.gz]' file is the server only distribution.  It contains nothing other than the scripts and binaries
+<p>The 'keycloak-6.0.1.[zip|tar.gz]' file is the server only distribution.  It contains nothing other than the scripts and binaries
 to run the Keycloak Server.  To unpack this file just run your operating system&#8217;s <code>unzip</code> or <code>gunzip</code> and <code>tar</code> utilities.</p>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-overlay-6.0.0.[zip|tar.gz]' file is a WildFly add-on that allows you to install Keycloak Server on top of an existing
+<p>The 'keycloak-overlay-6.0.1.[zip|tar.gz]' file is a WildFly add-on that allows you to install Keycloak Server on top of an existing
 WildFly distribution.  We do not support users that want to run their applications and Keycloak on the same server instance.  To install the Keycloak Service Pack, just unzip it in the root directory
 of your WildFly distribution, open the bin directory in a shell and run <code>./jboss-cli.[sh|bat] --file=keycloak-install.cli</code>.</p>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-demo-6.0.0.[zip|tar.gz]' contains the server binaries, all documentation and all examples.  It is preconfigured with both the
+<p>The 'keycloak-demo-6.0.1.[zip|tar.gz]' contains the server binaries, all documentation and all examples.  It is preconfigured with both the
 OIDC and SAML client application adapters and can deploy any of the distribution examples out of the box with no configuration.  This distribution is only
 recommended for those that want to test drive Keycloak.  We do not support users that run the demo distribution in production.</p>
 </div>
@@ -4533,7 +4516,7 @@ so that the actual client IP address is forwarded to and processed by the Keyclo
 <div class="paragraph">
 <p>Configuring your proxy to generate the <code>X-Forwarded-For</code> and <code>X-Forwarded-Proto</code> HTTP headers and preserving the
  original <code>Host</code> HTTP header is beyond the scope of this guide.  Take extra precautions to ensure that the
-<code>X-Forwared-For</code> header is set by your proxy.  If your proxy isn&#8217;t configured correctly, then <em>rogue</em> clients can set this header themselves and trick Keycloak
+<code>X-Forwarded-For</code> header is set by your proxy.  If your proxy isn&#8217;t configured correctly, then <em>rogue</em> clients can set this header themselves and trick Keycloak
 into thinking the client is connecting from a different IP address than it actually is.  This becomes really important if you are doing
 any black or white listing of IP addresses.</p>
 </div>
@@ -4697,7 +4680,7 @@ file and go to the undertow configuration in the <code>load-balancer</code> prof
 </div>
 <div class="paragraph">
 <p>The <code>output-socket-binding</code> is a logical name pointing to a <code>socket-binding</code> configured later in the <em>domain.xml</em> file.
-the <code>instance-id</code> attribute must also be unique to the new host as this value is used by a cookie to enable sticky
+The <code>instance-id</code> attribute must also be unique to the new host as this value is used by a cookie to enable sticky
 sessions when load balancing.</p>
 </div>
 <div class="paragraph">
@@ -5266,339 +5249,6 @@ The cache will be cleared for all realms!
 </div>
 </div>
 </div>
-<div class="sect1">
-<h2 id="_proxy"><a class="anchor" href="#_proxy"></a>10. Keycloak Security Proxy</h2>
-<div class="sectionbody">
-<div class="sidebarblock page-links">
-<div class="content">
-<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_installation/topics/proxy.adoc" target="_blank">Edit this section</a>
-<a href="https://issues.jboss.org/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_installation/topics/proxy.adoc" target="_blank">Report an issue</a>
-</div>
-</div>
-<div class="paragraph">
-<p>Keycloak has an HTTP(S) proxy that you can put in front of web applications and services where it is not possible to install the Keycloak adapter.
-You can set up URL filters so that certain URLs are secured either by browser login and/or bearer token authentication.
-You can also define role constraints for URL patterns within your applications.</p>
-</div>
-<div class="sect2">
-<h3 id="proxy-install-and-run"><a class="anchor" href="#proxy-install-and-run"></a>10.1. Proxy Install and Run</h3>
-<div class="paragraph">
-<p>Download the Keycloak proxy distribution from the Keycloak download pages and unzip it.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>$ unzip keycloak-proxy-dist.zip</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To run it you must have a proxy config file (which we&#8217;ll discuss in a moment).</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>$ java -jar bin/launcher.jar [your-config.json]</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If you do not specify a path to the proxy config file, the launcher will look in the current working directory for the file named <code>proxy.json</code></p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="proxy-configuration"><a class="anchor" href="#proxy-configuration"></a>10.2. Proxy Configuration</h3>
-<div class="paragraph">
-<p>Here&#8217;s an example configuration file.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="json">{
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">target-url</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">http://localhost:8082</span><span class="delimiter">&quot;</span></span>,
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">target-request-timeout</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">60000</span><span class="delimiter">&quot;</span></span>,
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">send-access-token</span><span class="delimiter">&quot;</span></span>: <span class="value">true</span>,
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">bind-address</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">localhost</span><span class="delimiter">&quot;</span></span>,
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">http-port</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">8080</span><span class="delimiter">&quot;</span></span>,
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">https-port</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">8443</span><span class="delimiter">&quot;</span></span>,
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">keystore</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">classpath:ssl.jks</span><span class="delimiter">&quot;</span></span>,
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">keystore-password</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">password</span><span class="delimiter">&quot;</span></span>,
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">key-password</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">password</span><span class="delimiter">&quot;</span></span>,
-    <span class="key"><span class="delimiter">&quot;</span><span class="content">applications</span><span class="delimiter">&quot;</span></span>: [
-        {
-            <span class="key"><span class="delimiter">&quot;</span><span class="content">base-path</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">/customer-portal</span><span class="delimiter">&quot;</span></span>,
-            <span class="key"><span class="delimiter">&quot;</span><span class="content">error-page</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">/error.html</span><span class="delimiter">&quot;</span></span>,
-            <span class="key"><span class="delimiter">&quot;</span><span class="content">adapter-config</span><span class="delimiter">&quot;</span></span>: {
-                <span class="key"><span class="delimiter">&quot;</span><span class="content">realm</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">demo</span><span class="delimiter">&quot;</span></span>,
-                <span class="key"><span class="delimiter">&quot;</span><span class="content">resource</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">customer-portal</span><span class="delimiter">&quot;</span></span>,
-                <span class="key"><span class="delimiter">&quot;</span><span class="content">realm-public-key</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">MIGfMA0GCSqGSIb</span><span class="delimiter">&quot;</span></span>,
-                <span class="key"><span class="delimiter">&quot;</span><span class="content">auth-server-url</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">http://localhost:8081/auth</span><span class="delimiter">&quot;</span></span>,
-                <span class="key"><span class="delimiter">&quot;</span><span class="content">ssl-required</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">external</span><span class="delimiter">&quot;</span></span>,
-                <span class="key"><span class="delimiter">&quot;</span><span class="content">principal-attribute</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">name</span><span class="delimiter">&quot;</span></span>,
-                <span class="key"><span class="delimiter">&quot;</span><span class="content">credentials</span><span class="delimiter">&quot;</span></span>: {
-                    <span class="key"><span class="delimiter">&quot;</span><span class="content">secret</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">password</span><span class="delimiter">&quot;</span></span>
-                }
-            }
-            ,
-            <span class="key"><span class="delimiter">&quot;</span><span class="content">constraints</span><span class="delimiter">&quot;</span></span>: [
-                {
-                    <span class="key"><span class="delimiter">&quot;</span><span class="content">pattern</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">/users/*</span><span class="delimiter">&quot;</span></span>,
-                    <span class="key"><span class="delimiter">&quot;</span><span class="content">roles-allowed</span><span class="delimiter">&quot;</span></span>: [
-                        <span class="string"><span class="delimiter">&quot;</span><span class="content">user</span><span class="delimiter">&quot;</span></span>
-                    ]
-                },
-                {
-                    <span class="key"><span class="delimiter">&quot;</span><span class="content">pattern</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">/admins/*</span><span class="delimiter">&quot;</span></span>,
-                    <span class="key"><span class="delimiter">&quot;</span><span class="content">roles-allowed</span><span class="delimiter">&quot;</span></span>: [
-                        <span class="string"><span class="delimiter">&quot;</span><span class="content">admin</span><span class="delimiter">&quot;</span></span>
-                    ]
-                },
-                {
-                    <span class="key"><span class="delimiter">&quot;</span><span class="content">pattern</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">/users/permit</span><span class="delimiter">&quot;</span></span>,
-                    <span class="key"><span class="delimiter">&quot;</span><span class="content">permit</span><span class="delimiter">&quot;</span></span>: <span class="value">true</span>
-                },
-                {
-                    <span class="key"><span class="delimiter">&quot;</span><span class="content">pattern</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">/users/deny</span><span class="delimiter">&quot;</span></span>,
-                    <span class="key"><span class="delimiter">&quot;</span><span class="content">deny</span><span class="delimiter">&quot;</span></span>: <span class="value">true</span>
-                }
-            ]
-        }
-    ]
-}</code></pre>
-</div>
-</div>
-<div class="sect3">
-<h4 id="basic-config"><a class="anchor" href="#basic-config"></a>10.2.1. Basic Config</h4>
-<div class="paragraph">
-<p>The basic configuration options for the server are as follows:</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">target-url</dt>
-<dd>
-<p>The URL this server is proxying. <em>REQUIRED</em>.</p>
-</dd>
-<dt class="hdlist1">target-request-timeout</dt>
-<dd>
-<p>The timeout (in ms) for the proxied request. <em>OPTIONAL</em>.
-Default is 30000.</p>
-</dd>
-<dt class="hdlist1">send-access-token</dt>
-<dd>
-<p>Boolean flag.
-If true, this will send the access token via the KEYCLOAK_ACCESS_TOKEN header to the proxied server. <em>OPTIONAL</em>.
-Default is false.</p>
-</dd>
-<dt class="hdlist1">bind-address</dt>
-<dd>
-<p>DNS name or IP address to bind the proxy server&#8217;s sockets to. <em>OPTIONAL</em>.
-The default value is <em>localhost</em></p>
-</dd>
-<dt class="hdlist1">http-port</dt>
-<dd>
-<p>Port to listen for HTTP requests.
-If you do not specify this value, then the proxy will not listen for regular HTTP requests. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">https-port</dt>
-<dd>
-<p>Port to listen for HTTPS requests.
-If you do not specify this value, then the proxy will not listen for HTTPS requests. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">keystore</dt>
-<dd>
-<p>Path to a Java keystore file that contains private key and certificate for the server to be able to handle HTTPS requests.
-Can be a file path, or, if you prefix it with <code>classpath:</code>                            it will look for this file in the classpath. <em>OPTIONAL</em>.
-If you have enabled HTTPS, but have not defined a keystore, the proxy will auto-generate a self-signed certificate and use that.</p>
-</dd>
-<dt class="hdlist1">buffer-size</dt>
-<dd>
-<p>HTTP server socket buffer size.
-Usually the default is good enough. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">buffers-per-region</dt>
-<dd>
-<p>HTTP server socket buffers per region.
-Usually the default is good enough. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">io-threads</dt>
-<dd>
-<p>Number of threads to handle IO.
-Usually default is good enough.
- <em>OPTIONAL</em>.
-The default is the number of available processors * 2.</p>
-</dd>
-<dt class="hdlist1">worker-threads</dt>
-<dd>
-<p>Number of threads to handle requests.
-Usually the default is good enough. <em>OPTIONAL</em>.
-The default is the number of available processors * 16.</p>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="application-config"><a class="anchor" href="#application-config"></a>10.3. Application Config</h3>
-<div class="paragraph">
-<p>Next under the <code>applications</code> array attribute, you can define one or more applications per host you are proxying.</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">base-path</dt>
-<dd>
-<p>The base context root for the application.
-Must start with '/'. <em>REQUIRED</em>.</p>
-</dd>
-<dt class="hdlist1">error-page</dt>
-<dd>
-<p>If the proxy has an error, it will display the target application&#8217;s error page relative URL. <em>OPTIONAL</em>.
-This is a relative path to the base-path.
-In the example above it would be <code>/customer-portal/error.html</code>.</p>
-</dd>
-<dt class="hdlist1">adapter-config</dt>
-<dd>
-<p><em>REQUIRED</em>.
-Same configuration as any other Keycloak adapter.</p>
-</dd>
-<dt class="hdlist1">proxy-address-forwarding</dt>
-<dd>
-<p>Enable usage of X-Forwarded-For, X-Forwarded-Host, X-Forwarded-Proto when hosted behind another proxy/load-balancer.</p>
-</dd>
-</dl>
-</div>
-<div class="sect3">
-<h4 id="constraint-config"><a class="anchor" href="#constraint-config"></a>10.3.1. Constraint Config</h4>
-<div class="paragraph">
-<p>Next under each application you can define one or more constraints in the <code>constraints</code> array attribute.
-A constraint defines a URL pattern relative to the base-path.
-You can deny, permit, or require authentication for a specific URL pattern.
-You can specify roles allowed for that path as well.
-More specific constraints will take precedence over more general ones.</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">pattern</dt>
-<dd>
-<p>URL pattern to match relative to the base-path of the application.
-Must start with '/'. <em>REQUIRED.</em>
-You may only have one wildcard and it must come at the end of the pattern.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Valid: <code>/foo/bar/*</code> and  <code>/foo/*.txt</code></p>
-</li>
-<li>
-<p>Not valid: <code>/*/foo/*</code>.</p>
-</li>
-</ul>
-</div>
-</dd>
-<dt class="hdlist1">roles-allowed</dt>
-<dd>
-<p>Array of strings of roles allowed to access this url pattern. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">methods</dt>
-<dd>
-<p>Array of strings of HTTP methods that will exclusively match this pattern and HTTP request. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">excluded-methods</dt>
-<dd>
-<p>Array of strings of HTTP methods that will be ignored when match this pattern. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">deny</dt>
-<dd>
-<p>Deny all access to this URL pattern. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">permit</dt>
-<dd>
-<p>Permit all access without requiring authentication or a role mapping. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">permit-and-inject</dt>
-<dd>
-<p>Permit all access, but inject the headers, if user is already authenticated. <em>OPTIONAL</em>.</p>
-</dd>
-<dt class="hdlist1">authenticate</dt>
-<dd>
-<p>Require authentication for this pattern, but no role mapping. <em>OPTIONAL</em>.</p>
-</dd>
-</dl>
-</div>
-</div>
-<div class="sect3">
-<h4 id="header-names-config"><a class="anchor" href="#header-names-config"></a>10.3.2. Header Names Config</h4>
-<div class="paragraph">
-<p>Next under the list of applications you can override the defaults for the names of the header fields injected by the proxy (see <a href="#_identity_headers">Keycloak Identity Headers</a>). This mapping is optional.</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">keycloak-subject</dt>
-<dd>
-<p>e.g.
-MYAPP_USER_ID</p>
-</dd>
-<dt class="hdlist1">keycloak-username</dt>
-<dd>
-<p>e.g.
-MYAPP_USER_NAME</p>
-</dd>
-<dt class="hdlist1">keycloak-email</dt>
-<dd>
-<p>e.g.
-MYAPP_USER_EMAIL</p>
-</dd>
-<dt class="hdlist1">keycloak-name</dt>
-<dd>
-<p>e.g.
-MYAPP_USER_ID</p>
-</dd>
-<dt class="hdlist1">keycloak-access-token</dt>
-<dd>
-<p>e.g.
-MYAPP_ACCESS_TOKEN</p>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_identity_headers"><a class="anchor" href="#_identity_headers"></a>10.4. Keycloak Identity Headers</h3>
-<div class="paragraph">
-<p>When forwarding requests to the proxied server, Keycloak Proxy will set some additional headers with values from the OIDC identity token it received for authentication.</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">KEYCLOAK_SUBJECT</dt>
-<dd>
-<p>User id.
-Corresponds to JWT <code>sub</code> and will be the user id Keycloak uses to store this user.</p>
-</dd>
-<dt class="hdlist1">KEYCLOAK_USERNAME</dt>
-<dd>
-<p>Username.
-Corresponds to JWT <code>preferred_username</code>.</p>
-</dd>
-<dt class="hdlist1">KEYCLOAK_EMAIL</dt>
-<dd>
-<p>Email address of user if set.</p>
-</dd>
-<dt class="hdlist1">KEYCLOAK_NAME</dt>
-<dd>
-<p>Full name of user if set.</p>
-</dd>
-<dt class="hdlist1">KEYCLOAK_ACCESS_TOKEN</dt>
-<dd>
-<p>Send the access token in this header if the proxy was configured to send it.
-This token can be used to make bearer token requests.             Header field names can be configured using a map of <code>header-names</code> in configuration file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="json">{
-    <span class="string"><span class="delimiter">&quot;</span><span class="content">header-names</span><span class="delimiter">&quot;</span></span> {
-        <span class="key"><span class="delimiter">&quot;</span><span class="content">keycloak-subject</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">MY_SUBJECT</span><span class="delimiter">&quot;</span></span>
-    }
-}</code></pre>
-</div>
-</div>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-</div>
 </div>
 <div id="footnotes">
 <hr>
@@ -5608,7 +5258,7 @@ This token can be used to make bearer token requests.             Header field n
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-04-17 08:35:28 UTC
+Last updated 2019-04-24 08:49:49 UTC
 </div>
 </div>
 <ul id="globalnav">
