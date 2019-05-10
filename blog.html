@@ -165,6 +165,84 @@ For each newsletter, we will also highlight a few features for which we would es
 
 
 
+                <h1><a href="2019/04/keycloak-cluster-setup.html">Keycloak Cluster Setup</a></h1>
+
+                <p class="blog-date">Saturday, April 27 2019, posted by 张立强 liqiang@fit2cloud.com</p>
+
+                <div class="blog blog-container">
+
+<p xmlns="http://www.w3.org/1999/html">This post shares some solutions to setup Keycloak cluster in various scenarios (e.g. cross-DC, docker cross-host, Kubernetes).</p>
+
+<p>If you'd like to setup Keycloak cluster, this blog may give you some reference.</p>
+
+<p>Two cli script files are added to the <a href="https://hub.docker.com/r/jboss/keycloak/">Keycloak image</a> as per the <a href="https://github.com/jboss-dockerfiles/keycloak/blob/master/server/README.md#adding-custom-discovery-protocols">guide</a>.</p>
+
+<p>The Dockerfile is below and these two files are the most important matter for this blog, you can find them from <a href="https://raw.githubusercontent.com/fit2anything/keycloak-cluster-setup-and-configuration/master/src/TCPPING.cli">TCPPING.cli</a> and <a href="https://raw.githubusercontent.com/fit2anything/keycloak-cluster-setup-and-configuration/master/src/JDBC_PING.cli">JDBC_PING.cli</a>.</p>
+
+<pre>
+FROM jboss/keycloak:latest
+
+ADD cli/TCPPING.cli /opt/jboss/tools/cli/jgroups/discovery/
+ADD cli/JDBC_PING.cli /opt/jboss/tools/cli/jgroups/discovery/
+</pre>
+
+<p>First of all we should know that for a Keycloak cluster, all keycloak instances should use same database and this is very simple, another thing is about cache(generally there are two kinds of cache in Keycloaks, the 1st is persistent data cache read from database aim to improve performance like realm/client/user, the 2nd is the non-persistent data cache like sessions/clientSessions, the 2nd is very important for a cluster) which is a little bit complex to configure, we have to make sure the consistent of cache in a cluster view.</p>
+
+<p>Totally here are 3 solutions for clustering, and all of the solutions are base on the discovery protocols of <a href="http://jgroups.org/">JGroups</a> (Keycloak use <a href="http://infinispan.org/">Infinispan</a> cache and Infinispan use JGroups to discover nodes).</p>
+
+<h3>1. PING</h3>
+<p><a href="http://jgroups.org/manual/#PING">PING</a> is the default enabled clustering solution of Keycloak using UDP protocol, and you don't need to do any configuration for this.</p>
+<p>But PING is only available when multicast network is enabled and port 55200 should be exposed, e.g. bare metals, VMs, docker containers in the same host.</p>
+<img src="https://raw.githubusercontent.com/fit2anything/keycloak-cluster-setup-and-configuration/master/src/ping-deployment.jpg"/>
+<p>We tested this by two Keycloak containers in same host.</p>
+<p>The logs show that the two Keycloak instances discovered each other and clustered.</p>
+<img src="https://raw.githubusercontent.com/zhangliqiang/keycloak-cluster-setup-and-configuration/master/src/ping-log.png"/>
+
+<h3>2. TCPPING</h3>
+<p><a href="http://jgroups.org/manual/#TCPPING_Prot">TCPPING</a> use TCP protocol with 7600 port. This can be used when multicast is not available, e.g. deployments cross DC, containers cross host.</p>
+<img src="https://raw.githubusercontent.com/fit2anything/keycloak-cluster-setup-and-configuration/master/src/tcp-ping-deployment.jpg"/>
+<p>We tested this by two Keycloak containers cross host.</p>
+<p>And in this solution we need to set three below environment variables for containers.
+<pre>
+#IP address of this host, please make sure this IP can be accessed by the other Keycloak instances
+JGROUPS_DISCOVERY_EXTERNAL_IP=172.21.48.39
+#protocol
+JGROUPS_DISCOVERY_PROTOCOL=TCPPING
+#IP and Port of all host
+JGROUPS_DISCOVERY_PROPERTIES=initial_hosts="172.21.48.4[7600],172.21.48.39[7600]"
+</pre>
+</p>
+<p>The logs show that the two Keycloak instances discovered each other and clustered.</p>
+<img src="https://raw.githubusercontent.com/fit2anything/keycloak-cluster-setup-and-configuration/master/src/tcp-ping-log.png"/>
+
+<h3>3. JDBC_PING</h3>
+<p><a href="http://jgroups.org/manual/#_jdbc_ping">JDBC_PING</a> use TCP protocol with 7600 port which is similar as TCPPING, but the difference between them is, TCPPING requires you configure the IP and port of all instances,  for JDBC_PING you just need to configure the IP and port of current instance, this is because in JDBC_PING solution each instance insert its own information into database and the instances discover peers by the ping data read from database.</p>
+<p>We tested this by two Keycloak containers cross host.</p>
+<p>And in this solution we need to set two below environment variables for containers.
+<pre>
+#IP address of this host, please make sure this IP can be accessed by the other Keycloak instances
+JGROUPS_DISCOVERY_EXTERNAL_IP=172.21.48.39
+#protocol
+JGROUPS_DISCOVERY_PROTOCOL=JDBC_PING
+</pre>
+</p>
+<p>The ping data of all instances haven been saved in database after instances started.</p>
+<img src="https://raw.githubusercontent.com/fit2anything/keycloak-cluster-setup-and-configuration/master/src/jdbc-ping-data.png"/>
+<p>The logs show that the two Keycloak instances discovered each other and clustered.</p>
+<img src="https://raw.githubusercontent.com/fit2anything/keycloak-cluster-setup-and-configuration/master/src/jdbc-ping-log.png"/>
+
+<h3>One more thing</h3>
+<p>The above solutions are available for most scenarios, but they are still not enough for some others, e.g.Kubernetes.</p>
+<p>The typical deployment on Kubernetes is one Deployment/ReplicateSet/StatefulSet contains multi Keycloak Pods, the Pods are really dynamic as they can scale up and down or failover to another node, which requires the cluster to discover and remove these dynamic members.</p>
+<p>On Kubernetes we can use <a href="https://github.com/jboss-dockerfiles/keycloak/blob/master/server/README.md#openshift-example-with-dnsdns_ping">DNS_PING</a> or <a href="http://jgroups.org/manual/#_kube_ping">KUBE_PING</a> which work quite well in  <a href="https://github.com/helm/charts/blob/master/stable/keycloak/templates/statefulset.yaml#L92">practice</a>. </p>
+<p>Besides DNS_PING and KUBE_PING, JDBC_PING is another option for Kubernetes. </p>
+<p>On Kubernetes multicast is available only for the containers in the same node and a pod has no static ip which can be used to configure TCPPING or JDBC_PING. But in the JDBC_PING.cli mentioned above we have handled this, if you don't set the JGROUPS_DISCOVERY_EXTERNAL_IP env, the pod ip will be used, that means on Kubernetes you can simply set JGROUPS_DISCOVERY_PROTOCOL=JDBC_PING then your keycloak cluster is ok.</p>
+
+<h3>Discussion</h3>
+<p>Suggestions and comments can be discussed via <a href="https://lists.jboss.org/mailman/listinfo/keycloak-user">Keycloak User Mail List</a> or <a href="https://github.com/fit2anything/keycloak-cluster-setup-and-configuration">this GitHub Repository</a>.</p>                </div>
+
+
+
                 <h1><a href="2019/04/versioning.html">Keycloak Releases and Versioning</a></h1>
 
                 <p class="blog-date">Wednesday, April 24 2019, posted by Stian Thorgersen</p>
@@ -308,69 +386,6 @@ For each newsletter, we will also highlight a few features for which we would es
 <li><a href="https://issues.jboss.org/browse/KEYCLOAK-6073">Support different URLs for front and back channel requests in adapters</a> - When adapters are located alongside Keycloak, it's not always recommended to use the public URL of Keycloak; this issue concerns allowing adapters to use one URL for back-channel requests and a different URL for redirects.</li>
 <li><a href="https://issues.jboss.org/browse/KEYCLOAK-2939">OpenID Connect Front-Channel Logout</a> - Add support for OpenID Connect Front-Channel logout specification to Keycloak.</li>
 <li><a href="https://issues.jboss.org/browse/KEYCLOAK-2537">SCIM 2</a> - Add support for the SCIM 2 specification to Keycloak, which provides a standards-based interface for user management.</li>
-</ul>
-</p>
-                </div>
-
-
-
-                <h1><a href="2019/03/web-authn.html">W3C Web Authentication (WebAuthn)</a></h1>
-
-                <p class="blog-date">Wednesday, March 06 2019, posted by Stian Thorgersen</p>
-
-                <div class="blog blog-container">
-
-<p>
-W3C Web Authentication (WebAuthn) was recently made an official web standard. This is a great step towards making a safer and
-simpler authentication experience for users.
-</p>
-
-<p>
-Where traditional authentication, such as password and OTP, rely on having shared secrets between the user and the
-web application, this is not the case with WebAuthn. WebAuthn uses public key-based credentials resulting in the web
-application not having access to the users secrets anymore. The keys are also unique per web application which eliminates
-the risk of phishing attacks.
-</p>
-
-<p>
-WebAuthn provides a standard protocol for web applications to authenticate via a number of devices through a relatively
-simple challenge/response. All major browser vendors now have support for WebAuthn and FIDO2, where FIDO2 is the specification
-that enables the browser to communicate with different hardware devices.
-</p>
-
-<p>
-WebAuthn can be used both as a two factor mechanism as well as enable passwordless authentication. There are already
-an healthy amount of devices that can be used together with WebAuthn. There are a number of security keys like
-<a href="https://www.yubico.com/">YubiKey</a>, <a href="https://thinc.ensurity.com/">ThinC</a> and
-<a href="https://cloud.google.com/titan-security-key/">Titan</a>. A lot of new laptops also come with built-in
-fingerprint scanners, and it Android also recently made it possible to use the fingerprint scanners on Android 7+ devices with WebAuthn.
-</p>
-
-<p>
-We are of course planning on bringing WebAuthn support to Keycloak in the near future. The team behind <a href="https://github.com/webauthn4j/webauthn4j">webauthn4j</a>
-has been hard at work greating a quality Java library for WebAuthn and will hopefully soon have an extension to
-Keycloak ready.
-</p>
-
-<p>
-We will first focus on two-factor authentication with WebAuth and as part of this we will bring a number of improvements
-to Keycloak around two-factor authentication. For more details check the
-<a href="https://github.com/keycloak/keycloak-community/blob/master/design/web-authn-two-factor.md">design document</a>.
-</p>
-
-<p>
-Later, we will also bring the passwordless experience to Keycloak. This will also introduce Keycloak to the identity
-first login flows. By asking for the users identity first Keycloak can provide smarter decisions on how to authenticate
-a user based on the users preferences. For example requesting the user to press the button on their security key instead
-of asking for a password.
-</p>
-
-<p>
-Resources:
-<ul>
-<li><a href="https://www.w3.org/TR/webauthn/">W3C Specification</a></li>
-<li><a href="https://fidoalliance.org/w3c-and-fido-alliance-finalize-web-standard-for-secure-passwordless-logins/">W3C and FIDO Alliance Finalize Web Standard for Secure, Passwordless Logins</a></li>
-<li><a href="https://www.wired.com/story/android-passwordless-login-fido2/">Android is helping kill passwords on a billion devices</a></li>
 </ul>
 </p>
                 </div>
