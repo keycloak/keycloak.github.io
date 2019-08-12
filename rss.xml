@@ -9,6 +9,78 @@
   <language>en-us</language>
   <category>Keycloak/SSO/Identity and Access Management</category>
       <item>
+        <title>Keycloak and JDBC Ping</title>
+        <link>https://www.keycloak.org/2019/08/keycloak-jdbc-ping.html</link>
+        <description>
+&lt;p&gt;
+A few months back, we had a great article about clustering using &lt;a href=&quot;http://jgroups.org/manual/#JDBC_PING&quot;&gt;JDBC_PING&lt;/a&gt; protocol. Since then, we introduced some improvements for the &lt;a href=&quot;https://quay.io/repository/keycloak/keycloak?tab=tags&quot;&gt;Keycloak container image&lt;/a&gt; that can simplify the setup. So, before diving into this blog post, I highly encourage you to visit the &lt;a href=&quot;https://www.keycloak.org/2019/05/keycloak-cluster-setup.html&quot;&gt;Keycloak Cluster Setup&lt;/a&gt; article.
+&lt;/p&gt;
+
+
+&lt;h2&gt;What has changed in our Container Image?&lt;/h2&gt;
+&lt;p&gt;
+Probably the most important change is configuring the JGroups discovery protocol by using variables (see the &lt;a href=&quot;https://github.com/jboss-dockerfiles/keycloak/pull/151&quot;&gt;Pull Request&lt;/a&gt;). Once the change got in, we could configure the JGroups discovery by setting two properties:
+&lt;ul&gt;
+&lt;li&gt;JGROUPS_DISCOVERY_PROTOCOL&lt;/li&gt;
+&lt;li&gt;JGROUPS_DISCOVERY_PROPERTIES&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/p&gt;
+
+&lt;h2&gt;Let&#39;s apply the changes, shall we...&lt;/h2&gt;
+&lt;p&gt;
+The JDBC_PING-based setup works fine in all scenarios, where we connect all Keyclaok instances to the same database. Since JDBC_PING can be configured to obtain a database connection using JNDI binding, it can easily connect to the Keycloak database. All we need to do is to add two parameters to our docker image:
+&lt;ul&gt;
+&lt;li&gt;JGROUPS_DISCOVERY_PROTOCOL=JDBC_PING&lt;/li&gt;
+&lt;li&gt;JGROUPS_DISCOVERY_PROPERTIES=datasource_jndi_name=java:jboss/datasources/KeycloakDS&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/p&gt;
+
+You may find an end-to-end scenario &lt;a href=&quot;https://github.com/jboss-dockerfiles/keycloak/pull/204&quot;&gt;here&lt;/a&gt;.
+&lt;/p&gt;
+
+&lt;h2&gt;Additional configuration&lt;/h2&gt;
+&lt;p&gt;
+In some scenarios, you may need additional configuration. All additional settings might be added to the JGROUPS_DISCOVERY_PROPERTIES. Here are some hints and common problems, that you may find:
+&lt;table&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Problem description&lt;/td&gt;
+&lt;td&gt;Possible solution&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;The initialization SQL needs to be adjusted&lt;/td&gt;
+&lt;td&gt;In this case, you might want to look at &lt;tt&gt;initialize_sql&lt;/tt&gt; JDBC_PING property&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;When Keycloak crashes, the database is not cleared&lt;/td&gt;
+&lt;td&gt;Turn &lt;tt&gt;remove_old_coords_on_view_change&lt;/tt&gt; property on&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;When Keycloak crashes, the database is not cleared&lt;/td&gt;
+&lt;td&gt;Also, when a cluster is not too large, you may turn the &lt;tt&gt;remove_all_data_on_view_change&lt;/tt&gt; property on&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Sometimes, Keycloak doesn&#39;t write its data into the database&lt;/td&gt;
+&lt;td&gt;You may lower the &lt;tt&gt;info_writer_sleep_time&lt;/tt&gt; and &lt;tt&gt;info_writer_max_writes_after_view&lt;/tt&gt; property values&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/p&gt;
+
+&lt;/br&gt;
+
+&lt;p&gt;
+Haven fun and don&#39;t forget to let us know what you think about this blog post using the &lt;a href=&quot;https://lists.jboss.org/mailman/listinfo/keycloak-user&quot;&gt;User Mailing List&lt;/a&gt;.
+&lt;/br&gt;
+Sebastian Łaskawiec and the Keycloak Team
+&lt;/p&gt;
+</description>
+        <guid>https://www.keycloak.org/2019/08/keycloak-jdbc-ping.html</guid>
+        <pubDate>Mon, 12 Aug 2019 00:00:00 GMT</pubDate>
+        <category>Cluster, JDBC_PING</category>
+        <author>Sebastian Łaskaiwec</author>
+      </item>
+      <item>
         <title>Keycloak Cluster Setup</title>
         <link>https://www.keycloak.org/2019/05/keycloak-cluster-setup.html</link>
         <description>
