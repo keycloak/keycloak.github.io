@@ -733,7 +733,14 @@ span.image img {
 </ul>
 </li>
 <li><a href="#leveraging-java-ee">6.3. Leveraging Java EE</a></li>
-<li><a href="#available-spis">6.4. Available SPIs</a></li>
+<li><a href="#_script_providers">6.4. JavaScript Providers</a>
+<ul class="sectlevel3">
+<li><a href="#create-a-jar-with-the-scripts-you-want-to-deploy">6.4.1. Create a JAR with the scripts you want to deploy</a></li>
+<li><a href="#deploy-the-script-jar">6.4.2. Deploy the Script JAR</a></li>
+<li><a href="#using-keycloak-administration-console-to-upload-scripts">6.4.3. Using Keycloak Administration Console to upload scripts</a></li>
+</ul>
+</li>
+<li><a href="#available-spis">6.5. Available SPIs</a></li>
 </ul>
 </li>
 <li><a href="#_extensions">7. Extending the Server</a>
@@ -2189,7 +2196,165 @@ perform a JNDI lookup of the Stateful EJB in its <code>create()</code> method.</
 </div>
 </div>
 <div class="sect2">
-<h3 id="available-spis"><a class="anchor" href="#available-spis"></a>6.4. Available SPIs</h3>
+<h3 id="_script_providers"><a class="anchor" href="#_script_providers"></a>6.4. JavaScript Providers</h3>
+<div class="paragraph">
+<p>Keycloak has the ability to execute scripts during runtime in order to allow administrators to customize specific functionalities:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OpenID Connect Script Protocol Mapper</p>
+</li>
+<li>
+<p>OpenID Connect Script Authenticator</p>
+</li>
+<li>
+<p>JavaScript Policy</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="create-a-jar-with-the-scripts-you-want-to-deploy"><a class="anchor" href="#create-a-jar-with-the-scripts-you-want-to-deploy"></a>6.4.1. Create a JAR with the scripts you want to deploy</h4>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+JAR files are regular ZIP files with a <code>.jar</code> extension.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In order to make your scripts available to Keycloak you need to deploy them to the server. For that, you should create
+a <code>JAR</code> file with the following structure:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>META-INF/keycloak-scripts.json
+
+my-script-authenticator.js
+my-script-policy.js
+my-script-mapper.js</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>META-INF/keycloak-scripts.json</code> is a file descriptor that provides metadata information about the scripts you want to deploy. It is a JSON file with the following structure:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="json">{
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">authenticators</span><span class="delimiter">&quot;</span></span>: [
+        {
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">name</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">My Authenticator</span><span class="delimiter">&quot;</span></span>,
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">fileName</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">my-authenticator.js</span><span class="delimiter">&quot;</span></span>,
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">description</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">My Authenticator from a JS file</span><span class="delimiter">&quot;</span></span>
+        }
+    ],
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">policies</span><span class="delimiter">&quot;</span></span>: [
+        {
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">name</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">My Policy</span><span class="delimiter">&quot;</span></span>,
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">fileName</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">my-policy.js</span><span class="delimiter">&quot;</span></span>,
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">description</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">My Policy from a JS file</span><span class="delimiter">&quot;</span></span>
+        }
+    ],
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">mappers</span><span class="delimiter">&quot;</span></span>: [
+        {
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">name</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">My Mapper</span><span class="delimiter">&quot;</span></span>,
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">fileName</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">my-mapper.js</span><span class="delimiter">&quot;</span></span>,
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">description</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">My Mapper from a JS file</span><span class="delimiter">&quot;</span></span>
+        }
+    ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This file should reference the different types of script providers that you want to deploy:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>authenticators</code></p>
+<div class="paragraph">
+<p>For OpenID Connect Script Authenticators. You can have one or multiple authenticators in the same JAR file</p>
+</div>
+</li>
+<li>
+<p><code>policies</code></p>
+<div class="paragraph">
+<p>For JavaScript Policies when using Keycloak Authorization Services. You can have one or multiple policies in the same JAR file</p>
+</div>
+</li>
+<li>
+<p><code>mappers</code></p>
+<div class="paragraph">
+<p>For OpenID Connect Script Protocol Mappers. You can have one or multiple mappers in the same JAR file</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For each script file in your <code>JAR</code> file you must have a corresponding entry in <code>META-INF/keycloak-scripts.json</code> that maps your scripts files to a specific provider type. For that you should provide the following properties for each entry:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>name</code></p>
+<div class="paragraph">
+<p>A friendly name that will be used to show the scripts through the Keycloak Administration Console. If not provided, the name
+of the script file will be used instead</p>
+</div>
+</li>
+<li>
+<p><code>description</code></p>
+<div class="paragraph">
+<p>An optional text that better describes the intend of the script file</p>
+</div>
+</li>
+<li>
+<p><code>fileName</code></p>
+<div class="paragraph">
+<p>The name of the script file. This property is <strong>mandatory</strong> and should map to a file within the JAR.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="deploy-the-script-jar"><a class="anchor" href="#deploy-the-script-jar"></a>6.4.2. Deploy the Script JAR</h4>
+<div class="paragraph">
+<p>Once you have a JAR file with a descriptor and the scripts you want to deploy, you just need to copy the JAR to the to the Keycloak <code>standalone/deployments/</code> directory.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="using-keycloak-administration-console-to-upload-scripts"><a class="anchor" href="#using-keycloak-administration-console-to-upload-scripts"></a>6.4.3. Using Keycloak Administration Console to upload scripts</h4>
+<div class="paragraph">
+<p>By default, the Keycloak Administration Console won&#8217;t allow administrators to upload scripts to the server. The reason is that
+script execution can potentially harm the system due to the execution of malicious scripts. In order to prevent different types of
+attacks and lower the risks when running scripts at runtime, administrators should prefer deploying scripts directly to the server using a JAR file.</p>
+</div>
+<div class="paragraph">
+<p>By deploying scripts directly into the server, we expect that scripts go through a proper code analysis in order to find possible
+vulnerabilities that can be introduced by any script deployed to the server.</p>
+</div>
+<div class="paragraph">
+<p>However, it should still be possible to upload scripts to the server through the Keycloak Administration Console. For that,
+you must set the following system property when booting the server:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">    -Dkeycloak.profile.feature.upload_scripts=enabled</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more details about how to enable the <code>upload_scripts</code> feature. Please, take a look at the <a href="https://www.keycloak.org/docs/7.0/server_installation/#profiles">Profiles</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="available-spis"><a class="anchor" href="#available-spis"></a>6.5. Available SPIs</h3>
 <div class="paragraph">
 <p>If you want to see list of all available SPIs at runtime, you can check <code>Server Info</code> page in admin console as described in <a href="#_providers_admin_console">Admin Console</a> section.</p>
 </div>
@@ -5356,7 +5521,7 @@ before upgrading Keycloak. This will remove linked local imported copies of any 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-08-26 11:30:44 UTC
+Last updated 2019-10-16 12:19:12 UTC
 </div>
 </div>
 <ul id="globalnav">
