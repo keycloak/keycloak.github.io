@@ -754,14 +754,40 @@ span.image img {
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
+<li><a href="#keycloak-8-0-0">Keycloak 8.0.0</a>
+<ul class="sectlevel2">
+<li><a href="#highlights">Highlights</a>
+<ul class="sectlevel3">
+<li><a href="#vault">Vault</a></li>
+<li><a href="#new-default-hostname-provider">New Default Hostname provider</a></li>
+<li><a href="#messages-in-theme-resources">Messages in theme resources</a></li>
+<li><a href="#rolemappingsprovider-spi-for-the-saml-adapters">RoleMappingsProvider SPI for the SAML adapters</a></li>
+<li><a href="#wildfly-18-upgrade">WildFly 18 Upgrade</a></li>
+<li><a href="#w3c-web-authentication-support">W3C Web Authentication support</a></li>
+<li><a href="#support-for-password-less-authentication-multi-factor-authentication-and-multiple-credentials-per-user">Support for password-less authentication, multi-factor authentication and multiple credentials per user</a></li>
+</ul>
+</li>
+<li><a href="#other-improvements">Other Improvements</a>
+<ul class="sectlevel3">
+<li><a href="#system-properties-and-environment-variables-support-in-theme-properties">System properties and environment variables support in theme.properties</a></li>
+<li><a href="#support-more-signing-algorithms-for-client-authentication-with-signed-jwt">Support more signing algorithms for client authentication with signed JWT</a></li>
+<li><a href="#configurable-client-authentication-method-for-oidc-identity-providers">Configurable client authentication method for OIDC Identity providers</a></li>
+<li><a href="#support-enable-disable-logging-into-the-javascript-adapter">Support enable/disable logging into the JavaScript adapter</a></li>
+<li><a href="#credentials-support-removed-from-the-javascript-adapter">Credentials support removed from the JavaScript adapter</a></li>
+<li><a href="#updates-for-gatekeeper">Updates for Gatekeeper</a></li>
+<li><a href="#deploying-scripts-to-the-server">Deploying Scripts to the Server</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a href="#keycloak-7-0-1-final">Keycloak 7.0.1.Final</a>
 <ul class="sectlevel2">
-<li><a href="#deploying-scripts-to-the-server">Deploying Scripts to the Server</a></li>
+<li><a href="#deploying-scripts-to-the-server-2">Deploying Scripts to the Server</a></li>
 </ul>
 </li>
 <li><a href="#keycloak-7-0-0">Keycloak 7.0.0</a>
 <ul class="sectlevel2">
-<li><a href="#highlights">Highlights</a>
+<li><a href="#highlights-2">Highlights</a>
 <ul class="sectlevel3">
 <li><a href="#wildfly-17-upgrade">WildFly 17 Upgrade</a></li>
 <li><a href="#tomcat-9-adapter-support">Tomcat 9 adapter support</a></li>
@@ -770,7 +796,7 @@ span.image img {
 <li><a href="#testing-and-release-automation">Testing and release automation</a></li>
 </ul>
 </li>
-<li><a href="#other-improvements">Other improvements</a></li>
+<li><a href="#other-improvements-2">Other improvements</a></li>
 </ul>
 </li>
 <li><a href="#keycloak-6-0-0">Keycloak 6.0.0</a>
@@ -931,10 +957,157 @@ span.image img {
 </div>
 </div>
 <div class="sect1">
+<h2 id="keycloak-8-0-0"><a class="anchor" href="#keycloak-8-0-0"></a>Keycloak 8.0.0</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="highlights"><a class="anchor" href="#highlights"></a>Highlights</h3>
+<div class="sect3">
+<h4 id="vault"><a class="anchor" href="#vault"></a>Vault</h4>
+<div class="paragraph">
+<p>Several configuration fields can obtain their value from
+a vault instead of entering the value directly: LDAP bind password,
+SMTP password, and identity provider secrets.</p>
+</div>
+<div class="paragraph">
+<p>Furthermore, new vault SPI has been introduced to enable development
+of extensions to access secrets from custom vaults.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="new-default-hostname-provider"><a class="anchor" href="#new-default-hostname-provider"></a>New Default Hostname provider</h4>
+<div class="paragraph">
+<p>The fixed and request hostname providers have been replaced with a single new default hostname provider. This provider
+comes with a number of improvements, including:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>No need to change provider to set fixed base URL</p>
+</li>
+<li>
+<p>Support different base URL for frontend and backend requests</p>
+</li>
+<li>
+<p>Support changing context-path in cases where Keycloak is exposed on a different context-path through a reverse proxy</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="messages-in-theme-resources"><a class="anchor" href="#messages-in-theme-resources"></a>Messages in theme resources</h4>
+<div class="paragraph">
+<p>Message bundles in theme resources enables internationalization of custom providers such as authenticators. They are also shared between all theme types, making it possible to for example share messages between the login and account console. Thanks to <a href="https://github.com/micedre">micedre</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="rolemappingsprovider-spi-for-the-saml-adapters"><a class="anchor" href="#rolemappingsprovider-spi-for-the-saml-adapters"></a>RoleMappingsProvider SPI for the SAML adapters</h4>
+<div class="paragraph">
+<p>We have added a new SPI that allows for the configuration of custom role mappers that are used by the SAML adapters to map
+the roles extracted from the SAML assertion into roles that exist in the SP application environment. This is particularly useful
+when the adapters need to communicate with third party IDPs and the roles set by the IDP in the assertion do not correspond to
+the roles that were defined for the SP application. The provider to be used can configured in the <code>keycloak-saml.xml</code>
+file or in the <code>keycloak-saml</code> subsystem. An implementation that performs the role mappings based on the contents of a properties
+file was also provided.</p>
+</div>
+<div class="paragraph">
+<p>Notice that when Keycloak acts as the IDP we can use the built-in role mappers to perform any necessary mappings
+before setting the roles into the assertion, so this SPI will probably be redundant in this case. The <code>RoleMappingsProvider</code>
+SPI was designed for situations when the IDP offer no way to map roles before adding them to the assertion.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="wildfly-18-upgrade"><a class="anchor" href="#wildfly-18-upgrade"></a>WildFly 18 Upgrade</h4>
+<div class="paragraph">
+<p>Keycloak server was upgraded to use WildFly 18 under the covers.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="w3c-web-authentication-support"><a class="anchor" href="#w3c-web-authentication-support"></a>W3C Web Authentication support</h4>
+<div class="paragraph">
+<p>In this release, we added initial support for W3C Web Authentication (WebAuthn). There are a few limitations in current implementation,
+however we are working on further improvements in this area. Thanks to <a href="https://github.com/tnorimat">tnorimat</a> for the contribution. Also thanks to
+<a href="https://github.com/ynojima">ynojima</a> for the help and feedback.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="support-for-password-less-authentication-multi-factor-authentication-and-multiple-credentials-per-user"><a class="anchor" href="#support-for-password-less-authentication-multi-factor-authentication-and-multiple-credentials-per-user"></a>Support for password-less authentication, multi-factor authentication and multiple credentials per user</h4>
+<div class="paragraph">
+<p>With the arrival of W3C Web Authentication support, we&#8217;ve refined the authentication flow system to be able to allow a user to select which authentication method is preferred for login (for example, the choice between an OTP credential and a WebAuthn credential). The new mechanisms also allow an administrator to
+craft flows for password-less login, for example just using WebAuthn as an authentication method. Please note that with these changes, any custom authentication
+flow you have created may need to be adapted to the new flow logic.</p>
+</div>
+<div class="paragraph">
+<p>As a result of these changes, users can now have multiple OTP devices and multiple WebAuthn devices. The same system that allows a user
+to select which type of device to use during login also allows that user to select which specific device to use. Thanks to the <a href="https://github.com/cloudtrust">Cloudtrust</a> team:
+<a href="https://github.com/AlistairDoswald">AlistairDoswald</a>, <a href="https://github.com/fperot74">sispeo</a> and <a href="https://github.com/Fratt">Fratt</a> for their contributions, and
+to <a href="https://github.com/harture">harture</a> and <a href="https://github.com/lagess">Laurent</a> for their help.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="other-improvements"><a class="anchor" href="#other-improvements"></a>Other Improvements</h3>
+<div class="sect3">
+<h4 id="system-properties-and-environment-variables-support-in-theme-properties"><a class="anchor" href="#system-properties-and-environment-variables-support-in-theme-properties"></a>System properties and environment variables support in theme.properties</h4>
+<div class="paragraph">
+<p>It is now possible to use system properties and environment variables within theme.properties file. Thanks to <a href="https://github.com/Opa-">Opa-</a></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="support-more-signing-algorithms-for-client-authentication-with-signed-jwt"><a class="anchor" href="#support-more-signing-algorithms-for-client-authentication-with-signed-jwt"></a>Support more signing algorithms for client authentication with signed JWT</h4>
+<div class="paragraph">
+<p>Thanks to <a href="https://github.com/tnorimat">tnorimat</a>, we support more signing algorithms for client authentication with signed JWT.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configurable-client-authentication-method-for-oidc-identity-providers"><a class="anchor" href="#configurable-client-authentication-method-for-oidc-identity-providers"></a>Configurable client authentication method for OIDC Identity providers</h4>
+<div class="paragraph">
+<p>In this release, possibility to authenticate OIDC providers with signed JWT or basic authentication was added. So all the client
+authentication methods mentioned in the <a href="https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">OIDC specification</a>
+are supported now. Thanks to <a href="https://github.com/madgaet">madgaet</a> and <a href="https://github.com/rradillen">rradillen</a> for contributions.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="support-enable-disable-logging-into-the-javascript-adapter"><a class="anchor" href="#support-enable-disable-logging-into-the-javascript-adapter"></a>Support enable/disable logging into the JavaScript adapter</h4>
+<div class="paragraph">
+<p>Thanks to <a href="https://github.com/jonkoops">jonkoops</a> now it&#8217;s possible to enable or disable logging for the JS adapter.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="credentials-support-removed-from-the-javascript-adapter"><a class="anchor" href="#credentials-support-removed-from-the-javascript-adapter"></a>Credentials support removed from the JavaScript adapter</h4>
+<div class="paragraph">
+<p>The option to provide client credentials in the JavaScript adapter was removed. Thanks to <a href="https://github.com/jonkoops">jonkoops</a></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="updates-for-gatekeeper"><a class="anchor" href="#updates-for-gatekeeper"></a>Updates for Gatekeeper</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Secure token and logout endpoint were included in Gatekeeper. Thanks to <a href="https://github.com/fredbi">fredbi</a></p>
+</li>
+<li>
+<p>There was a bug on Gatekeeper which was making cookies to be applied to subdomains. Thanks to <a href="https://github.com/daniel-ac-martin">daniel-ac-martin</a> the issue was fixed</p>
+</li>
+<li>
+<p>Now Gatekeeper provides support to <a href="https://www.owasp.org/index.php/SameSite">Same-site cookies</a>. Thanks to <a href="https://github.com/fiji-flo">fiji-flo</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="deploying-scripts-to-the-server"><a class="anchor" href="#deploying-scripts-to-the-server"></a>Deploying Scripts to the Server</h4>
+<div class="paragraph">
+<p>Please take a look at <a href="https://www.keycloak.org/docs/latest/release_notes/#keycloak-7-0-1-final">7.0.1 Release Notes</a> for more details on how you can now deploy and run scripts to customize specific behavior.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="keycloak-7-0-1-final"><a class="anchor" href="#keycloak-7-0-1-final"></a>Keycloak 7.0.1.Final</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="deploying-scripts-to-the-server"><a class="anchor" href="#deploying-scripts-to-the-server"></a>Deploying Scripts to the Server</h3>
+<h3 id="deploying-scripts-to-the-server-2"><a class="anchor" href="#deploying-scripts-to-the-server-2"></a>Deploying Scripts to the Server</h3>
 <div class="paragraph">
 <p>Until now, administrators were allowed to upload scripts to the server through the Keycloak Administration Console as well as
 through the RESTful Admin API.</p>
@@ -950,7 +1123,7 @@ please take a look at <a href="https://www.keycloak.org/docs/latest/server_devel
 <h2 id="keycloak-7-0-0"><a class="anchor" href="#keycloak-7-0-0"></a>Keycloak 7.0.0</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="highlights"><a class="anchor" href="#highlights"></a>Highlights</h3>
+<h3 id="highlights-2"><a class="anchor" href="#highlights-2"></a>Highlights</h3>
 <div class="sect3">
 <h4 id="wildfly-17-upgrade"><a class="anchor" href="#wildfly-17-upgrade"></a>WildFly 17 Upgrade</h4>
 <div class="paragraph">
@@ -985,7 +1158,7 @@ Red Hat Single Sign-On.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="other-improvements"><a class="anchor" href="#other-improvements"></a>Other improvements</h3>
+<h3 id="other-improvements-2"><a class="anchor" href="#other-improvements-2"></a>Other improvements</h3>
 <div class="ulist">
 <ul>
 <li>
@@ -1559,7 +1732,7 @@ Thanks to <a href="https://github.com/looorent">loorent</a> for the contribution
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-11-15 14:34:32 UTC
+Last updated 2019-11-15 21:18:05 CET
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
