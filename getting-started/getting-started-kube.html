@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Keycloak - Guide - Keycloak on OpenJDK</title>
+    <title>Keycloak - Guide - Keycloak on Kubernetes</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Keycloak is an open source identity and access management solution">
     <meta name="author" content="Keycloak Team">
@@ -53,62 +53,119 @@
 
 <div class="page-section">
     <div class="container blog">
-        <h1>Keycloak on OpenJDK</h1>
-        <p>Get started with Keycloak on bear metal</p>
+        <h1>Keycloak on Kubernetes</h1>
+        <p>Get started with Keycloak on Kubernetes</p>
 
 <div class="sect1">
 <h2 id="_before_you_start">Before you start</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Make sure you have <a href="https://openjdk.java.net/">OpenJDK 1.8</a> or newer installed.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_download_keycloak">Download Keycloak</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>First step is to download and extract <a href="https://downloads.jboss.org/keycloak/9.0.0/keycloak-9.0.0.zip">keycloak-9.0.0.zip</a>
-from the Keycloak website.</p>
+<p>Make sure you have Minikube installed, ideally with the Ingress addon enabled.</p>
 </div>
 <div class="paragraph">
-<p>After extracting you should have a directory named keycloak-9.0.0.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_start_keycloak">Start Keycloak</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>From a terminal open the directory keycloak-9.0.0, then to start Keycloak run the following command.</p>
-</div>
-<div class="paragraph">
-<p>On Linux run:</p>
+<p>To check if you have the Ingress addon enabled run:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/standalone.sh</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">minikube addons list</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>On Windows run:</p>
+<p>If the Ingress addon is not enabled run the following to enable it:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/standalone.bat</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">minikube addons enable ingress</code></pre>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_create_an_admin_user">Create an admin user</h2>
+<h2 id="_run_keycloak">Run Keycloak</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak does not come with a default admin user, which means before you can start using Keycloak you need to create
-an admin user.</p>
+<p>The Keycloak QuickStarts repository includes some example files to help deploy Keycloak to Kubernetes. First step is to retrieve
+these files by cloing the repository:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">git clone https://github.com/keycloak/keycloak-quickstarts.git</code></pre>
+</div>
 </div>
 <div class="paragraph">
-<p>To do this open <a href="http://localhost:8080/auth" class="bare" target="_blank" rel="noopener">http://localhost:8080/auth</a>, then fill in the form with your preferred username and password.</p>
+<p>If you don&#8217;t have Git installed you can download the files directly from here:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://raw.githubusercontent.com/keycloak/keycloak-quickstarts/latest/kubernetes-examples/keycloak.yaml">keycloak.yaml</a></p>
+</li>
+<li>
+<p><a href="https://raw.githubusercontent.com/keycloak/keycloak-quickstarts/latest/kubernetes-examples/keycloak-ingress.yaml">keycloak-ingress.yaml</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s start with creating the Keycloak deployment and service:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create -f keycloak-quickstarts/kubernetes-examples/keycloak.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will start Keycloak on Kuberneters. It will also create an initial admin user with username <code>admin</code> and password
+<code>admin</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="_access_keycloak_with_ingress_addon_enabled">Access Keycloak with Ingress addon enabled</h3>
+<div class="paragraph">
+<p>Start by creating an Ingress for Keycloak:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">cat keycloak-quickstarts/kubernetes-examples/keycloak-ingress.yaml | \
+sed "s/KEYCLOAK_HOST/keycloak.$(minikube ip).nip.io/" | \
+kubectl create -f -</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run the following to find out the URLs of Keycloak:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">KEYCLOAK_URL=https://keycloak.$(minikube ip).nip.io/auth &amp;&amp;
+echo "" &amp;&amp;
+echo "Keycloak:                 $KEYCLOAK_URL" &amp;&amp;
+echo "Keycloak Admin Console:   $KEYCLOAK_URL/admin" &amp;&amp;
+echo "Keycloak Account Console: $KEYCLOAK_URL/realms/myrealm/account" &amp;&amp;
+echo ""</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Remember these URLs as you will need them throughout this guide. The URL for the account console won&#8217;t work
+right now as you will need to create the realm first.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_access_keycloak_without_ingress">Access Keycloak without Ingress</h3>
+<div class="paragraph">
+<p>If you don&#8217;t have the Ingress addon enabled you can access Keycloak from the following URL:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">KEYCLOAK_URL=http://$(minikube ip):$(kubectl get services/keycloak -o go-template='{{(index .spec.ports 0).nodePort}}')/auth &amp;&amp;
+echo "" &amp;&amp;
+echo "Keycloak:                 $KEYCLOAK_URL" &amp;&amp;
+echo "Keycloak Admin Console:   $KEYCLOAK_URL/admin" &amp;&amp;
+echo "Keycloak Account Console: $KEYCLOAK_URL/realms/myrealm/account" &amp;&amp;
+echo ""</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Remember these URLs as you will need them throughout this guide. The URL for the account console won&#8217;t work
+right now as you will need to create the realm first.</p>
+</div>
 </div>
 </div>
 </div>
@@ -116,7 +173,7 @@ an admin user.</p>
 <h2 id="_login_to_the_admin_console">Login to the admin console</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Go to the <a href="http://localhost:8080/auth/admin" target="_blank" rel="noopener">Keycloak Admin Console</a> and login with the username and password
+<p>Go to the Keycloak Admin Console and login with the username and password
 you created earlier.</p>
 </div>
 </div>
@@ -135,7 +192,7 @@ your own applications.</p>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Open the <a href="http://localhost:8080/auth/admin" target="_blank" rel="noopener">Keycloak Admin Console</a></p>
+<p>Open the Keycloak Admin Console</p>
 </li>
 <li>
 <p>Hover the mouse over the dropdown in the top-left corner where it says <code>Master</code>, then click on <code>Add realm</code></p>
@@ -174,7 +231,7 @@ your own applications.</p>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Open the <a href="http://localhost:8080/auth/admin" target="_blank" rel="noopener">Keycloak Admin Console</a></p>
+<p>Open the Keycloak Admin Console</p>
 </li>
 <li>
 <p>Click <code>Roles</code> (left-hand menu)</p>
@@ -213,7 +270,7 @@ your own applications.</p>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Open the <a href="http://localhost:8080/auth/admin" target="_blank" rel="noopener">Keycloak Admin Console</a></p>
+<p>Open the Keycloak Admin Console</p>
 </li>
 <li>
 <p>Click <code>Users</code> (left-hand menu)</p>
@@ -308,7 +365,7 @@ your own applications.</p>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Open the <a href="http://localhost:8080/auth/realms/myrealm/account" target="_blank" rel="noopener">Keycloak Account Console</a></p>
+<p>Open the Keycloak Account Console</p>
 </li>
 <li>
 <p>Login with <code>myuser</code> and the password you created earlier</p>
