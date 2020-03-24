@@ -1007,6 +1007,7 @@ span.image img {
 <ul class="sectlevel3">
 <li><a href="#default-first-login-flow">Default First Login Flow</a></li>
 <li><a href="#automatically-link-existing-first-login-flow">Automatically Link Existing First Login Flow</a></li>
+<li><a href="#disabling-automatic-user-creation">Disabling Automatic User Creation</a></li>
 </ul>
 </li>
 <li><a href="#retrieving-external-idp-tokens">Retrieving External IDP Tokens</a></li>
@@ -1017,7 +1018,7 @@ span.image img {
 <ul class="sectlevel2">
 <li><a href="#administering-sessions">Administering Sessions</a>
 <ul class="sectlevel3">
-<li><a href="#logout-all-limitations">Logout All Limitations</a></li>
+<li><a href="#limitations-of-the-code-logout-all-code-operation">Limitations of the <code>Logout all</code> Operation</a></li>
 <li><a href="#application-drilldown">Application Drilldown</a></li>
 <li><a href="#user-drilldown">User Drilldown</a></li>
 </ul>
@@ -1167,7 +1168,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>9.0.0</strong> <em>Latest</em></p>
+<p>Version <strong>9.0.2</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -2524,8 +2525,9 @@ they cannot use any stored passwords.</p>
 </dd>
 <dt class="hdlist1">Password Blacklist</dt>
 <dd>
-<p>This policy checks if a given password is contained in a blacklist file, which is potentially a very large file.
+<p>This policy checks if a given password (converted to lowercase) is contained in a blacklist file, which is potentially a very large file.
 Password blacklists are UTF-8 plain-text files with Unix line endings where every line represents a blacklisted password.
+All passwords in the blacklist must be lowercased to facilitate case-insensitive comparison.
 The file name of the blacklist file must be provided as the password policy value, e.g. <code>10_million_password_list_top_1000000.txt</code>.
 Blacklist files are resolved against <code>${jboss.server.data.dir}/password-blacklists/</code> by default.
 This path can be customized via the <code>keycloak.password.blacklists.path</code> system property,
@@ -6606,7 +6608,7 @@ select the <code>Membership</code> tab, <em>Jim</em> is now displayed there.</p>
 <div class="paragraph">
 <p>In the IT world the concepts of Group and Role are often blurred and interchangeable.
 In Keycloak, Groups are just a collection of users that you can apply roles and attributes to in one place.
-Roles define a type of user and applications assign permission and access control to roles</p>
+Roles define a type of user and applications assign permission and access control to roles.</p>
 </div>
 <div class="paragraph">
 <p>Aren&#8217;t <a href="#_composite-roles">Composite Roles</a> also similar to Groups?
@@ -7319,8 +7321,7 @@ possible to regularly rotate the keys without any downtime or interruption to us
 </div>
 <div class="paragraph">
 <p>To view the active keys for a realm select the realm in the admin console click on <code>Realm settings</code> then <code>Keys</code>. This
-will show the currently active keys for the realm. Keycloak currently only supports RSA signatures so there
-is only one active keypair. In the future as more signature algorithms are added there will be more active keypairs.</p>
+will show the currently active keys for the realm.</p>
 </div>
 <div class="paragraph">
 <p>To view passive or disabled keys select <code>Passive</code> or <code>Disabled</code>.
@@ -9089,7 +9090,7 @@ Disable this if you don&#8217;t want to confirm linking by email, but instead yo
 <dt class="hdlist1">Verify Existing Account By Re-authentication</dt>
 <dd>
 <p>This authenticator is used if email authenticator is disabled or not available (SMTP not configured for realm). It will display a login screen
-where the user needs to authenticate with his password to link their Keycloak account with the Identity provider.
+where the user needs to authenticate to link their Keycloak account with the Identity provider.
 User can also re-authenticate with some different identity provider, which is already linked to their Keycloak account.
 You can also force users to use OTP. Otherwise it&#8217;s optional and used only if OTP is already set for the user account.</p>
 </dd>
@@ -9139,6 +9140,31 @@ would require a more complex flow, for example setting the "Automatically Set Ex
 </td>
 </tr>
 </table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="disabling-automatic-user-creation"><a class="anchor" href="#disabling-automatic-user-creation"></a>Disabling Automatic User Creation</h4>
+<div class="paragraph">
+<p>The Default first login flow will look up a Keycloak account matching the external identity, and will then offer to link them; if there is no matching Keycloak account, it will automatically create one.
+This default behavior may be unsuitable for some setups, for example, when using read-only LDAP user store (which means all users are pre-created).
+In this case, automatic user creation should be turned off. To disable user creation:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>open the <code>First Broker Login</code> flow configuration;</p>
+</li>
+<li>
+<p>set <code>Create User If Unique</code> to <code>DISABLED</code>;</p>
+</li>
+<li>
+<p>set <code>Confirm Link Existing Account</code> to <code>DISABLED</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This configuration also implies that Keycloak itself won&#8217;t be able to determine which internal account would correspond to the external identity.
+Therefore, the <code>Verify Existing Account By Re-authentication</code> authenticator will ask the user to provide both username and password.</p>
 </div>
 </div>
 </div>
@@ -9207,7 +9233,7 @@ See <a href="https://www.keycloak.org/docs/latest/securing_apps/#_java_adapter_l
 <p>When a user logs into a realm, Keycloak maintains a user session for them and remembers each and every client they
 have visited within the session.  There are a lot of administrative
 functions that realm admins can perform on these user sessions.  They can view login stats for the entire realm and dive down
-into each client to see who is logged in and where.  Admins can logout a user or set of users from the Admin Console. They
+into each client to see who is logged in and where.  Admins can logout a user or a set of users from the Admin Console. They
 can revoke tokens and set up all the token and session timeouts there too.</p>
 </div>
 <div class="sect2">
@@ -9226,15 +9252,15 @@ can revoke tokens and set up all the token and session timeouts there too.</p>
 <p><span class="image"><img src="./keycloak-images/sessions.png" alt="sessions"></span></p>
 </div>
 <div class="paragraph">
-<p>A list of clients is given and how many active sessions there currently are for that client. You can also logout all
+<p>A list of clients is given and how many active sessions there currently are for that client. You can also log out all
 users in the realm by clicking the <code>Logout all</code> button on the right side of this list.</p>
 </div>
 <div class="sect3">
-<h4 id="logout-all-limitations"><a class="anchor" href="#logout-all-limitations"></a>Logout All Limitations</h4>
+<h4 id="limitations-of-the-code-logout-all-code-operation"><a class="anchor" href="#limitations-of-the-code-logout-all-code-operation"></a>Limitations of the <code>Logout all</code> Operation</h4>
 <div class="paragraph">
 <p>Any SSO cookies set will now be invalid and clients that request authentication in active browser sessions will now have to
 re-login.  Only certain clients are notified of this logout event, specifically clients that are using the Keycloak
-OIDC client adapter. Other client types (i.e. SAML) will not receive a backchannel logout request.</p>
+OIDC client adapter. Other client types, such as SAML, will not receive a backchannel logout request.</p>
 </div>
 <div class="paragraph">
 <p>It is important to note that any outstanding access tokens are not revoked by clicking <code>Logout all</code>.  They have to
@@ -9319,45 +9345,46 @@ OIDC client adapter installed.</p>
 </thead>
 <tbody>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default Signature Algorithm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The default algorithm that is used to assign tokens for this realm.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Revoke Refresh Token</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">For OIDC clients that are doing the refresh token flow, this flag, if on, will revoke that refresh token and issue another with the request that the client has to use.
- This basically means that refresh tokens have a one time use.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">For OIDC clients that are doing the refresh token flow, this flag, if on, will revoke that refresh token and issue another token with the request that the client has to use. The result is that each refresh token is used only once.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SSO Session Idle</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Also pertains to OIDC clients.  If the user is not active for longer than this timeout, the user session will be invalidated.  How is idle time checked?
-A client requesting authentication will bump the idle timeout.  Refresh token requests will also bump the idle timeout.
-There is a small window of time that is always added to the idle timeout before the session is actually invalidated (See note below).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Also pertains to OIDC clients.  If the user is not active for longer than this timeout, the user session will be invalidated.  The idle timeout is reset by a client requesting authentication or by a refresh token request.
+There is a small window of time that is always added to the idle timeout before the session  invalidation takes effect. See the note below.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SSO Session Max</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum time before a user session is expired and invalidated.  This is a hard number and time.  It controls the maximum time
- a user session can remain active, regardless of activity.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum time before a user session is expired and invalidated. This option controls the maximum time that a user session can remain active, regardless of user activity.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SSO Session Idle Remember Me</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Same as the standard SSO Session Idle configuration but specific to logins with remember me enabled. It allows for the specification of longer
- session idle timeouts when remember me is selected during the login process. It is an optional configuration and if not set to a value
- bigger than 0 it uses the same idle timeout set in the SSO Session Idle configuration.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same as the standard SSO Session Idle configuration but specific to logins with Remember Me enabled. It allows for the specification of longer
+ session idle timeouts when Remember Me is selected during the login process. It is an optional configuration and if not set to a value
+greater than 0 it uses the same idle timeout as set in the SSO Session Idle configuration.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SSO Session Max Remember Me</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Same as the standard SSO Session Max but specific to logins with remember me enabled. It allows for the specification of longer lived
- sessions when remember me is selected during the login process. It is an optional configuration and if not set to a value bigger than 0
- it uses the same session lifespan set in the SSO Session Max configuration.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same as the standard SSO Session Max but specific to logins with Remember Me enabled. It allows for the specification of longer lived
+ sessions when Remember Me is selected during the login process. It is an optional configuration and if not set to a value greater than 0
+ it uses the same session lifespan as set in the SSO Session Max configuration.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Offline Session Idle</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">For <a href="#_offline-access">offline access</a>, this is the time the session is allowed to remain idle before the offline token is revoked.
-There is a small window of time that is always added to the idle timeout before the session is actually invalidated (See note below).</p></td>
+There is a small window of time that is always added to the idle timeout before the session  invalidation takes effect. See the note below.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Offline Session Max Limited</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">For <a href="#_offline-access">offline access</a>, if this flag is on, Offline Session Max is enabled to control the maximum time the offline token can remain active, regardless of activity.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">For <a href="#_offline-access">offline access</a>, if this flag is on, Offline Session Max is enabled to control the maximum time the offline token can remain active, regardless of user activity.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Offline Session Max</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">For <a href="#_offline-access">offline access</a>, this is the maximum time before the corresponding offline token is revoked. This is a hard number and time. It controls the maximum time the offline token can remain active, regardless of activity.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">For <a href="#_offline-access">offline access</a>, this is the maximum time before the corresponding offline token is revoked.  This option controls the maximum time the offline token can remain active, regardless of user activity.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Access Token Lifespan</p></td>
@@ -9389,7 +9416,7 @@ There is a small window of time that is always added to the idle timeout before 
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Override User-Initiated Action Lifespan</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Permits the possibility of having independent timeouts per operation (e.g. e-mail verification, forgot password, user actions and Identity Provider E-mail Verification). This field is non mandatory and if nothing is specified it defaults to the value configured at <em>User-Initiated Action Lifespan</em>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Permits the possibility of having independent timeouts per operation (for example, e-mail verification, forgot password, user actions and Identity Provider E-mail Verification). This field is optional. If nothing is specified, it defaults to the value configured at <em>User-Initiated Action Lifespan</em>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -9426,10 +9453,10 @@ This is useful if your application needs to do some "offline" actions on behalf 
 An example is a periodic backup of some data every night.</p>
 </div>
 <div class="paragraph">
-<p>Your application is responsible for persisting the offline token in some storage (usually a database) and then using it to manually retrieve new access token from Keycloak server.</p>
+<p>Your application is responsible for persisting the offline token in some storage (usually a database) and then using it to retrieve new access token from Keycloak server.</p>
 </div>
 <div class="paragraph">
-<p>The difference between a classic Refresh token and an Offline token is, that an offline token will never expire by default and is not subject of <code>SSO Session Idle timeout</code> and <code>SSO Session Max lifespan</code> .
+<p>The difference between a classic Refresh token and an Offline token is, that an offline token will never expire by default and is not subject of the <code>SSO Session Idle timeout</code> and <code>SSO Session Max lifespan</code>.
 The offline token is valid even after a user logout or server restart.
 However by default you do need to use the offline token for a refresh token action at least once per 30 days (this value, <code>Offline Session Idle timeout</code>, can be changed in the administration console in the <code>Tokens</code> tab under <code>Realm Settings</code>).
 Moreover, if you enable the option <code>Offline Session Max Limited</code>, then the offline token expires after 60 days regardless of using the offline token for a refresh token action (this value, <code>Offline Session Max</code>, can also be changed in the administration console in the Tokens tab under Realm Settings).
@@ -9836,7 +9863,24 @@ Groups and roles are automatically registered, but not synchronized, so any chan
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>$ ipa user-add john --first=John --last=Smith --email=john@smith.com --phone=042424242 --street="Testing street" \      --city="Testing city" --state="Testing State" --postalcode=0000000000</pre>
+<pre>$ ipa user-add john --first=John --last=Smith --email=john@smith.com --phone=042424242 --street="Testing street" \      --city="Testing city" --state="Testing State" --postalcode=0000000000 --password</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To force setting the user&#8217;s password, use kinit.  Given the user john, you would enter this command:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kinit john</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To restore normal IPA operation, you would enter these commands:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kdestroy -A
+kinit admin</pre>
 </div>
 </div>
 </div>
@@ -13688,7 +13732,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh get testLDAPConnection -q action=testConnection -q bindCredential=secret -q bindDn=uid=admin,ou=system -q connectionUrl=ldap://localhost:10389 -q useTruststoreSpi=ldapsOnly</pre>
+<pre class="nowrap">$ kcadm.sh create testLDAPConnection -s action=testConnection -s bindCredential=secret -s bindDn=uid=admin,ou=system -s connectionUrl=ldap://localhost:10389 -s useTruststoreSpi=ldapsOnly</pre>
 </div>
 </div>
 </li>
@@ -13707,7 +13751,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh get testLDAPConnection -q action=testAuthentication -q bindCredential=secret -q bindDn=uid=admin,ou=system -q connectionUrl=ldap://localhost:10389 -q useTruststoreSpi=ldapsOnly</pre>
+<pre class="nowrap">$ kcadm.sh create testLDAPConnection -s action=testAuthentication -s bindCredential=secret -s bindDn=uid=admin,ou=system -s connectionUrl=ldap://localhost:10389 -s useTruststoreSpi=ldapsOnly</pre>
 </div>
 </div>
 </li>
@@ -14051,7 +14095,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-02-17 12:58:11 UTC
+Last updated 2020-03-24 06:54:09 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
