@@ -794,6 +794,7 @@ span.image img {
 <li><a href="#migrating-to-9-0-1">Migrating to 9.0.1</a>
 <ul class="sectlevel3">
 <li><a href="#legacy-promise-in-javascript-adapter">Legacy promise in JavaScript adapter</a></li>
+<li><a href="#duplicated-top-level-groups">Duplicated top level groups</a></li>
 </ul>
 </li>
 <li><a href="#migrating-to-9-0-0">Migrating to 9.0.0</a>
@@ -1045,7 +1046,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>9.0.3</strong> <em>Latest</em></p>
+<p>Version <strong>10.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1590,6 +1591,25 @@ to preserve compatibility with older client adapters. More details are available
 <p>It is no longer necessary to set promiseType in the JavaScript adapter, and both are available at the same time. It is
 recommended to update applications to use native promise API (<code>then</code> and <code>catch</code>) as soon as possible, as the legacy API
 (<code>success</code> and <code>error</code>) will be removed at some point.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="duplicated-top-level-groups"><a class="anchor" href="#duplicated-top-level-groups"></a>Duplicated top level groups</h4>
+<div class="paragraph">
+<p>Version 9.0.1 fixes a problem which could create duplicated top level groups in the realm. Nevertheless the existence
+of previous duplicated groups makes the upgrade process fail. The Keycloak server can be affected by this issue
+if it is using a H2, MariaDB, MySQL or PostgreSQL database. Before launching the upgrade, check if the server contains
+duplicated top level groups. For example the following SQL query can be executed at database level to list them:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>SELECT REALM_ID, NAME, COUNT(*) FROM KEYCLOAK_GROUP WHERE PARENT_GROUP is NULL GROUP BY REALM_ID, NAME HAVING COUNT(*) &gt; 1;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Only one top level group can exist in each realm with the same name. Duplicates should be reviewed and deleted before the
+upgrade. The error in the upgrade contains the message <code>Change Set META-INF/jpa-changelog-9.0.1.xml::9.0.1-
+KEYCLOAK-12579-add-not-null-constraint::keycloak failed.</code></p>
 </div>
 </div>
 </div>
@@ -2996,7 +3016,7 @@ credentials tab in the administration console.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-04-14 10:22:29 UTC
+Last updated 2020-04-29 10:38:42 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
