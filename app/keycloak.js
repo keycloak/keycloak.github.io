@@ -18,9 +18,9 @@
 (function(root, factory) {
     if ( typeof exports === 'object' ) {
         if ( typeof module === 'object' ) {
-            module.exports = factory( require("js-sha256"), require("base64-js") );    
+            module.exports = factory( require("js-sha256"), require("base64-js") );
         } else {
-            exports["keycloak"] = factory( require("js-sha256"), require("base64-js") );    
+            exports["keycloak"] = factory( require("js-sha256"), require("base64-js") );
         }
     } else {
         /**
@@ -36,7 +36,7 @@
         /**
          * [base64-js]{@link https://github.com/beatgammit/base64-js}
          *
-         * @version v1.3.0 
+         * @version v1.3.0
          * @author Kirill, Fomichev
          * @copyright Kirill, Fomichev 2014
          * @license MIT
@@ -46,7 +46,7 @@
         /**
          * [promise-polyfill]{@link https://github.com/taylorhakes/promise-polyfill}
          *
-         * @version v8.1.3 
+         * @version v8.1.3
          * @author Hakes, Taylor
          * @copyright Hakes, Taylor 2014
          * @license MIT
@@ -56,7 +56,7 @@
         var Keycloak = factory( root["sha256"], root["base64js"] );
         root["Keycloak"] = Keycloak;
 
-        if ( typeof define === "function" && define.amd ) { 
+        if ( typeof define === "function" && define.amd ) {
             define( "keycloak", [], function () { return Keycloak; } );
         }
     }
@@ -92,7 +92,7 @@
         var promise = this.then(function handleSuccess(value) {
             callback(value);
         });
-        
+
         return toKeycloakPromise(promise);
     };
 
@@ -132,7 +132,7 @@
         var useNonce = true;
         var logInfo = createLogger(console.info);
         var logWarn = createLogger(console.warn);
-        
+
         kc.init = function (initOptions) {
             kc.authenticated = false;
 
@@ -203,6 +203,12 @@
 
                 if (initOptions.silentCheckSsoRedirectUri) {
                     kc.silentCheckSsoRedirectUri = initOptions.silentCheckSsoRedirectUri;
+                }
+
+                if (typeof initOptions.silentCheckSsoFallback === 'boolean') {
+                    kc.silentCheckSsoFallback = initOptions.silentCheckSsoFallback;
+                } else {
+                    kc.silentCheckSsoFallback = true;
                 }
 
                 if (initOptions.pkceMethod) {
@@ -356,7 +362,12 @@
                 }
             }
 
-            configPromise.then(processInit);
+            configPromise.then(function () {
+                check3pCookiesSupported().then(processInit)
+                .catch(function() {
+                    promise.setError();
+                });
+            });
             configPromise.catch(function() {
                 promise.setError();
             });
@@ -846,6 +857,13 @@
                             }
                             return src;
                         },
+                        thirdPartyCookiesIframe: function() {
+                            var src = getRealmUrl() + '/protocol/openid-connect/3p-cookies/step1.html';
+                            if (kc.iframeVersion) {
+                                src = src + '?version=' + kc.iframeVersion;
+                            }
+                            return src;
+                        },
                         register: function() {
                             return getRealmUrl() + '/protocol/openid-connect/registrations';
                         },
@@ -1037,8 +1055,7 @@
 
             str = str.replace('/-/g', '+');
             str = str.replace('/_/g', '/');
-            switch (str.length % 4)
-            {
+            switch (str.length % 4) {
                 case 0:
                     break;
                 case 2:
@@ -1050,9 +1067,6 @@
                 default:
                     throw 'Invalid token';
             }
-
-            str = (str + '===').slice(0, str.length + (str.length % 4));
-            str = str.replace(/-/g, '+').replace(/_/g, '/');
 
             str = decodeURIComponent(escape(atob(str)));
 
@@ -1273,6 +1287,45 @@
                 if (loginIframe.callbackList.length == 1) {
                     loginIframe.iframe.contentWindow.postMessage(msg, origin);
                 }
+            } else {
+                promise.setSuccess();
+            }
+
+            return promise.promise;
+        }
+
+        function check3pCookiesSupported() {
+            var promise = createPromise();
+
+            if (loginIframe.enable || kc.silentCheckSsoRedirectUri) {
+                var iframe = document.createElement('iframe');
+                iframe.setAttribute('src', kc.endpoints.thirdPartyCookiesIframe());
+                iframe.setAttribute('title', 'keycloak-3p-check-iframe' );
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+
+                var messageCallback = function(event) {
+                    if (iframe.contentWindow !== event.source) {
+                        return;
+                    }
+
+                    if (event.data !== "supported" && event.data !== "unsupported") {
+                        promise.setError();
+                    } else if (event.data === "unsupported") {
+                        loginIframe.enable = false;
+                        if (kc.silentCheckSsoFallback) {
+                            kc.silentCheckSsoRedirectUri = false;
+                        }
+                        logWarn("[KEYCLOAK] 3rd party cookies aren't supported by this browser. checkLoginIframe and " +
+                            "silent check-sso are not available.")
+                    }
+
+                    document.body.removeChild(iframe);
+                    window.removeEventListener("message", messageCallback);
+                    promise.setSuccess();
+                };
+
+                window.addEventListener('message', messageCallback, false);
             } else {
                 promise.setSuccess();
             }
