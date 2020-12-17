@@ -792,8 +792,14 @@ span.image img {
 <li><a href="#upgrading-keycloak-admin-client">Upgrading Keycloak Admin Client</a></li>
 <li><a href="#migration-changes">Migration Changes</a>
 <ul class="sectlevel2">
-<li><a href="#migrating-to-11-0-1">Migrating to 11.0.1</a></li>
-<li><a href="#changes-of-default-configuration-values">Changes of default configuration values</a></li>
+<li><a href="#migrating-to-12-0-0">Migrating to 12.0.0</a>
+<ul class="sectlevel3">
+<li><a href="#upgrade-to-wildfly-21">Upgrade to Wildfly 21</a></li>
+<li><a href="#skip-creation-of-user-session-for-the-docker-protocol-authentication">Skip creation of user session for the Docker protocol authentication</a></li>
+<li><a href="#upgrade-to-patternfly-4">Upgrade to PatternFly 4</a></li>
+<li><a href="#client-credentials-grant-without-refresh-token-by-default">Client Credentials Grant without refresh token by default</a></li>
+</ul>
+</li>
 <li><a href="#migrating-to-11-0-0">Migrating to 11.0.0</a>
 <ul class="sectlevel3">
 <li><a href="#upgrade-to-wildfly-20">Upgrade to Wildfly 20</a></li>
@@ -810,7 +816,7 @@ span.image img {
 </ul>
 </li>
 <li><a href="#migrating-to-9-0-0">Migrating to 9.0.0</a>
-<ul class="sectlevel4">
+<ul class="sectlevel3">
 <li><a href="#improved-handling-of-user-locale">Improved handling of user locale</a></li>
 <li><a href="#deprecated-methods-in-token-representation-java-classes">Deprecated methods in token representation Java classes</a></li>
 </ul>
@@ -1058,7 +1064,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>11.0.3</strong> <em>Latest</em></p>
+<p>Version <strong>12.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1613,22 +1619,66 @@ Keycloak server version.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="migrating-to-11-0-1"><a class="anchor" href="#migrating-to-11-0-1"></a>Migrating to 11.0.1</h3>
-
+<h3 id="migrating-to-12-0-0"><a class="anchor" href="#migrating-to-12-0-0"></a>Migrating to 12.0.0</h3>
+<div class="sect3">
+<h4 id="upgrade-to-wildfly-21"><a class="anchor" href="#upgrade-to-wildfly-21"></a>Upgrade to Wildfly 21</h4>
+<div class="paragraph">
+<p>The Keycloak server was upgraded to use Wildfly 21 as the underlying container. This does not directly involve any
+specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
 </div>
-<div class="sect2">
-<h3 id="changes-of-default-configuration-values"><a class="anchor" href="#changes-of-default-configuration-values"></a>Changes of default configuration values</h3>
 <div class="dlist">
 <dl>
-<dt class="hdlist1">Reduced default HTTP socket read timeout</dt>
+<dt class="hdlist1">Dependency updates</dt>
 <dd>
-<p>The default read timeout for the HTTP and HTTPS listeners has been reduced from 120 to 30 seconds.</p>
+<p>The dependencies were updated to the versions used by Wildfly 21 server. For example, Infinispan is now 11.0.4.Final.</p>
 </dd>
-<dt class="hdlist1">Increased default JDBC connection pool size</dt>
+<dt class="hdlist1">Configuration changes</dt>
 <dd>
-<p>The default connection pool size of the default H2 JDBC datasource has been increased from 20 to 100 connections. It is recommended to set a sufficient pool size for the production datasource as well.</p>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+section to handle the migration of configuration files automatically. If more detail is needed, because, for example, you did some
+configuration changes on your own, the list of the most important changes follows:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>object-memory</code> element of Infinispan caches is now deprecated (unused) and was replaced with the <code>heap-memory</code> element.</p>
+</li>
+</ul>
+</div>
 </dd>
 </dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="skip-creation-of-user-session-for-the-docker-protocol-authentication"><a class="anchor" href="#skip-creation-of-user-session-for-the-docker-protocol-authentication"></a>Skip creation of user session for the Docker protocol authentication</h4>
+<div class="paragraph">
+<p>No user session is created after successful authentication with the Docker protocol. For details, please refer to the <a href="https://www.keycloak.org/docs/latest/server_admin/#_docker">Server Administration Guide</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="upgrade-to-patternfly-4"><a class="anchor" href="#upgrade-to-patternfly-4"></a>Upgrade to PatternFly 4</h4>
+<div class="paragraph">
+<p>The Keycloak login theme components have been upgraded to PatternFly 4.
+The old PatternFly 3 runs simultaneously with the new one, so it&#8217;s possible to keep PF3 components.
+However, some changes to the design of the login theme were performed. Please upgrade your custom login theme due them.
+An example with the necessary changes can be found in the <code>keycloak/examples/themes/theme/sunrise</code> directory.
+No additional setup is required.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="client-credentials-grant-without-refresh-token-by-default"><a class="anchor" href="#client-credentials-grant-without-refresh-token-by-default"></a>Client Credentials Grant without refresh token by default</h4>
+<div class="paragraph">
+<p>From this Keycloak version, the OAuth2 Client Credentials Grant endpoint does not issue refresh tokens by default. This behavior is aligned with the OAuth2 specification.
+As a side-effect of this change, no user session is created on the Keycloak server side after successful Client Credentials authentication, which results
+in improved performance and memory consumption. Clients that use Client Credentials Grant are encouraged to stop using
+refresh tokens and instead always authenticate at every request with <code>grant_type=client_credentials</code> instead of using <code>refresh_token</code> as grant type.
+In relation to this, Keycloak has support for revocation of access tokens in the OAuth2 Revocation Endpoint, hence clients are allowed
+to revoke individual access tokens if needed.</p>
+</div>
+<div class="paragraph">
+<p>For backwards compatibility, a possibility to stick to the behavior of old versions exists. When this is used, the refresh token will be still issued after
+a successful authentication with the Client Credentials Grant and also the user session will be created. This can be enabled for the particular client in
+the Keycloak admin console, in client details in the section with <code>OpenID Connect Compatibility Modes</code> with the switch <code>Use Refresh Tokens For Client Credentials Grant</code>.</p>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -1637,7 +1687,7 @@ Keycloak server version.</p>
 <h4 id="upgrade-to-wildfly-20"><a class="anchor" href="#upgrade-to-wildfly-20"></a>Upgrade to Wildfly 20</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 20 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but there are few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -1647,7 +1697,7 @@ specific Keycloak server functionality, but there are few changes related to the
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
-<p>There are few configuration changes in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
 section to handle the migration of configuration files automatically.</p>
 </dd>
 <dt class="hdlist1">Cross-Datacenter Replication changes</dt>
@@ -1697,8 +1747,8 @@ Implementors of SPIs subclassing the <code>UserModel</code> directly or indirect
 Users of the policy evaluation feature have to adapt their policies if they use the number of attributes in their evaluations since every user will now have four new attributes by default.</p>
 </div>
 <div class="paragraph">
-<p>The public API of <code>UserModel</code> has not changed, so no changes to frontend resources or SPIs accessing user data should be necessary.
-The database has also not changed, yet.</p>
+<p>The public API of <code>UserModel</code> did not change. No changes to frontend resources or SPIs accessing user data are necessary.
+Also, the database did not change yet.</p>
 </div>
 </div>
 <div class="sect3">
@@ -1757,8 +1807,8 @@ KEYCLOAK-12579-add-not-null-constraint::keycloak failed.</code></p>
 </div>
 <div class="sect2">
 <h3 id="migrating-to-9-0-0"><a class="anchor" href="#migrating-to-9-0-0"></a>Migrating to 9.0.0</h3>
-<div class="sect4">
-<h5 id="improved-handling-of-user-locale"><a class="anchor" href="#improved-handling-of-user-locale"></a>Improved handling of user locale</h5>
+<div class="sect3">
+<h4 id="improved-handling-of-user-locale"><a class="anchor" href="#improved-handling-of-user-locale"></a>Improved handling of user locale</h4>
 <div class="paragraph">
 <p>A number of improvements have been made to how the locale for the login page is selected, as well as when the locale
 is updated for a user.</p>
@@ -1771,8 +1821,8 @@ is updated for a user.</p>
 <h4 id="deprecated-methods-in-token-representation-java-classes"><a class="anchor" href="#deprecated-methods-in-token-representation-java-classes"></a>Deprecated methods in token representation Java classes</h4>
 <div class="paragraph">
 <p>In the year 2038 an <code>int</code> is no longer able to hold the value of seconds since 1970, as such we are working on updating these to
-<code>long</code> values. In token representation there is a further issue, which is an <code>int</code> will by default result in <code>0</code> in the
-JSON representation, while it should not be included.</p>
+<code>long</code> values. Moreover, another issue related with processing of <code>int</code> values exists in token representation. An <code>int</code> will by
+default result into <code>0</code> in the JSON representation, while it should not be included.</p>
 </div>
 <div class="paragraph">
 <p>See JavaDocs for further details on exact methods that have been deprecated and replacement methods.</p>
@@ -1814,7 +1864,7 @@ soon as possible.</p>
 <h4 id="upgrade-to-wildfly-18"><a class="anchor" href="#upgrade-to-wildfly-18"></a>Upgrade to Wildfly 18</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 18 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but there are a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -1824,7 +1874,7 @@ specific Keycloak server functionality, but there are a few changes related to t
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
-<p>There are few configuration changes in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
 section to handle the migration of configuration files automatically.</p>
 </dd>
 <dt class="hdlist1">Cross-Datacenter Replication changes</dt>
@@ -1874,7 +1924,7 @@ From the user&#8217;s point of view, the behavior during authentication should b
 </dd>
 <dt class="hdlist1">Changes in the Java SPI</dt>
 <dd>
-<p>There are some changes in the Java Authentication SPI and Credential Provider SPI. The interface <code>Authenticator</code> is not changed,
+<p>Some changes exist in the Java Authentication SPI and Credential Provider SPI. The interface <code>Authenticator</code> is not changed,
 but you may be affected if you&#8217;re developing more advanced authenticators, which introduce some new credential types (subclasses of <code>CredentialModel</code>).
 There are changes on the <code>CredentialProvider</code> interface and introduction of some new interfaces like <code>CredentialValidator</code>. Also you
 may be affected if your authenticator supported the OPTIONAL execution requirement. It is recommended to double check the latest authentication
@@ -1882,7 +1932,7 @@ examples in the server development guide for more details.</p>
 </dd>
 <dt class="hdlist1">Freemarker template changes</dt>
 <dd>
-<p>There are also some changes in the freemarker templates. You may be affected if you have your own theme with custom freemarker
+<p>Some changes in the freemarker templates exist. You may be affected if you have your own theme with custom freemarker
 templates for login forms or some account forms, especially for the forms related to OTP. It is recommended to double check changes in
 the Freemarker templates in the latest Keycloak and align your templates according to it.</p>
 </dd>
@@ -1893,7 +1943,7 @@ the Freemarker templates in the latest Keycloak and align your templates accordi
 <h4 id="user-credentials-changes"><a class="anchor" href="#user-credentials-changes"></a>User credentials changes</h4>
 <div class="paragraph">
 <p>We added more flexibility around storing of user credentials. Among other things, every user can have multiple credentials of the same
-type, for example multiple OTP credentials. There are some changes in the database schema in relation to that, however the credentials from
+type, for example multiple OTP credentials. As a result, some changes to the database schema were performed. However the credentials from
 the previous version should be automatically updated to the new format and users should be still able to login with their passwords or OTP
 credentials set in the previous version.</p>
 </div>
@@ -1905,7 +1955,7 @@ credentials set in the previous version.</p>
 <h4 id="upgrade-to-wildfly-17"><a class="anchor" href="#upgrade-to-wildfly-17"></a>Upgrade to Wildfly 17</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 17 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but there are a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -1915,7 +1965,7 @@ specific Keycloak server functionality, but there are a few changes related to t
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
-<p>There are few configuration changes in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
 section to handle the migration of configuration files automatically.</p>
 </dd>
 <dt class="hdlist1">Cross-Datacenter Replication changes</dt>
@@ -1939,7 +1989,7 @@ not guaranteed as we don&#8217;t test it anymore.</p>
 <h4 id="upgrade-to-wildfly-16"><a class="anchor" href="#upgrade-to-wildfly-16"></a>Upgrade to Wildfly 16</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 16 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but there are few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -1949,7 +1999,7 @@ specific Keycloak server functionality, but there are few changes related to the
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
-<p>There are few configuration changes in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
 section to handle the migration of configuration files automatically.</p>
 </dd>
 <dt class="hdlist1">Cross-Datacenter Replication changes</dt>
@@ -2000,7 +2050,7 @@ we cannot assume which one will be used to fulfill the auth request so the reque
 <h4 id="upgrade-to-wildfly-15"><a class="anchor" href="#upgrade-to-wildfly-15"></a>Upgrade to Wildfly 15</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 15 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but there are few changes related to the migration, which worth mentioning.</p>
+specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -2010,7 +2060,7 @@ specific Keycloak server functionality, but there are few changes related to the
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
-<p>There are few configuration changes in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
 section to handle the migration of configuration files automatically.</p>
 </dd>
 <dt class="hdlist1">Cross-Datacenter Replication changes</dt>
@@ -2084,8 +2134,8 @@ migration is finished.</p>
 <div class="sect4">
 <h5 id="protocol-mapper-spi-addition"><a class="anchor" href="#protocol-mapper-spi-addition"></a>Protocol mapper SPI addition</h5>
 <div class="paragraph">
-<p>Related to this, there is a small addition in the (unsupported) Protocol Mappers SPI. You can be affected only if you
-implemented a custom ProtocolMapper. There is a new <code>getPriority()</code> method on the ProtocolMapper interface. The method has the
+<p>Related to this, a small addition to the (unsupported) Protocol Mappers SPI exists. You can be affected only if you
+implemented a custom ProtocolMapper. A new <code>getPriority()</code> method on the ProtocolMapper interface got introduced. The method has the
 default implementation set to return 0. If your protocol mapper implementation relies on the roles in the access token <code>realmAccess</code>
 or <code>resourceAccess</code> properties, you may need to increase the priority of your mapper.</p>
 </div>
@@ -2130,7 +2180,7 @@ was not found in the directory, you will have to register the client application
 <h4 id="upgrade-to-wildfly-14"><a class="anchor" href="#upgrade-to-wildfly-14"></a>Upgrade to Wildfly 14</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 14 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but there are few changes related to the migration, which worth mentioning.</p>
+specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -2140,7 +2190,7 @@ specific Keycloak server functionality, but there are few changes related to the
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
-<p>There are few configuration changes in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
 section to handle the migration of configuration files automatically.</p>
 </dd>
 <dt class="hdlist1">Cross-Datacenter Replication changes</dt>
@@ -2164,7 +2214,7 @@ not guaranteed as we don&#8217;t test it anymore.</p>
 <h4 id="upgrade-to-wildfly-13"><a class="anchor" href="#upgrade-to-wildfly-13"></a>Upgrade to Wildfly 13</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 13 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but there are few changes related to the migration, which worth mentioning.</p>
+specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -2174,7 +2224,7 @@ specific Keycloak server functionality, but there are few changes related to the
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
-<p>There are few configuration changes in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
 section to handle the migration of configuration files automatically. If more detail is needed, because, for example, you did some configuration
 changes on your own, here is a list of the most important changes:</p>
 <div class="ulist">
@@ -2183,7 +2233,7 @@ changes on your own, here is a list of the most important changes:</p>
 <p>Element <code>eviction</code> on infinispan caches is now deprecated (unused) and was replaced by element <code>object-memory</code></p>
 </li>
 <li>
-<p>There is no <code>jndi-attribute</code> on <code>cache-container</code> element in infinispan subsystem.</p>
+<p>The <code>cache-container</code> element in Infinispan subsystem does not recognize the <code>jndi-attribute</code> anymore.</p>
 </li>
 </ul>
 </div>
@@ -2200,7 +2250,7 @@ not guaranteed as we don&#8217;t test it anymore.</p>
 <p>You don&#8217;t need to configure security anymore in the Infinispan server configuration file.</p>
 </li>
 <li>
-<p>There is a need to remove <code>transaction</code> element from the configuration of replicated caches in the Infinispan server
+<p>The <code>transaction</code> element needs to be removed from the configuration of replicated caches in the Infinispan server
 configuration file. This is needed because of the infinispan bug <a href="https://issues.redhat.com/browse/ISPN-9323" class="bare">https://issues.redhat.com/browse/ISPN-9323</a>.</p>
 </li>
 </ul>
@@ -2337,7 +2387,7 @@ were moved to a different package in <code>org.keycloak:keycloak-core</code>.</p
 <p>For example, the parameter will be always present in the browser URL after successful authentication to the client application.
 In these cases, it may be useful to disable adding the <code>session_state</code> parameter to the authentication response. This can be done
 for the particular client in the Keycloak admin console, in client details in the section with <code>OpenID Connect Compatibility Modes</code>,
-described in <a href="#_compatibility_with_older_adapters">Compatibility with older adapters</a>. There is the <code>Exclude Session State From Authentication Response</code> switch,
+described in <a href="#_compatibility_with_older_adapters">Compatibility with older adapters</a>. Dedicated <code>Exclude Session State From Authentication Response</code> switch exists,
 which can be turned on to prevent adding the <code>session_state</code> parameter to the Authentication Response.</p>
 </div>
 <div class="admonitionblock note">
@@ -2432,7 +2482,7 @@ offline tokens will work. So for example, your user requested offline token in 1
 still able to refresh his old offline token in 2.5.1 version.</p>
 </div>
 <div class="paragraph">
-<p>But there is limitation, that once you change the realm active key, the users won&#8217;t be able to refresh old offline tokens
+<p>But a limitation exists. Once you change the realm active key, the users won&#8217;t be able to refresh old offline tokens
 anymore. So you shouldn&#8217;t change the active realm key until all your users with offline tokens refreshed their tokens. Obviously newly
 refreshed tokens will have KID in the header, so after all users exchange their old offline tokens, you are free to change the active realm key.</p>
 </div>
@@ -2475,7 +2525,7 @@ can be made to use legacy RSA-v1.5 encryption scheme when started with system pr
 <h4 id="infinispan-caches-realms-and-users-are-always-local"><a class="anchor" href="#infinispan-caches-realms-and-users-are-always-local"></a>Infinispan caches realms and users are always local</h4>
 <div class="paragraph">
 <p>Even if you use Keycloak in cluster, the caches <code>realms</code> and <code>users</code> defined in infinispan subsystem in <code>standalone-ha.xml</code> are
-always local caches now. There is separate cache <code>work</code>, which handles sending invalidation messages between cluster nodes and informing whole cluster
+always local caches now. A separate cache <code>work</code> exists, which handles sending invalidation messages between cluster nodes and informing whole cluster
 what records in underlying <code>realms</code> and <code>users</code> caches should be invalidated.</p>
 </div>
 </div>
@@ -2590,7 +2640,7 @@ the new default (20K) the same operation can take 50-100 ms.</p>
 <div class="sect3">
 <h4 id="adapter-option-auth-server-url-for-backend-requests-removed"><a class="anchor" href="#adapter-option-auth-server-url-for-backend-requests-removed"></a>Adapter option auth-server-url-for-backend-requests removed</h4>
 <div class="paragraph">
-<p>We&#8217;ve removed the option auth-server-url-for-backend-requests as there were issues in some scenarios when it was used. In more details,
+<p>We&#8217;ve removed the option auth-server-url-for-backend-requests due to issues in some scenarios when it was used. In more details,
 it was possible to access the Keycloak server from 2 different contexts (internal and external), which was causing issues in token validations etc.</p>
 </div>
 <div class="paragraph">
@@ -2710,7 +2760,7 @@ So if you&#8217;re using Admin REST API or Keycloak admin-client, you should upd
 <div class="sect3">
 <h4 id="option-update-profile-on-first-login-moved-from-identity-provider-to-review-profile-authenticator"><a class="anchor" href="#option-update-profile-on-first-login-moved-from-identity-provider-to-review-profile-authenticator"></a>Option 'Update Profile On First Login' moved from Identity provider to Review Profile authenticator</h4>
 <div class="paragraph">
-<p>In this version, we added <code>First Broker Login</code>, which allows you to specify what exactly should be done when new user is logged through Identity provider (or Social provider), but there is no existing Keycloak user yet linked to the social account.
+<p>In this version, we added <code>First Broker Login</code>, which allows you to specify what exactly should be done when new user is logged through Identity provider (or Social provider), but no Keycloak user linked to the social account exists yet.
 As part of this work, we added option <code>First Login Flow</code> to identity providers where you can specify the flow and then you can configure this flow under <code>Authentication</code> tab in admin console.</p>
 </div>
 <div class="paragraph">
@@ -2729,8 +2779,7 @@ See documentation for more details if you want to catch and handle adapter error
 <div class="sect3">
 <h4 id="identityprovidermapper-changes"><a class="anchor" href="#identityprovidermapper-changes"></a>IdentityProviderMapper changes</h4>
 <div class="paragraph">
-<p>There is no change in the interface itself or method signatures.
-However there is some change in behavior.
+<p>The interface itself and method signatures did not change. However some changes in the behavior exist.
 We added <code>First Broker Login</code> flow in this release and the method <code>IdentityProviderMapper.importNewUser</code> is now called after <code>First Broker Login</code> flow is finished.
 So if you want to have any attribute available in <code>Review Profile</code> page, you would need to use the method <code>preprocessFederatedIdentity</code> instead of <code>importNewUser</code> . You can set any attribute by invoke <code>BrokeredIdentityContext.setUserAttribute</code> and that will be available on <code>Review profile</code> page.</p>
 </div>
@@ -2755,7 +2804,7 @@ It won&#8217;t be possible to reuse old refresh token multiple times.</p>
 <p>We did a bit of restructure and renamed some packages.
 It is mainly about renaming internal packages of util classes.
 The most important classes used in your application ( for example AccessToken or KeycloakSecurityContext ) as well as the SPI are still unchanged.
-However there is slight chance that you will be affected and will need to update imports of your classes.
+However, a slight chance exists that you will be affected and will need to update imports of your classes.
 For example if you are using multitenancy and KeycloakConfigResolver, you will be affected as for example class HttpFacade was moved to different package - it is <code>org.keycloak.adapters.spi.HttpFacade</code> now.</p>
 </div>
 </div>
@@ -2787,7 +2836,7 @@ However in all cases, you will need to update <code>standalone/configuration/key
 In non-clustered mode a local Infinispan cache is used.
 We&#8217;ve also removed our custom in-memory cache and the no cache providers.
 If you have realmCache or userCache set in keycloak-server.json to mem or none please remove these.
-As Infinispan is the only provider there&#8217;s no longer any need for the realmCache and userCache objects so these can be removed.</p>
+As Infinispan is the only provider the realmCache and userCache objects are no longer needed and can be removed.</p>
 </div>
 </div>
 <div class="sect3">
@@ -2797,7 +2846,7 @@ As Infinispan is the only provider there&#8217;s no longer any need for the real
 In non-clustered mode a local Infinispan cache is used.
 We&#8217;ve also removed the JPA and Mongo user session providers.
 If you have userSession set in keycloak-server.json to mem, jpa or mongo please remove it.
-As Infinispan is the only provider there&#8217;s no longer any need for the userSession object so it can be removed.</p>
+As Infinispan is the only provider the userSession object is no longer needed and can be removed.</p>
 </div>
 <div class="paragraph">
 <p>For anyone that wants to achieve increased durability of user sessions this can be achieved by configuring the user session cache with more than one owner or use a replicated cache.
@@ -2819,7 +2868,7 @@ If you want to add contact details, please refer to the address theme included i
 <div class="sect3">
 <h4 id="direct-grant-api-always-enabled"><a class="anchor" href="#direct-grant-api-always-enabled"></a>Direct Grant API always enabled</h4>
 <div class="paragraph">
-<p>In the past Direct Grant API (or Resource Owner Password Credentials) was disabled by default and there was an option on a realm to enable it.
+<p>In the past Direct Grant API (or Resource Owner Password Credentials) was disabled by default and an option to enable it on a realm existed.
 The Direct Grant API is now always enabled and the option to enable/disable for a realm is removed.</p>
 </div>
 </div>
@@ -2921,7 +2970,7 @@ Remember to backup your database prior to upgrading.</p>
 <div class="paragraph">
 <p>The value of <code>iss</code> claim in access and id tokens have changed from <code>realm name</code> to <code>realm url</code>.
 This is required by OpenID Connect specification.
-If you&#8217;re using our adapters there&#8217;s no change required, other than if you&#8217;ve been using bearer-only without specifying <code>auth-server-url</code> you have to add it now.
+If you&#8217;re using our adapters no change is required, except if you&#8217;ve been using bearer-only without specifying the <code>auth-server-url</code>, you have to add it now.
 If you&#8217;re using another library (or RSATokenVerifier) you need to make the corresponding changes when verifying <code>iss</code>.</p>
 </div>
 </div>
@@ -2949,7 +2998,7 @@ This has been simplified to only requiring a plain text file (<code>META-INF/key
 <div class="sect3">
 <h4 id="claims-changes"><a class="anchor" href="#claims-changes"></a>Claims changes</h4>
 <div class="paragraph">
-<p>Previously there was <code>Claims</code> tab in admin console for application and OAuth clients.
+<p>Previously a dedicated <code>Claims</code> tab existed in the admin console for application and OAuth clients.
 This was used to configure which attributes should go into access token for particular application/client.
 This was removed and replaced with protocol mappers which are more flexible.</p>
 </div>
@@ -3138,11 +3187,11 @@ attempt to invoke a refresh on the auth server using a saved refresh token.</p>
 installation documentation.  Edits to standalone.xml are now required.</p>
 </li>
 <li>
-<p>There is a new credential type "secret".  Unlike other credential types, it is stored in plain text in
+<p>A new credential type "secret" got introduced. Unlike other credential types, it is stored in plain text in
 the database and can be viewed in the admin console.</p>
 </li>
 <li>
-<p>There is no longer required Application or OAuth Client credentials.  These client types are now
+<p>Application and OAuth Client credentials are no longer required. These client types are now
 hard coded to use the "secret" credential type.</p>
 </li>
 <li>
@@ -3158,7 +3207,7 @@ credentials tab in the administration console.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-11-05 15:19:22 UTC
+Last updated 2020-12-17 07:43:56 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
