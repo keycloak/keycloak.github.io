@@ -792,6 +792,13 @@ span.image img {
 <li><a href="#upgrading-keycloak-admin-client">Upgrading Keycloak Admin Client</a></li>
 <li><a href="#migration-changes">Migration Changes</a>
 <ul class="sectlevel2">
+<li><a href="#migrating-to-13-0-0">Migrating to 13.0.0</a>
+<ul class="sectlevel3">
+<li><a href="#manual-migration-step-needed">Manual migration step needed</a></li>
+<li><a href="#upgrade-to-wildfly-23">Upgrade to Wildfly 23</a></li>
+<li><a href="#upgrade-to-wildfly-22">Upgrade to Wildfly 22</a></li>
+</ul>
+</li>
 <li><a href="#migrating-to-12-0-2">Migrating to 12.0.2</a>
 <ul class="sectlevel3">
 <li><a href="#read-only-attributes">Read-only attributes</a></li>
@@ -927,7 +934,7 @@ span.image img {
 </li>
 <li><a href="#migrating-to-2-2-0">Migrating to 2.2.0</a>
 <ul class="sectlevel3">
-<li><a href="#code-databaseschema-code-property-deprecated"><code>databaseSchema</code> property deprecated</a></li>
+<li><a href="#code-databaseschema-code-property-strong-deprecated-strong"><code>databaseSchema</code> property <strong>deprecated</strong></a></li>
 <li><a href="#changes-in-client-s-valid-redirect-uris">Changes in Client&#8217;s Valid Redirect URIs</a></li>
 <li><a href="#authenticate-by-default-removed-from-identity-providers">Authenticate by default removed from Identity Providers</a></li>
 </ul>
@@ -1070,7 +1077,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>12.0.4</strong> <em>Latest</em></p>
+<p>Version <strong>13.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1360,6 +1367,37 @@ default connectionsJpa provider:</p>
 <p>When you start the server with this setting your database is automatically migrated if the database schema has changed
 in the new version.</p>
 </div>
+<div class="paragraph">
+<p>Creating an index on huge tables with millions of records can easily take a huge amount of time
+and potentially cause major service disruption on upgrades.
+For those cases, we added a threshold (the number of records) for automated index creation.
+By default, this threshold is <code>100000</code> records.
+When the number of records is higher than the threshold, the index is not created automatically,
+and there will be a warning message in server logs including SQL commands which can be applied later manually.</p>
+</div>
+<div class="paragraph">
+<p>To change the threshold, set the <code>indexCreationThreshold</code> property, value for the default <code>connectionsLiquibase</code> provider:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">connectionsLiquibase</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;properties&gt;</span>
+            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">indexCreationThreshold</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">100000</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;/properties&gt;</span>
+    <span class="tag">&lt;/provider&gt;</span>
+<span class="tag">&lt;/spi&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or run this CLI command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=keycloak-server/spi=connectionsLiquibase/:add(default-provider=default)
+/subsystem=keycloak-server/spi=connectionsLiquibase/provider=default/:add(properties={indexCreationThreshold =&gt; &quot;100000&quot;},enabled=true)</code></pre>
+</div>
+</div>
 </div>
 <div class="sect3">
 <h4 id="manual-relational-database-migration"><a class="anchor" href="#manual-relational-database-migration"></a>Manual Relational Database Migration</h4>
@@ -1459,7 +1497,7 @@ you have successfully updated your customized template.</p>
 the updated info.ftl template from the new installation:</p>
 </div>
 <div class="paragraph">
-<div class="title">Comparison of an example custom Login theme template with the updated version of the Login theme template</div>
+<div class="title">Comparison of the Login theme template from the old installation with the updated version of the Login theme template</div>
 <p><span class="image"><img src="./images/theme-migration-meld-info-2.png" alt="theme migration meld info 2"></span></p>
 </div>
 <div class="paragraph">
@@ -1625,6 +1663,97 @@ Keycloak server version.</p>
 </div>
 </div>
 <div class="sect2">
+<h3 id="migrating-to-13-0-0"><a class="anchor" href="#migrating-to-13-0-0"></a>Migrating to 13.0.0</h3>
+<div class="sect3">
+<h4 id="manual-migration-step-needed"><a class="anchor" href="#manual-migration-step-needed"></a>Manual migration step needed</h4>
+<div class="paragraph">
+<p>Manual change is required when the standalone.xml contains references to any of the SmallRye modules.
+SmallRye modules were removed from the underlying WildFly distribution, and the server does not start
+if the configuration references them. Thus if the configuration in the <code>standalone.xml</code> refers to these modules,
+the server configuration migration via <code>migrate-standalone.cli</code> fails before any changes are made to the configuration.
+In such case, to perform server configuration migration, you have to manually remove all the lines that refer
+to SmallRye modules. In the default configuration, you need to remove specifically the following lines:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;extension</span> <span class="attribute-name">module</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.wildfly.extension.microprofile.config-smallrye</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;extension</span> <span class="attribute-name">module</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.wildfly.extension.microprofile.health-smallrye</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;extension</span> <span class="attribute-name">module</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.wildfly.extension.microprofile.metrics-smallrye</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:wildfly:microprofile-config-smallrye:1.0</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:wildfly:microprofile-health-smallrye:2.0</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">security-enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">empty-liveness-checks-status</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${env.MP_HEALTH_EMPTY_LIVENESS_CHECKS_STATUS:UP}</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">empty-readiness-checks-status</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${env.MP_HEALTH_EMPTY_READINESS_CHECKS_STATUS:UP}</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+<span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:wildfly:microprofile-metrics-smallrye:2.0</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">security-enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">exposed-subsystems</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">*</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">prefix</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${wildfly.metrics.prefix:wildfly}</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="upgrade-to-wildfly-23"><a class="anchor" href="#upgrade-to-wildfly-23"></a>Upgrade to Wildfly 23</h4>
+<div class="paragraph">
+<p>The Keycloak server was upgraded to use Wildfly 23 as the underlying container. This does not directly involve any
+specific Keycloak server functionality, however, note these changes related to migration:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Dependency updates</dt>
+<dd>
+<p>The dependencies were updated to the versions used by the Wildfly 23 server. For example, Infinispan is now <code>11.0.9.Final</code>.</p>
+</dd>
+<dt class="hdlist1">Configuration changes</dt>
+<dd>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+section to handle the migration of configuration files automatically. However, here are the most important changes, which you may need
+if you made your own configuration changes:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>module</code> attribute of Infinispan cache containers is now <strong>deprecated</strong> (unused) and is <strong>replaced with</strong> the <code>modules</code> attribute,
+representing the set of modules associated with this cache container&#8217;s configuration. Moreover, there were also additional
+changes to attributes of various elements, originating from the use of Wildfly 23 as the underlying container. For example,
+the <code>managed-executor-service</code> and <code>managed-scheduled-executor-service</code> elements now recognize the new <code>hung-task-termination-period</code>
+attribute. See <a href="https://docs.wildfly.org/23/wildscribe/index.html">the Wildfly 23 full model reference</a> for details.</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="upgrade-to-wildfly-22"><a class="anchor" href="#upgrade-to-wildfly-22"></a>Upgrade to Wildfly 22</h4>
+<div class="paragraph">
+<p>The Keycloak server was upgraded to use Wildfly 22 as the underlying container. This does not directly involve any
+specific Keycloak server functionality, however, note these changes related to migration:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Dependency updates</dt>
+<dd>
+<p>The dependencies were updated to the versions used by the Wildfly 22 server. For example, Infinispan is now <code>11.0.8.Final</code>.</p>
+</dd>
+<dt class="hdlist1">Configuration changes</dt>
+<dd>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+section to handle the migration of configuration files automatically. However, here are the most important changes, which you may need
+if you made your own configuration changes:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The <a href="https://docs.wildfly.org/22/Admin_Guide.html#MicroProfile_Config_SmallRye">Eclipse MicroProfile Config</a>, <a href="https://docs.wildfly.org/22/Admin_Guide.html#MicroProfile_Health_SmallRye">Eclipse MicroProfile Health</a>, and <a href="https://docs.wildfly.org/22/Admin_Guide.html#MicroProfile_Metrics_SmallRye">Eclipse MicroProfile Metrics</a> subsystems are replaced with <a href="https://docs.wildfly.org/22/Admin_Guide.html#Health">WildFly subsystem for health</a> and <a href="https://docs.wildfly.org/22/Admin_Guide.html#MicroProfile_Metrics_SmallRye">WildFly subsystem for base metrics</a>.</p>
+</li>
+<li>
+<p>The default Wildfly configuration now uses the ability to make use of an automatically generated self-signed certificate with Elytron. Refer to <a href="https://docs.wildfly.org/22/WildFly_Elytron_Security.html#update-wildfly-to-use-the-default-elytron-components-for-application-authentication">a dedicated <code>applicationSSC</code> server SSL context section</a> for details.</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect2">
 <h3 id="migrating-to-12-0-2"><a class="anchor" href="#migrating-to-12-0-2"></a>Migrating to 12.0.2</h3>
 <div class="sect3">
 <h4 id="read-only-attributes"><a class="anchor" href="#read-only-attributes"></a>Read-only attributes</h4>
@@ -1674,23 +1803,23 @@ as possible.</p>
 <h4 id="upgrade-to-wildfly-21"><a class="anchor" href="#upgrade-to-wildfly-21"></a>Upgrade to Wildfly 21</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 21 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, however, note these changes related to migration:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Dependency updates</dt>
 <dd>
-<p>The dependencies were updated to the versions used by Wildfly 21 server. For example, Infinispan is now 11.0.4.Final.</p>
+<p>The dependencies were updated to the versions used by the Wildfly 21 server. For example, Infinispan is now 11.0.4.Final.</p>
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
 <p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
-section to handle the migration of configuration files automatically. If more detail is needed, because, for example, you did some
-configuration changes on your own, the list of the most important changes follows:</p>
+section to handle the migration of configuration files automatically. However, here are the most important changes, which you may need
+if you made your own configuration changes:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>The <code>object-memory</code> element of Infinispan caches is now deprecated (unused) and was replaced with the <code>heap-memory</code> element.</p>
+<p>The <code>object-memory</code> element of Infinispan caches is now <strong>deprecated</strong> (unused) and is <strong>replaced with</strong> the <code>heap-memory</code> element.</p>
 </li>
 </ul>
 </div>
@@ -1737,13 +1866,13 @@ the Keycloak admin console, in client details in the section with <code>OpenID C
 <h4 id="upgrade-to-wildfly-20"><a class="anchor" href="#upgrade-to-wildfly-20"></a>Upgrade to Wildfly 20</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 20 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, however, note these changes related to migration:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Dependency updates</dt>
 <dd>
-<p>The dependencies were updated to the versions used by Wildfly 20 server. For example, Infinispan is now 10.1.8.Final.</p>
+<p>The dependencies were updated to the versions used by the Wildfly 20 server. For example, Infinispan is now 10.1.8.Final.</p>
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
@@ -1755,7 +1884,7 @@ section to handle the migration of configuration files automatically.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>You will need to upgrade Infinispan server to version 9.4.18. The older version may still work, but it is
+<p>You will need to upgrade Infinispan server to version 9.4.19. The older version may still work, but it is
 not guaranteed as they are not tested anymore.</p>
 </li>
 <li>
@@ -1804,7 +1933,7 @@ Also, the database did not change yet.</p>
 <div class="sect3">
 <h4 id="instagram-idp-migrated-to-new-the-api"><a class="anchor" href="#instagram-idp-migrated-to-new-the-api"></a>Instagram IdP migrated to new the API</h4>
 <div class="paragraph">
-<p>Instagram IdP now uses new API as the old legacy API was deprecated. This requires getting new API credentials. For details,
+<p>Instagram IdP now uses new API as the old legacy API was <strong>deprecated</strong>. This requires getting new API credentials. For details,
 please refer to the <a href="https://www.keycloak.org/docs/latest/server_admin/#instagram">Server Administration Guide</a>.</p>
 </div>
 <div class="paragraph">
@@ -1905,7 +2034,7 @@ This recommendation is true in particular if you have some more customized authe
 <div class="sect3">
 <h4 id="new-default-hostname-provider"><a class="anchor" href="#new-default-hostname-provider"></a>New Default Hostname provider</h4>
 <div class="paragraph">
-<p>The old request and fixed hostname providers have been replaced with a new default hostname provider. The request
+<p>The old request and fixed hostname providers are replaced with a new default hostname provider. The request
 and fixed hostname providers are now deprecated and it is recommended to switch to the default hostname provider as
 soon as possible.</p>
 </div>
@@ -1914,13 +2043,13 @@ soon as possible.</p>
 <h4 id="upgrade-to-wildfly-18"><a class="anchor" href="#upgrade-to-wildfly-18"></a>Upgrade to Wildfly 18</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 18 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, however, note these changes related to migration:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Dependency updates</dt>
 <dd>
-<p>The dependencies were updated to the versions used by Wildfly 18 server. For example, Infinispan is now 9.4.16.Final.</p>
+<p>The dependencies were updated to the versions used by the Wildfly 18 server. For example, Infinispan is now 9.4.16.Final.</p>
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
@@ -1932,7 +2061,7 @@ section to handle the migration of configuration files automatically.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>You will need to upgrade Infinispan server to version 9.4.18. The older version may still work, but it is
+<p>You will need to upgrade Infinispan server to version 9.4.19. The older version may still work, but it is
 not guaranteed as we don&#8217;t test it anymore.</p>
 </li>
 </ul>
@@ -1968,9 +2097,10 @@ please take a look at <a href="https://www.keycloak.org/docs/latest/server_devel
 <dt class="hdlist1">OPTIONAL execution requirement removed</dt>
 <dd>
 <p>Regarding migration, the most important change is removing the support for the OPTIONAL requirement from authentication executions and
-replacing it with the CONDITIONAL requirement, which allows more flexibility. The existing OPTIONAL authenticators configured in the previous version will be replaced with the CONDITIONAL subflows. These subflows will have
-the <code>Condition - User Configured</code> condition configured as first execution, and the previously OPTIONAL authenticator (for example <code>OTP Form</code>) as second execution.
-From the user&#8217;s point of view, the behavior during authentication should be same as in the previous version.</p>
+replacing it with the CONDITIONAL requirement, which allows more flexibility. The existing OPTIONAL authenticators configured in the
+previous version are replaced with the CONDITIONAL subflows. These subflows have the <code>Condition - User Configured</code> condition configured
+as first execution, and the previously OPTIONAL authenticator (for example <code>OTP Form</code>) as second execution. From the user&#8217;s point of view,
+the behavior during authentication is the same as in the previous version.</p>
 </dd>
 <dt class="hdlist1">Changes in the Java SPI</dt>
 <dd>
@@ -2005,13 +2135,13 @@ credentials set in the previous version.</p>
 <h4 id="upgrade-to-wildfly-17"><a class="anchor" href="#upgrade-to-wildfly-17"></a>Upgrade to Wildfly 17</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 17 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, however, note these changes related to migration:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Dependency updates</dt>
 <dd>
-<p>The dependencies were updated to the versions used by Wildfly 17 server. For example, Infinispan is now 9.4.14.Final.</p>
+<p>The dependencies were updated to the versions used by the Wildfly 17 server. For example, Infinispan is now 9.4.14.Final.</p>
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
@@ -2023,7 +2153,7 @@ section to handle the migration of configuration files automatically.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>You will need to upgrade Infinispan server to version 9.4.18. The older version may still work, but it is
+<p>You will need to upgrade Infinispan server to version 9.4.19. The older version may still work, but it is
 not guaranteed as we don&#8217;t test it anymore.</p>
 </li>
 </ul>
@@ -2039,13 +2169,13 @@ not guaranteed as we don&#8217;t test it anymore.</p>
 <h4 id="upgrade-to-wildfly-16"><a class="anchor" href="#upgrade-to-wildfly-16"></a>Upgrade to Wildfly 16</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 16 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, however, note these changes related to migration:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Dependency updates</dt>
 <dd>
-<p>The dependencies were updated to the versions used by Wildfly 16 server. For example, Infinispan is now 9.4.8.Final.</p>
+<p>The dependencies were updated to the versions used by the Wildfly 16 server. For example, Infinispan is now 9.4.8.Final.</p>
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
@@ -2057,7 +2187,7 @@ section to handle the migration of configuration files automatically.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>You will need to upgrade Infinispan server to version 9.4.18. The older version may still work, but it is
+<p>You will need to upgrade Infinispan server to version 9.4.19. The older version may still work, but it is
 not guaranteed as we don&#8217;t test it anymore.</p>
 </li>
 </ul>
@@ -2100,13 +2230,13 @@ we cannot assume which one will be used to fulfill the auth request so the reque
 <h4 id="upgrade-to-wildfly-15"><a class="anchor" href="#upgrade-to-wildfly-15"></a>Upgrade to Wildfly 15</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 15 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, however, note these changes related to migration:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Dependency updates</dt>
 <dd>
-<p>The dependencies were updated to the versions used by Wildfly 15 server. For example, Infinispan is now 9.4.3.Final.</p>
+<p>The dependencies were updated to the versions used by the Wildfly 15 server. For example, Infinispan is now 9.4.3.Final.</p>
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
@@ -2118,7 +2248,7 @@ section to handle the migration of configuration files automatically.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>You will need to upgrade Infinispan server to version 9.4.18. The older version may still work, but it is
+<p>You will need to upgrade Infinispan server to version 9.4.19. The older version may still work, but it is
 not guaranteed as we don&#8217;t test it anymore.</p>
 </li>
 </ul>
@@ -2230,13 +2360,13 @@ was not found in the directory, you will have to register the client application
 <h4 id="upgrade-to-wildfly-14"><a class="anchor" href="#upgrade-to-wildfly-14"></a>Upgrade to Wildfly 14</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 14 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, however, note these changes related to migration:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Dependency updates</dt>
 <dd>
-<p>The dependencies were updated to the versions used by Wildfly 14 server. For example, Infinispan is now 9.3.1.Final.</p>
+<p>The dependencies were updated to the versions used by the Wildfly 14 server. For example, Infinispan is now 9.3.1.Final.</p>
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
@@ -2248,7 +2378,7 @@ section to handle the migration of configuration files automatically.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>You will need to upgrade Infinispan server to version 9.4.18. The older version may still work, but it is
+<p>You will need to upgrade Infinispan server to version 9.4.19. The older version may still work, but it is
 not guaranteed as we don&#8217;t test it anymore.</p>
 </li>
 </ul>
@@ -2264,26 +2394,26 @@ not guaranteed as we don&#8217;t test it anymore.</p>
 <h4 id="upgrade-to-wildfly-13"><a class="anchor" href="#upgrade-to-wildfly-13"></a>Upgrade to Wildfly 13</h4>
 <div class="paragraph">
 <p>The Keycloak server was upgraded to use Wildfly 13 as the underlying container. This does not directly involve any
-specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
+specific Keycloak server functionality, however, note these changes related to migration:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Dependency updates</dt>
 <dd>
-<p>The dependencies were updated to the versions used by Wildfly 13 server. For example, Infinispan is now 9.2.4.Final and Undertow is 2.0.9.Final</p>
+<p>The dependencies were updated to the versions used by the Wildfly 13 server. For example, Infinispan is now 9.2.4.Final and Undertow is 2.0.9.Final</p>
 </dd>
 <dt class="hdlist1">Configuration changes</dt>
 <dd>
 <p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
-section to handle the migration of configuration files automatically. If more detail is needed, because, for example, you did some configuration
-changes on your own, here is a list of the most important changes:</p>
+section to handle the migration of configuration files automatically. However, here are the most important changes, which you may need
+if you made your own configuration changes:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>Element <code>eviction</code> on infinispan caches is now deprecated (unused) and was replaced by element <code>object-memory</code></p>
+<p>Element <code>eviction</code> on infinispan caches is now <strong>deprecated</strong> (unused) and is <strong>replaced with</strong> element <code>object-memory</code></p>
 </li>
 <li>
-<p>The <code>cache-container</code> element in Infinispan subsystem does not recognize the <code>jndi-attribute</code> anymore.</p>
+<p>The <code>cache-container</code> element in Infinispan subsystem <strong>does not recognize</strong> the <code>jndi-attribute</code> anymore.</p>
 </li>
 </ul>
 </div>
@@ -2293,7 +2423,7 @@ changes on your own, here is a list of the most important changes:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>You will need to upgrade Infinispan server to version 9.4.18. The older version may still work, but it is
+<p>You will need to upgrade Infinispan server to version 9.4.19. The older version may still work, but it is
 not guaranteed as we don&#8217;t test it anymore.</p>
 </li>
 <li>
@@ -2364,7 +2494,7 @@ the consent page again after the migration.</p>
 <dt class="hdlist1">Some configuration switches removed</dt>
 <dd>
 <p>The switch <code>Scope Param Required</code> was removed from Role Detail. The switches <code>Consent Required</code> and <code>Consent Text</code> were removed
-from the Protocol Mapper details. Those switches were replaced by the Client Scope feature.</p>
+from the Protocol Mapper details. Those switches are replaced with the Client Scope feature.</p>
 </dd>
 </dl>
 </div>
@@ -2615,9 +2745,9 @@ trusted by the server (Identity providers or clients, which uses authentication 
 <div class="sect2">
 <h3 id="migrating-to-2-2-0"><a class="anchor" href="#migrating-to-2-2-0"></a>Migrating to 2.2.0</h3>
 <div class="sect3">
-<h4 id="code-databaseschema-code-property-deprecated"><a class="anchor" href="#code-databaseschema-code-property-deprecated"></a><code>databaseSchema</code> property deprecated</h4>
+<h4 id="code-databaseschema-code-property-strong-deprecated-strong"><a class="anchor" href="#code-databaseschema-code-property-strong-deprecated-strong"></a><code>databaseSchema</code> property <strong>deprecated</strong></h4>
 <div class="paragraph">
-<p>The <code>databaseSchema</code> property for both JPA and Mongo is now deprecated and has been replaced by <code>initializeEmpty</code>
+<p>The <code>databaseSchema</code> property for both JPA and Mongo is now <strong>deprecated</strong> and is <strong>replaced with</strong> <code>initializeEmpty</code>
 and <code>migrationStrategy</code>. <code>initializeEmpty</code> can bet set to <code>true</code> or <code>false</code> and controls if an empty database should
 be initialized. <code>migrationStrategy</code> can be set to <code>update</code>, <code>validate</code> and <code>manual</code>. <code>manual</code> is only supported for
 relational databases and will write an SQL file with the required changes to the database schema. Please note that
@@ -2732,7 +2862,7 @@ These libraries are now only added to your deployment if you have Keycloak authe
 <h4 id="deprecated-openid-connect-endpoints"><a class="anchor" href="#deprecated-openid-connect-endpoints"></a>Deprecated OpenID Connect endpoints</h4>
 <div class="paragraph">
 <p>In 1.2 we deprecated a number of endpoints that where not consistent with the OpenID Connect specifications, these have now been removed.
-This also applies to the validate token endpoints that was replaced with the new introspect endpoint in 1.8.</p>
+This also applies to the validate token endpoint that is replaced with the new introspect endpoint in 1.8.</p>
 </div>
 </div>
 <div class="sect3">
@@ -3050,7 +3180,7 @@ This has been simplified to only requiring a plain text file (<code>META-INF/key
 <div class="paragraph">
 <p>Previously a dedicated <code>Claims</code> tab existed in the admin console for application and OAuth clients.
 This was used to configure which attributes should go into access token for particular application/client.
-This was removed and replaced with protocol mappers which are more flexible.</p>
+This was removed and is replaced with protocol mappers which are more flexible.</p>
 </div>
 <div class="paragraph">
 <p>You don&#8217;t need to care about migration of database from previous version.
@@ -3257,7 +3387,7 @@ credentials tab in the administration console.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2021-03-01 08:20:01 UTC
+Last updated 2021-05-06 12:24:51 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>

@@ -754,11 +754,11 @@ span.image img {
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#overview">Overview</a>
+<li><a href="#keycloak-features-and-concepts">Keycloak features and concepts</a>
 <ul class="sectlevel2">
 <li><a href="#features">Features</a></li>
-<li><a href="#how-does-security-work">How Does Security Work?</a></li>
-<li><a href="#core-concepts-and-terms">Core Concepts and Terms</a></li>
+<li><a href="#basic-keycloak-operations">Basic Keycloak operations</a></li>
+<li><a href="#core-concepts-and-terms">Core concepts and terms</a></li>
 </ul>
 </li>
 <li><a href="#server-initialization">Server Initialization</a></li>
@@ -867,6 +867,7 @@ span.image img {
 <li><a href="#conditions-in-conditional-flows">Conditions in Conditional flows</a>
 <ul class="sectlevel3">
 <li><a href="#available-conditions">Available Conditions</a></li>
+<li><a href="#explicitly-deny-allow-access-in-conditional-flows">Explicitly deny/allow access in conditional flows</a></li>
 </ul>
 </li>
 </ul>
@@ -904,7 +905,7 @@ span.image img {
 <li><a href="#_audience">Audience Support</a></li>
 </ul>
 </li>
-<li><a href="#saml-clients">SAML Clients</a>
+<li><a href="#_client-saml-configuration">SAML Clients</a>
 <ul class="sectlevel3">
 <li><a href="#idp-initiated-login">IDP Initiated Login</a></li>
 <li><a href="#saml-entity-descriptors">SAML Entity Descriptors</a></li>
@@ -1018,6 +1019,7 @@ span.image img {
 <li><a href="#default-first-login-flow">Default First Login Flow</a></li>
 <li><a href="#automatically-link-existing-first-login-flow">Automatically Link Existing First Login Flow</a></li>
 <li><a href="#_disabling_automatic_user_creation">Disabling Automatic User Creation</a></li>
+<li><a href="#detect-existing-user-first-login-flow">Detect Existing User First Login Flow</a></li>
 </ul>
 </li>
 <li><a href="#retrieving-external-idp-tokens">Retrieving External IDP Tokens</a></li>
@@ -1052,9 +1054,10 @@ span.image img {
 <li><a href="#sync-of-ldap-users-to-keycloak">Sync of LDAP users to Keycloak</a></li>
 <li><a href="#_ldap_mappers">LDAP Mappers</a></li>
 <li><a href="#_ldap_password_hashing">Password Hashing</a></li>
+<li><a href="#_ldap_troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
-<li><a href="#_sssd">SSSD and FreeIPA Identity Management Integration</a>
+<li><a href="#sssd-and-freeipa-identity-management-integration">SSSD and FreeIPA Identity Management Integration</a>
 <ul class="sectlevel3">
 <li><a href="#freeipa-idm-server">FreeIPA/IdM Server</a></li>
 <li><a href="#sssd-and-d-bus">SSSD and D-Bus</a></li>
@@ -1180,14 +1183,14 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>12.0.4</strong> <em>Latest</em></p>
+<p>Version <strong>13.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="overview"><a class="anchor" href="#overview"></a>Overview</h2>
+<h2 id="keycloak-features-and-concepts"><a class="anchor" href="#keycloak-features-and-concepts"></a>Keycloak features and concepts</h2>
 <div class="sectionbody">
 <div class="sidebarblock page-links">
 <div class="content">
@@ -1211,6 +1214,9 @@ party identity providers like Facebook and Google.</p>
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/overview/features.adoc" target="_blank">Edit this section</a>
 <a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/overview/features.adoc" target="_blank">Report an issue</a>
 </div>
+</div>
+<div class="paragraph">
+<p>Keycloak provides the following features:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -1279,7 +1285,7 @@ protocol mappers and many more.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="how-does-security-work"><a class="anchor" href="#how-does-security-work"></a>How Does Security Work?</h3>
+<h3 id="basic-keycloak-operations"><a class="anchor" href="#basic-keycloak-operations"></a>Basic Keycloak operations</h3>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/overview/how.adoc" target="_blank">Edit this section</a>
@@ -1291,7 +1297,7 @@ protocol mappers and many more.</p>
 be secured by this server.  Keycloak uses open protocol standards like <a href="https://openid.net/connect/">OpenID Connect</a>
 or <a href="http://saml.xml.org/saml-specifications">SAML 2.0</a> to secure
 your applications.  Browser applications redirect a user&#8217;s browser from the application to the Keycloak authentication
-server where they enter their credentials.  This is important because users are completely isolated from applications and
+server where they enter their credentials.  This redirection is important because users are completely isolated from applications and
 applications never see a user&#8217;s credentials.  Applications instead are given an identity token or assertion that is cryptographically
 signed.  These tokens can have identity information like username, address, email, and other profile data.  They can also
 hold permission data so that applications can make authorization decisions.  These tokens can also be used to make secure
@@ -1299,7 +1305,7 @@ invocations on REST-based services.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="core-concepts-and-terms"><a class="anchor" href="#core-concepts-and-terms"></a>Core Concepts and Terms</h3>
+<h3 id="core-concepts-and-terms"><a class="anchor" href="#core-concepts-and-terms"></a>Core concepts and terms</h3>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/overview/concepts.adoc" target="_blank">Edit this section</a>
@@ -1307,8 +1313,7 @@ invocations on REST-based services.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>There are some key concepts and terms you should be aware of before attempting to use Keycloak to secure your web applications
-and REST services.</p>
+<p>Consider these core concepts and terms before attempting to use Keycloak to secure your web applications and REST services.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -1855,6 +1860,10 @@ For this reason the previously authenticated users locale is remembered in a per
 user has actively switched the locale through the locale selector on the login pages the users locale is also updated at
 this point.</p>
 </div>
+<div class="paragraph">
+<p>If you want to change the logic for selecting the locale, you have an option to create custom <code>LocaleSelectorProvider</code>. For details, please refer to the
+<a href="https://www.keycloak.org/docs/latest/server_development/#_locale_selector">Server Developer Guide</a>.</p>
+</div>
 </div>
 </div>
 </div>
@@ -2362,7 +2371,7 @@ for more information on extending and creating themes.</p>
 <p>Allowing the user to delete their account is done through an AIA (Application Initiated Action). You need first of all to enable the action from the admin console. In the Authentication menu, go to the Required Actions tab and tick the enabled checkbox for the "Delete Account" action.</p>
 </div>
 <div class="paragraph">
-<p><span class="image"><img src="./keycloak-images/enable-delete-account-action.png" alt="enable delete account action"></span></p>
+<p><span class="image"><img src="./images/enable-delete-account-action.png" alt="enable delete account action"></span></p>
 </div>
 <div class="ulist">
 <ul>
@@ -2381,19 +2390,16 @@ for more information on extending and creating themes.</p>
 <p>Finally, select <code>delete-account</code> and click on add selected.</p>
 </div>
 <div class="paragraph">
-<p><span class="image"><img src="./keycloak-images/delete-account-client-role.png" alt="delete account client role"></span></p>
+<p><span class="image"><img src="./images/delete-account-client-role.png" alt="delete account client role"></span></p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="deleting-a-user-in-action"><a class="anchor" href="#deleting-a-user-in-action"></a>Deleting a user in action</h3>
 <div class="paragraph">
-<p>Once the functionlity is enabled, the user will see a new section named "Delete Account" appear in the bottom of the "Personal Info" page</p>
+<p>Once the functionality is enabled, the user will see a new section named "Delete Account" appear in the bottom of the "Personal Info" page</p>
 </div>
 <div class="paragraph">
-<p><span class="image"><img src="./keycloak-images/delete-account-landing-screen.png" alt="delete account landing screen"></span></p>
-</div>
-<div class="paragraph">
-<p><span class="image"><img src="./keycloak-images/delete-account-page.png" alt="delete account page"></span></p>
+<p><span class="image"><img src="./images/delete-account-page.png" alt="delete account page"></span></p>
 </div>
 <div class="paragraph">
 <p>As stated by the warning message, this action is irreversible, and it implies the deletion of all the user&#8217;s data in Keycloak.</p>
@@ -2402,7 +2408,7 @@ for more information on extending and creating themes.</p>
 <p>Once the user clicks on Delete, he will be prompted to enter his credentials again and redirected to the final confirmation step:</p>
 </div>
 <div class="paragraph">
-<p><span class="image"><img src="./keycloak-images/delete-account-confirm.png" alt="delete account confirm"></span></p>
+<p><span class="image"><img src="./images/delete-account-confirm.png" alt="delete account confirm"></span></p>
 </div>
 <div class="paragraph">
 <p>After confirming, the user&#8217;s account will be deleted.</p>
@@ -2626,7 +2632,7 @@ they cannot use any stored passwords.</p>
 <dd>
 <p>This policy checks if a given password (converted to lowercase) is contained in a blacklist file, which is potentially a very large file.
 Password blacklists are UTF-8 plain-text files with Unix line endings where every line represents a blacklisted password.
-All passwords in the blacklist must be lowercased to facilitate case-insensitive comparison.
+All passwords in the blacklist must be lowercase to facilitate case-insensitive comparison.
 The file name of the blacklist file must be provided as the password policy value, e.g. <code>10_million_password_list_top_1000000.txt</code>.
 Blacklist files are resolved against <code>${jboss.server.data.dir}/password-blacklists/</code> by default.
 This path can be customized via the <code>keycloak.password.blacklists.path</code> system property,
@@ -3461,7 +3467,7 @@ future versions and provide some more flexible mappings from Kerberos principals
 <p>During SSL/TLS handshake, the server and the client exchange their x.509/v3 certificates</p>
 </li>
 <li>
-<p>The container (WildFly) validates the certificate PKIX path and the certificate expiration</p>
+<p>The web container (either the reverse proxy or WildFly where Keycloak is deployed) validates the certificate PKIX path and the certificate expiration</p>
 </li>
 <li>
 <p>The x.509 client certificate authenticator validates the client certificate as follows:</p>
@@ -3502,6 +3508,22 @@ future versions and provide some more flexible mappings from Kerberos principals
 </div>
 </li>
 </ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Note that it is the responsibility of the web container to validate certificate PKIX path. X.509 authenticator on the
+Keycloak side provides just the additional support for check the certificate expiration, certificate revocation status and key usage. If you are
+using Keycloak deployed behind reverse proxy, make sure that your reverse proxy is configured to validate PKIX path. If you
+do not use reverse proxy and users directly access the WildFly, you should be fine as WildFly makes sure that PKIX path is validated as long
+as it is configured as described below.
+</td>
+</tr>
+</table>
 </div>
 <div class="sect3">
 <h4 id="features-2"><a class="anchor" href="#features-2"></a>Features</h4>
@@ -3738,7 +3760,7 @@ Usage of <code>Full certificate in PEM format</code> as an identity source is li
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:11.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:12.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
         ....
     <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
             <span class="tag">&lt;https-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default</span><span class="delimiter">&quot;</span></span>
@@ -4081,7 +4103,7 @@ all certificates in trusted-ca-list-for-client-auth.pem must be added to <a href
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="xml">...
     <span class="tag">&lt;profile&gt;</span>
-        <span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:logging:3.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:logging:8.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
 ...
             <span class="tag">&lt;logger</span> <span class="attribute-name">category</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.keycloak.authentication.authenticators.x509</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
                 <span class="tag">&lt;level</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">TRACE</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
@@ -4148,7 +4170,7 @@ all certificates in trusted-ca-list-for-client-auth.pem must be added to <a href
 </div>
 </div>
 <div class="paragraph">
-<p>Keycloak provides the limited support for <a href="https://www.w3.org/TR/webauthn/">W3C Web Authentication (WebAuthn)</a>. Keycloak works as a WebAuthn&#8217;s <a href="https://www.w3.org/TR/webauthn/#rp-operations">Relying Party (RP)</a>.</p>
+<p>Keycloak provides the limited support for <a href="https://www.w3.org/TR/webauthn/">W3C Web Authentication (WebAuthn)</a>. Keycloak works as a WebAuthn&#8217;s <a href="https://www.w3.org/TR/webauthn/#sctn-rp-operations">Relying Party (RP)</a>.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -4400,7 +4422,7 @@ assuming that authentication flow configuration above with the conditional subfl
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Attestation Conveyance Preference</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">It tells the WebAuthn API implementation on the browser (<a href="https://www.w3.org/TR/webauthn/#webauthn-client">WebAuthn Client</a>) the preference of how to generate an Attestation Statement. This is an optional configuration item that is applied to the operation of registering a WebAuthn authenticator. If no option is selected, its behavior is the same as selecting "none".
- For more details, see <a href="https://www.w3.org/TR/webauthn/#attestation-convey">WebAuthn Specification</a>.</p></td>
+ For more details, see <a href="https://www.w3.org/TR/webauthn/#attestation-conveyance">WebAuthn Specification</a>.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Authenticator Attachment</p></td>
@@ -4409,7 +4431,7 @@ assuming that authentication flow configuration above with the conditional subfl
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Require Resident Key</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">It tells the WebAuthn authenticator to generate the Public Key Credential as <a href="https://www.w3.org/TR/webauthn/#client-side-resident-public-key-credential-source">Client-side-resident Public Key Credential Source</a>. This is an optional configuration item that is applied to the operation of registering a WebAuthn authenticator. If no option is selected, its behavior is the same as selecting "No".
+<td class="tableblock halign-left valign-top"><p class="tableblock">It tells the WebAuthn authenticator to generate the Public Key Credential as <a href="https://www.w3.org/TR/webauthn/#client-side-discoverable-public-key-credential-source">Client-side-resident Public Key Credential Source</a>. This is an optional configuration item that is applied to the operation of registering a WebAuthn authenticator. If no option is selected, its behavior is the same as selecting "No".
  For more details, see <a href="https://www.w3.org/TR/webauthn/#dom-authenticatorselectioncriteria-requireresidentkey">WebAuthn Specification</a>.</p></td>
 </tr>
 <tr>
@@ -4649,6 +4671,67 @@ In other words, the attribute should not be present.</p>
 </dl>
 </div>
 </div>
+<div class="sect3">
+<h4 id="explicitly-deny-allow-access-in-conditional-flows"><a class="anchor" href="#explicitly-deny-allow-access-in-conditional-flows"></a>Explicitly deny/allow access in conditional flows</h4>
+<div class="paragraph">
+<p>You can allow or deny access to resources in a conditional flow.
+The two authenticators <code>Deny Access</code> and <code>Allow Access</code> control access to the resources by conditions.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>Allow Access</code></dt>
+<dd>
+<p>Authenticator will always successfully authenticate.
+This authenticator is not configurable.</p>
+</dd>
+<dt class="hdlist1"><code>Deny Access</code></dt>
+<dd>
+<p>Access will always be denied.
+You can define an error message, which will be shown to the user.
+You can provide these fields:</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Alias</dt>
+<dd>
+<p>Describes a name of the execution, which will be shown in the authentication flow.</p>
+</dd>
+<dt class="hdlist1">Error message</dt>
+<dd>
+<p>Error message which will be shown to the user.
+The error message could be provided as a particular message or as a property in order to use it with localization.
+(i.e "<em>You do not have the role 'admin'.</em>", <em>my-property-deny</em> in messages properties)
+Leave blank for the default message defined as property <code>access-denied</code>.</p>
+</dd>
+</dl>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Here is an example how to deny access to all users who do not have the role <code>role1</code> and show an error message defined by a property <code>deny-role1</code>.
+This example includes <code>Condition - User Role</code> and <code>Deny Access</code> executions.</p>
+</div>
+<div class="paragraph">
+<div class="title">Browser flow</div>
+<p><span class="image"><img src="./images/deny-access-flow.png" alt="deny access flow"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">Condition - User Role configuration</div>
+<p><span class="image"><img src="./images/deny-access-role-condition.png" alt="deny access role condition"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">Configuration of the <code>Deny Access</code> is really easy. You can specify an arbitrary alias and required message like this:</div>
+<p><span class="image"><img src="./images/deny-access-execution-cond.png" alt="deny access execution cond"></span></p>
+</div>
+<div class="paragraph">
+<p>The last thing is defining the property with an error message in the login theme <code>messages_en.properties</code> (for English):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>deny-role1 = You do not have required role!</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -4789,24 +4872,538 @@ of an external user, a token is created based on the metadata and permissions of
 More info together with example is in <a href="#_service_accounts">Service Accounts</a> chapter.</p>
 </div>
 </div>
+<div class="sect4">
+<h5 id="device-authorization-grant"><a class="anchor" href="#device-authorization-grant"></a>Device Authorization Grant</h5>
+<div class="paragraph">
+<p>This is used by clients running on internet-connected devices that have limited input capabilities or lack a suitable browser. Here&#8217;s a brief summary of the protocol:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The application requests Keycloak a device code and a user code. Keycloak creates a device code and a user code. Keycloak returns a response including the device code and the user code to the application.</p>
+</li>
+<li>
+<p>The application provides the user with the user code and the verification URI. The user accesses a verification URI to be authenticated by using another browser.</p>
+</li>
+<li>
+<p>The application repeatedly polls Keycloak to find out if the user completed the user authorization. If user authentication is complete, the application exchanges the device code for an <em>identity</em>, <em>access</em> and <em>refresh</em> token.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_client_initiated_backchannel_authentication_grant"><a class="anchor" href="#_client_initiated_backchannel_authentication_grant"></a>Client Initiated Backchannel Authentication Grant</h5>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Client Initiated Backchannel Authentication Grant is <strong>Technology Preview</strong> and is not fully supported. This feature is disabled by default.</p>
+</div>
+<div class="paragraph">
+<p>To enable start the server with <code>-Dkeycloak.profile=preview</code>
+or <code>-Dkeycloak.profile.feature.ciba=enabled</code>
+. For more details see <a href="https://www.keycloak.org/docs/latest/server_installation/#profiles">Profiles</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This is used by clients who want to initiate the authentication flow by communicating with the OpenID Provider directly without redirect through the user&#8217;s browser like OAuth 2.0&#8217;s authorization code grant. Here&#8217;s a brief summary of the protocol:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The client requests Keycloak an auth_req_id that identifies the authentication request made by the client. Keycloak creates the auth_req_id.</p>
+</li>
+<li>
+<p>After receiving this auth_req_id, this client repeatedly needs to poll Keycloak to obtain an Access Token, Refresh Token and ID Token from Keycloak in return for the auth_req_id until the user is authenticated.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>An administrator can configure Client Initiated Backchannel Authentication (CIBA) related operations as <code>CIBA Policy</code> per realm.</p>
+</div>
+<div class="paragraph">
+<p>Also please refer to other places of Keycloak documentation like <a href="https://www.keycloak.org/docs/latest/securing_apps/#_backchannel_authentication_endpoint">Backchannel Authentication Endpoint section</a> of Securing Applications and Services Guide and <a href="https://www.keycloak.org/docs/latest/securing_apps/#_client_initiated_backchannel_authentication_grant">Client Initiated Backchannel Authentication Grant section</a> of Securing Applications and Services Guide.</p>
+</div>
+<div class="sect5">
+<h6 id="ciba-policy"><a class="anchor" href="#ciba-policy"></a>CIBA Policy</h6>
+<div class="paragraph">
+<p>An administrator carries out the following operations on the <code>Admin Console</code> :</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Open the <code>Authentication &#8594; CIBA Policy</code> tab.</p>
+</li>
+<li>
+<p>Configure items and click <code>Save</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The configurable items and their description follow.</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Configuration</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Backchannel Token Delivery Mode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifying how the CD (Consumption Device) gets the authentication result and related tokens. There are three modes, "poll", "ping" and "push". Keycloak only supports "poll". The default setting is "poll". This configuration is required.
+ For more details, see <a href="https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#rfc.section.5">CIBA Specification</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Expires In</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The expiration time of the "auth_req_id" in seconds since the authentication request was received. The default setting is 120. This configuration is required.
+ For more details, see <a href="https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#successful_authentication_request_acknowdlegment">CIBA Specification</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Interval</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The interval in seconds the CD (Consumption Device) needs to wait for between polling requests to the token endpoint. The default setting is 5. This configuration is optional.
+ For more details, see <a href="https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#successful_authentication_request_acknowdlegment">CIBA Specification</a>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Authentication Requested User Hint</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The way of identifying the end-user for whom authentication is being requested. The default setting is "login_hint".  There are three modes, "login_hint", "login_hint_token" and "id_token_hint". Keycloak only supports "login_hint". This configuration is required.
+ For more details, see <a href="https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#rfc.section.7.1">CIBA Specification</a>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect5">
+<h6 id="provider-setting"><a class="anchor" href="#provider-setting"></a>Provider Setting</h6>
+<div class="paragraph">
+<p>The CIBA grant uses the following two providers.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Authentication Channel Provider : provides the communication between Keycloak and the entity that actually authenticates the user via AD (Authentication Device).</p>
+</li>
+<li>
+<p>User Resolver Provider : get <code>UserModel</code> of Keycloak from the information provided by the client to identify the user.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Keycloak has both default providers. However, the administrator needs to set up Authentication Channel Provider like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ciba-auth-channel</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    <span class="tag">&lt;default-provider&gt;</span>ciba-http-auth-channel<span class="tag">&lt;/default-provider&gt;</span>
+    <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ciba-http-auth-channel</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;properties&gt;</span>
+            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">httpAuthenticationChannelUri</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https://backend.internal.example.com/auth</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+        <span class="tag">&lt;/properties&gt;</span>
+    <span class="tag">&lt;/provider&gt;</span>
+<span class="tag">&lt;/spi&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The configurable items and their description follow.</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Configuration</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">httpAuthenticationChannelUri</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifying URI of the entity that actually authenticates the user via AD (Authentication Device).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect5">
+<h6 id="authentication-channel-provider"><a class="anchor" href="#authentication-channel-provider"></a>Authentication Channel Provider</h6>
+<div class="paragraph">
+<p>CIBA standard document does not specify how to authenticate the user by AD. Therefore, it might be implemented at the discretion of products. Keycloak delegates this authentication to an external authentication entity. To communicate with the authentication entity, Keycloak provides Authentication Channel Provider.</p>
+</div>
+<div class="paragraph">
+<p>Its implementation of Keycloak assumes that the authentication entity is under the control of the administrator of Keycloak so that Keycloak trusts the authentication entity. It is not recommended to use the authentication entity that the administrator of Keycloak cannot control.</p>
+</div>
+<div class="paragraph">
+<p>Authentication Channel Provider is provided as SPI provider so that users of Keycloak can implement their own provider in order to meet their environment. Keycloak provides its default provider called HTTP Authentication Channel Provider that uses HTTP to communicate with the authentication entity.</p>
+</div>
+<div class="paragraph">
+<p>If a user of Keycloak user want to use the HTTP Authentication Channel Provider, they need to know its contract between Keycloak and the authentication entity consisting of the following two parts.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Authentication Delegation Request/Response</dt>
+<dd>
+<p>Keycloak sends an authentication request to the authentication entity.</p>
+</dd>
+<dt class="hdlist1">Authentication Result Notification/ACK</dt>
+<dd>
+<p>The authentication entity notifies the result of the authentication to Keycloak.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Authentication Delegation Request/Response consists of the following messaging.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Authentication Delegation Request</dt>
+<dd>
+<p>The request is sent from Keycloak to the authentication entity to ask it for user authentication by AD.</p>
+</dd>
+</dl>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>POST [delegation_reception]</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Headers</p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Value</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Content-Type</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">application/json</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The message body is json formatted.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Authorization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bearer [token]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The [token] is used when the authentication entity notifies the result of the authentication to Keycloak.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="ulist">
+<ul>
+<li>
+<p>Parameters</p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Path</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">delegation_reception</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The endpoint provided by the authentication entity to receive the delegation request</p></td>
+</tr>
+</tbody>
+</table>
+<div class="ulist">
+<ul>
+<li>
+<p>Body</p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">login_hint</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">It tells the authentication entity who is authenticated by AD.<br>
+By default, it is the user&#8217;s "username".<br>
+This field is required and was defined by CIBA standard document.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">scope</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">It tells which scopes the authentication entity gets consent from the authenticated user.<br>
+This field is required and was defined by CIBA standard document.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">is_consent_required</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">It shows whether the authentication entity needs to get consent from the authenticated user about the scope.<br>
+ This field is required.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">binding_message</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Its value is intended to be shown in both CD and AD&#8217;s UI to make the user recognize that the authentication by AD is triggered by CD.<br>
+This field is optional and was defined by CIBA standard document.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">acr_values</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">It tells the requesting Authentication Context Class Reference from CD.<br>
+This field is optional and was defined by CIBA standard document.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Authentication Delegation Response</dt>
+<dd>
+<p>The response is returned from the authentication entity to Keycloak to notify that the authentication entity received the authentication request from Keycloak.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Responses</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">HTTP Status Code</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">204</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">It notifies Keycloak of receiving the authentication delegation request.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Authentication Result Notification/ACK consists of the following messaging.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Authentication Result Notification</dt>
+<dd>
+<p>The authentication entity sends the result of the authentication request to Keycloak.</p>
+</dd>
+</dl>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>POST /auth/realms/[realm]/protocol/openid-connect/ext/ciba/auth/callback</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Headers</p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Value</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Content-Type</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">application/json</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The message body is json formatted.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Authorization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bearer [token]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The [token] must be the one the authentication entity has received from Keycloak in Authentication Delegation Request.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="ulist">
+<ul>
+<li>
+<p>Parameters</p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Path</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">realm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The realm name</p></td>
+</tr>
+</tbody>
+</table>
+<div class="ulist">
+<ul>
+<li>
+<p>Body</p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">status</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">It tells the result of user authentication by AD.<br>
+It must be one of the following status.<br>
+  SUCCEED : The authentication by AD has been successfully completed.<br>
+  UNAUTHORIZED : The authentication by AD has not been completed.<br>
+  CANCELLED : The authentication by AD has been cancelled by the user.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Authentication Result ACK</dt>
+<dd>
+<p>The response is returned from Keycloak to the authentication entity to notify Keycloak received the result of user authentication by AD from the authentication entity.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Responses</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">HTTP Status Code</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">200</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">It notifies the authentication entity of receiving the notification of the authentication result.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect5">
+<h6 id="user-resolver-provider"><a class="anchor" href="#user-resolver-provider"></a>User Resolver Provider</h6>
+<div class="paragraph">
+<p>Even if the same user, its representation may differ in each CD, Keycloak and the authentication entity.</p>
+</div>
+<div class="paragraph">
+<p>For CD, Keycloak and the authentication entity to recognize the same user, this User Resolver Provider converts their own user representations among them.</p>
+</div>
+<div class="paragraph">
+<p>User Resolver Provider is provided as SPI provider so that users of Keycloak can implement their own provider in order to meet their environment. Keycloak provides its default provider called Default User Resolver Provider that has the following characteristics.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Only support <code>login_hint</code> parameter and is used as default.</p>
+</li>
+<li>
+<p><code>username</code> of UserModel in Keycloak is used to represent the user on CD, Keycloak and the authentication entity.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
 </div>
 <div class="sect3">
 <h4 id="_oidc-endpoints"><a class="anchor" href="#_oidc-endpoints"></a>Keycloak Server OIDC URI Endpoints</h4>
 <div class="paragraph">
 <p>Here&#8217;s a list of OIDC endpoints that the Keycloak publishes.  These URLs are useful if you are using a non-Keycloak client adapter to
 talk OIDC with the auth server.  These are all relative URLs and the root of the URL being the HTTP(S) protocol, hostname, and usually path prefixed with
-<em>/auth</em>:  i.e. https://localhost:8080/auth</p>
+<em>/auth</em>, for example https://localhost:8080/auth.</p>
+</div>
+<div class="paragraph">
+<p>You can also find these endpoints under "OpenID Endpoint Configuration" in your realm settings.</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/auth</dt>
 <dd>
 <p>This is the URL endpoint for obtaining a temporary code in the Authorization Code Flow or for obtaining tokens via the
-Implicit Flow, Direct Grants, or Client Grants.</p>
+Implicit Flow or Hybrid Flow.</p>
 </dd>
 <dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/token</dt>
 <dd>
-<p>This is the URL endpoint for the Authorization Code Flow to turn a temporary code into a token.</p>
+<p>This is the URL endpoint for the Authorization Code Flow to turn a temporary code into a token, or for obtaining tokens
+directly via Resource Owner Password Credentials (Direct Access Grants) or Client Credentials.</p>
 </dd>
 <dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/logout</dt>
 <dd>
@@ -4819,6 +5416,18 @@ Implicit Flow, Direct Grants, or Client Grants.</p>
 <dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/revoke</dt>
 <dd>
 <p>This is the URL endpoint for OAuth 2.0 Token Revocation described in <a href="https://tools.ietf.org/html/rfc7009">RFC7009</a>.</p>
+</dd>
+<dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/certs</dt>
+<dd>
+<p>This is the URL endpoint for the JSON Web Key Set (JWKS) containing the public keys used to verify any JSON Web Token (jwks_uri)</p>
+</dd>
+<dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/auth/device</dt>
+<dd>
+<p>This is the URL endpoint for Device Authorization Grant to obtain a device code and a user code.</p>
+</dd>
+<dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/ext/ciba/auth</dt>
+<dd>
+<p>This is the URL endpoint for Client Initiated Backchannel Authentication Grant to obtain an auth_req_id that identifies the authentication request made by the client.</p>
 </dd>
 </dl>
 </div>
@@ -4916,6 +5525,17 @@ is always better than in the more limited URL.</p>
 <div class="paragraph">
 <p>ECP stands for "Enhanced Client or Proxy", a SAML v.2.0 profile which allows for the exchange of SAML attributes outside the context of a web browser.
 This is used most often for REST or SOAP-based clients.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="artifact-binding"><a class="anchor" href="#artifact-binding"></a>Artifact Binding</h5>
+<div class="paragraph">
+<p>The SAML <em>Artifact</em> binding works alongside the standard <em>Redirect</em> or <em>POST</em> bindings. The purpose of this binding is
+to prevent SAML messages from passing by the browser. When a SAML message would be sent to the application or the Keycloak, it is instead saved and in its place a Redirect or a POST is sent containing an unique identifier (this is the artifact).
+The contacted party uses SOAP to send a message containing the artifact directly to the originator, which in turn replies via SOAP with the saved SAML message.</p>
+</div>
+<div class="paragraph">
+<p>This binding can have some security benefits, for example when the user is not trusted with the contents of a SAML assertion. Instead, they are exchanged between the application and Keycloak via SOAP.</p>
 </div>
 </div>
 </div>
@@ -5179,6 +5799,18 @@ If this is turned on, this application cannot participate in browser logins.</p>
 <p>If this is on, clients are allowed to use the OIDC <a href="#_oidc-auth-flows">Direct Access Grants</a>.</p>
 </div>
 <div class="paragraph">
+<p><strong>OAuth 2.0 Device Authorization Grant Enabled</strong></p>
+</div>
+<div class="paragraph">
+<p>If this is on, clients are allowed to use the OIDC <a href="#_oidc-auth-flows">Device Authorization Grant</a>.</p>
+</div>
+<div class="paragraph">
+<p><strong>OpenID Connect Client Initiated Backchannel Authentication Grant Enabled</strong></p>
+</div>
+<div class="paragraph">
+<p>If this is on, clients are allowed to use the OIDC <a href="#_oidc-auth-flows">Client Initiated Backchannel Authentication Grant</a>.</p>
+</div>
+<div class="paragraph">
 <p><strong>Root URL</strong></p>
 </div>
 <div class="paragraph">
@@ -5402,7 +6034,7 @@ Instead, keycloak adapters currently treat access and refresh tokens as bearer t
 <p>If you&#8217;ve set the client&#8217;s <a href="#_access-type">access type</a> to <code>confidential</code> in the client&#8217;s
 <code>Settings</code> tab, a new <code>Credentials</code> tab will show up. Note that the <code>Credentials</code> tab only
 shows up after you&#8217;ve clicked the <code>Save</code> button at the bottom of the settings screen with a
-<code>confidential</code> access type. As part of dealing with thistype of client you have to configure
+<code>confidential</code> access type. As part of dealing with this type of client you have to configure
 the client&#8217;s credentials.</p>
 </div>
 <div class="paragraph">
@@ -5838,7 +6470,7 @@ which was the token issued for, unless any of the audience mappers added it.
 </div>
 </div>
 <div class="sect2">
-<h3 id="saml-clients"><a class="anchor" href="#saml-clients"></a>SAML Clients</h3>
+<h3 id="_client-saml-configuration"><a class="anchor" href="#_client-saml-configuration"></a>SAML Clients</h3>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/clients/client-saml.adoc" target="_blank">Edit this section</a>
@@ -5910,6 +6542,12 @@ If you&#8217;ve ever done a social login to Google, you&#8217;ll often see a sim
 This is enabled by default, which means that <code>AuthStatement</code> element will be included in login responses. Note that setting this to off
 would prevent the client from determining the maximum session length which could result into never expiring client session.</p>
 </dd>
+<dt class="hdlist1">Force Artifact Binding</dt>
+<dd>
+<p>When turned on, this will force Keycloak to send artifact messages instead of SAML messages via <em>POST</em> and <em>Redirect</em>,
+even when the client has not asked for the binding during login. This must be set if <em>Artifact</em> binding is to be used with
+Idp-initiated login. To use artifact messages also during logout, it is necessary to also configure <code>Logout Service Redirect Binding URL</code>.</p>
+</dd>
 <dt class="hdlist1">Sign Documents</dt>
 <dd>
 <p>When turned on, Keycloak will sign the document using the realm&#8217;s private key.</p>
@@ -5978,8 +6616,49 @@ If this switch is false, then Keycloak will invoke a background SAML request to 
 <dd>
 <p>Name ID Format for the subject.
 If no name ID policy is specified in the request or if the Force Name ID Format attribute is true, this value is used.
-Properties used for each of the respective formats are defined below.</p>
+Properties used for each of the respective formats are defined below.
+You can change the attribute used by the NameID Mapper.</p>
 </dd>
+</dl>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name ID Format</th>
+<th class="tableblock halign-left valign-top">Properties/Attributes Used</th>
+<th class="tableblock halign-left valign-top">Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">username (unspecified)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Username Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">example_user</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">email</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Email Property</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="mailto:example_user@example.com">example_user@example.com</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">persistent</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">saml.persistent.name.id.for.$clientId Attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">G-6e2a1050-0fc0-479b-bf6e-29cd3ccb373b</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">transient</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">property and attribute values are not used</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">G-bfb85c10-57d7-4331-81bc-52f104599d79</p></td>
+</tr>
+</tbody>
+</table>
+<div class="dlist">
+<dl>
 <dt class="hdlist1">Root URL</dt>
 <dd>
 <p>If Keycloak uses any configured relative URLs, this value is prepended to them.</p>
@@ -6016,6 +6695,18 @@ If a login request contains the Assertion Consumer Service URL, that will take p
 <dt class="hdlist1">Logout Service Redirect Binding URL</dt>
 <dd>
 <p>Redirect Binding URL for the Logout Service.</p>
+</dd>
+<dt class="hdlist1">Logout Service Artifact Binding URL</dt>
+<dd>
+<p><em>Artifact</em> Binding URL for the Logout Service. When set together with the <code>Force Artifact Binding</code> option, <em>Artifact</em> binding is forced for both login and logout flows. <em>Artifact</em> binding is not used for logout unless this property is set.</p>
+</dd>
+<dt class="hdlist1">Artifact Binding URL</dt>
+<dd>
+<p>URL to send the HTTP artifact messages to.</p>
+</dd>
+<dt class="hdlist1">Artifact Resolution Service</dt>
+<dd>
+<p>URL of the client SOAP endpoint where to send the <code>ArtifactResolve</code> messages to.</p>
 </dd>
 </dl>
 </div>
@@ -6495,11 +7186,26 @@ If you want to see how you can send a custom value for a <code>scope</code> para
 </table>
 </div>
 <div class="sect4">
-<h5 id="generating-example-tokens"><a class="anchor" href="#generating-example-tokens"></a>Generating Example Tokens</h5>
+<h5 id="generating-example-tokens-and-user-info"><a class="anchor" href="#generating-example-tokens-and-user-info"></a>Generating Example Tokens and User Info</h5>
 <div class="paragraph">
-<p>To see an example of a real access token, generated for the particular user and issued for the particular client, with the specified
-value of <code>scope</code> parameter, select the user from the <code>Evaluate</code> screen. This will generate an example token that includes all of the
-claims and role mappings used.</p>
+<p>If you select a user in the <code>Evaluate</code> screen, the following example data is generated:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Generated Access Token: An access token that will be generated and sent to the client when the selected user is authenticated.</p>
+</li>
+<li>
+<p>Generated ID Token: An ID Token that will be generated and sent to the client when the selected user is authenticated.</p>
+</li>
+<li>
+<p>Generated User Info: The information about the user that is returned by the UserInfo Endpoint.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>All examples are generated for the particular user and issued for the particular client, with the specified
+value of <code>scope</code> parameter. The examples include all of the claims and role mappings used.</p>
 </div>
 </div>
 </div>
@@ -6704,7 +7410,9 @@ chapter.</p>
 <div class="paragraph">
 <p>Default roles allow you to automatically assign user role mappings when any user is newly created or imported through
 <a href="#_identity_broker">Identity Brokering</a>.
-To specify default roles go to the <code>Roles</code> left menu item, and click the <code>Default Roles</code> tab.</p>
+To specify default roles go to the <code>Roles</code> left menu item, and click the <code>Default Roles</code> tab or alternatively you can
+search for <code>default-roles-${realmName}</code> role in the <code>Realm Roles</code> tab and then click Edit. Please note the <code>default-roles-${realmName}</code>
+role cannot be removed because it serves as a container for both realm and client default roles.</p>
 </div>
 <div class="paragraph">
 <div class="title">Default Roles</div>
@@ -9018,6 +9726,11 @@ You must define the OpenID Connect configuration options as well.  They basicall
 <td class="tableblock halign-left valign-top"><p class="tableblock">This realm will need a client secret to use when using the Authorization Code Flow. The value of this field can refer a value from an external <a href="#_vault-administration">vault</a>.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client Assertion Signature Algorithm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Signature algorithm to create JWT assertion as client authentication.
+In the case of JWT signed with private key or Client secret as jwt, it is required. If no algorithm is specified, the following algorithm is adapted. <code>RS256</code> is adapted in the case of JWT signed with private key.  <code>HS256</code> is adapted in the case of Client secret as jwt.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Issuer</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Responses from the IDP may contain an issuer claim.  This config value is optional.  If specified, this claim will be validated against the value you provide.</p></td>
 </tr>
@@ -9140,11 +9853,15 @@ You must define the SAML configuration options as well.  They basically describe
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Principal Type</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies which part of the SAML assertion will be used to identify and track external user identities. Can be either Subject NameID or SAML attribute (either by name or by friendly name).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies which part of the SAML assertion will be used to identify and track external user identities. Can be either Subject NameID or SAML attribute (either by name or by friendly name). Subject NameID value can not be set together with 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient' NameID Policy Format value.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Principal Attribute</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">If Principal is set to either "Attribute [Name]" or "Attribute [Friendly Name]", this field will specify the name or the friendly name of the identifying attribute, respectively.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allow create</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allow the external identity provider to create a new identifier to represent the principal.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">HTTP-POST Binding Response</p></td>
@@ -9478,8 +10195,24 @@ by <code>Confirm Link Existing Account</code> authenticator).</p>
 If it&#8217;s not, then the authenticator just creates a new local Keycloak account and links it with the identity provider and the whole flow is finished.
 Otherwise it goes to the next <code>Handle Existing Account</code> subflow.
 If you always want to ensure that there is no duplicated account, you can mark this authenticator as <code>REQUIRED</code>. In this case, the user
-will see the error page if there is an existing Keycloak account and the user will need to link his identity provider account through Account management.</p>
+will see the error page if there is an existing Keycloak account and the user will need to link the identity provider account through Account management.</p>
 </dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you want to skip the ability to create new users, but you want that users authenticated from identity provider must already exists in Keycloak with same username or email like the user from identity provider, you can create new flow and replace <code>Create User If Exists</code> authenticator with <code>Detect Existing Broker User</code> . More details in the <a href="#detect-existing-user-first-login-flow">examples below</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="dlist">
+<dl>
 <dt class="hdlist1">Confirm Link Existing Account</dt>
 <dd>
 <p>On the info page, the user will see that there is an existing Keycloak account with the same email.
@@ -9571,6 +10304,53 @@ In this case, automatic user creation should be turned off. To disable user crea
 <div class="paragraph">
 <p>This configuration also implies that Keycloak itself won&#8217;t be able to determine which internal account would correspond to the external identity.
 Therefore, the <code>Verify Existing Account By Re-authentication</code> authenticator will ask the user to provide both username and password.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="detect-existing-user-first-login-flow"><a class="anchor" href="#detect-existing-user-first-login-flow"></a>Detect Existing User First Login Flow</h4>
+<div class="paragraph">
+<p>In order to configure a first login flow in which:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>only users already registered in this realm can log in,</p>
+</li>
+<li>
+<p>users are automatically linked without being prompted,</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>create a new flow with the following two authenticators:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Detect Existing Broker User</dt>
+<dd>
+<p>This authenticator ensures that unique users are handled. Set the authenticator requirement to <code>Mandatory</code>.</p>
+</dd>
+<dt class="hdlist1">Automatically Set Existing User</dt>
+<dd>
+<p>Automatically sets an existing user to the authentication context without any verification. Set the authenticator requirement to <code>Mandatory</code>.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>You have to set the <code>First Login Flow</code> of the identity provider configuration to that flow.
+You could set the also set <code>Sync Mode</code> to <code>force</code> if you want to update the user profile (Last Name, First Name&#8230;&#8203;) with the identity provider attributes.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This flow can be used if you want to delegate the identity to other identity providers (such as github, facebook &#8230;&#8203;) but you want to manage which users that can log in.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -10287,9 +11067,83 @@ directory entry using <code>ldapsearch</code> and base64 decode the <code>userPa
 </table>
 </div>
 </div>
+<div class="sect3">
+<h4 id="_ldap_troubleshooting"><a class="anchor" href="#_ldap_troubleshooting"></a>Troubleshooting</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>It is useful to increase the logging level to TRACE for the category <code>org.keycloak.storage.ldap</code>. You increase this level in the logging
+subsystem in the <code>standalone(-ha).xml</code> file. With this setting, many logging messages are sent
+to the <code>server.log</code> file in the <code>TRACE</code> level, including the logging for all queries to the LDAP server and the parameters, which were
+used to send the queries. When you are creating any LDAP question on user forum or JIRA, consider attaching the server log with
+enabled TRACE logging. If it is too big, the good alternative is to include just the snippet from server log with the messages, which were
+added to the log during the operation, which causes the issues to you.</p>
+</li>
+<li>
+<p>When you create LDAP provider, message appear in the server log in the INFO level starting with:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>Creating new LDAP Store for the LDAP storage provider: ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It shows the configuration of your LDAP provider. Before you are asking the questions or reporting bugs, it will be nice to include this
+message to show your LDAP configuration. Eventually feel free to replace some config changes, which you do not want to include, with some
+placeholder values. One example is <code>bindDn=some-placeholder</code> . For <code>connectionUrl</code>, feel free to replace it as well, but it is generally
+useful to include at least the protocol, which was used (<code>ldap</code> vs <code>ldaps</code>)`. Similarly it can be useful to include the details for
+configuration of your LDAP mappers, which are displayed with the message like this at the DEBUG level:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>Mapper for provider: XXX, Mapper name: YYY, Provider: ZZZ ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note those messages are displayed just with the enabled DEBUG logging.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>For tracking the performance or connection pooling issues, consider setting the value of property <code>Connection Pool Debug Level</code> of
+the LDAP provider to value <code>all</code>. This will add lots of additional messages to server log with the included logging for the LDAP connection
+pooling. This can be used to track the issues related to connection pooling or performance.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+After changing the configuration of connection pooling, you may need to restart the Keycloak server to enforce re-initialization
+of the LDAP provider connection.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If no more messages appear for connection pooling even after server restart, it can indicate that connection pooling does not work
+with your LDAP server.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>For the case of reporting LDAP issue, you may consider to attach some part of your LDAP tree with the target data, which causes issues
+in your environment. For example if login of some user takes lot of time, you can consider attach his LDAP entry showing count of <code>member</code> attributes
+of various "group" entries. In this case, it might be useful to add if those group entries are mapped to some Group LDAP mapper (or Role LDAP Mapper)
+in Keycloak etc.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 <div class="sect2">
-<h3 id="_sssd"><a class="anchor" href="#_sssd"></a>SSSD and FreeIPA Identity Management Integration</h3>
+<h3 id="sssd-and-freeipa-identity-management-integration"><a class="anchor" href="#sssd-and-freeipa-identity-management-integration"></a>SSSD and FreeIPA Identity Management Integration</h3>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/user-federation/sssd.adoc" target="_blank">Edit this section</a>
@@ -11535,7 +12389,7 @@ URL in the default hostname provider.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:11.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:12.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
     ...
     <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
         ...
@@ -11584,7 +12438,7 @@ receives the client IP address and not the proxy IP address
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:11.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:12.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
     ...
     <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
         ...
@@ -14751,7 +15605,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2021-03-01 08:19:56 UTC
+Last updated 2021-05-06 12:24:48 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>

@@ -808,11 +808,12 @@ span.image img {
 </li>
 <li><a href="#_providers">Service Provider Interfaces (SPI)</a>
 <ul class="sectlevel2">
-<li><a href="#implementing-an-spi">Implementing an SPI</a>
+<li><a href="#_implementing_spi">Implementing an SPI</a>
 <ul class="sectlevel3">
 <li><a href="#_providers_admin_console">Show info from your SPI implementation in admin console</a></li>
 </ul>
 </li>
+<li><a href="#_use_available_providers">Use available providers</a></li>
 <li><a href="#registering-provider-implementations">Registering provider implementations</a>
 <ul class="sectlevel3">
 <li><a href="#using-the-keycloak-deployer">Using the Keycloak Deployer</a></li>
@@ -900,7 +901,7 @@ span.image img {
 <li><a href="#_user-storage-spi">User Storage SPI</a>
 <ul class="sectlevel2">
 <li><a href="#provider-interfaces">Provider Interfaces</a></li>
-<li><a href="#provider-capability-interfaces">Provider Capability Interfaces</a></li>
+<li><a href="#_provider_capability_interfaces">Provider Capability Interfaces</a></li>
 <li><a href="#model-interfaces">Model Interfaces</a>
 <ul class="sectlevel3">
 <li><a href="#storage-ids">Storage Ids</a></li>
@@ -955,6 +956,7 @@ span.image img {
 <li><a href="#upgrading-to-a-new-model">Upgrading to a New Model</a></li>
 </ul>
 </li>
+<li><a href="#stream-based-interfaces">Stream-based Interfaces</a></li>
 </ul>
 </li>
 <li><a href="#_vault-spi">Vault SPI</a>
@@ -1004,7 +1006,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>12.0.4</strong> <em>Latest</em></p>
+<p>Version <strong>13.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1063,7 +1065,7 @@ This one is short</code></pre>
 <a href="https://www.keycloak.org/docs/latest/securing_apps/">Securing Applications and Services Guide</a>. You can also use direct access grant to obtain an access token.</p>
 </div>
 <div class="paragraph">
-<p>For complete documentation see <a href="https://www.keycloak.org/docs/12.0/api_documentation/">API Documentation</a>.</p>
+<p>For complete documentation see <a href="https://www.keycloak.org/docs/13.0/api_documentation/">API Documentation</a>.</p>
 </div>
 <div class="sect2">
 <h3 id="examples-using-curl"><a class="anchor" href="#examples-using-curl"></a>Examples using CURL</h3>
@@ -1176,7 +1178,7 @@ RealmRepresentation realm = keycloak.realm(<span class="string"><span class="del
 </div>
 </div>
 <div class="paragraph">
-<p>Complete Javadoc for the admin client is available at <a href="https://www.keycloak.org/docs/12.0/api_documentation/">API Documentation</a>.</p>
+<p>Complete Javadoc for the admin client is available at <a href="https://www.keycloak.org/docs/13.0/api_documentation/">API Documentation</a>.</p>
 </div>
 </div>
 </div>
@@ -1607,8 +1609,8 @@ usernameOrEmail=....</code></pre>
 <h4 id="custom-identity-providers-icons"><a class="anchor" href="#custom-identity-providers-icons"></a>Custom Identity providers icons</h4>
 <div class="paragraph">
 <p>Keycloak supports adding icons for custom Identity providers, which are displayed on the login screen.
-You just have to define an icon classes in your login <code>theme.properties</code> file (f.e. <code>themes/mytheme/login/theme.properties</code>) with key pattern <code>kcLogoIdP-&lt;alias&gt;</code>.
-For Identity provider with alias <code>myProvider</code>, you may add line, like below, to login theme properties of your custom theme.</p>
+You just have to define icon classes in your login <code>theme.properties</code> file (i.e. <code>themes/mytheme/login/theme.properties</code>) with key pattern <code>kcLogoIdP-&lt;alias&gt;</code>.
+For Identity provider with an alias <code>myProvider</code>, you may add a line, like below, to <code>theme.properties</code> file of your custom theme.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1788,29 +1790,8 @@ provider.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>By default, the locale is selected using the <code>DefaultLocaleSelectorProvider</code> which implements the <code>LocaleSelectorProvider</code> interface. English is the default language when internationalization is disabled. With internationalization enabled, the locale is resolved in the following priority:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><code>kc_locale</code> query parameter</p>
-</li>
-<li>
-<p><code>KEYCLOAK_LOCALE</code> cookie value</p>
-</li>
-<li>
-<p>User&#8217;s preferred locale if a user instance is available</p>
-</li>
-<li>
-<p><code>ui_locales</code> query parameter</p>
-</li>
-<li>
-<p><code>Accept-Language</code> request header</p>
-</li>
-<li>
-<p>Realm&#8217;s default language</p>
-</li>
-</ol>
+<p>By default, the locale is selected using the <code>DefaultLocaleSelectorProvider</code> which implements the <code>LocaleSelectorProvider</code> interface. English is the default language when internationalization is disabled.
+With internationalization enabled, the locale is resolved according to the logic described in the <a href="https://www.keycloak.org/docs/latest/server_admin/#_user_locale_selection">Server Administration Guide</a>.</p>
 </div>
 <div class="paragraph">
 <p>This behaviour can be changed through the <code>LocaleSelectorSPI</code> by implementing the <code>LocaleSelectorProvider</code> and <code>LocaleSelectorProviderFactory</code>.</p>
@@ -2106,7 +2087,7 @@ to the application.  If there is an error condition and the auth server deems it
 To achieve this Keycloak has a number of Service Provider Interfaces (SPI) for which you can implement your own providers.</p>
 </div>
 <div class="sect2">
-<h3 id="implementing-an-spi"><a class="anchor" href="#implementing-an-spi"></a>Implementing an SPI</h3>
+<h3 id="_implementing_spi"><a class="anchor" href="#_implementing_spi"></a>Implementing an SPI</h3>
 <div class="paragraph">
 <p>To implement an SPI you need to implement its ProviderFactory and Provider interfaces. You also need to create a service configuration file.</p>
 </div>
@@ -2274,6 +2255,51 @@ custom provider currently installed), current configuration of the provider (eg.
 }</code></pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_use_available_providers"><a class="anchor" href="#_use_available_providers"></a>Use available providers</h3>
+<div class="paragraph">
+<p>In your provider implementation, you can use other providers available in Keycloak. The existing providers can be typically retrieved with the
+usage of the <code>KeycloakSession</code>, which is available to your provider as described in the section <a href="#_implementing_spi">Implementing an SPI</a>.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak has two provider types:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Single-implementation provider types</strong> - There can be only a single active implementation of the particular provider type in Keycloak runtime.
+For example <code>HostnameProvider</code> specifies the hostname to be used by Keycloak and that is shared for the whole Keycloak server.
+Hence there can be only single implementation of this provider active for the Keycloak server. If there are multiple provider implementations available to the server runtime,
+one of them needs to be specified in the keycloak subsystem configuration in the <code>standalone.xml</code> as the default one. For example such as:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>&lt;spi name="hostname"&gt;
+    &lt;default-provider&gt;default&lt;/default-provider&gt;
+    ...
+&lt;/spi&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The value <code>default</code> used as the value of <code>default-provider</code> must match the ID returned by the <code>ProviderFactory.getId()</code> of the particular provider factory implementation.
+In the code, you can obtain the provider such as <code>keycloakSession.getProvider(HostnameProvider.class)</code></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Multiple implementation provider types</strong> - Those are provider types, that allow multiple implementations available and working together
+in the Keycloak runtime. For example <code>EventListener</code> provider allows to have multiple implementations available and registered, which means
+that particular event can be sent to all the listeners (jboss-logging, sysout etc). In the code, you can obtain a specified instance of the provider
+for example such as <code>session.getProvider(EventListener.class, "jboss-logging")</code> . You need to specify <code>provider_id</code> of the provider as the second argument
+as there can be multiple instances of this provider type as described above. The provider ID must match the ID returned by the <code>ProviderFactory.getId()</code> of the
+particular provider factory implementation. Some provider types can be retrieved with the usage of <code>ComponentModel</code> as the second argument and some (for example <code>Authenticator</code>) even
+need to be retrieved with the usage of <code>KeycloakSessionFactory</code>. It is not recommended to implement your own providers this way as it may be deprecated in the future.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
@@ -2701,7 +2727,7 @@ deploy all scripts directly to the server as soon as possible.</p>
 </div>
 <div class="paragraph">
 <p>The Keycloak SPI framework offers the possibility to implement or override particular built-in providers. However Keycloak
-also provides capabilities to extend it&#8217;s core functionalities and domain. This includes possibilities to:</p>
+also provides capabilities to extend its core functionalities and domain. This includes possibilities to:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -4790,7 +4816,7 @@ for it when you enabled through the admin console.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="provider-capability-interfaces"><a class="anchor" href="#provider-capability-interfaces"></a>Provider Capability Interfaces</h3>
+<h3 id="_provider_capability_interfaces"><a class="anchor" href="#_provider_capability_interfaces"></a>Provider Capability Interfaces</h3>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_development/topics/user-storage/provider-capability-interfaces.adoc" target="_blank">Edit this section</a>
@@ -5276,7 +5302,7 @@ If you do not specify the template parameter, your provider will not function. T
 </div>
 </div>
 <div class="paragraph">
-<p>Our <code>PropertyFileUserStorageProvider</code> example is bit contrived. It is hardcoded to a property file that is embedded in the jar of the provider, which is not terribly useful. We might want to make the location of this file configurable per instance of the provider. In other words, we might want to reuse this provider mulitple times in multiple different realms and point to completely different user property files. We&#8217;ll also want to perform this configuration within the administration console UI.</p>
+<p>Our <code>PropertyFileUserStorageProvider</code> example is bit contrived. It is hardcoded to a property file that is embedded in the jar of the provider, which is not terribly useful. We might want to make the location of this file configurable per instance of the provider. In other words, we might want to reuse this provider multiple times in multiple different realms and point to completely different user property files. We&#8217;ll also want to perform this configuration within the administration console UI.</p>
 </div>
 <div class="paragraph">
 <p>The <code>UserStorageProviderFactory</code> has additional methods you can implement that handle provider configuration. You describe the variables you want to configure per provider and the administration console automatically renders a generic input page to gather this configuration. When implemented, callback methods also validate the configuration before it is saved, when a provider is created for the first time, and when it is updated. <code>UserStorageProviderFactory</code> inherits these methods from the <code>org.keycloak.component.ComponentFactory</code> interface.</p>
@@ -6391,6 +6417,92 @@ before upgrading Keycloak. This will remove linked local imported copies of any 
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="stream-based-interfaces"><a class="anchor" href="#stream-based-interfaces"></a>Stream-based Interfaces</h3>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_development/topics/user-storage/stream-interfaces.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_development/topics/user-storage/stream-interfaces.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="paragraph">
+<p>Many of the user storage interfaces in Keycloak contain query methods that can return potentially large sets of objects,
+which might lead to significant impacts in terms of memory consumption and processing time. This is especially true when only
+a small subset of the objects' internal state is used in the query method&#8217;s logic.</p>
+</div>
+<div class="paragraph">
+<p>To provide developers with a more efficient alternative to process large data sets in these query methods, a <code>Streams</code>
+sub-interface has been added to user storage interfaces. These <code>Streams</code> sub-interfaces replace the original collection-based
+methods in the super-interfaces with stream-based variants, making the collection-based methods default. The default implementation
+of a collection-based query method invokes its <code>Stream</code> counterpart and collects the result into the proper collection type.</p>
+</div>
+<div class="paragraph">
+<p>The <code>Streams</code> sub-interfaces allow for implementations to focus on the stream-based approach for processing sets of data and
+benefit from the potential memory and performance optimizations of that approach. The interfaces that offer a <code>Streams</code>
+sub-interface to be implemented include a few <em><a href="#_provider_capability_interfaces">capability interfaces</a></em>, all interfaces in the <code>org.keycloak.storage.federated</code>
+package and a few others that might be implemented depending on the scope of the custom storage implementation.</p>
+</div>
+<div class="paragraph">
+<p>See this list of the interfaces that offer a <code>Streams</code> sub-interface to developers.</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Package</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Classes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.keycloak.credential</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>CredentialInputUpdater</code>(*), <code>UserCredentialStore</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.keycloak.models</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>GroupModel</code>, <code>RoleMapperModel</code>, <code>UserCredentialManager</code>, <code>UserModel</code>, <code>UserProvider</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.keycloak.models.cache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>CachedUserModel</code>, <code>UserCache</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.keycloak.storage.federated</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All interfaces</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>org.kecyloak.storage.user</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UserQueryProvider</code>(*)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>(*) indicates the interface is a <em><a href="#_provider_capability_interfaces">capability interface</a></em></p>
+</div>
+<div class="paragraph">
+<p>Custom user storage implementation that want to benefit from the streams approach should simply implement the <code>Streams</code>
+sub-interfaces instead of the original interfaces. For example, the following code uses the <code>Streams</code> variant of the <code>UserQueryProvider</code>
+interface:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="java"><span class="directive">public</span> <span class="type">class</span> <span class="class">CustomQueryProvider</span> <span class="directive">extends</span> UserQueryProvider.Streams {
+...
+    <span class="annotation">@Override</span>
+    Stream&lt;UserModel&gt; getUsersStream(RealmModel realm, <span class="predefined-type">Integer</span> firstResult, <span class="predefined-type">Integer</span> maxResults) {
+        <span class="comment">// custom logic here</span>
+    }
+
+    <span class="annotation">@Override</span>
+    Stream&lt;UserModel&gt; searchForUserStream(<span class="predefined-type">String</span> search, RealmModel realm) {
+        <span class="comment">// custom logic here</span>
+    }
+...
+}</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -6476,7 +6588,7 @@ plain byte and character arrays and buffers is preferable.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2021-03-01 08:19:59 UTC
+Last updated 2021-05-06 12:24:49 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
