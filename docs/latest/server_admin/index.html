@@ -803,6 +803,18 @@ span.image img {
 <li><a href="#_personal_data">Personal data collected by Keycloak</a></li>
 <li><a href="#enabling-account-deletion-by-users">Enabling account deletion by users</a></li>
 <li><a href="#deleting-a-user-in-action">Deleting a user in action</a></li>
+<li><a href="#user-profile">User Profile</a>
+<ul class="sectlevel3">
+<li><a href="#enabling-the-declarative-user-profile">Enabling the Declarative User Profile</a></li>
+<li><a href="#managing-the-user-profile">Managing the User Profile</a></li>
+<li><a href="#managing-attributes">Managing Attributes</a></li>
+<li><a href="#managing-permissions">Managing Permissions</a></li>
+<li><a href="#managing-validations">Managing Validations</a></li>
+<li><a href="#managing-annotations">Managing Annotations</a></li>
+<li><a href="#using-the-json-configuration">Using the JSON Configuration</a></li>
+<li><a href="#verifying-user-profile">Verifying User Profile</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#login-page-settings">Login Page Settings</a>
@@ -877,6 +889,7 @@ span.image img {
 <li><a href="#_oidc">OpenID Connect</a>
 <ul class="sectlevel3">
 <li><a href="#_oidc-auth-flows">OIDC Auth Flows</a></li>
+<li><a href="#_oidc-logout">OIDC Logout</a></li>
 <li><a href="#_oidc-endpoints">Keycloak Server OIDC URI Endpoints</a></li>
 </ul>
 </li>
@@ -931,10 +944,15 @@ span.image img {
 <li><a href="#scopes-explained">Scopes explained</a></li>
 </ul>
 </li>
+<li><a href="#_client_policies">Client Policies</a>
+<ul class="sectlevel3">
+<li><a href="#use-cases">Use-cases</a></li>
+<li><a href="#protocol-2">Protocol</a></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#backward-compatibility">Backward Compatibility</a></li>
 </ul>
 </li>
-<li><a href="#roles">Roles</a>
-<ul class="sectlevel2">
 <li><a href="#realm-roles">Realm Roles</a></li>
 <li><a href="#client-roles">Client Roles</a></li>
 <li><a href="#_composite-roles">Composite Roles</a></li>
@@ -1038,6 +1056,7 @@ span.image img {
 <li><a href="#_revocation-policy">Revocation Policies</a></li>
 <li><a href="#_timeouts">Session and Token Timeouts</a></li>
 <li><a href="#_offline-access">Offline Access</a></li>
+<li><a href="#offline-sessions-preloading">Offline Sessions Preloading</a></li>
 <li><a href="#_transient-session">Transient sessions</a></li>
 </ul>
 </li>
@@ -1115,6 +1134,7 @@ span.image img {
 <li><a href="#ssl-https-requirement">SSL/HTTPS Requirement</a></li>
 <li><a href="#csrf-attacks">CSRF Attacks</a></li>
 <li><a href="#_unspecific-redirect-uris">Unspecific Redirect URIs</a></li>
+<li><a href="#fapi-compliance">FAPI compliance</a></li>
 <li><a href="#compromised-access-and-refresh-tokens">Compromised Access and Refresh Tokens</a></li>
 <li><a href="#compromised-authorization-code">Compromised Authorization Code</a></li>
 <li><a href="#open-redirectors">Open redirectors</a></li>
@@ -1183,7 +1203,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>13.0.1</strong> <em>Latest</em></p>
+<p>Version <strong>14.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -2412,6 +2432,460 @@ for more information on extending and creating themes.</p>
 </div>
 <div class="paragraph">
 <p>After confirming, the user&#8217;s account will be deleted.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="user-profile"><a class="anchor" href="#user-profile"></a>User Profile</h3>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/users/user-profile.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/users/user-profile.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="paragraph">
+<p>In Keycloak a user is associated with a set of attributes. These attributes are used to better describe and identify users within Keycloak as well as to pass over additional information to applications about them.</p>
+</div>
+<div class="paragraph">
+<p>A user profile defines a well-defined schema for representing user attributes and how they are managed within a realm. By providing a consistent view over user information, it allows administrators to control the different aspects on how attributes are managed as well as to make a lot easier to extend Keycloak to support additional attributes.</p>
+</div>
+<div class="paragraph">
+<p>Among other capabilities, user profile enables administrators to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Define a schema for user attributes</p>
+</li>
+<li>
+<p>Define whether an attribute is required based on contextual information (e.g.: if required only for users, or admins, or both, or depending on the scope being requested.)</p>
+</li>
+<li>
+<p>Define specific permissions for viewing and editing user attributes, making possible to adhere to strong privacy requirements where some attributes can not be seen or be changed by third-parties (including administrators)</p>
+</li>
+<li>
+<p>Dynamically enforce user profile compliance so that user information is always updated and in compliance with the metadata and rules associated with attributes</p>
+</li>
+<li>
+<p>Define validation rules on a per-attribute basis by leveraging the built-in validators or writing custom ones</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The User Profile capabilities are backed by the User Profile SPI. By default, there are two providers you can choose from:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Legacy User Profile Provider (<code>legacy-user-profile</code>)</p>
+</li>
+<li>
+<p>Declarative User Profile Provider (<code>declarative-user-profile</code>)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The legacy provider is enabled by default, and it provides a basic user profile configuration based on the user root attributes such as e-mail, first and last names.</p>
+</div>
+<div class="paragraph">
+<p>On the other hand, the declarative provider gives you a lot more flexibility to define the user profile configuration to a realm through the administration console and a well-defined JSON schema.</p>
+</div>
+<div class="paragraph">
+<p>In the next sections, we&#8217;ll be looking at how to use the declarative provider to define your own user profile configuration.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>In the future, the <code>declarative-user-profile</code> provider is going to replace the legacy provider and become the default.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="enabling-the-declarative-user-profile"><a class="anchor" href="#enabling-the-declarative-user-profile"></a>Enabling the Declarative User Profile</h4>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Declarative User Profile is <strong>Technology Preview</strong> and is not fully supported. This feature is disabled by default.</p>
+</div>
+<div class="paragraph">
+<p>To enable start the server with <code>-Dkeycloak.profile=preview</code>
+or <code>-Dkeycloak.profile.feature.declarative_user_profile=enabled</code>
+. For more details see <a href="https://www.keycloak.org/docs/latest/server_installation/#profiles">Profiles</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In addition to enabling the <code>declarative_user_profile</code> feature, you should use the <a href="https://www.keycloak.org/docs/latest/server_installation/#_start_cli">CLI</a> to set the <code>declarative-user-profile</code> provider as the default provider as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ /subsystem=keycloak-server/spi=userProfile:add(default-provider=declarative-user-profile)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After setting the default provider, make sure to restart the server.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="managing-the-user-profile"><a class="anchor" href="#managing-the-user-profile"></a>Managing the User Profile</h4>
+<div class="paragraph">
+<p>The user profile configuration is managed on a per-realm basis. For that, click on the
+<code>Realm Settings</code> link on the left side menu and then click on the <code>User Profile</code> tab.</p>
+</div>
+<div class="paragraph">
+<div class="title">User Profile Attributes</div>
+<p><span class="image"><img src="./keycloak-images/user-profile-attributes.png" alt="user profile attributes"></span></p>
+</div>
+<div class="paragraph">
+<p>In the <code>Attributes</code> sub-tab you have a list of the attributes currently associated with the user profile. By default, Keycloak uses a configuration based on the user root attributes and very similar to the configuration used by the legacy provider.</p>
+</div>
+<div class="paragraph">
+<p>In the <code>JSON Editor</code> sub-tab you can view and edit the configuration using a well-defined JSON schema.</p>
+</div>
+<div class="paragraph">
+<p>In the next section, you are going to learn how to manage the configuration from the <code>Attributes</code> sub-tab.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="managing-attributes"><a class="anchor" href="#managing-attributes"></a>Managing Attributes</h4>
+<div class="paragraph">
+<p>At the <code>Attributes</code> sub-tab you should be able to create, edit, and delete the attributes associated with the user profile.</p>
+</div>
+<div class="paragraph">
+<p>To define a new attribute and associate it with the user profile, click on the <code>Create</code> button in the top-right corner of the attribute listing.</p>
+</div>
+<div class="paragraph">
+<div class="title">Attribute Configuration</div>
+<p><span class="image"><img src="./keycloak-images/user-profile-create-attribute.png" alt="user profile create attribute"></span></p>
+</div>
+<div class="paragraph">
+<p>When configuring the attribute you should be able to define the following settings:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Name</dt>
+<dd>
+<p>The name of the attribute. This setting is required.</p>
+</dd>
+<dt class="hdlist1">Required</dt>
+<dd>
+<p>Set the attribute as required. If enabled, the attribute must be set by users and administrators. Otherwise, the attribute is optional.</p>
+</dd>
+<dt class="hdlist1">Permission</dt>
+<dd>
+<p>In this section, you can define read and write permissions for users and administrators.</p>
+</dd>
+<dt class="hdlist1">Validation</dt>
+<dd>
+<p>In this section, you can define custom validations when updating the attribute.</p>
+</dd>
+<dt class="hdlist1">Annotation</dt>
+<dd>
+<p>In this section, you can associate annotations to the attribute.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="managing-permissions"><a class="anchor" href="#managing-permissions"></a>Managing Permissions</h4>
+<div class="paragraph">
+<p>In the <code>Permission</code> section, you can define the level of access users and administrators have to read and write to an attribute.</p>
+</div>
+<div class="paragraph">
+<div class="title">Attribute Permission</div>
+<p><span class="image"><img src="./keycloak-images/user-profile-permission.png" alt="user profile permission"></span></p>
+</div>
+<div class="paragraph">
+<p>For that, you should be able to use the following settings:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Can user view?</dt>
+<dd>
+<p>If enabled, users can view the attribute. Otherwise, users don&#8217;t have access to the attribute.</p>
+</dd>
+<dt class="hdlist1">Can user edit?</dt>
+<dd>
+<p>If enabled, users can view and edit the attribute. Otherwise, users don&#8217;t have access to write to the attribute.</p>
+</dd>
+<dt class="hdlist1">Can admin view?</dt>
+<dd>
+<p>If enabled, administrators can view the attribute. Otherwise, administrators don&#8217;t have access to the attribute.</p>
+</dd>
+<dt class="hdlist1">Can admin edit?</dt>
+<dd>
+<p>If enabled, administrators can view and edit the attribute. Otherwise, administrators don&#8217;t have access to write to the attribute.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="managing-validations"><a class="anchor" href="#managing-validations"></a>Managing Validations</h4>
+<div class="paragraph">
+<p>In the <code>Validation</code> section, you can choose from different forms of validation to make sure the attribute value conforms to specific rules.</p>
+</div>
+<div class="paragraph">
+<div class="title">Attribute Validation</div>
+<p><span class="image"><img src="./keycloak-images/user-profile-validation.png" alt="user profile validation"></span></p>
+</div>
+<div class="paragraph">
+<p>Keycloak provides different validators out of the box:</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">not-empty</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check that input value is not empty. It means it is not null for all data types.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">not-blank</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check that a string value is not empty. It means it is not null nor empty.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">length</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check the length of a string value based on a minimum and maximum length.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check if the value is an integer.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">double</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check if the value is a number.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check if the value is a valid URI.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">pattern</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check if the value matches a specific RegEx pattern.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">email</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check if the value has a valid e-mail format.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">local-date</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check if the value has a valid format based on the realm and/or user locale.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="managing-annotations"><a class="anchor" href="#managing-annotations"></a>Managing Annotations</h4>
+<div class="paragraph">
+<p>In order to pass additional information to frontends, attributes can be decorated with
+annotations to dictate how attributes should be rendered. This capability is mainly useful when extending Keycloak themes to render pages dynamically based on the annotations associated with attributes.</p>
+</div>
+<div class="paragraph">
+<div class="title">Attribute Annotation</div>
+<p><span class="image"><img src="./keycloak-images/user-profile-annotation.png" alt="user profile annotation"></span></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="using-the-json-configuration"><a class="anchor" href="#using-the-json-configuration"></a>Using the JSON Configuration</h4>
+<div class="paragraph">
+<p>The user profile configuration is stored using a well-defined JSON schema. You can choose from editing the user profile configuration directly by clicking on the <code>JSON Editor</code> sub-tab.</p>
+</div>
+<div class="paragraph">
+<div class="title">JSON Configuration</div>
+<p><span class="image"><img src="./keycloak-images/user-profile-json-config.png" alt="user profile json config"></span></p>
+</div>
+<div class="paragraph">
+<p>The JSON schema is defined as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{
+  "attributes": [
+    {
+      "name": "myattribute",
+      "required": {
+        "roles": [ "user", "admin" ],
+        "scopes": [ "foo", "bar" ]
+      },
+      "permissions": {
+        "view": [ "admin", "user" ],
+        "edit": [ "admin", "user" ]
+      },
+      "annotations": {
+        "myannotation": "myannotation-value"
+      }
+    }
+  ]
+}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The schema supports as many attributes as you need.</p>
+</div>
+<div class="paragraph">
+<p>For each attribute you should define a <code>name</code> and, optionally, the <code>required</code>, <code>permission</code>, and the <code>annotations</code> settings.</p>
+</div>
+<div class="sect4">
+<h5 id="required-property"><a class="anchor" href="#required-property"></a>Required Property</h5>
+<div class="paragraph">
+<p>The <code>required</code> setting defines whether an attribute is required. Keycloak allows you to set an attribute as required based on different conditions.</p>
+</div>
+<div class="paragraph">
+<p>When the <code>required</code> setting is defined as an empty object, the attribute is always required.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{
+  "attributes": [
+    {
+      "name": "myattribute",
+      "required": {}
+  ]
+}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>On the other hand, you can choose to make the attribute required only for users, or administrators, or both. As well as mark the attribute as required only in case a specific scope is requested when the user is authenticating in Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>To mark an attribute as required for a user and/or administrator, set the <code>roles</code> property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{
+  "attributes": [
+    {
+      "name": "myattribute",
+      "required": {
+        "roles": ["user"]
+      }
+  ]
+}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>roles</code> property expects an array whose values can be either <code>user</code> or <code>admin</code>, depending on whether the attribute should be required by the user or the administrator, respectively.</p>
+</div>
+<div class="paragraph">
+<p>Similarly, you can choose to make the attribute required when a set of one or more scopes is requested by a client when authenticating a user. For that, you can use the <code>scopes</code> property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{
+  "attributes": [
+    {
+      "name": "myattribute",
+      "required": {
+        "scopes": ["foo"]
+      }
+  ]
+}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>scopes</code> property is an array whose values can be any string representing a client scope.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="permissions-property"><a class="anchor" href="#permissions-property"></a>Permissions Property</h5>
+<div class="paragraph">
+<p>The attribute-level <code>permissions</code> property can be used to define the read and write permissions to an attribute. The permissions are set based on whether these operations can be performed on the attribute by a user, or administrator, or both.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{
+  "attributes": [
+    {
+      "name": "myattribute",
+      "permissions": {
+        "view": ["admin"],
+        "edit": ["user"]
+      }
+  ]
+}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Both <code>view</code> and <code>edit</code> properties expect an array whose values can be either <code>user</code> or <code>admin</code>, depending on whether the attribute is viewable or editable by the user or the administrator, respectively.</p>
+</div>
+<div class="paragraph">
+<p>When the <code>edit</code> permission is granted, the <code>view</code> permission is implicitly granted.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="annotations-property"><a class="anchor" href="#annotations-property"></a>Annotations Property</h5>
+<div class="paragraph">
+<p>The attribute-level <code>annotation</code> property can be used to associate additional metadata to attributes. Annotations are mainly useful for passing over additional information about attributes to frontends rendering user attributes based on the user profile configuration. Each annotation is a key/value pair.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{
+  "attributes": [
+    {
+      "name": "myattribute",
+      "annotations": {
+        "foo": ["foo-value"],
+        "bar": ["bar-value"]
+      }
+  ]
+}</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="verifying-user-profile"><a class="anchor" href="#verifying-user-profile"></a>Verifying User Profile</h4>
+<div class="paragraph">
+<p>In order to make sure user profiles are in compliance with the configuration, administrators may use the <code>VerifyProfile</code> required action to eventually force users to update their profiles when authenticating to Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>When enabled, the <code>VerifyProfile</code> action is going to perform the following steps when the user is authenticating:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check whether the user profile is fully compliant with the user profile configuration set to the realm.</p>
+</li>
+<li>
+<p>If not, perform an additional step during the authentication so that the user can update his/her profile.</p>
+</li>
+<li>
+<p>If the user profile is compliant with the configuration, no additional step is performed, and the user continues with the authentication process.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The <code>VerifyProfile</code> action is similar to the <code>UpdateProfile</code>. However, it leverages all the capabilities provided by the user profile configuration to dynamically render the attributes defined in the user profile configuration.</p>
+</div>
+<div class="paragraph">
+<p>By default, the <code>VerifyProfile</code> action is disabled. To enabled it, click on the
+<code>Authentication</code> link on the left side menu and then click on the <code>Required Actions</code> tab. At this tab, click on the <code>Register</code> button and select the <code>VerifyProfile</code> action.</p>
+</div>
+<div class="paragraph">
+<div class="title">Registring the VerifyProfile Required Action</div>
+<p><span class="image"><img src="./keycloak-images/user-profile-register-verify-profile-action.png" alt="user profile register verify profile action"></span></p>
+</div>
 </div>
 </div>
 </div>
@@ -3844,7 +4318,7 @@ If you setup a new Keycloak instance it is recommended to enable this option. Le
 </dd>
 <dt class="hdlist1"><code>Enable Serial Number hexadecimal representation</code> (optional)</dt>
 <dd>
-<p>An option to use hexadecimal representation of the Serial Number. See <a href="https://tools.ietf.org/html/rfc5280#section-4.1.2.2">RFC5280, Section-4.1.2.2</a>. Serial Number with sign bit set to 1 should be left padded with 00 octet. E.g. Serial number with decimal value <em>161</em>, or <em>a1</em> in hexadecimal representation according to RFC5280 must be encoded as <em>00a1</em>. More details can be found: <a href="https://tools.ietf.org/html/rfc5280#appendix-B">RFC5280, appendix-B</a>.</p>
+<p>An option to use hexadecimal representation of the Serial Number. See <a href="https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.2">RFC5280, Section-4.1.2.2</a>. Serial Number with sign bit set to 1 should be left padded with 00 octet. E.g. Serial number with decimal value <em>161</em>, or <em>a1</em> in hexadecimal representation according to RFC5280 must be encoded as <em>00a1</em>. More details can be found: <a href="https://datatracker.ietf.org/doc/html/rfc5280#appendix-B">RFC5280, appendix-B</a>.</p>
 </dd>
 <dt class="hdlist1"><code>A regular expression</code> (optional)</dt>
 <dd>
@@ -3897,11 +4371,11 @@ If you use a different attribute name, you may need to add it to the list of rea
 </dd>
 <dt class="hdlist1"><code>Validate Key Usage</code> (optional)</dt>
 <dd>
-<p>Verifies whether the certificate&#8217;s KeyUsage extension bits are set. For example, "digitalSignature,KeyEncipherment" will verify if  bits 0 and 2 in the KeyUsage extension are asserted. Leave the parameter empty to disable the Key Usage validation. See <a href="https://tools.ietf.org/html/rfc5280#section-4.2.1.3">RFC5280, Section-4.2.1.3</a>. The server will raise an error only when flagged as critical by the issuing CA and there is a key usage extension mismatch.</p>
+<p>Verifies whether the certificate&#8217;s KeyUsage extension bits are set. For example, "digitalSignature,KeyEncipherment" will verify if  bits 0 and 2 in the KeyUsage extension are asserted. Leave the parameter empty to disable the Key Usage validation. See <a href="https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.3">RFC5280, Section-4.2.1.3</a>. The server will raise an error only when flagged as critical by the issuing CA and there is a key usage extension mismatch.</p>
 </dd>
 <dt class="hdlist1"><code>Validate Extended Key Usage</code> (optional)</dt>
 <dd>
-<p>Verifies one or more purposes as defined in the Extended Key Usage extension. See <a href="https://tools.ietf.org/html/rfc5280#section-4.2.1.12">RFC5280, Section-4.2.1.12</a>. Leave the parameter empty to disable the Extended Key Usage validation. The server will raise an error only when flagged as critical by the issuing CA and there is a key usage extension mismatch.</p>
+<p>Verifies one or more purposes as defined in the Extended Key Usage extension. See <a href="https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.12">RFC5280, Section-4.2.1.12</a>. Leave the parameter empty to disable the Extended Key Usage validation. The server will raise an error only when flagged as critical by the issuing CA and there is a key usage extension mismatch.</p>
 </dd>
 <dt class="hdlist1"><code>Bypass identity confirmation</code></dt>
 <dd>
@@ -4411,7 +4885,7 @@ assuming that authentication flow configuration above with the conditional subfl
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Signature Algorithms</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">It tells the WebAuthn authenticator which signature algorithms to use for the <a href="https://www.w3.org/TR/webauthn/#public-key-credential">Public Key Credential</a> that can be used for signing and verifying the <a href="https://www.w3.org/TR/webauthn/#authentication-assertion">Authentication Assertion</a>. Multiple algorithms can be specified. If no algorithm is specified, <a href="https://tools.ietf.org/html/rfc8152#section-8.1">ES256</a> is adapted. The default setting is ES256. This is an optional configuration item that is applied to the operation of registering a WebAuthn authenticator.
+<td class="tableblock halign-left valign-top"><p class="tableblock">It tells the WebAuthn authenticator which signature algorithms to use for the <a href="https://www.w3.org/TR/webauthn/#public-key-credential">Public Key Credential</a> that can be used for signing and verifying the <a href="https://www.w3.org/TR/webauthn/#authentication-assertion">Authentication Assertion</a>. Multiple algorithms can be specified. If no algorithm is specified, <a href="https://datatracker.ietf.org/doc/html/rfc8152#section-8.1">ES256</a> is adapted. The default setting is ES256. This is an optional configuration item that is applied to the operation of registering a WebAuthn authenticator.
  For more details, see <a href="https://www.w3.org/TR/webauthn/#dictdef-publickeycredentialparameters">WebAuthn Specification</a>.</p></td>
 </tr>
 <tr>
@@ -4757,7 +5231,7 @@ and the applications it secures interact with these protocols.</p>
 </div>
 </div>
 <div class="paragraph">
-<p><a href="https://openid.net/connect/">OpenID Connect</a> (OIDC) is an authentication protocol that is an extension of <a href="https://tools.ietf.org/html/rfc6749">OAuth 2.0</a>.
+<p><a href="https://openid.net/connect/">OpenID Connect</a> (OIDC) is an authentication protocol that is an extension of <a href="https://datatracker.ietf.org/doc/html/rfc6749">OAuth 2.0</a>.
 While OAuth 2.0 is only a framework for building authorization protocols and is mainly incomplete, OIDC is a full-fledged authentication and authorization
 protocol.  OIDC also makes heavy use of the <a href="https://jwt.io">Json Web Token</a> (JWT) set of standards.  These standards define an
 identity token JSON format and ways to digitally sign and encrypt that data in a compact and web-friendly way.</p>
@@ -4825,7 +5299,7 @@ manner.  Again, this is ok so long as you use HTTPS and strictly enforce redirec
 into this in the <a href="#_clients">Managing Clients</a> chapter.</p>
 </div>
 <div class="paragraph">
-<p>Keycloak also supports the optional <a href="https://tools.ietf.org/html/rfc7636">Proof Key for Code Exchange</a> specification.</p>
+<p>Keycloak also supports the optional <a href="https://datatracker.ietf.org/doc/html/rfc7636">Proof Key for Code Exchange</a> specification.</p>
 </div>
 </div>
 <div class="sect4">
@@ -5214,7 +5688,7 @@ This field is optional and was defined by CIBA standard document.</p></td>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">204</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">201</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">It notifies Keycloak of receiving the authentication delegation request.</p></td>
 </tr>
 </tbody>
@@ -5384,6 +5858,51 @@ It must be one of the following status.<br>
 </div>
 </div>
 <div class="sect3">
+<h4 id="_oidc-logout"><a class="anchor" href="#_oidc-logout"></a>OIDC Logout</h4>
+<div class="paragraph">
+<p>OIDC has three different specifications relevant to logout mechanisms, all of these are currently in draft status:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="https://openid.net/specs/openid-connect-session-1_0.html">Session Management</a></p>
+</li>
+<li>
+<p><a href="https://openid.net/specs/openid-connect-frontchannel-1_0.html">Front-Channel Logout</a></p>
+</li>
+<li>
+<p><a href="https://openid.net/specs/openid-connect-backchannel-1_0.html">Back-Channel Logout</a></p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Again since all of this is described in the OIDC specification we will only give a brief overview here.</p>
+</div>
+<div class="sect4">
+<h5 id="session-management"><a class="anchor" href="#session-management"></a>Session Management</h5>
+<div class="paragraph">
+<p>This is a browser-based logout. The application obtains session status information from Keycloak at a regular basis.
+When the session is terminated at Keycloak the application will notice and trigger it&#8217;s own logout.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="frontchannel-logout"><a class="anchor" href="#frontchannel-logout"></a>Frontchannel Logout</h5>
+<div class="paragraph">
+<p>This is also a browser-based logout. In contrast to the Session Managment based logout approach Keycloak will send logout
+requests to the clients. Applications or clients need to have a frontchannel logout URL registered at Keycloak.
+After triggering a logout at Keycloak, it will send logout requests to these registered URLs that will terminate the client sessions.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="backchannel-logout"><a class="anchor" href="#backchannel-logout"></a>Backchannel Logout</h5>
+<div class="paragraph">
+<p>This is a non browser-based logout that uses direct backchannel communication between Keycloak and clients.
+Keycloak sends a HTTP POST request containing a logout token to all clients logged into Keycloak. These
+requests are sent to a registered backchannel logout URLs at Keycloak and are supposed to trigger a logout at client side.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
 <h4 id="_oidc-endpoints"><a class="anchor" href="#_oidc-endpoints"></a>Keycloak Server OIDC URI Endpoints</h4>
 <div class="paragraph">
 <p>Here&#8217;s a list of OIDC endpoints that the Keycloak publishes.  These URLs are useful if you are using a non-Keycloak client adapter to
@@ -5415,7 +5934,7 @@ directly via Resource Owner Password Credentials (Direct Access Grants) or Clien
 </dd>
 <dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/revoke</dt>
 <dd>
-<p>This is the URL endpoint for OAuth 2.0 Token Revocation described in <a href="https://tools.ietf.org/html/rfc7009">RFC7009</a>.</p>
+<p>This is the URL endpoint for OAuth 2.0 Token Revocation described in <a href="https://datatracker.ietf.org/doc/html/rfc7009">RFC7009</a>.</p>
 </dd>
 <dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/certs</dt>
 <dd>
@@ -5428,6 +5947,10 @@ directly via Resource Owner Password Credentials (Direct Access Grants) or Clien
 <dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/ext/ciba/auth</dt>
 <dd>
 <p>This is the URL endpoint for Client Initiated Backchannel Authentication Grant to obtain an auth_req_id that identifies the authentication request made by the client.</p>
+</dd>
+<dt class="hdlist1">/realms/{realm-name}/protocol/openid-connect/logout/backchannel-logout</dt>
+<dd>
+<p>This is the URL endpoint for performing backchannel logouts described in the OIDC specification.</p>
 </dd>
 </dl>
 </div>
@@ -5625,7 +6148,7 @@ This flow assumes that a <code>docker login</code> command has already been perf
 <p>The flow begins when the Docker client requests a resource from the Docker registry.  If the resource is protected and no auth token is present in the request, the Docker registry server will respond to the client with a 401 + some information on required permissions and where to find the authorization server.</p>
 </li>
 <li>
-<p>The Docker client will construct an authentication request based on the 401 response from the Docker registry.  The client will then use the locally cached credentials (from a previously run <code>docker login</code> command) as part of a <a href="https://tools.ietf.org/html/rfc2617">HTTP Basic Authentication</a> request to the Keycloak authentication server.</p>
+<p>The Docker client will construct an authentication request based on the 401 response from the Docker registry.  The client will then use the locally cached credentials (from a previously run <code>docker login</code> command) as part of a <a href="https://datatracker.ietf.org/doc/html/rfc2617">HTTP Basic Authentication</a> request to the Keycloak authentication server.</p>
 </li>
 <li>
 <p>The Keycloak authentication server will attempt to authenticate the user and return a JSON body containing an OAuth-style Bearer token.</p>
@@ -5767,7 +6290,7 @@ If you&#8217;ve ever done a social login to Google, you&#8217;ll often see a sim
 <dt class="hdlist1"><em>confidential</em></dt>
 <dd>
 <p>Confidential access type is for server-side clients that need to perform a browser login and require a client secret when they turn an access code into an access token,
-(see <a href="https://tools.ietf.org/html/rfc6749#section-4.1.3">Access Token Request</a> in the OAuth 2.0 spec for more details). This type should be used for server-side applications.</p>
+(see <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3">Access Token Request</a> in the OAuth 2.0 spec for more details). This type should be used for server-side applications.</p>
 </dd>
 <dt class="hdlist1"><em>public</em></dt>
 <dd>
@@ -5865,6 +6388,31 @@ See <a href="https://www.keycloak.org/docs/latest/securing_apps/">Securing Appli
 <p>To fill in the <code>Web Origins</code> data, enter in a base URL and click the + sign to add.  Click the - sign next to URLs you want to remove.
 Remember that you still have to click the <code>Save</code> button!</p>
 </div>
+<div class="paragraph">
+<p><strong>Backchannel Logout URL</strong></p>
+</div>
+<div class="paragraph">
+<p>When Keycloak receives a logout request via <code>end_session_endpoint</code> it will post a backchannel logout request at this URL like described in the
+<a href="https://openid.net/specs/openid-connect-backchannel-1_0.html">OpenID Connect specification</a>.
+This causes the client to log itself out.</p>
+</div>
+<div class="paragraph">
+<p><strong>Backchannel Logout Session Required</strong></p>
+</div>
+<div class="paragraph">
+<p>If enabled, the session id is included in the logout token when a backchannel logout request is sent.
+This results in only logging out a specific session. If disabled, all sessions of the corresponding
+user will be logged out.</p>
+</div>
+<div class="paragraph">
+<p><strong>Backchannel Logout Revoke Offline Sessions</strong></p>
+</div>
+<div class="paragraph">
+<p>If enabled, a <code>revoke_offline_access</code> event is added to the logout token. This should result in also logging out offline
+sessions with a backchannel logout request. This event is not specified by the <a href="https://openid.net/specs/openid-connect-backchannel-1_0.html">OpenID Connect specification</a>
+and may have to change in the future. Keycloak itself will respect the <code>revoke_offline_access</code> in a logout token when receiving
+a backchannel logout request.</p>
+</div>
 <div class="sect3">
 <h4 id="advanced-settings"><a class="anchor" href="#advanced-settings"></a>Advanced Settings</h4>
 <div id="_mtls-client-certificate-bound-tokens" class="paragraph">
@@ -5912,7 +6460,7 @@ Remember that you still have to click the <code>Save</code> button!</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>Please see <a href="https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-3">Mutual TLS Client Certificate Bound Access Tokens</a> in the OAuth 2.0 Mutual TLS Client Authentication and Certificate Bound Access Tokens for more details.</p>
+<p>Please see <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-mtls-08#section-3">Mutual TLS Client Certificate Bound Access Tokens</a> in the OAuth 2.0 Mutual TLS Client Authentication and Certificate Bound Access Tokens for more details.</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -5953,13 +6501,13 @@ Instead, keycloak adapters currently treat access and refresh tokens as bearer t
 </ul>
 </div>
 <div class="paragraph">
-<p>Please see <a href="https://tools.ietf.org/html/rfc7636">RFC 7636 Proof Key for Code Exchange by OAuth Public Clients</a> for more details.</p>
+<p>Please see <a href="https://datatracker.ietf.org/doc/html/rfc7636">RFC 7636 Proof Key for Code Exchange by OAuth Public Clients</a> for more details.</p>
 </div>
 <div id="_jwe-id-token-encryption" class="paragraph">
 <p><strong>Signed and Encrypted ID Token Support</strong></p>
 </div>
 <div class="paragraph">
-<p>Keycloak can encrypt ID token according to the <a href="https://tools.ietf.org/html/rfc7516">Json Web Encryption (JWE)</a> specification. The administrator can determine whether encrypting ID token or not per client. This feature is disabled as default.</p>
+<p>Keycloak can encrypt ID token according to the <a href="https://datatracker.ietf.org/doc/html/rfc7516">Json Web Encryption (JWE)</a> specification. The administrator can determine whether encrypting ID token or not per client. This feature is disabled as default.</p>
 </div>
 <div class="paragraph">
 <p>The key for encrypting ID token is called Content Encryption Key (CEK). Keycloak and a client need to negotiate which CEK is used and how to deliver it. The way to do so is called Key Management Mode.</p>
@@ -5971,18 +6519,15 @@ Instead, keycloak adapters currently treat access and refresh tokens as bearer t
 <p>In Key Encryption, the client generates a key pair of asymmetric cryptography. The public key is used to encrypt CEK. Keycloak generates CEK per ID token, encrypts the ID token by this generated CEK and encrypts this CEK by this client&#8217;s public key. The client decrypts this encrypted CEK by their private key, and decrypt the ID token by decrypted CEK. Therefore, any party other than the client is not able to decrypt ID token.</p>
 </div>
 <div class="paragraph">
-<p>The client needs to pass their public key for encrypting CEK onto Keycloak. Keycloak supports downloading public keys from the URL the client provides. The client needs to provide their public keys according to <a href="https://tools.ietf.org/html/rfc7517">Json Web Keys (JWK)</a> specification. The way to do so is defined in <code>Signed JWT</code> of <a href="#_client-credentials">Confidential Client Credentials</a>. The detailed procedure is as follows:</p>
+<p>The client needs to pass their public key for encrypting CEK onto Keycloak. Keycloak supports downloading public keys from the URL the client provides. The client needs to provide their public keys according to <a href="https://datatracker.ietf.org/doc/html/rfc7517">Json Web Keys (JWK)</a> specification. The way to do so is defined in <code>Signed JWT</code> of <a href="#_client-credentials">Confidential Client Credentials</a>. The detailed procedure is as follows:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>open the client&#8217;s <code>Credentials</code> tab</p>
+<p>open the client&#8217;s <code>Keys</code> tab</p>
 </li>
 <li>
-<p>select <code>Signed Jwt</code> from <code>Client Authenticator</code> pulldown menu</p>
-</li>
-<li>
-<p>set ON to <code>JWKS URL</code> switch</p>
+<p>toggle <code>JWKS URL</code> to ON</p>
 </li>
 <li>
 <p>input the client&#8217;s public key providing URL on <code>JWKS URL</code> textbox</p>
@@ -5990,7 +6535,7 @@ Instead, keycloak adapters currently treat access and refresh tokens as bearer t
 </ul>
 </div>
 <div class="paragraph">
-<p>Key Encryption&#8217;s algorithms are defined in the <a href="https://tools.ietf.org/html/rfc7518#section-4.1">Json Web Algorithm (JWA)</a> specification. Keycloak supports RSAES-PKCS1-v1_5(RSA1_5), RSAES OAEP using default parameters (RSA-OAEP), and RSAES OAEP 256 using SHA-256 and MFG1 (RSA-OAEP-256). The detailed procedure to select this algorithm is as follows:</p>
+<p>Key Encryption&#8217;s algorithms are defined in the <a href="https://datatracker.ietf.org/doc/html/rfc7518#section-4.1">Json Web Algorithm (JWA)</a> specification. Keycloak supports RSAES-PKCS1-v1_5(RSA1_5), RSAES OAEP using default parameters (RSA-OAEP), and RSAES OAEP 256 using SHA-256 and MFG1 (RSA-OAEP-256). The detailed procedure to select this algorithm is as follows:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -6006,7 +6551,7 @@ Instead, keycloak adapters currently treat access and refresh tokens as bearer t
 </ul>
 </div>
 <div class="paragraph">
-<p>ID token encryption algorithms by CEK are also defined in the <a href="https://tools.ietf.org/html/rfc7518#section-5.1">JWA</a> specification. Keycloak supports AES_CBC_HMAC_SHA2 algorithms and AES GCM algorithms. The detailed procedure to select this algorithm is as follows:</p>
+<p>ID token encryption algorithms by CEK are also defined in the <a href="https://datatracker.ietf.org/doc/html/rfc7518#section-5.1">JWA</a> specification. Keycloak supports AES_CBC_HMAC_SHA2 algorithms and AES GCM algorithms. The detailed procedure to select this algorithm is as follows:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -6054,9 +6599,15 @@ button allows you to recreate this secret if you want or need to.</p>
 <p><span class="image"><img src="./keycloak-images/client-credentials-jwt.png" alt="client credentials jwt"></span></p>
 </div>
 <div class="paragraph">
-<p>When choosing this credential type you will have to also generate a private key and certificate for the client.  The private key
-will be used to sign the JWT, while the certificate is used by the server to verify the signature.  Click on the
-<code>Generate new keys and certificate</code> button to start this process.</p>
+<p>When choosing this credential type you will have to also generate a private key and certificate for the client in the tab <code>Keys</code>.
+The private key will be used to sign the JWT, while the certificate is used by the server to verify the signature.</p>
+</div>
+<div class="paragraph">
+<div class="title">Keys Tab</div>
+<p><span class="image"><img src="./images/client-oidc-keys.png" alt="client oidc keys"></span></p>
+</div>
+<div class="paragraph">
+<p>Click on the <code>Generate new keys and certificate</code> button to start this process.</p>
 </div>
 <div class="paragraph">
 <div class="title">Generate Keys</div>
@@ -6135,7 +6686,7 @@ use cases, it is sufficient to accept all certificates. In that case, you can us
 </div>
 <div class="paragraph">
 <p>There are two ways for Keycloak to obtain the Client ID from the request. The first option is the <code>client_id</code>
-parameter in the query (described in Section 2.2 of the <a href="https://tools.ietf.org/html/rfc6749">OAuth 2.0 Specification</a>).
+parameter in the query (described in Section 2.2 of the <a href="https://datatracker.ietf.org/doc/html/rfc6749">OAuth 2.0 Specification</a>).
 The second option is to supply <code>client_id</code> as a form parameter.</p>
 </div>
 </div>
@@ -6189,7 +6740,7 @@ You also need to use the parameter <code>grant_type=client_credentials</code> as
 </div>
 </div>
 <div class="paragraph">
-<p>The response would be this <a href="https://tools.ietf.org/html/rfc6749#section-4.4.3">standard JSON document</a> from the OAuth 2.0 specification.</p>
+<p>The response would be this <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-4.4.3">standard JSON document</a> from the OAuth 2.0 specification.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -6595,7 +7146,7 @@ The AES algorithm is used with a key size of 128 bits.</p>
 <dt class="hdlist1">Client Signature Required</dt>
 <dd>
 <p>Expect that documents coming from a client are signed.
-Keycloak will validate this signature using the client public key or cert set up in the <code>SAML Keys</code> tab.</p>
+Keycloak will validate this signature using the client public key or cert set up in the <code>Keys</code> tab.</p>
 </dd>
 <dt class="hdlist1">Force POST Binding</dt>
 <dd>
@@ -7273,11 +7824,275 @@ More details in the <a href="https://www.keycloak.org/docs/latest/authorization_
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_client_policies"><a class="anchor" href="#_client_policies"></a>Client Policies</h3>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/clients/client-policies.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/clients/client-policies.adoc" target="_blank">Report an issue</a>
 </div>
 </div>
-<div class="sect1">
-<h2 id="roles"><a class="anchor" href="#roles"></a>Roles</h2>
-<div class="sectionbody">
+<div class="paragraph">
+<p>To make it easy to secure client applications, it is beneficial to realize the following points in a unified way.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Setting policies on what configuration a client can have</p>
+</li>
+<li>
+<p>Validation of client configurations</p>
+</li>
+<li>
+<p>Conformance to a required security standards and profiles such as Financial-grade API (FAPI)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To realize these points in a unified way, <em>Client Policies</em> concept is introduced.</p>
+</div>
+<div class="sect3">
+<h4 id="use-cases"><a class="anchor" href="#use-cases"></a>Use-cases</h4>
+<div class="paragraph">
+<p>Client Policies realize the following points mentioned as follows.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Setting policies on what configuration a client can have</dt>
+<dd>
+<p>Configuration settings on the client can be enforced by client policies during client creation/update, but also during OpenID Connect requests to Keycloak server, which are related to particular client.
+Keycloak supports similar thing also through the Client Registration Policies described in the <a href="https://www.keycloak.org/docs/latest/securing_apps/#_client_registration_policies">Securing Applications and Services Guide</a>.
+However, Client Registration Policies can only cover OIDC Dynamic Client Registration. Client Policies cover not only what Client Registration Policies can do, but other client
+registration and configuration ways. The current plans are for Client Registration to be replaced by Client Policies.</p>
+</dd>
+<dt class="hdlist1">Validation of client configurations</dt>
+<dd>
+<p>Keycloak supports validation whether the client follows settings like Proof Key for Code Exchange,
+Request Object Signing Algorithm, Holder-of-Key Token, and so on on some endpoints like Authorization Endpoint, Token Endpoint, and so on.
+These can be specified by each setting item (on Admin Console, switch, pulldown menu and so on). To make the client application secure, the administrator needs to set
+many settings in the appropriate way, which makes it difficult for the administrator to secure the client application.
+Client Policies can do these validation of client configurations mentioned just above and they can also be used to auto-configure some client configuration switches to meet
+the advanced security requirements. In the future, individual client configuration settings may be replaced by Client Policies directly performing required validations.</p>
+</dd>
+<dt class="hdlist1">Conformance to a required security standards and profiles such as FAPI</dt>
+<dd>
+<p>The <em>Global client profiles</em> are client profiles pre-configured in Keycloak by default. They are pre-configured to be compliant with standard security profiles like <a href="https://www.keycloak.org/docs/latest/securing_apps/#_fapi-support">FAPI</a>,
+which makes it easy for the administrator to secure their client application to be compliant with the particular security profile. At this moment, Keycloak has global
+profiles for the support of FAPI 1 specification. The administrator will just need to configure the client policies to specify which clients should
+be compliant with the FAPI. The administrator can configure client profiles and client policies, so that Keycloak clients can be easily made compliant with various other
+security profiles like SPA, Native App, Open Banking and so on.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="protocol-2"><a class="anchor" href="#protocol-2"></a>Protocol</h4>
+<div class="paragraph">
+<p>The client policy concept is independent of any specific protocol. However, Keycloak currently supports it only just for the <a href="https://www.keycloak.org/docs/latest/securing_apps/#_oidc">OpenID Connect (OIDC) protocol</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="architecture"><a class="anchor" href="#architecture"></a>Architecture</h4>
+<div class="paragraph">
+<p>Client Policies consists of the four building blocks: Condition, Executor, Profile and Policy.</p>
+</div>
+<div class="sect4">
+<h5 id="condition"><a class="anchor" href="#condition"></a>Condition</h5>
+<div class="paragraph">
+<p>A condition determines to which client a policy is adopted and when it is adopted. Some conditions are checked at the time of client create/update when some other conditions are
+checked during client requests (OIDC Authorization request, Token endpoint request and so on). The condition checks whether one specified criteria is satisfied. For example,
+some condition checks whether the access type of the client is confidential.</p>
+</div>
+<div class="paragraph">
+<p>The condition can not be used solely by itself. It can be used in a <a href="#_client_policy_policy">policy</a> that is described afterwards.</p>
+</div>
+<div class="paragraph">
+<p>A condition can be configurable the same as other configurable providers. What can be configured depends on each condition&#8217;s nature.</p>
+</div>
+<div class="paragraph">
+<p>The following conditions are provided:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">The way of creating/updating a client</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Dynamic Client Registration (Anonymous or Authenticated with Initial access token or Registration access token)</p>
+</li>
+<li>
+<p>Admin REST API (Admin Console and so on)</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>So for example when creating a client, a condition can be configured to evaluate to true when this client is created by OIDC Dynamic Client Registration without initial
+access token (Anonymous Dynamic Client Registration). So this condition can be used for example to ensure that all clients registered through OIDC Dynamic Client Registration
+are FAPI compliant.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Author of a client (Checked by presence to the particular role or group)</dt>
+<dd>
+<p>On OpenID Connect dynamic client registration, an author of a client is the end user who was authenticated to get an access token for generating a new client, not Service
+Account of the existing client that actually accesses the registration endpoint with the access token. On registration by Admin REST API, an author of a client is the end user
+like the administrator of the Keycloak.</p>
+</dd>
+<dt class="hdlist1">Client Access Type (confidential, public, bearer-only)</dt>
+<dd>
+<p>For example when a client sends an authorization request, a policy is adopted if this client is confidential.</p>
+</dd>
+<dt class="hdlist1">Client Scope</dt>
+<dd>
+<p>Evaluates to true if the client has a particular client scope (either as default or as an optional scope used in current request). This can be used for example to ensure that
+OIDC authorization requests with scope <code>fapi-example-scope</code> need to be FAPI compliant.</p>
+</dd>
+<dt class="hdlist1">Client Role</dt>
+<dd>
+<p>Applies for clients with the client role of the specified name</p>
+</dd>
+<dt class="hdlist1">Client Domain Name, Host or IP Address</dt>
+<dd>
+<p>Applied for specific domain names of client. Or for the cases when the administrator registers/updates client from particular Host or IP Address.</p>
+</dd>
+<dt class="hdlist1">Any Client</dt>
+<dd>
+<p>This condition always evaluates to true. It can be used for example to ensure that all clients in the particular realm are FAPI compliant.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect4">
+<h5 id="executor"><a class="anchor" href="#executor"></a>Executor</h5>
+<div class="paragraph">
+<p>An executor specifies what action is executed on a client to which a policy is adopted. The executor executes one or several specified actions. For example,
+some executor checks whether the value of the parameter <code>redirect_uri</code> in the authorization request matches exactly with one of the pre-registered redirect URIs on
+Authorization Endpoint and rejects this request if not.</p>
+</div>
+<div class="paragraph">
+<p>The executor can not be used solely by itself. It can be used in a <a href="#_client_policy_profile">profile</a> that is described afterwards.</p>
+</div>
+<div class="paragraph">
+<p>An executor can be configurable the same as other configurable providers. What can be configured depends on the nature of each executor.</p>
+</div>
+<div class="paragraph">
+<p>An executor acts on various events. An executor implementation can ignore certain types of events (For example, executor for checking OIDC <code>request</code> object acts just
+on the OIDC authorization request). Events are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Creating a client (including creation through dynamic client registration)</p>
+</li>
+<li>
+<p>Updating a client</p>
+</li>
+<li>
+<p>Sending an authorization request</p>
+</li>
+<li>
+<p>Sending a token request</p>
+</li>
+<li>
+<p>Sending a token refresh request</p>
+</li>
+<li>
+<p>Sending a token revocation request</p>
+</li>
+<li>
+<p>Sending a token introspection request</p>
+</li>
+<li>
+<p>Sending a userinfo request</p>
+</li>
+<li>
+<p>Sending a logout request with a refresh token</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>On each event, an executor can work in multiple phases. For example, on creating/updating a client, the executor can modify the client configuration by auto-configure specific client
+settings. After that, the executor validates this configuration in validation phase.</p>
+</div>
+<div class="paragraph">
+<p>One of several purposes for this executor is to realize the security requirements of client conformance profiles like FAPI. To do so, the following executors are needed:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Enforce secure <a href="#_client-credentials">Client Authentication method</a> is used for the client</p>
+</li>
+<li>
+<p>Enforce <a href="#_mtls-client-certificate-bound-tokens">Holder-of-key tokens</a> are used</p>
+</li>
+<li>
+<p>Enforce <a href="#_proof-key-for-code-exchange">Proof Key for Code Exchange (PKCE)</a> is used</p>
+</li>
+<li>
+<p>Enforce secure signature algorithm for <a href="#_client-credentials">Signed JWT client authentication (private-key-jwt)</a> is used</p>
+</li>
+<li>
+<p>Enforce HTTPS redirect URI and make sure that configured redirect URI does not contain wildcards</p>
+</li>
+<li>
+<p>Enforce OIDC <code>request</code> object satisfying high security level</p>
+</li>
+<li>
+<p>Enforce Response Type of OIDC Hybrid Flow including ID Token used as <em>detached signature</em> as described in the FAPI 1 specification, which means that ID Token returned from Authorization response won&#8217;t contain user profile data</p>
+</li>
+<li>
+<p>Enforce more secure <code>state</code> and <code>nonce</code> parameters treatment for preventing CSRF</p>
+</li>
+<li>
+<p>Enforce more secure signature algorithm when client registration</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_client_policy_profile"><a class="anchor" href="#_client_policy_profile"></a>Profile</h5>
+<div class="paragraph">
+<p>A profile consists of several executors, which can realize a security profile like FAPI. Profile can be configured by the Admin REST API (Admin Console) together with its executors.
+Two <em>global profiles</em> exist and they are configured in Keycloak by default with pre-configured executors compliant with the FAPI Baseline and FAPI Advanced specifications.
+More details exist in the FAPI section of the <a href="https://www.keycloak.org/docs/latest/securing_apps/#_fapi-support">Securing Applications and Services Guide</a>.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_client_policy_policy"><a class="anchor" href="#_client_policy_policy"></a>Policy</h5>
+<div class="paragraph">
+<p>A policy consists of several conditions and profiles. The policy can be adopted to clients satisfying all conditions of this policy. The policy refers several profiles and all
+executors of these profiles execute their task against the client that this policy is adopted to.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuration"><a class="anchor" href="#configuration"></a>Configuration</h4>
+<div class="paragraph">
+<p>Policies, profiles, conditions, executors can be configured by Admin REST API, which means also the Admin Console. To do so, there is a tab <em>Realm</em> &#8594; <em>Realm Settings</em> &#8594; <em>Client Policies</em>
+, which means the administrator can have client policies per realm.</p>
+</div>
+<div class="paragraph">
+<p>The <em>Global Client Profiles</em> are automatically available in each realm. However there are no client policies
+configured by default. This means that the administrator is always required to create any client policy if they want for example the clients of his realm to be FAPI compliant. Global
+profiles cannot be updated, but the administrator can easily use them as a template and create their own profile if they want to do some slight changes in the global profile configurations.
+There is JSON Editor available in the Admin Console, which simplifies the creation of new profile based on some global profile.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="backward-compatibility"><a class="anchor" href="#backward-compatibility"></a>Backward Compatibility</h4>
+<div class="paragraph">
+<p>Client Policies can replace Client Registration Policies described in the <a href="https://www.keycloak.org/docs/latest/securing_apps/#_client_registration_policies">Securing Applications and Services Guide</a>.
+However, Client Registration Policies also still co-exist. This means that for example during a Dynamic Client Registration request to create/update a client, both client policies and
+client registration policies are applied.</p>
+</div>
+<div class="paragraph">
+<p>The current plans are for the Client Registration Policies feature to be removed and the existing client registration policies will be migrated into new client policies automatically.
+== Roles</p>
+</div>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/roles.adoc" target="_blank">Edit this section</a>
@@ -7291,6 +8106,8 @@ Applications often assign access and permissions to specific roles rather than i
 with users can be too fine grained and hard to manage.  For example, the Admin Console has specific roles which give permission to users
 to access parts of the Admin Console UI and perform certain actions.  There is a global namespace for roles and each client also has its own
 dedicated namespace where roles can be defined.</p>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="realm-roles"><a class="anchor" href="#realm-roles"></a>Realm Roles</h3>
@@ -10683,6 +11500,52 @@ support offline tokens if you include <code>scope=offline_access</code> in the b
 </div>
 </div>
 <div class="sect2">
+<h3 id="offline-sessions-preloading"><a class="anchor" href="#offline-sessions-preloading"></a>Offline Sessions Preloading</h3>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/sessions/preloading.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/sessions/preloading.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="paragraph">
+<p>In addition to Infinispan caches, offline sessions are stored in a database which means they will be available even after server restart.
+By default, the offline sessions are preloaded from the database into the Infinispan caches during the server startup.
+However this approach has a drawback if there are many offline sessions to be preloaded. It can significantly slow down the server startup time.</p>
+</div>
+<div class="paragraph">
+<p>To overcome this problem, Keycloak can be configured to fetch offline sessions into the Infinispan caches on demand.
+It can be achieved by setting <code>preloadOfflineSessionsFromDatabase</code> property in <code>userSessions</code> SPI to <code>false</code>.</p>
+</div>
+<div class="paragraph">
+<p>The following example shows how to configure lazy offline sessions loading.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:keycloak-server:1.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    ...
+    <span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">userSessions</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;default-provider&gt;</span>infinispan<span class="tag">&lt;/default-provider&gt;</span>
+        <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">infinispan</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+            <span class="tag">&lt;properties&gt;</span>
+                <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">preloadOfflineSessionsFromDatabase</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+            <span class="tag">&lt;/properties&gt;</span>
+        <span class="tag">&lt;/provider&gt;</span>
+    <span class="tag">&lt;/spi&gt;</span>
+    ...
+<span class="tag">&lt;/subsystem&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Equivalent configuration using CLI commands:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=keycloak-server/spi=userSessions:add(default-provider=infinispan)
+/subsystem=keycloak-server/spi=userSessions/provider=infinispan:add(properties={preloadOfflineSessionsFromDatabase =&gt; &quot;false&quot;},enabled=true)</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_transient-session"><a class="anchor" href="#_transient-session"></a>Transient sessions</h3>
 <div class="sidebarblock page-links">
 <div class="content">
@@ -12323,7 +13186,7 @@ See the <a href="https://www.keycloak.org/docs/latest/server_development/">Serve
 <p>This chapter discusses possible security vulnerabilities any authentication server could have and how Keycloak
 mitigates those vulnerabilities.
 A good list of potential vulnerabilities and what security implementations should do to mitigate them can be found in
-the <a href="https://tools.ietf.org/html/rfc6819">OAuth 2.0 Threat Model</a> document and its most recent extension <a href="https://tools.ietf.org/html/draft-ietf-oauth-security-topics-15">OAuth 2.0 Security Best Current Practice</a> put out by the IETF.
+the <a href="https://datatracker.ietf.org/doc/html/rfc6819">OAuth 2.0 Threat Model</a> document and its most recent extension <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-15">OAuth 2.0 Security Best Current Practice</a> put out by the IETF.
 Many of those vulnerabilities are discussed here.</p>
 </div>
 <div class="sect2">
@@ -12814,7 +13677,7 @@ An attacker can steal a user&#8217;s authentication credentials and access their
 </div>
 <div class="paragraph">
 <p>By default, every response by Keycloak sets some specific browser headers that can prevent this from happening.
-Specifically, it sets <a href="https://tools.ietf.org/html/rfc7034">X-FRAME_OPTIONS</a> and <a href="http://www.w3.org/TR/CSP/">Content-Security-Policy</a>.
+Specifically, it sets <a href="https://datatracker.ietf.org/doc/html/rfc7034">X-FRAME_OPTIONS</a> and <a href="http://www.w3.org/TR/CSP/">Content-Security-Policy</a>.
 You should take a look at the definition of both of these headers as there is a lot of fine-grain browser access you can control.
 In the admin console you can specify the values these headers will have.  Go to the <code>Realm Settings</code> left menu item and
 click the <code>Security Defenses</code> tab and make sure you are on the <code>Headers</code> sub-tab.</p>
@@ -12896,6 +13759,20 @@ This query or form parameter is checked against the state cookie to verify that 
 are too general, then it would be possible for a rogue client to impersonate a different client that has a broader scope
 of access.  This could happen for instance if two clients live under the same domain.  So, it&#8217;s a good idea to make your
 registered redirect URIs as specific as feasible.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="fapi-compliance"><a class="anchor" href="#fapi-compliance"></a>FAPI compliance</h3>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/threat/fapi-compliance.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/threat/fapi-compliance.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="paragraph">
+<p>To make sure that Keycloak server will validate your client to be more secure and FAPI compliant, you can configure client policies
+for the FAPI support. Details are described in the FAPI section of <a href="https://www.keycloak.org/docs/latest/securing_apps/#_fapi-support">Securing Applications and Services Guide</a>. Among other things, this ensures some security best practices
+described above like SSL required for clients, secure redirect URI used and more of similar best practices.</p>
 </div>
 </div>
 <div class="sect2">
@@ -13006,8 +13883,64 @@ Or alternatively, you can set role scope mappings at the Client Scope level and 
 </div>
 <div class="paragraph">
 <p>In environments where the level of trust among services is low, it is a good practice to limit the audiences on the token. The
-motivation behind this is described in the <a href="https://tools.ietf.org/html/rfc6819#section-5.1.5.5">OAuth2 Threat Model</a> document and
-more details are in the <a href="#_audience">Audience Support section</a>.</p>
+motivation behind this is described in the <a href="https://datatracker.ietf.org/doc/html/rfc6819#section-5.1.5.5">OAuth2 Threat Model</a> document and
+more details are in the <a href="#_audience">Audience Support section</a>.
+=== Limit Authentication Sessions</p>
+</div>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/threat/auth-sessions-limit.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/threat/auth-sessions-limit.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="paragraph">
+<p>Keycloak creates an authentication session for each authentication request within a realm. This session is internally represented by <code>RootAuthenticationSession</code>. Each <code>RootAuthenticationSession</code> can have multiple authentication sessions for a given client. In a browser authentication flow, the browser session translates to <code>RootAuthenticationSession</code> while browser tabs translate to a collection of authentication sessions within the <code>RootAuthenticationSession</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This section describes deployments that use the Infinispan provider for authentication sessions.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Higher memory usage and a network overload in a cluster may occur for deployments where there are many active <code>RootAuthenticationSession</code> with a lot of authentication sessions.</p>
+</div>
+<div class="paragraph">
+<p>There is a possibility to mitigate the aforementioned threats. The maximum allowed number of <code>RootAuthenticationSession</code> should be addressed by limiting the request rate per time on the proxy or load balancer in front of Keycloak. The maximum number of authentication sessions per <code>RootAuthenticationSession</code> can be configured in <code>authenticationSessions</code> SPI by setting property <code>authSessionsLimit</code>. The default value is set to 300 authentication sessions per a <code>RootAuthenticationSession</code>. When this limit is reached, the oldest authentication session will be removed after a new authentication session request.</p>
+</div>
+<div class="paragraph">
+<p>The following example shows how to limit the number of active authentication sessions per a <code>RootAuthenticationSession</code> to 100.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:keycloak-server:1.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+    ...
+    <span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">authenticationSessions</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+        <span class="tag">&lt;default-provider&gt;</span>infinispan<span class="tag">&lt;/default-provider&gt;</span>
+        <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">infinispan</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+            <span class="tag">&lt;properties&gt;</span>
+                <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">authSessionsLimit</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">100</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+            <span class="tag">&lt;/properties&gt;</span>
+        <span class="tag">&lt;/provider&gt;</span>
+    <span class="tag">&lt;/spi&gt;</span>
+    ...
+<span class="tag">&lt;/subsystem&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Equivalent configuration using CLI commands:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=keycloak-server/spi=authenticationSessions:add(default-provider=infinispan)
+/subsystem=keycloak-server/spi=authenticationSessions/provider=infinispan:add(properties={authSessionsLimit =&gt; &quot;100&quot;},enabled=true)</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -15605,7 +16538,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2021-05-25 09:54:56 UTC
+Last updated 2021-06-18 08:37:26 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>

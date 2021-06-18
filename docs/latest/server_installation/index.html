@@ -940,6 +940,7 @@ span.image img {
 </li>
 <li><a href="#_operator-extensions">Installing extensions and themes</a></li>
 <li><a href="#_command-options">Command options for managing custom resources</a></li>
+<li><a href="#_operator-upgrade-strategy">Upgrade strategy</a></li>
 </ul>
 </li>
 </ul>
@@ -983,7 +984,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>13.0.1</strong> <em>Latest</em></p>
+<p>Version <strong>14.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1107,19 +1108,19 @@ system property on startup to <code>file:/dev/urandom</code>.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>'keycloak-13.0.1.[zip|tar.gz]'</p>
+<p>'keycloak-14.0.0.[zip|tar.gz]'</p>
 </li>
 <li>
-<p>'keycloak-overlay-13.0.1.[zip|tar.gz]'</p>
+<p>'keycloak-overlay-14.0.0.[zip|tar.gz]'</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-13.0.1.[zip|tar.gz]' file is the server only distribution.  It contains nothing other than the scripts and binaries
+<p>The 'keycloak-14.0.0.[zip|tar.gz]' file is the server only distribution.  It contains nothing other than the scripts and binaries
 to run the Keycloak Server.  To unpack this file just run your operating system&#8217;s <code>unzip</code> or <code>gunzip</code> and <code>tar</code> utilities.</p>
 </div>
 <div class="paragraph">
-<p>The 'keycloak-overlay-13.0.1.[zip|tar.gz]' file is a WildFly add-on that allows you to install Keycloak Server on top of an existing
+<p>The 'keycloak-overlay-14.0.0.[zip|tar.gz]' file is a WildFly add-on that allows you to install Keycloak Server on top of an existing
 WildFly distribution.  We do not support users that want to run their applications and Keycloak on the same server instance.  To install the Keycloak Service Pack, just unzip it in the root directory
 of your WildFly distribution, open the bin directory in a shell and run <code>./jboss-cli.[sh|bat] --file=keycloak-install.cli</code>.</p>
 </div>
@@ -3525,7 +3526,7 @@ More info about state transfer is available in the <a href="https://infinispan.o
 <p>How bad are these inconsistencies? Usually only means that a user will need to re-authenticate.</p>
 </div>
 <div class="paragraph">
-<p>When using the <code>WARN</code> policy, it may happen that the single-use cache, which is provided by the <code>actionTokens</code> cache and which handles that particular key is really single use, but may "successfully" write the same key twice. But, for example, the OAuth2 specification <a href="https://tools.ietf.org/html/rfc6749#section-10.5">mentions</a> that code must be single-use. With the <code>WARN</code> policy, this may not be strictly guaranteed and the same code could be written twice if there is an attempt to write it concurrently in both sites.</p>
+<p>When using the <code>WARN</code> policy, it may happen that the single-use cache, which is provided by the <code>actionTokens</code> cache and which handles that particular key is really single use, but may "successfully" write the same key twice. But, for example, the OAuth2 specification <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-10.5">mentions</a> that code must be single-use. With the <code>WARN</code> policy, this may not be strictly guaranteed and the same code could be written twice if there is an attempt to write it concurrently in both sites.</p>
 </div>
 <div class="paragraph">
 <p>If there is a longer network outage or split-brain, then with both <code>FAIL</code> and <code>WARN</code>, the other site will be taken offline after some time and failures as described in <a href="#onoffline">Bringing sites offline and online</a>. With the default 1 minute timeout, it is usually 1-3 minutes until all the involved caches are taken offline. After that, all the operations will work fine from an end user perspective.
@@ -4226,6 +4227,12 @@ supported. In addition there are some features that are enabled by default, but 
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">client_policies</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Add client configuration policies</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">declarative_user_profile</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Configure user profiles using a declarative style</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Preview</p></td>
 </tr>
@@ -8089,6 +8096,61 @@ keycloak-postgresql-c824c6-vv27m   1/1      Running      0           71m</code><
 </table>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_operator-upgrade-strategy"><a class="anchor" href="#_operator-upgrade-strategy"></a>Upgrade strategy</h3>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_installation/topics/operator/upgrading.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_installation/topics/operator/upgrading.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="paragraph">
+<p>You can configure how the operator performs Keycloak upgrades. You can choose from the following upgrade strategies.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>recreate</code>: This is the default strategy. The operator removes all Keycloak replicas, optionally creates a backup
+and then creates the replicas based on a newer Keycloak image. This strategy is suitable for major upgrades as
+a single Keycloak version is accessing the underlying database. The downside is Keycloak needs to be shut
+down during the upgrade.</p>
+</li>
+<li>
+<p><code>rolling</code>: The operator removes one replica at a time and creates it again based on a newer Keycloak image. This
+ensures a zero-downtime upgrade but is more suitable for minor version upgrades that do not require database migration
+since the database is accessed by multiple Keycloak versions concurrently. Automatic backups are not supported
+with this strategy.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">Example YAML file for a Keycloak custom resource</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">apiVersion</span>: <span class="string"><span class="content">keycloak.org/v1alpha1</span></span>
+<span class="key">kind</span>: <span class="string"><span class="content">Keycloak</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">example-keycloak</span></span>
+  <span class="key">labels</span>:
+   <span class="key">app</span>: <span class="string"><span class="content">keycloak</span></span>
+<span class="key">spec</span>:
+  <span class="key">instances</span>: <span class="string"><span class="content">2</span></span>
+  <span class="key">migration</span>:
+    <span class="key">strategy</span>: <span class="string"><span class="content">recreate</span></span>
+    <span class="key">backups</span>:
+      <span class="key">enabled</span>: <span class="string"><span class="content">True</span></span>
+  <span class="key">externalAccess</span>:
+    <span class="key">enabled</span>: <span class="string"><span class="content">True</span></span></code></pre>
+</div>
+</div>
+<div class="ulist">
+<div class="title">Additional Resources</div>
+<ul>
+<li>
+<p>For more information on rolling updates, see the <a href="https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#rolling-update">Updating StatefulSets manual</a>.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -8100,7 +8162,7 @@ keycloak-postgresql-c824c6-vv27m   1/1      Running      0           71m</code><
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2021-05-25 09:54:57 UTC
+Last updated 2021-06-18 08:37:29 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
