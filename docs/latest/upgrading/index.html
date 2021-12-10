@@ -791,6 +791,12 @@ span.image img {
 <li><a href="#upgrading-keycloak-admin-client">Upgrading Keycloak Admin Client</a></li>
 <li><a href="#migration-changes">Migration Changes</a>
 <ul class="sectlevel2">
+<li><a href="#migrating-to-16-0-0">Migrating to 16.0.0</a>
+<ul class="sectlevel3">
+<li><a href="#proxy-environment-variables">Proxy environment variables</a></li>
+<li><a href="#deprecated-features-in-the-keycloak-operator">Deprecated features in the Keycloak Operator</a></li>
+</ul>
+</li>
 <li><a href="#migrating-to-14-0-0">Migrating to 14.0.0</a>
 <ul class="sectlevel3">
 <li><a href="#client-policies-migration">Client Policies Migration</a></li>
@@ -807,6 +813,11 @@ span.image img {
 <ul class="sectlevel3">
 <li><a href="#read-only-attributes">Read-only attributes</a></li>
 <li><a href="#valid-request-uris">Valid Request URIs</a></li>
+</ul>
+</li>
+<li><a href="#migrating-to-13-0-0-2">Migrating to 13.0.0</a>
+<ul class="sectlevel3">
+<li><a href="#upgrade-to-wildfly-22-2">Upgrade to Wildfly 22</a></li>
 </ul>
 </li>
 <li><a href="#migrating-to-12-0-0">Migrating to 12.0.0</a>
@@ -1054,7 +1065,7 @@ span.image img {
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://www.keycloak.org/docs/latest/getting_started/">Getting Started</a></p>
+<p><a href="https://www.keycloak.org/getting-started">Getting Started</a></p>
 </li>
 <li>
 <p><a href="https://www.keycloak.org/docs/latest/server_installation/">Server Installation</a></p>
@@ -1081,7 +1092,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>15.0.2</strong> <em>Latest</em></p>
+<p>Version <strong>15.1.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1127,6 +1138,20 @@ server first and Keycloak adapters second.</p>
 <p>Before you upgrade, be aware of the order in which you need to perform the upgrade steps. Also note potential issues
 that can occur within the upgrade process. In general, you must upgrade Keycloak server first, and then upgrade
 the adapters.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>In a minor upgrade of Keycloak, all user sessions are lost. After the upgrade, all users will have to log in again.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -1637,6 +1662,29 @@ Keycloak server version.</p>
 </div>
 </div>
 <div class="sect2">
+<h3 id="migrating-to-16-0-0"><a class="anchor" href="#migrating-to-16-0-0"></a>Migrating to 16.0.0</h3>
+<div class="sect3">
+<h4 id="proxy-environment-variables"><a class="anchor" href="#proxy-environment-variables"></a>Proxy environment variables</h4>
+<div class="paragraph">
+<p>Keycloak now respects the standard <code>HTTP_PROXY</code>, <code>HTTPS_PROXY</code> and <code>NO_PROXY</code> environment variables for outgoing
+HTTP requests. This change could lead to unexpected use of a proxy server if you have for example the <code>HTTP_PROXY</code> variable defined but have no
+explicit proxy mappings specified in your SPI configuration. To prevent Keycloak from using those environment variables,
+you can explicitly create a no proxy route for all requests as <code>.*;NO_PROXY</code>.</p>
+</div>
+<div class="paragraph">
+<p>For more details, see the <a href="https://www.keycloak.org/docs/latest/server_installation/#_proxy_env_vars">related chapter in the Server Installation and Configuration Guide</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="deprecated-features-in-the-keycloak-operator"><a class="anchor" href="#deprecated-features-in-the-keycloak-operator"></a>Deprecated features in the Keycloak Operator</h4>
+<div class="paragraph">
+<p>With this release, we have deprecated and/or marked as unsupported some features in the Keycloak Operator. This
+concerns the Backup CRD and the operator managed Postgres Database. For more details, please see the
+<a href="https://www.keycloak.org/docs/latest/server_installation/#_operator_production_usage">related chapter in the Server Installation and Configuration Guide</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
 <h3 id="migrating-to-14-0-0"><a class="anchor" href="#migrating-to-14-0-0"></a>Migrating to 14.0.0</h3>
 <div class="sect3">
 <h4 id="client-policies-migration"><a class="anchor" href="#client-policies-migration"></a>Client Policies Migration</h4>
@@ -1779,6 +1827,40 @@ This can be configured through the admin console on the client details page or t
 to contain the list of Request URI values, which are permitted for the particular client. This is to avoid SSRF attacks. There is possibility to use wildcards
 or relative paths similarly such as the <code>Valid Redirect URIs</code> option, however for security purposes, we typically recommend to use as specific value
 as possible.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="migrating-to-13-0-0-2"><a class="anchor" href="#migrating-to-13-0-0-2"></a>Migrating to 13.0.0</h3>
+<div class="sect3">
+<h4 id="upgrade-to-wildfly-22-2"><a class="anchor" href="#upgrade-to-wildfly-22-2"></a>Upgrade to Wildfly 22</h4>
+<div class="paragraph">
+<p>The Keycloak server was upgraded to use Wildfly 22 as the underlying container. This does not directly involve any
+specific Keycloak server functionality, but a few changes related to the migration, which are worth mentioning.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Dependency updates</dt>
+<dd>
+<p>The dependencies were updated to the versions used by Wildfly 22 server. For example, Infinispan is now <code>11.0.8.Final</code>.</p>
+</dd>
+<dt class="hdlist1">Configuration changes</dt>
+<dd>
+<p>A few configuration changes exist in the <code>standalone(-ha).xml</code> and <code>domain.xml</code> files. You should follow the <a href="#_install_new_version">Upgrading Keycloak server</a>
+section to handle the migration of configuration files automatically. If more detail is needed, because, for example, you did some
+configuration changes on your own, the list of the most important changes follows:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The <a href="https://docs.wildfly.org/22/Admin_Guide.html#MicroProfile_Config_SmallRye">Eclipse MicroProfile Config</a>, <a href="https://docs.wildfly.org/22/Admin_Guide.html#MicroProfile_Health_SmallRye">Eclipse MicroProfile Health</a>, and <a href="https://docs.wildfly.org/22/Admin_Guide.html#MicroProfile_Metrics_SmallRye">Eclipse MicroProfile Metrics</a> subsystems were replaced by <a href="https://docs.wildfly.org/22/Admin_Guide.html#Health">WildFly subsystem for health</a> and <a href="https://docs.wildfly.org/22/Admin_Guide.html#MicroProfile_Metrics_SmallRye">WildFly subsystem for base metrics</a>.</p>
+</li>
+<li>
+<p>The default Wildfly configuration now utilizes the ability to make use of an automatically generated self-signed certificate with Elytron. Refer to <a href="https://docs.wildfly.org/22/WildFly_Elytron_Security.html#update-wildfly-to-use-the-default-elytron-components-for-application-authentication">a dedicated <code>applicationSSC</code> server SSL context section</a> for details.</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
 </div>
 </div>
 </div>
@@ -2310,7 +2392,7 @@ or <code>resourceAccess</code> properties, you may need to increase the priority
 <div class="paragraph">
 <p>Audiences of all the clients, for which authenticated user has at least one client role in the token, are automatically added
 to the <code>aud</code> claim in the access token now. On the other hand, an access token may not automatically contain the audience of the
-frontend client, for which it was issued. Read the <a href="https://www.keycloak.org/docs/latest/server_admin/#_audience">Server Administration Guide</a> for more details.</p>
+frontend client, for which it was issued. Read the <a href="https://www.keycloak.org/docs/latest/server_admin/#audience-support">Server Administration Guide</a> for more details.</p>
 </div>
 </div>
 </div>
@@ -3372,7 +3454,7 @@ credentials tab in the administration console.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2021-08-20 08:43:37 UTC
+Last updated 2021-12-10 14:25:52 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
