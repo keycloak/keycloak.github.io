@@ -986,7 +986,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>15.1.1</strong> <em>Latest</em></p>
+<p>Version <strong>16.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1110,14 +1110,14 @@ system property on startup to <code>file:/dev/urandom</code>.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><code>keycloak-15.1.1.[zip|tar.gz]</code></p>
+<p><code>keycloak-16.0.0.[zip|tar.gz]</code></p>
 <div class="paragraph">
 <p>This file is the server only distribution.  It contains nothing other than the scripts and binaries
 to run the Keycloak Server.</p>
 </div>
 </li>
 <li>
-<p><code>keycloak-overlay-15.1.1.[zip|tar.gz]</code></p>
+<p><code>keycloak-overlay-16.0.0.[zip|tar.gz]</code></p>
 <div class="paragraph">
 <p>This file is a WildFly add-on that you can use to install the Keycloak Server on top of an existing
 WildFly distribution.  We do not support users who want to run their applications and Keycloak on the same server instance.</p>
@@ -1129,7 +1129,7 @@ WildFly distribution.  We do not support users who want to run their application
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>To install the Keycloak server, run your operating system&#8217;s <code>unzip</code> or <code>gunzip</code> and <code>tar</code> utilities on the <code>keycloak-15.1.1.[zip|tar.gz]</code> file.</p>
+<p>To install the Keycloak server, run your operating system&#8217;s <code>unzip</code> or <code>gunzip</code> and <code>tar</code> utilities on the <code>keycloak-16.0.0.[zip|tar.gz]</code> file.</p>
 </li>
 <li>
 <p>To install the Keycloak Service Pack, it must be installed on a different server instance.</p>
@@ -1139,7 +1139,7 @@ WildFly distribution.  We do not support users who want to run their application
 <p>Change to the root directory of your WildFly distribution.</p>
 </li>
 <li>
-<p>Unzip the <code>keycloak-overlay-15.1.1.[zip|tar.gz]</code> file.</p>
+<p>Unzip the <code>keycloak-overlay-16.0.0.[zip|tar.gz]</code> file.</p>
 </li>
 <li>
 <p>Open the bin directory in a shell.</p>
@@ -5367,12 +5367,12 @@ vqIFQeuLL3BaHwpl3t7j2lMWcK1p80laAxEASib/fAwrRHpLHBXRcq6uALUOZl4Alt8=
 </div>
 </li>
 <li>
-<p>Add the new <code>security-realm</code> element using the CLI:</p>
+<p>Configure the keystore using the CLI:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>$ /core-service=management/security-realm=UndertowRealm:add()
-
-$ /core-service=management/security-realm=UndertowRealm/server-identity=ssl:add(keystore-path=keycloak.jks, keystore-relative-to=jboss.server.config.dir, keystore-password=secret)</code></pre>
+<pre class="CodeRay highlight"><code>$ /subsystem=elytron/key-store=httpsKS:add(relative-to=jboss.server.config.dir,path=keycloak.jks,credential-reference={clear-text=secret},type=JKS)
+$ /subsystem=elytron/key-manager=httpsKM:add(key-store=httpsKS,credential-reference={clear-text=secret})
+$ /subsystem=elytron/server-ssl-context=httpsSSC:add(key-manager=httpsKM,protocols=[\"TLSv1.3\"])</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -5380,32 +5380,15 @@ $ /core-service=management/security-realm=UndertowRealm/server-identity=ssl:add(
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>$ /host=&lt;host_name&gt;/core-service=management/security-realm=UndertowRealm/server-identity=ssl:add(keystore-path=keycloak.jks, keystore-relative-to=jboss.domain.config.dir, keystore-password=secret)</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>In the standalone or host configuration file, the <code>security-realms</code> element should look like this:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;security-realm</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">UndertowRealm</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    <span class="tag">&lt;server-identities&gt;</span>
-        <span class="tag">&lt;ssl&gt;</span>
-            <span class="tag">&lt;keystore</span> <span class="attribute-name">path</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">keycloak.jks</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">relative-to</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">jboss.server.config.dir</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">keystore-password</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">secret</span><span class="delimiter">&quot;</span></span> <span class="tag">/&gt;</span>
-        <span class="tag">&lt;/ssl&gt;</span>
-    <span class="tag">&lt;/server-identities&gt;</span>
-<span class="tag">&lt;/security-realm&gt;</span></code></pre>
+<pre class="CodeRay highlight"><code>$ /host=&lt;host_name&gt;/subsystem=elytron/key-store=httpsKS:add(relative-to=jboss.server.config.dir,path=keycloak.jks,credential-reference={clear-text=secret},type=JKS)</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>In the standalone or each domain configuration file, search for any instances of <code>security-realm</code>.</p>
-</li>
-<li>
-<p>Modify the <code>https-listener</code> to use the created realm:</p>
+<p>Modify the <code>https-listener</code> to use the `server-ssl-context`previously created:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>$ /subsystem=undertow/server=default-server/https-listener=https:write-attribute(name=security-realm, value=UndertowRealm)</code></pre>
+<pre class="CodeRay highlight"><code>$ /subsystem=undertow/server=default-server/https-listener=https:write-attribute(name=ssl-context, value=httpsSSC)</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -5419,13 +5402,16 @@ $ /core-service=management/security-realm=UndertowRealm/server-identity=ssl:add(
 <pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:12.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
    <span class="tag">&lt;buffer-cache</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
    <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-      <span class="tag">&lt;https-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">security-realm</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">UndertowRealm</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+      <span class="tag">&lt;https-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">ssl-context</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">httpsSSC</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
    ...
 <span class="tag">&lt;/subsystem&gt;</span></code></pre>
 </div>
 </div>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>For more information on configuring TLS refer to the <a href="https://docs.wildfly.org/25/WildFly_Elytron_Security.html#configure-ssltls">WildFly documentation</a>.</p>
 </div>
 </div>
 </div>
@@ -8568,7 +8554,7 @@ with this strategy.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2021-12-17 10:32:41 UTC
+Last updated 2021-12-17 15:55:25 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
