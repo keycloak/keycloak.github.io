@@ -817,14 +817,6 @@ span.image img {
 <li><a href="#_ldap_troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
-<li><a href="#_sssd">SSSD and FreeIPA Identity Management integration</a>
-<ul class="sectlevel3">
-<li><a href="#freeipa-idm-server">FreeIPA/IdM server</a></li>
-<li><a href="#sssd-and-d-bus">SSSD and D-Bus</a></li>
-<li><a href="#enabling-the-sssd-federation-provider">Enabling the SSSD federation provider</a></li>
-</ul>
-</li>
-<li><a href="#configuring-a-federated-sssd-store">Configuring a federated SSSD store</a></li>
 <li><a href="#custom-providers">Custom providers</a></li>
 </ul>
 </li>
@@ -928,6 +920,7 @@ span.image img {
 <li><a href="#built-in-flows">Built-in flows</a></li>
 <li><a href="#creating-flows">Creating flows</a></li>
 <li><a href="#creating-a-password-less-browser-login-flow">Creating a password-less browser login flow</a></li>
+<li><a href="#_step-up-flow">Creating a browser login flow with step-up mechanism</a></li>
 </ul>
 </li>
 <li><a href="#script-authenticator">Script Authenticator</a></li>
@@ -945,12 +938,10 @@ span.image img {
 <li><a href="#_x509">X.509 client certificate user authentication</a>
 <ul class="sectlevel3">
 <li><a href="#features-2">Features</a></li>
-<li><a href="#enable-x-509-client-certificate-user-authentication">Enable X.509 client certificate user authentication</a></li>
 <li><a href="#_browser_flow">Adding X.509 client certificate authentication to browser flows</a></li>
 <li><a href="#configuring-x-509-client-certificate-authentication">Configuring X.509 client certificate authentication</a></li>
 <li><a href="#adding-x-509-client-certificate-authentication-to-a-direct-grant-flow">Adding X.509 Client Certificate Authentication to a Direct Grant Flow</a></li>
 <li><a href="#client-certificate-lookup">Client certificate lookup</a></li>
-<li><a href="#troubleshooting-2">Troubleshooting</a></li>
 </ul>
 </li>
 <li><a href="#_webauthn">W3C Web Authentication (WebAuthn)</a>
@@ -1105,15 +1096,7 @@ span.image img {
 </li>
 <li><a href="#_vault-administration">Using a vault to obtain secrets</a>
 <ul class="sectlevel2">
-<li><a href="#_providers">Kubernetes / OpenShift files plain-text vault provider</a></li>
-<li><a href="#elytron-credential-store-vault-provider">Elytron credential store vault provider</a></li>
 <li><a href="#key-resolvers">Key resolvers</a></li>
-<li><a href="#sample-configuration">Sample Configuration</a>
-<ul class="sectlevel3">
-<li><a href="#configuring-the-credential-store-and-vault-without-a-mask">Configuring the credential store and vault without a mask</a></li>
-<li><a href="#masking-the-password-in-the-credential-store-and-vault">Masking the password in the credential store and vault</a></li>
-</ul>
-</li>
 </ul>
 </li>
 <li><a href="#configuring-auditing-to-track-events">Configuring auditing to track events</a>
@@ -1127,20 +1110,9 @@ span.image img {
 <li><a href="#admin-events">Admin events</a></li>
 </ul>
 </li>
-<li><a href="#assembly-exporting-importing_server_administration_guide">Importing and exporting the database</a>
-<ul class="sectlevel2">
-<li><a href="#admin-console-export-import">Admin console export/import</a></li>
-</ul>
-</li>
 <li><a href="#mitigating-security-threats">Mitigating security threats</a>
 <ul class="sectlevel2">
 <li><a href="#host">Host</a></li>
-<li><a href="#admin-endpoints-and-admin-console">Admin endpoints and Admin Console</a>
-<ul class="sectlevel3">
-<li><a href="#ip-restriction">IP restriction</a></li>
-<li><a href="#port-restriction">Port restriction</a></li>
-</ul>
-</li>
 <li><a href="#password-guess-brute-force-attacks">Brute force attacks</a>
 <ul class="sectlevel3">
 <li><a href="#password-policies">Password policies</a></li>
@@ -1209,7 +1181,7 @@ span.image img {
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://www.keycloak.org/getting-started">Getting Started</a></p>
+<p><a href="https://www.keycloak.org/guides#getting-started">Getting Started</a></p>
 </li>
 <li>
 <p><a href="https://www.keycloak.org/docs/latest/server_installation/">Server Installation</a></p>
@@ -1236,7 +1208,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>16.1.1</strong> <em>Latest</em></p>
+<p>Version <strong>17.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1548,7 +1520,7 @@ must be used to filter out bots.  Credential reset flow defines what actions a u
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In a web browser, go to the <a href="http://localhost:8080/auth" class="bare">http://localhost:8080/auth</a> URL.</p>
+<p>In a web browser, go to the <a href="http://localhost:8080" class="bare">http://localhost:8080</a> URL.</p>
 </li>
 <li>
 <p>Supply a username and password that you can recall.</p>
@@ -1563,40 +1535,17 @@ must be used to filter out bots.  Credential reset flow defines what actions a u
 <div class="sect2">
 <h3 id="creating-the-account-remotely"><a class="anchor" href="#creating-the-account-remotely"></a>Creating the account remotely</h3>
 <div class="paragraph">
-<p>If you cannot access the server from a <code>localhost</code> address, or just want to start Keycloak from the command line, use the <code>&#8230;&#8203;/bin/add-user-keycloak</code> script.</p>
+<p>If you cannot access the server from a <code>localhost</code> address, or just want to start Keycloak from the command line, use the <code>KEYCLOAK_ADMIN</code> and <code>KEYCLOAK_ADMIN_PASSWORD</code> environment variables to create an initial admin account.</p>
 </div>
 <div class="paragraph">
-<div class="title">Add-user-keycloak script</div>
-<p><span class="image"><img src="./keycloak-images/add-user-script.png" alt="add user script"></span></p>
-</div>
-<div class="paragraph">
-<p>The parameters are a little different depending if you are using the standalone operation mode or domain operation mode.  For standalone mode, here is how you use the script.</p>
+<p>For example:</p>
 </div>
 <div class="listingblock">
-<div class="title">Linux/Unix</div>
 <div class="content">
-<pre class="CodeRay highlight"><code>$ .../bin/add-user-keycloak.sh -r master -u &lt;username&gt; -p &lt;password&gt;</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">Windows</div>
-<div class="content">
-<pre class="CodeRay highlight"><code>&gt; ...\bin\add-user-keycloak.bat -r master -u &lt;username&gt; -p &lt;password&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For domain mode, you have to point the script to one of your server hosts using the <code>-sc</code> switch.</p>
-</div>
-<div class="listingblock">
-<div class="title">Linux/Unix</div>
-<div class="content">
-<pre class="CodeRay highlight"><code>$ .../bin/add-user-keycloak.sh --sc domain/servers/server-one/configuration -r master -u &lt;username&gt; -p &lt;password&gt;</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">Windows</div>
-<div class="content">
-<pre class="CodeRay highlight"><code>&gt; ...\bin\add-user-keycloak.bat --sc domain/servers/server-one/configuration -r master -u &lt;username&gt; -p &lt;password&gt;</code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">export KEYCLOAK_ADMIN=&lt;username&gt;
+export KEYCLOAK_ADMIN_PASSWORD=&lt;password&gt;
+
+bin/kc.[sh|bat] start</code></pre>
 </div>
 </div>
 </div>
@@ -1639,7 +1588,7 @@ must be used to filter out bots.  Credential reset flow defines what actions a u
 <li>
 <p>Go the the URL for the Admin Console.</p>
 <div class="paragraph">
-<p>For example, for localhost, use this URL: <a href="http://localhost:8080/auth/admin/" class="bare">http://localhost:8080/auth/admin/</a></p>
+<p>For example, for localhost, use this URL: <a href="http://localhost:8080/admin/" class="bare">http://localhost:8080/admin/</a></p>
 </div>
 <div class="paragraph">
 <div class="title">Login page</div>
@@ -1755,14 +1704,6 @@ realm and only be able to interact with customer-facing apps.</p>
 </div>
 <div class="paragraph">
 <p>The current realm is now set to the realm you just created.  You can switch between managing different realms by pointing to the top left corner to click <strong>Select Realm</strong>.</p>
-</div>
-<div class="ulist _additional-resources">
-<div class="title">Additional resources</div>
-<ul>
-<li>
-<p>Alternatively you can import a JSON document that defines your new realm. For more detail, see the <a href="#assembly-exporting-importing_server_administration_guide">Export and Import</a> chapter.</p>
-</li>
-</ul>
 </div>
 </div>
 <div class="sect2">
@@ -2056,11 +1997,6 @@ this point.</p>
 </div>
 <div class="paragraph">
 <p>If you want to change the logic for selecting the locale, you have an option to create custom <code>LocaleSelectorProvider</code>. For details, please refer to the
-<a href="https://www.keycloak.org/docs/latest/server_development/#_locale_selector">Server Developer Guide</a>.
-When a user is authenticated, an action is triggered to update the locale in the persisted cookie mentioned earlier. If the user has actively switched the locale through the locale selector on the login pages, the user&#8217;s locale is also updated at this point.</p>
-</div>
-<div class="paragraph">
-<p>If you want to change the logic for selecting the locale, you have an option to create a custom <code>LocaleSelectorProvider</code>. For details, see the
 <a href="https://www.keycloak.org/docs/latest/server_development/#_locale_selector">Server Developer Guide</a>.</p>
 </div>
 </div>
@@ -2824,17 +2760,9 @@ directory entry using <code>ldapsearch</code> and base64 decode the <code>userPa
 </div>
 <div class="sect3">
 <h4 id="_ldap_troubleshooting"><a class="anchor" href="#_ldap_troubleshooting"></a>Troubleshooting</h4>
-<div class="ulist">
-<ul>
-<li>
-<p>It is useful to increase the logging level to TRACE for the category <code>org.keycloak.storage.ldap</code>. You increase this level in the logging</p>
-</li>
-</ul>
-</div>
 <div class="paragraph">
-<p>It is useful to increase the logging level to TRACE for the category <code>org.keycloak.storage.ldap</code>. You increase this level in the logging
-subsystem in the <code>standalone(-ha).xml</code> file. With this setting, many logging messages are sent
-to the <code>server.log</code> file in the <code>TRACE</code> level, including the logging for all queries to the LDAP server and the parameters, which were
+<p>It is useful to increase the logging level to TRACE for the category <code>org.keycloak.storage.ldap</code>. With this setting, many logging messages are sent
+to the server log in the <code>TRACE</code> level, including the logging for all queries to the LDAP server and the parameters, which were
 used to send the queries. When you are creating any LDAP question on user forum or JIRA, consider attaching the server log with
 enabled TRACE logging. If it is too big, the good alternative is to include just the snippet from server log with the messages, which were
 added to the log during the operation, which causes the issues to you.</p>
@@ -2916,252 +2844,6 @@ in your environment. For example if login of some user takes lot of time, you ca
 of various "group" entries. In this case, it might be useful to add if those group entries are mapped to some Group LDAP mapper (or Role LDAP Mapper)
 in Keycloak and so on.</p>
 </div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_sssd"><a class="anchor" href="#_sssd"></a>SSSD and FreeIPA Identity Management integration</h3>
-<div class="sidebarblock page-links">
-<div class="content">
-<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/user-federation/sssd.adoc" target="_blank">Edit this section</a>
-<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/user-federation/sssd.adoc" target="_blank">Report an issue</a>
-</div>
-</div>
-<div class="paragraph">
-<p>Keycloak includes the <a href="https://fedoraproject.org/wiki/Features/SSSD">System Security Services Daemon (SSSD)</a> plugin. SSSD is part of the Fedora and Red Hat Enterprise Linux (RHEL), and it provides access to multiple identities and authentication providers. SSSD also provides benefits such as failover and offline support. For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system-level_authentication_guide/sssd">the Red Hat Enterprise Linux Identity Management documentation</a>.</p>
-</div>
-<div class="paragraph">
-<p>SSSD integrates with the FreeIPA identity management (IdM) server, providing authentication and access control. With this integration, Keycloak can authenticate against privileged access management (PAM) services and retrieve user data from SSSD. For more information about using Red Hat Identity Management in Linux environments, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/linux_domain_identity_authentication_and_policy_guide/index">the Red Hat Enterprise Linux Identity Management documentation</a>.</p>
-</div>
-<div class="paragraph">
-<p><span class="image"><img src="./keycloak-images/keycloak-sssd-freeipa-integration-overview.png" alt="keycloak sssd freeipa integration overview"></span></p>
-</div>
-<div class="paragraph">
-<p>Keycloak and SSSD communicate through read-only D-Bus interfaces. For this reason, the way to provision and update users is to use the FreeIPA/IdM administration interface. By default, the interface imports the username, email, first name, and last name.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Keycloak registers groups and roles automatically but does not synchronize them. Any changes made by the Keycloak administrator in Keycloak do not synchronize with SSSD.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="sect3">
-<h4 id="freeipa-idm-server"><a class="anchor" href="#freeipa-idm-server"></a>FreeIPA/IdM server</h4>
-<div class="paragraph">
-<p>The <a href="https://hub.docker.com/r/freeipa/freeipa-server/">FreeIPA Docker image</a> is available in Docker Hub. To set up the FreeIPA server, see the <a href="https://www.freeipa.org/page/Quick_Start_Guide">FreeIPA documentation</a>.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Run your FreeIPA server using this command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash"> docker run --name freeipa-server-container -it \
- -h server.freeipa.local -e PASSWORD=YOUR_PASSWORD \
- -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
- -v /var/lib/ipa-data:/data:Z freeipa/freeipa-server</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The parameter <code>-h</code> with <code>server.freeipa.local</code> represents the FreeIPA/IdM server hostname.
-Change <code>YOUR_PASSWORD</code> to a password of your own.</p>
-</div>
-</li>
-<li>
-<p>After the container starts, change the <code>/etc/hosts</code> file to include:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">x.x.x.x     server.freeipa.local</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If you do not make this change, you must set up a DNS server.</p>
-</div>
-</li>
-<li>
-<p>Use the following command to enroll your Linux server in the IPA domain so that the SSSD federation provider starts and runs on Keycloak:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash"> ipa-client-install --mkhomedir -p admin -w password</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Run the following command on the client to verify the installation is working:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash"> kinit admin</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Enter your password.</p>
-</li>
-<li>
-<p>Add users to the IPA server using this command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ ipa user-add &lt;username&gt; --first=&lt;first name&gt; --last=&lt;surname&gt; --email=&lt;email address&gt; --phone=&lt;telephoneNumber&gt; --street=&lt;street&gt; \      --city=&lt;city&gt; --state=&lt;state&gt; --postalcode=&lt;postal code&gt; --password</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Force set the user&#8217;s password using kinit.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash"> kinit &lt;username&gt;</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Enter the following to restore normal IPA operation:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">kdestroy -A
-kinit admin</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="sssd-and-d-bus"><a class="anchor" href="#sssd-and-d-bus"></a>SSSD and D-Bus</h4>
-<div class="paragraph">
-<p>The federation provider obtains the data from SSSD using D-BUS. It authenticates the data using PAM.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Install the sssd-dbus RPM.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo yum install sssd-dbus</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Run the provisioning script available from the Keycloak distribution:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">  $ bin/federation-sssd-setup.sh</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This provisioning script makes the following changes to <code>/etc/sssd/sssd.conf</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">  [domain/your-hostname.local]
-  ...
-  ldap_user_extra_attrs = mail:mail, sn:sn, givenname:givenname, telephoneNumber:telephoneNumber
-  ...
-  [sssd]
-  services = nss, sudo, pam, ssh, ifp
-  ...
-  [ifp]
-  allowed_uids = root, yourOSUsername
-  user_attributes = +mail, +telephoneNumber, +givenname, +sn</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Run <code>dbus-send</code> to ensure the setup is successful.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">sudo dbus-send --print-reply --system --dest=org.freedesktop.sssd.infopipe /org/freedesktop/sssd/infopipe org.freedesktop.sssd.infopipe.GetUserGroups string:john</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If the setup is successful, you see the user&#8217;s group. If this command returns a timeout or an error, the federation provider running on Keycloak cannot retrieve any data. This error usually happens because the server is not enrolled in the FreeIPA IdM server, or does not have permission to access the SSSD service.</p>
-</div>
-<div class="paragraph">
-<p>If you do not have permission to access the SSSD service, ensure that the user running the Keycloak server is in the <code>/etc/sssd/sssd.conf</code> file in the following section:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">[ifp]
-allowed_uids = root, your_username</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="enabling-the-sssd-federation-provider"><a class="anchor" href="#enabling-the-sssd-federation-provider"></a>Enabling the SSSD federation provider</h4>
-<div class="paragraph">
-<p>Keycloak uses DBus-Java to communicate at a low level with D-Bus. D-Bus depends on the <a href="http://www.matthew.ath.cx/projects/java/">Unix Sockets Library</a>.</p>
-</div>
-<div class="paragraph">
-<p>You can find an RPM for this library in <a href="https://github.com/keycloak/libunix-dbus-java/releases">the keycloak repository</a>. Before installing this RPM, check the RPM signature using this command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">  $ rpm -K libunix-dbus-java-0.8.0-1.fc24.x86_64.rpm
-  libunix-dbus-java-0.8.0-1.fc24.x86_64.rpm:
-    Header V4 RSA/SHA256 Signature, key ID 84dc9914: OK
-    Header SHA1 digest: OK (d17bb7ebaa7a5304c1856ee4357c8ba4ec9c0b89)
-    V4 RSA/SHA256 Signature, key ID 84dc9914: OK
-    MD5 digest: OK (770c2e68d052cb4a4473e1e9fd8818cf)</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Install the RPM using this command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo yum install libunix-dbus-java-0.8.0-1.fc24.x86_64.rpm</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Keycloak uses JNA to authenticate with PAM. Ensure you have the JAN package installed.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo yum install jna</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Use the <code>sssctl user-checks</code> command to validate your setup:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>  $ sudo sssctl user-checks admin -s keycloak</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="configuring-a-federated-sssd-store"><a class="anchor" href="#configuring-a-federated-sssd-store"></a>Configuring a federated SSSD store</h3>
-<div class="paragraph">
-<p>After the installation, configure a federated SSSD store.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Click <strong>User Federation</strong> in the menu.</p>
-</li>
-<li>
-<p>From the <strong>Add Provider</strong> list select <em>sssd</em>. Keycloak brings you to the sssd configuration page.</p>
-</li>
-<li>
-<p>Click <strong>Save</strong>.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>You can now authenticate against Keycloak using FreeIPA/IdM credentials.</p>
 </div>
 </div>
 <div class="sect2">
@@ -4217,9 +3899,8 @@ In Keycloak, websites cannot include a login page dialog in an iframe. This rest
 <p>Declarative User Profile is <strong>Technology Preview</strong> and is not fully supported. This feature is disabled by default.</p>
 </div>
 <div class="paragraph">
-<p>To enable start the server with <code>-Dkeycloak.profile=preview</code>
-or <code>-Dkeycloak.profile.feature.declarative_user_profile=enabled</code>
-. For more details see <a href="https://www.keycloak.org/docs/latest/server_installation/#profiles">Profiles</a>.</p>
+<p>To enable start the server with <code>--features=preview</code>
+or <code>--features=declarative-user-profile</code></p>
 </div>
 </td>
 </tr>
@@ -5498,39 +5179,20 @@ provided by built-in <code>options</code> validation.</p>
 </div>
 <div class="paragraph">
 <p>In addition to Infinispan caches, offline sessions are stored in a database which means they will be available even after server restart.
-By default, the offline sessions are preloaded from the database into the Infinispan caches during the server startup.
-However this approach has a drawback if there are many offline sessions to be preloaded. It can significantly slow down the server startup time.</p>
+By default, the offline sessions are not preloaded from the database into the Infinispan caches during the server startup, because this
+approach has a drawback if there are many offline sessions to be preloaded. It can significantly slow down the server startup time.
+Therefore, the offline sessions are lazily fetched from the database by default.</p>
 </div>
 <div class="paragraph">
-<p>To overcome this problem, Keycloak can be configured to fetch offline sessions into the Infinispan caches on demand.
-It can be achieved by setting <code>preloadOfflineSessionsFromDatabase</code> property in <code>userSessions</code> SPI to <code>false</code>.</p>
+<p>However, Keycloak can be configured to preload the offline sessions from the database into the Infinispan caches during the server startup.
+It can be achieved by setting <code>preloadOfflineSessionsFromDatabase</code> property in the <code>userSessions</code> SPI to <code>true</code>.</p>
 </div>
 <div class="paragraph">
-<p>The following example shows how to configure lazy offline sessions loading.</p>
+<p>The following example shows how to configure offline sessions preloading.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:keycloak-server:1.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    ...
-    <span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">userSessions</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;default-provider&gt;</span>infinispan<span class="tag">&lt;/default-provider&gt;</span>
-        <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">infinispan</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-            <span class="tag">&lt;properties&gt;</span>
-                <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">preloadOfflineSessionsFromDatabase</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">false</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-            <span class="tag">&lt;/properties&gt;</span>
-        <span class="tag">&lt;/provider&gt;</span>
-    <span class="tag">&lt;/spi&gt;</span>
-    ...
-<span class="tag">&lt;/subsystem&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Equivalent configuration using CLI commands:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=keycloak-server/spi=userSessions:add(default-provider=infinispan)
-/subsystem=keycloak-server/spi=userSessions/provider=infinispan:add(properties={preloadOfflineSessionsFromDatabase =&gt; &quot;false&quot;},enabled=true)</code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">bin/kc.[sh|bat] start --spi-user-sessions-infinispan-preload-offline-sessions-from-database=false</code></pre>
 </div>
 </div>
 </div>
@@ -6184,9 +5846,9 @@ It can be achieved by setting <code>preloadOfflineSessionsFromDatabase</code> pr
 </div>
 </div>
 <div class="sect4">
-<h5 id="look-ahead-window"><a class="anchor" href="#look-ahead-window"></a>Look ahead window</h5>
+<h5 id="look-around-window"><a class="anchor" href="#look-around-window"></a>Look around window</h5>
 <div class="paragraph">
-<p>The number of intervals the server attempts to match the hash. This option is present in Keycloak if the clock of the TOTP generator or authentication server become out-of-sync. The default value of 1 is adequate. For example, if the time interval for a token is 30 seconds, the default value of 1 means it will accept valid tokens in the 30-second window. Every increment of this value increases the valid window by 30 seconds.</p>
+<p>The number of intervals the server attempts to match the hash. This option is present in Keycloak if the clock of the TOTP generator or authentication server becomes out-of-sync. The default value of 1 is adequate. For example, if the time interval for a token is 30 seconds, the default value of 1 means it will accept valid tokens in the 90-second window (time interval 30 seconds + look ahead 30 seconds + look behind 30 seconds). Every increment of this value increases the valid window by 60 seconds (look ahead 30 seconds + look behind 30 seconds).</p>
 </div>
 </div>
 <div class="sect4">
@@ -6211,7 +5873,7 @@ It can be achieved by setting <code>preloadOfflineSessionsFromDatabase</code> pr
 </div>
 </div>
 <div class="sect4">
-<h5 id="look-ahead-window-2"><a class="anchor" href="#look-ahead-window-2"></a>Look ahead window</h5>
+<h5 id="look-ahead-window"><a class="anchor" href="#look-ahead-window"></a>Look ahead window</h5>
 <div class="paragraph">
 <p>The number of intervals the server attempts to match the hash. This option is present in Keycloak if the clock of the TOTP generator or authentication server become out-of-sync. The default value of 1 is adequate. This option is present in Keycloak to cover when the user&#8217;s counter gets ahead of the server.</p>
 </div>
@@ -6565,7 +6227,7 @@ Passwordless Authenticator.</p>
 </div>
 </li>
 <li>
-<p>Click <strong>Actions for the *Forms</strong> execution.</p>
+<p>Click <strong>Actions</strong> for the <strong>Forms</strong> execution.</p>
 </li>
 <li>
 <p>Select <strong>Add execution</strong>.</p>
@@ -6731,6 +6393,317 @@ Passwordless Authenticator.</p>
 </li>
 </ul>
 </div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step-up-flow"><a class="anchor" href="#_step-up-flow"></a>Creating a browser login flow with step-up mechanism</h4>
+<div class="paragraph">
+<p>This section describes how to create advanced browser login flow using the step-up mechanism. The purpose of step-up authentication is to allow access to clients or resources based on a specific authentication level of a user.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Click <strong>Authentication</strong> in the menu.</p>
+</li>
+<li>
+<p>Click the <strong>Flows</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>New</strong>.</p>
+</li>
+<li>
+<p>Enter <code>Browser Incl Step up Mechanism</code> as an alias.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add execution</strong>.</p>
+</li>
+<li>
+<p>Select <strong>Cookie</strong> from the item list.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Alternative</strong> for the <strong>Cookie</strong> authentication type to set its requirement to alternative.</p>
+</li>
+<li>
+<p>Click <strong>Add flow</strong>.</p>
+</li>
+<li>
+<p>Enter <strong>Auth Flow</strong> as an alias.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Alternative</strong> for the <strong>Auth Flow</strong> authentication type to set its requirement to alternative.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Now you configure the flow for the first authentication level.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click <strong>Actions</strong> for the <strong>Auth Flow</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add flow</strong>.</p>
+</li>
+<li>
+<p>Enter <code>1st Condition Flow</code> as an alias.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Conditional</strong> for the <strong>1st Condition Flow</strong> authentication type to set its requirement to conditional.</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> for the <strong>1st Condition Flow</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add execution</strong>.</p>
+</li>
+<li>
+<p>Select <strong>Conditional - Level Of Authentication</strong> from the item list.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Required</strong> for the <strong>Conditional - Level Of Authentication</strong> authentication type to set its requirement to required.</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> for the <strong>Conditional - Level Of Authentication</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Config</strong>.</p>
+</li>
+<li>
+<p>Enter <code>Level 1</code> as an alias.</p>
+</li>
+<li>
+<p>Enter <code>1</code> for the Level of Authentication (LoA).</p>
+</li>
+<li>
+<p>Set Store LoA in user session <strong>ON</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong></p>
+<div class="paragraph">
+<div class="title">Configure the condition for the first authentication level</div>
+<p><span class="image"><img src="./images/authentication-step-up-condition-1.png" alt="authentication step up condition 1"></span></p>
+</div>
+</li>
+<li>
+<p>Click <strong>Actions</strong> for the <strong>1st Condition Flow</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add execution</strong>.</p>
+</li>
+<li>
+<p>Select <strong>Username Password Form</strong> from the item list.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Required</strong> for the <strong>Username Password Form</strong> authentication type to set its requirement to required.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Now you configure the flow for the second authentication level.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click <strong>Actions</strong> for the <strong>Auth Flow</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add flow</strong>.</p>
+</li>
+<li>
+<p>Enter <code>2nd Condition Flow</code> as an alias.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Conditional</strong> for the <strong>2nd Condition Flow</strong> authentication type to set its requirement to conditional.</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> for the <strong>2nd Condition Flow</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add execution</strong>.</p>
+</li>
+<li>
+<p>Select <strong>Conditional - Level Of Authentication</strong> from the item list.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Required</strong> for the <strong>Conditional - Level Of Authentication</strong> authentication type to set its requirement to required.</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> for the <strong>Conditional - Level Of Authentication</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Config</strong>.</p>
+</li>
+<li>
+<p>Enter <code>Level 2</code> as an alias.</p>
+</li>
+<li>
+<p>Enter <code>2</code> for the Level of Authentication (LoA).</p>
+</li>
+<li>
+<p>Set Store LoA in user session <strong>OFF</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong></p>
+<div class="paragraph">
+<div class="title">Configure the condition for the second authentication level</div>
+<p><span class="image"><img src="./images/authentication-step-up-condition-2.png" alt="authentication step up condition 2"></span></p>
+</div>
+</li>
+<li>
+<p>Click <strong>Actions</strong> for the <strong>2nd Condition Flow</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add execution</strong>.</p>
+</li>
+<li>
+<p>Select <strong>OTP Form</strong> from the item list.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Required</strong> for the <strong>OTP Form</strong> authentication type to set its requirement to required.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Finally, change the bindings.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click the <strong>Bindings</strong> tab.</p>
+</li>
+<li>
+<p>Click the <strong>Browser Flow</strong> item list.</p>
+</li>
+<li>
+<p>Select <strong>Browser Incl Step up Mechanism</strong> from the item list.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Browser login with step-up mechanism</div>
+<p><span class="image"><img src="./images/authentication-step-up-flow.png" alt="authentication step up flow"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">Request a certain authentication level</div>
+<p>To use the step-up mechanism, you have to specify a requested level of authentication (LoA) in your authentication request. The claims parameter is used for this purpose:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>https://{DOMAIN}/realms/{REALMNAME}/protocol/openid-connect/auth?client_id={CLIENT-ID}&amp;redirect_uri={REDIRECT-URI}&amp;scope=openid&amp;response_type=code&amp;response_mode=query&amp;nonce=exg16fxdjcu&amp;claims=%7B%22id_token%22%3A%7B%22acr%22%3A%7B%22essential%22%3Atrue%2C%22values%22%3A%5B%22gold%22%5D%7D%7D%7D</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The claims parameter is specified in a JSON representation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>claims= {
+            "id_token": {
+                "acr": {
+                    "essential": true,
+                    "values": ["gold"]
+                }
+            }
+        }</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+To request the acr_vale as text (such as <code>gold</code>) instead of a numeric value, you have to configure the mapping between the ACR and the LoA at the client level. For configuration see <a href="#_mapping-acr-to-loa">ACR to LoA Mapping</a>)
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For more details see the <a href="https://openid.net/specs/openid-connect-core-1_0.html#acrSemantics">official OIDC specification</a>.</p>
+</div>
+<div class="paragraph">
+<div class="title">Flow logic</div>
+<p>The logic for the previous configured authentication flow is as follows:<br>
+If a client request a high authentication level, meaning Level of Authentication 2 (LoA 2), a user has to perform full 2-factor authentication: Username/Password + OTP. However, if a user already has a session in Keycloak, that was logged in with username and password (LoA 1), the user is only asked for the second authenticaton factor (OTP).</p>
+</div>
+<div class="paragraph">
+<p>The <strong>option in the condition to store the achieved LoA in the user session</strong> determines wheather the user will be asked to present the authentication factor again during a subsequent authentication. If true, the user will not be re-authenticated with this level during subsequent authentication. If false, it means that subsequent authentications will re-authentication with that level again. This is useful for operations that require higher security in the application (e.g. send payment) and always require authentication with the specific level.</p>
+</div>
+<table class="tableblock frame-all grid-all spread">
+<caption class="title">Table 1. Implications about possible acr inputs in authentication request</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Authentication Request</th>
+<th class="tableblock halign-left valign-top">Implication</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>No acr claim</strong> is requested</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum authentication  (<strong>1st Condition Flow</strong>) is executed</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>No essential claim</strong> is requested in the acr claim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default is <strong>false</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Unknown acr</strong> value is requested</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">If essential false, minimum authentication is executed. If essential true, the outcome is a failed authentication attempt</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User is re-authenticated via a <strong>cookie</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Acr value in access token und ID token is <code>0</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+A conflict situation may arise when an admin specifies several flows, sets different LoA levels to each, and assigns the flows to different clients. However, the rule is always the same: if a user has a certain level, it needs only have that level to connect to a client. It&#8217;s up to the admin to make sure that the LoA is coherent.
 </td>
 </tr>
 </table>
@@ -7115,7 +7088,7 @@ GSSContext context = gssManager.createContext(serviceName, krb5Oid,
 <p>Enable <code>Debug</code> flag in the Admin Console for Kerberos or LDAP federation providers</p>
 </li>
 <li>
-<p>Enable TRACE logging for category <code>org.keycloak</code> in the logging section of <code>standalone/configuration/standalone.xml</code> to receive more information in <code>standalone/log/server.log</code></p>
+<p>Enable TRACE logging for category <code>org.keycloak</code> to receive more information in server logs</p>
 </li>
 <li>
 <p>Add system properties <code>-Dsun.security.krb5.debug=true</code> and <code>-Dsun.security.spnego.debug=true</code></p>
@@ -7308,128 +7281,6 @@ as it is configured as described below.
 </li>
 </ul>
 </div>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="enable-x-509-client-certificate-user-authentication"><a class="anchor" href="#enable-x-509-client-certificate-user-authentication"></a>Enable X.509 client certificate user authentication</h4>
-<div class="paragraph">
-<p>The following sections describe how to configure WildFly/Undertow and the Keycloak Server to enable X.509 client certificate authentication.</p>
-</div>
-<div class="sect4">
-<h5 id="_enable-mtls-wildfly"><a class="anchor" href="#_enable-mtls-wildfly"></a>Enable mutual SSL in WildFly</h5>
-<div class="paragraph">
-<p>See <a href="https://docs.wildfly.org/24/Admin_Guide.html#enable-ssl">Enable SSL</a> for the instructions to enable SSL in WildFly.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Open KEYCLOAK_HOME/standalone/configuration/standalone.xml and add a new realm:</p>
-</li>
-</ul>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;security-realms&gt;</span>
-    <span class="tag">&lt;security-realm</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ssl-realm</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;server-identities&gt;</span>
-            <span class="tag">&lt;ssl&gt;</span>
-                <span class="tag">&lt;keystore</span> <span class="attribute-name">path</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">servercert.jks</span><span class="delimiter">&quot;</span></span>
-                          <span class="attribute-name">relative-to</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">jboss.server.config.dir</span><span class="delimiter">&quot;</span></span>
-                          <span class="attribute-name">keystore-password</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">servercert password</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-            <span class="tag">&lt;/ssl&gt;</span>
-        <span class="tag">&lt;/server-identities&gt;</span>
-        <span class="tag">&lt;authentication&gt;</span>
-            <span class="tag">&lt;truststore</span> <span class="attribute-name">path</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">truststore.jks</span><span class="delimiter">&quot;</span></span>
-                        <span class="attribute-name">relative-to</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">jboss.server.config.dir</span><span class="delimiter">&quot;</span></span>
-                        <span class="attribute-name">keystore-password</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">truststore password</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/authentication&gt;</span>
-    <span class="tag">&lt;/security-realm&gt;</span>
-<span class="tag">&lt;/security-realms&gt;</span></code></pre>
-</div>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><code>ssl/keystore</code></dt>
-<dd>
-<p>The <code>ssl</code> element contains the <code>keystore</code> element that contains the details to load the server public key pair from a JKS keystore.</p>
-</dd>
-<dt class="hdlist1"><code>ssl/keystore/path</code></dt>
-<dd>
-<p>The path to the JKS keystore.</p>
-</dd>
-<dt class="hdlist1"><code>ssl/keystore/relative-to</code></dt>
-<dd>
-<p>The path that the keystore path is relative to.</p>
-</dd>
-<dt class="hdlist1"><code>ssl/keystore/keystore-password</code></dt>
-<dd>
-<p>The password to open the keystore.</p>
-</dd>
-<dt class="hdlist1"><code>ssl/keystore/alias</code> (optional)</dt>
-<dd>
-<p>The alias of the entry in the keystore. Set if the keystore contains multiple entries.</p>
-</dd>
-<dt class="hdlist1"><code>ssl/keystore/key-password</code> (optional)</dt>
-<dd>
-<p>The private key password, if different from the keystore password.</p>
-</dd>
-<dt class="hdlist1"><code>authentication/truststore</code></dt>
-<dd>
-<p>Defines how to load a trust store to verify the certificate presented by the remote side of the inbound/outgoing connection. Typically, the truststore contains a collection of trusted CA certificates.</p>
-</dd>
-<dt class="hdlist1"><code>authentication/truststore/path</code></dt>
-<dd>
-<p>The path to the JKS keystore containing the certificates of the trusted certificate authorities.</p>
-</dd>
-<dt class="hdlist1"><code>authentication/truststore/relative-to</code></dt>
-<dd>
-<p>The path that the truststore path is relative to.</p>
-</dd>
-<dt class="hdlist1"><code>authentication/truststore/keystore-password</code></dt>
-<dd>
-<p>The password to open the truststore.</p>
-</dd>
-</dl>
-</div>
-</div>
-<div class="sect4">
-<h5 id="enable-https-listener"><a class="anchor" href="#enable-https-listener"></a>Enable HTTPS listener</h5>
-<div class="paragraph">
-<p>See <a href="https://docs.wildfly.org/24/Admin_Guide.html#https-listener">HTTPS Listener</a> for the instructions to enable HTTPS in WildFly.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Add the &lt;https-listener&gt; element.</p>
-</li>
-</ul>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:12.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        ....
-    <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-            <span class="tag">&lt;https-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default</span><span class="delimiter">&quot;</span></span>
-                        <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span>
-                        <span class="attribute-name">security-realm</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ssl-realm</span><span class="delimiter">&quot;</span></span>
-                        <span class="attribute-name">verify-client</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">REQUESTED</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-    <span class="tag">&lt;/server&gt;</span>
-<span class="tag">&lt;/subsystem&gt;</span></code></pre>
-</div>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><code>https-listener/security-realm</code></dt>
-<dd>
-<p>This value must match the name of the realm from the previous section.</p>
-</dd>
-<dt class="hdlist1"><code>https-listener/verify-client</code></dt>
-<dd>
-<p>If set to <strong>REQUESTED</strong>, the server optionally asks for a client certificate.
-If set to <strong>REQUIRED</strong>, the server refuses inbound connections if no client certificate has been provided.</p>
-</dd>
-</dl>
 </div>
 </div>
 </div>
@@ -7784,87 +7635,6 @@ Leave this parameter empty to disable the Key Usage validation. See <a href="htt
 <div class="paragraph">
 <p>Keycloak does not have built-in support for other reverse proxy implementations. However, you can make other reverse proxies behave in a similar way to <code>apache</code> or <code>haproxy</code>. If none of these work, create your implementation of the <code>org.keycloak.services.x509.X509ClientCertificateLookupFactory</code> and <code>org.keycloak.services.x509.X509ClientCertificateLookup</code> providers. See the <a href="https://www.keycloak.org/docs/latest/server_development/">Server Developer Guide</a> for details on how to add your provider.</p>
 </div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="troubleshooting-2"><a class="anchor" href="#troubleshooting-2"></a>Troubleshooting</h4>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Dumping HTTP headers</dt>
-<dd>
-<p>To view what the reverse proxy sends to Keycloak, enable the <code>RequestDumpingHandler</code> Undertow filter and consult the <code>server.log</code> file.</p>
-</dd>
-<dt class="hdlist1">Enable TRACE logging under the logging subsystem</dt>
-</dl>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml">...
-    <span class="tag">&lt;profile&gt;</span>
-        <span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:logging:8.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-...
-            <span class="tag">&lt;logger</span> <span class="attribute-name">category</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.keycloak.authentication.authenticators.x509</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-                <span class="tag">&lt;level</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">TRACE</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-            <span class="tag">&lt;/logger&gt;</span>
-            <span class="tag">&lt;logger</span> <span class="attribute-name">category</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.keycloak.services.x509</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-                <span class="tag">&lt;level</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">TRACE</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-            <span class="tag">&lt;/logger&gt;</span></code></pre>
-</div>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Do not use RequestDumpingHandler or TRACE logging in production.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Direct Grant authentication with X.509</dt>
-<dd>
-<p>You can use the following template to request a token by using the Resource Owner Password Credentials Grant:</p>
-</dd>
-</dl>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>$ curl https://[host][:port]/auth/realms/master/protocol/openid-connect/token \
-       --insecure \
-       --data "grant_type=password&amp;scope=openid profile&amp;username=&amp;password=&amp;client_id=CLIENT_ID&amp;client_secret=CLIENT_SECRET" \
-       -E /path/to/client_cert.crt \
-       --key /path/to/client_cert.key</code></pre>
-</div>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><code>[host][:port]</code></dt>
-<dd>
-<p>The host and the port number of the remote Keycloak server.</p>
-</dd>
-<dt class="hdlist1"><code>CLIENT_ID</code></dt>
-<dd>
-<p>The client id.</p>
-</dd>
-<dt class="hdlist1"><code>CLIENT_SECRET</code></dt>
-<dd>
-<p>For confidential clients, a client secret.</p>
-</dd>
-<dt class="hdlist1"><code>client_cert.crt</code></dt>
-<dd>
-<p>A public key certificate to verify the identity of the client in mutual SSL authentication. The certificate must be in PEM format.</p>
-</dd>
-<dt class="hdlist1"><code>client_cert.key</code></dt>
-<dd>
-<p>A private key in the public key pair. This key must be in PEM format.</p>
-</dd>
-</dl>
 </div>
 </div>
 </div>
@@ -8707,7 +8477,7 @@ If the user already exists, Keycloak may ask the user to link the identity retur
 <p>Although each type of identity provider has its configuration options, all share a common configuration. The following configuration options available:</p>
 </div>
 <table class="tableblock frame-all grid-all spread">
-<caption class="title">Table 1. Common Configuration</caption>
+<caption class="title">Table 2. Common Configuration</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -9633,7 +9403,7 @@ grantMethod: prompt <i class="conum" data-value="4"></i><b>(4)</b>
 <li>
 <p>Enter your initial configuration options. See <a href="#_general-idp-config">General IDP Configuration</a> for more information about configuration options.</p>
 <table class="tableblock frame-all grid-all spread">
-<caption class="title">Table 2. OpenID connect config</caption>
+<caption class="title">Table 3. OpenID connect config</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -9709,7 +9479,7 @@ In the case of JWT signed with private key or Client secret as jwt, it is requir
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">JWKS URL</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The URL pointing to the location of the IDP JWK keys. For more information, see the <a href="https://self-issued.info/docs/draft-ietf-jose-json-web-key.html">JWK specification</a>. If you use an external Keycloak as an IDP, you can use a URL such as <a href="http://broker-keycloak:8180/auth/realms/test/protocol/openid-connect/certs" class="bare">http://broker-keycloak:8180/auth/realms/test/protocol/openid-connect/certs</a> if your brokered Keycloak is running on <a href="http://broker-keycloak:8180" class="bare">http://broker-keycloak:8180</a> and its realm is <code>test</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The URL pointing to the location of the IDP JWK keys. For more information, see the <a href="https://self-issued.info/docs/draft-ietf-jose-json-web-key.html">JWK specification</a>. If you use an external Keycloak as an IDP, you can use a URL such as <a href="http://broker-keycloak:8180/realms/test/protocol/openid-connect/certs" class="bare">http://broker-keycloak:8180/realms/test/protocol/openid-connect/certs</a> if your brokered Keycloak is running on <a href="http://broker-keycloak:8180" class="bare">http://broker-keycloak:8180</a> and its realm is <code>test</code>.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Validating Public Key</p></td>
@@ -9725,7 +9495,7 @@ In the case of JWT signed with private key or Client secret as jwt, it is requir
 </ol>
 </div>
 <div class="paragraph">
-<p>You can import all this configuration data by providing a URL or file that points to OpenID Provider Metadata. If you connect to a Keycloak external IDP, you can import the IDP settings from <code>&lt;root&gt;/auth/realms/{realm-name}/.well-known/openid-configuration</code>. This link is a JSON document describing metadata about the IDP.</p>
+<p>You can import all this configuration data by providing a URL or file that points to OpenID Provider Metadata. If you connect to a Keycloak external IDP, you can import the IDP settings from <code>&lt;root&gt;/realms/{realm-name}/.well-known/openid-configuration</code>. This link is a JSON document describing metadata about the IDP.</p>
 </div>
 </div>
 <div class="sect2">
@@ -9772,7 +9542,7 @@ In the case of JWT signed with private key or Client secret as jwt, it is requir
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Service Provider Entity ID</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The SAML Entity ID that the remote Identity Provider uses to identify requests from this Service Provider. By default, this setting is set to the realms base URL <code>&lt;root&gt;/auth/realms/{realm-name}</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The SAML Entity ID that the remote Identity Provider uses to identify requests from this Service Provider. By default, this setting is set to the realms base URL <code>&lt;root&gt;/realms/{realm-name}</code>.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Single Sign-On Service URL</p></td>
@@ -9856,7 +9626,7 @@ In the case of JWT signed with private key or Client secret as jwt, it is requir
 </tbody>
 </table>
 <div class="paragraph">
-<p>You can import all configuration data by providing a URL or a file pointing to the SAML IDP entity descriptor of the external IDP. If you are connecting to a Keycloak external IDP, you can import the IDP settings from the URL <code>&lt;root&gt;/auth/realms/{realm-name}/protocol/saml/descriptor</code>. This link is an XML document describing metadata about the IDP. You can also import all this configuration data by providing a URL or XML file pointing to the external SAML IDP&#8217;s entity descriptor to connect to.</p>
+<p>You can import all configuration data by providing a URL or a file pointing to the SAML IDP entity descriptor of the external IDP. If you are connecting to a Keycloak external IDP, you can import the IDP settings from the URL <code>&lt;root&gt;/realms/{realm-name}/protocol/saml/descriptor</code>. This link is an XML document describing metadata about the IDP. You can also import all this configuration data by providing a URL or XML file pointing to the external SAML IDP&#8217;s entity descriptor to connect to.</p>
 </div>
 <div class="sect3">
 <h4 id="_identity_broker_saml_requested_authncontext"><a class="anchor" href="#_identity_broker_saml_requested_authncontext"></a>Requesting specific AuthnContexts</h4>
@@ -9867,7 +9637,7 @@ In the case of JWT signed with private key or Client secret as jwt, it is requir
 <p>You can list the criteria your Service Provider requires by adding ClassRefs or DeclRefs in the Requested AuthnContext Constraints section. Usually, you need to provide either ClassRefs or DeclRefs, so check with your Identity Provider documentation which values are supported. If no ClassRefs or DeclRefs are present, the Identity Provider does not enforce additional constraints.</p>
 </div>
 <table class="tableblock frame-all grid-all spread">
-<caption class="title">Table 3. Requested AuthnContext Constraints</caption>
+<caption class="title">Table 4. Requested AuthnContext Constraints</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -9904,7 +9674,7 @@ In the case of JWT signed with private key or Client secret as jwt, it is requir
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>http[s]://{host:port}/auth/realms/{realm-name}/broker/{broker-alias}/endpoint/descriptor</code></pre>
+<pre class="CodeRay highlight"><code>http[s]://{host:port}/realms/{realm-name}/broker/{broker-alias}/endpoint/descriptor</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -9918,7 +9688,7 @@ In the case of JWT signed with private key or Client secret as jwt, it is requir
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>http[s]://{host:port}/auth/realms/${realm-name}/broker/{broker-alias}/login</code></pre>
+<pre class="CodeRay highlight"><code>http[s]://{host:port}/realms/${realm-name}/broker/{broker-alias}/login</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -10348,7 +10118,7 @@ This flow can be used if you want to delegate the identity to other identity pro
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>GET /auth/realms/{realm}/broker/{provider_alias}/token HTTP/1.1
+<pre class="CodeRay highlight"><code>GET /realms/{realm}/broker/{provider_alias}/token HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer &lt;KEYCLOAK ACCESS TOKEN&gt;</code></pre>
 </div>
@@ -10690,7 +10460,7 @@ redirects to the application using the callback URL and additionally adds the <e
     <span class="tag">&lt;default-provider&gt;</span>ciba-http-auth-channel<span class="tag">&lt;/default-provider&gt;</span>
     <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ciba-http-auth-channel</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
         <span class="tag">&lt;properties&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">httpAuthenticationChannelUri</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https://backend.internal.example.com/auth</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
+            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">httpAuthenticationChannelUri</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https://backend.internal.example.com</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
         <span class="tag">&lt;/properties&gt;</span>
     <span class="tag">&lt;/provider&gt;</span>
 <span class="tag">&lt;/spi&gt;</span></code></pre>
@@ -10914,7 +10684,7 @@ This field is optional and was defined by CIBA standard document.</p></td>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>POST /auth/realms/[realm]/protocol/openid-connect/ext/ciba/auth/callback</pre>
+<pre class="CodeRay highlight"><code>POST /realms/[realm]/protocol/openid-connect/ext/ciba/auth/callback</code></pre>
 </div>
 </div>
 <div class="ulist">
@@ -11161,11 +10931,11 @@ requests are sent to a registered backchannel logout URLs at Keycloak and are su
 </div>
 </div>
 <div class="paragraph _abstract">
-<p>The following is a list of OIDC endpoints that Keycloak publishes. These endpoints can be used when a non-Keycloak client adapter uses OIDC to communicate with the authentication server. They are all relative URLs. The root of the URL consists of the HTTP(S) protocol, hostname, and the path, which is usually prefixed with <em>/auth</em>:  For example</p>
+<p>The following is a list of OIDC endpoints that Keycloak publishes. These endpoints can be used when a non-Keycloak client adapter uses OIDC to communicate with the authentication server. They are all relative URLs. The root of the URL consists of the HTTP(S) protocol, hostname, and optionally the path:  For example</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>https://localhost:8080/auth</code></pre>
+<pre class="CodeRay highlight"><code>https://localhost:8080</code></pre>
 </div>
 </div>
 <div class="dlist">
@@ -11305,7 +11075,7 @@ requests are sent to a registered backchannel logout URLs at Keycloak and are su
 <p>Keycloak has one endpoint for all SAML requests.</p>
 </div>
 <div class="paragraph">
-<p><code>http(s)://authserver.host/auth/realms/{realm-name}/protocol/saml</code></p>
+<p><code>http(s)://authserver.host/realms/{realm-name}/protocol/saml</code></p>
 </div>
 <div class="paragraph">
 <p>All bindings use this endpoint.</p>
@@ -11436,7 +11206,7 @@ Keycloak does not create a browser SSO session after successful authentication w
 <p>Keycloak has one endpoint for all Docker auth v2 requests.</p>
 </div>
 <div class="paragraph">
-<p><code>http(s)://authserver.host/auth/realms/{realm-name}/protocol/docker-v2</code></p>
+<p><code>http(s)://authserver.host/realms/{realm-name}/protocol/docker-v2</code></p>
 </div>
 </div>
 </div>
@@ -11569,7 +11339,7 @@ Admins with the <code>manage-users</code> role will only be able to assign admin
 </div>
 </div>
 <div class="paragraph">
-<p>Each realm has a dedicated Admin Console that can be accessed by going to the url <code>/auth/admin/{realm-name}/console</code>.
+<p>Each realm has a dedicated Admin Console that can be accessed by going to the url <code>/admin/{realm-name}/console</code>.
 Users within that realm can be granted realm management permissions by assigning specific user role mappings.</p>
 </div>
 <div class="paragraph">
@@ -11639,9 +11409,8 @@ Users within that realm can be granted realm management permissions by assigning
 <p>Fine Grain Admin Permissions is <strong>Technology Preview</strong> and is not fully supported. This feature is disabled by default.</p>
 </div>
 <div class="paragraph">
-<p>To enable start the server with <code>-Dkeycloak.profile=preview</code>
-or <code>-Dkeycloak.profile.feature.admin_fine_grained_authz=enabled</code>
-. For more details see <a href="https://www.keycloak.org/docs/latest/server_installation/#profiles">Profiles</a>.</p>
+<p>To enable start the server with <code>--features=preview</code>
+or <code>--features=admin-fine-grained-authz</code></p>
 </div>
 </td>
 </tr>
@@ -11814,7 +11583,7 @@ role tells the Admin Console that it should render client menus for the <code>sa
 <h5 id="testing-it-out"><a class="anchor" href="#testing-it-out"></a>Testing it out</h5>
 <div class="paragraph">
 <p>Next, we log out of the master realm and re-login to the <a href="#_per_realm_admin_permissions">dedicated admin console</a> for the <code>test</code> realm
-using the <code>sales-admin</code> as a username.  This is located under <code>/auth/admin/test/console</code>.</p>
+using the <code>sales-admin</code> as a username.  This is located under <code>/admin/test/console</code>.</p>
 </div>
 <div class="paragraph">
 <div class="title">Sales admin login</div>
@@ -11896,7 +11665,7 @@ allow the admin to view users in the realm he wants to add the <code>sales-appli
 <h5 id="testing-it-out-2"><a class="anchor" href="#testing-it-out-2"></a>Testing it out</h5>
 <div class="paragraph">
 <p>Next, we log out of the master realm and re-login to the <a href="#_per_realm_admin_permissions">dedicated admin console</a> for the <code>test</code> realm
-using the <code>sales-admin</code> as a username.  This is located under <code>/auth/admin/test/console</code>.</p>
+using the <code>sales-admin</code> as a username.  This is located under <code>/admin/test/console</code>.</p>
 </div>
 <div class="paragraph">
 <p>You will see that now the <code>sales-admin</code> can view users in the system.  If you select one of the
@@ -12356,20 +12125,6 @@ JavaScript code came from, the request must use CORS. The server must handle COR
 <div id="_mtls-client-certificate-bound-tokens" class="paragraph">
 <p><strong>OAuth 2.0 Mutual TLS Certificate Bound Access Tokens Enabled</strong></p>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>To enable mutual TLS in Keycloak, see <a href="#_enable-mtls-wildfly">Enable mutual SSL in WildFly</a>.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>Mutual TLS binds an access token and a refresh token together with a client certificate, which is exchanged during a TLS handshake. This binding prevents an attacker from using stolen tokens.</p>
 </div>
@@ -12550,6 +12305,19 @@ JavaScript code came from, the request must use CORS. The server must handle COR
 </li>
 </ol>
 </div>
+<div id="_mapping-acr-to-loa" class="paragraph">
+<p><strong>ACR to Level of Authentication (LoA) Mapping</strong></p>
+</div>
+<div class="paragraph">
+<p>In the advanced settings of a client, you can define which <code>Authentication Context Class Reference (ACR)</code> value is mapped to which <code>Level of Authentication (LoA)</code>. The ACR can be any value, whereas the LoA must be numeric.
+The acr claim in also included in the access token and ID token.</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="./images/client-oidc-map-acr-to-loa.png" alt="ACR to LoA mapping"></span></p>
+</div>
+<div class="paragraph">
+<p>For further details see  <a href="#_step-up-flow">Step-up Authentication</a> and  <a href="https://openid.net/specs/openid-connect-core-1_0.html#acrSemantics">the offical OIDC specification</a>.</p>
+</div>
 </div>
 <div class="sect3">
 <h4 id="_client-credentials"><a class="anchor" href="#_client-credentials"></a>Confidential client credentials</h4>
@@ -12679,18 +12447,6 @@ Keycloak caches public keys of OIDC clients. If the private key of your client i
 <div class="paragraph">
 <p>Keycloak will validate if the client uses proper X509 certificate during the TLS Handshake.</p>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This option requires mutual TLS in Keycloak. See <a href="#_enable-mtls-wildfly">Enable mutual SSL in WildFly</a>.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <div class="title">X509 certificate</div>
 <p><span class="image"><img src="./keycloak-images/x509-client-auth.png" alt="x509 client auth"></span></p>
@@ -12776,7 +12532,7 @@ use cases, it is sufficient to accept all certificates. In that case, you can us
 </ul>
 </div>
 <div class="paragraph">
-<p>The REST URL to invoke is <code>/auth/realms/{realm-name}/protocol/openid-connect/token</code>. This URL must be invoked as a POST request and requires that you post the client credentials with the request.</p>
+<p>The REST URL to invoke is <code>/realms/{realm-name}/protocol/openid-connect/token</code>. This URL must be invoked as a POST request and requires that you post the client credentials with the request.</p>
 </div>
 <div class="paragraph">
 <p>By default, client credentials are represented by the clientId and clientSecret of the client in the <strong>Authorization: Basic</strong> header but you can also authenticate the client with a signed JWT assertion or any other custom mechanism for client authentication.</p>
@@ -12789,7 +12545,7 @@ use cases, it is sufficient to accept all certificates. In that case, you can us
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>    POST /auth/realms/demo/protocol/openid-connect/token
+<pre class="CodeRay highlight"><code>    POST /realms/demo/protocol/openid-connect/token
     Authorization: Basic cHJvZHVjdC1zYS1jbGllbnQ6cGFzc3dvcmQ=
     Content-Type: application/x-www-form-urlencoded
 
@@ -13283,7 +13039,7 @@ This field is used when the exact SAML endpoints are not registered and Keycloak
 <p>IDP Initiated Login is a feature that allows you to set up an endpoint on the Keycloak server that will log you into a specific application/client.
 In the <strong>Settings</strong> tab for your client, you need to specify the <strong>IDP Initiated SSO URL Name</strong>.
 This is a simple string with no whitespace in it.
-After this you can reference your client at the following URL: <code>root/auth/realms/{realm}/protocol/saml/clients/{url-name}</code></p>
+After this you can reference your client at the following URL: <code>root/realms/{realm}/protocol/saml/clients/{url-name}</code></p>
 </div>
 <div class="paragraph">
 <p>The IDP initiated login implementation prefers <em>POST</em> over <em>REDIRECT</em> binding (check <a href="#_saml">saml bindings</a> for more information).
@@ -13307,7 +13063,7 @@ of the client settings) <em>POST</em> binding is used through that URL.</p>
 <div class="paragraph">
 <p>If your client requires a special relay state, you can also configure this on the <strong>Settings</strong> tab in the <strong>IDP Initiated SSO Relay State</strong> field.
 Alternatively, browsers can specify the relay state in a <strong>RelayState</strong> query parameter, i.e.
-<code>root/auth/realms/{realm}/protocol/saml/clients/{url-name}?RelayState=thestate</code>.</p>
+<code>root/realms/{realm}/protocol/saml/clients/{url-name}?RelayState=thestate</code>.</p>
 </div>
 <div class="paragraph">
 <p>When using <a href="#_identity_broker">identity brokering</a>, it is possible to set up an IDP Initiated Login for a client from an
@@ -13324,7 +13080,7 @@ at the external IDP:</p>
 <li>
 <p><strong>Assertion Consumer Service POST Binding URL</strong> in the <strong>Fine Grain SAML Endpoint Configuration</strong> section has
 to be set to the following URL:
-<code>broker-root/auth/realms/{broker-realm}/broker/{idp-name}/endpoint/clients/{client-id}</code>, where:</p>
+<code>broker-root/realms/{broker-realm}/broker/{idp-name}/endpoint/clients/{client-id}</code>, where:</p>
 <div class="ulist">
 <ul>
 <li>
@@ -13388,7 +13144,7 @@ the brokering IDP, and add <code>clients/<em>client-id</em></code> to the endpoi
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>root/auth/realms/{realm}/protocol/saml/descriptor</code></pre>
+<pre class="CodeRay highlight"><code>root/realms/{realm}/protocol/saml/descriptor</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -13415,11 +13171,11 @@ the brokering IDP, and add <code>clients/<em>client-id</em></code> to the endpoi
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>http://host:port/auth/realms/master/clients/account/redirect</code></pre>
+<pre class="CodeRay highlight"><code>http://host:port/realms/master/clients/account/redirect</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This URL temporarily redirects to: <a href="http://host:port/auth/realms/master/account" class="bare">http://host:port/auth/realms/master/account</a></p>
+<p>This URL temporarily redirects to: <a href="http://host:port/realms/master/account" class="bare">http://host:port/realms/master/account</a></p>
 </div>
 </div>
 <div class="sect2">
@@ -14203,128 +13959,6 @@ client registration policies are applied.</p>
 </dd>
 </dl>
 </div>
-<div class="paragraph">
-<p>To use a vault, register a vault provider in Keycloak. You can use the providers described <a href="#_providers">here</a> or implement your provider. See the <a href="https://www.keycloak.org/docs/latest/server_development/">Server Developer Guide</a> for more information.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Keycloak permits a maximum of one active vault provider per Keycloak instance at a time. Configure the vault provider in each instance within the cluster consistently.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_providers"><a class="anchor" href="#_providers"></a>Kubernetes / OpenShift files plain-text vault provider</h3>
-<div class="paragraph">
-<p>Keycloak supports vault implementation for <a href="https://kubernetes.io/docs/concepts/configuration/secret/">Kubernetes secrets</a>. You can mount Kubernetes secrets as data volumes, and they appear as a directory with a flat-file structure. Keycloak represents each secret as a file with the file&#8217;s name as the secret name and the file&#8217;s contents as the secret value.</p>
-</div>
-<div class="paragraph">
-<p>You must name the files within this directory as the secret name prefixed by the realm name and an underscore. Double all underscores within the secret name or the realm name in the file name. For example, for a field within a realm named <code>sso_realm</code>, a reference to a secret with the name <code>secret-name</code> would be written as <code>${vault.secret-name}</code>, and the file name looked up would be <code>sso__realm_secret-name</code>. Note the underscore doubled in realm name.</p>
-</div>
-<div class="paragraph">
-<p>To use this type of secret store, you must declare the <code>files-plaintext</code> vault provider in the standalone.xml file and set its parameter for the directory containing the mounted volume. This example shows the <code>files-plaintext</code> provider with the directory where vault files are searched set to <code>standalone/configuration/vault</code> relative to the Keycloak base directory:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">vault</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    <span class="tag">&lt;default-provider&gt;</span>files-plaintext<span class="tag">&lt;/default-provider&gt;</span>
-    <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">files-plaintext</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;properties&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">dir</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${jboss.home.dir}/standalone/configuration/vault/</span><span class="delimiter">&quot;</span></span> <span class="tag">/&gt;</span>
-        <span class="tag">&lt;/properties&gt;</span>
-    <span class="tag">&lt;/provider&gt;</span>
-<span class="tag">&lt;/spi&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Here is the equivalent configuration using CLI commands:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=keycloak-server/spi=vault/:add
-/subsystem=keycloak-server/spi=vault/provider=files-plaintext/:add(enabled=true,properties={dir =&gt; &quot;${jboss.home.dir}/standalone/configuration/vault&quot;})
-/subsystem=keycloak-server/spi=vault:write-attribute(name=default-provider,value=files-plaintext)</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="elytron-credential-store-vault-provider"><a class="anchor" href="#elytron-credential-store-vault-provider"></a>Elytron credential store vault provider</h3>
-<div class="paragraph">
-<p>Keycloak also provides support for reading secrets stored in an Elytron credential store. The <code>elytron-cs-keystore</code> vault provider can retrieve secrets from the credential store&#8217;s keystore based implementation, which is also the default implementation Elytron provides.</p>
-</div>
-<div class="paragraph">
-<p>A keystore backs this credential store. <code>JCEKS</code> is the default format, but you can use other formats such as <code>PKCS12</code>. Users can create and manage the store contents using the <code>elytron</code> subsystem in WildFly/JBoss EAP, or the <code>elytron-tool.sh</code> script.</p>
-</div>
-<div class="paragraph">
-<p>To use this provider, you must declare the <code>elytron-cs-keystore</code> in the <code>keycloak-server</code> subsystem and set the location and master secret of the keystore created by Elytron. An example of the minimal configuration for the provider follows:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">vault</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    <span class="tag">&lt;default-provider&gt;</span>elytron-cs-keystore<span class="tag">&lt;/default-provider&gt;</span>
-    <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">elytron-cs-keystore</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;properties&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">location</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${jboss.home.dir}/standalone/configuration/vault/credential-store.jceks</span><span class="delimiter">&quot;</span></span> <span class="tag">/&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">secret</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">secretpw1!</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/properties&gt;</span>
-    <span class="tag">&lt;/provider&gt;</span>
-<span class="tag">&lt;/spi&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If the underlying keystore has a format different from <code>JCEKS</code>, you must specify this format by using the <code>keyStoreType</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">vault</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    <span class="tag">&lt;default-provider&gt;</span>elytron-cs-keystore<span class="tag">&lt;/default-provider&gt;</span>
-    <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">elytron-cs-keystore</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;properties&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">location</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${jboss.home.dir}/standalone/configuration/vault/credential-store.p12</span><span class="delimiter">&quot;</span></span> <span class="tag">/&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">secret</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">secretpw1!</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">keyStoreType</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">PKCS12</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/properties&gt;</span>
-    <span class="tag">&lt;/provider&gt;</span>
-<span class="tag">&lt;/spi&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For the secret, the <code>elytron-cs-keystore</code> provider supports clear-text values and masked values by using the <code>elytron-tool.sh</code> script:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">vault</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-   ...
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">secret</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">MASK-3u2HNQaMogJJ8VP7J6gRIl;12345678;321</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-   ...
-<span class="tag">&lt;/spi&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For more information about creating and managing elytron credential stores and masking keystore secrets, see the Elytron documentation.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Keycloak implements the <code>elytron-cs-keystore</code> vault provider as a WildFly extension and is available if the Keycloak server runs on WildFly/JBoss EAP only.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</div>
 <div class="sect2">
 <h3 id="key-resolvers"><a class="anchor" href="#key-resolvers"></a>Key resolvers</h3>
 <div class="paragraph">
@@ -14332,15 +13966,7 @@ client registration policies are applied.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">vault</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    <span class="tag">&lt;default-provider&gt;</span>files-plaintext<span class="tag">&lt;/default-provider&gt;</span>
-    <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">files-plaintext</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;properties&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">dir</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${jboss.home.dir}/standalone/configuration/vault/</span><span class="delimiter">&quot;</span></span> <span class="tag">/&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">keyResolvers</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">REALM_UNDERSCORE_KEY, KEY_ONLY</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/properties&gt;</span>
-    <span class="tag">&lt;/provider&gt;</span>
-<span class="tag">&lt;/spi&gt;</span></code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">kc.[sh.bat] start --spi-vault-file-key-resolvers=REALM_UNDERSCORE_KEY,KEY_ONLY</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -14384,275 +14010,6 @@ client registration policies are applied.</p>
 </table>
 <div class="paragraph">
 <p>If you have not configured a resolver for the built-in providers, Keycloak selects the <code>REALM_UNDERSCORE_KEY</code>.</p>
-</div>
-<div class="paragraph">
-<p>The <code>FACTORY_PROVIDED</code> resolver provides a hook that you can use to implement a custom resolver by extending the provider factory of choice and overriding the <code>getFactoryResolver</code> method, so it returns the custom resolver. For example, if you want to use the <code>elytron-cs-keystore</code> provider but the built-in resolvers do not match the format used in your keystore, you can extend the <code>ElytronCSKeystoreProvider</code> and implement the <code>getFactoryResolver</code> method:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="java">    <span class="directive">public</span> <span class="type">class</span> <span class="class">CustomElytronProviderFactory</span> <span class="directive">extends</span> ElytronCSKeyStoreProviderFactory {
-        ...
-        <span class="annotation">@Override</span>
-        <span class="directive">protected</span> VaultKeyResolver getFactoryResolver() {
-            <span class="keyword">return</span> (realm, key) -&gt; realm + <span class="string"><span class="delimiter">&quot;</span><span class="content">###</span><span class="delimiter">&quot;</span></span> + key;
-        }
-
-        <span class="annotation">@Override</span>
-        <span class="directive">public</span> <span class="predefined-type">String</span> getId() {
-            <span class="keyword">return</span> <span class="string"><span class="delimiter">&quot;</span><span class="content">custom-elytron-cs-keystore;
-        }
-
-        ...
-    }</span></span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The custom factory returns a key resolver that combines the realm and key with a triple # character. For example, an entry would be <code>master_realm###smtp_key</code>. Install this factory like any custom provider.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The custom factory must override both the <code>getFactoryResolver</code> and <code>getId</code> methods. The second method is necessary so that you can properly configure the custom factory in Keycloak.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>To install and use the previous custom provider, the configuration would look similar to this:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">vault</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    <span class="tag">&lt;default-provider&gt;</span>custom-elytron-cs-keystore<span class="tag">&lt;/default-provider&gt;</span>
-    <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">custom-elytron-cs-keystore</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;properties&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">location</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${jboss.home.dir}/standalone/configuration/vault/credential-store.p12</span><span class="delimiter">&quot;</span></span> <span class="tag">/&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">secret</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">MASK-3u2HNQaMogJJ8VP7J6gRIl;12345678;321</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">keyStoreType</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">PKCS12</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">keyResolvers</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">FACTORY_PROVIDED</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/properties&gt;</span>
-    <span class="tag">&lt;/provider&gt;</span>
-<span class="tag">&lt;/spi&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This configuration makes Keycloak set up the custom Elytron provider and use the key resolver that the custom factory creates.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="sample-configuration"><a class="anchor" href="#sample-configuration"></a>Sample Configuration</h3>
-<div class="paragraph">
-<p>The following is an example of configuring a vault and credential store.  The procedure involves two parts:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Creating the credential store and a vault, where the credential store and vault passwords are in plain text.</p>
-</li>
-<li>
-<p>Updating the credential store and vault to have the password use a mask provided by <code>elytron-tool.sh</code>.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>In this example, the test target used is an LDAP instance with <code>BIND DN credential: secret12</code>. The target is mapped using user federation in the realm <code>ldaptest</code>.</p>
-</div>
-<div class="sect3">
-<h4 id="configuring-the-credential-store-and-vault-without-a-mask"><a class="anchor" href="#configuring-the-credential-store-and-vault-without-a-mask"></a>Configuring the credential store and vault without a mask</h4>
-<div class="paragraph">
-<p>You create the credential store and a vault where the credential store and vault passwords are in plain text.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>A running LDAP instance has <code>BIND DN credential: secret12</code>.</p>
-</li>
-<li>
-<p>The alias uses the format &lt;realm-name&gt;_&lt; key-value&gt; when using the default key resolver. In this case, the instance is running in the realm <code>ldaptest</code> and <code>ldaptest_ldap_secret</code> is the alias that corresponds to the value <code>ldap_secret</code> in that realm.</p>
-</li>
-</ul>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The resolver replaces underscore characters with double underscore characters in the realm and key names. For example, for the key <code>ldaptest_ldap_secret</code>, the final key will be <code>ldaptest_ldap__secret</code>.
-</td>
-</tr>
-</table>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Create the Elytron credential store.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">[standalone@localhost:9990 /] /subsystem=elytron/credential-store=test-store:add(create=true, location=/home/test/test-store.p12, credential-reference={clear-text=testpwd1!},implementation-properties={keyStoreType=PKCS12})</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add an alias to the credential store.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=elytron/credential-store=test-store:add-alias(alias=ldaptest_ldap__secret,secret-value=secret12)</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Notice how the resolver causes the key <code>ldaptest_ldap__secret</code> to use double underscores.</p>
-</div>
-</li>
-<li>
-<p>List the aliases from the credential store to inspect the contents of the keystore that is produced by Elytron.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">keytool -list -keystore /home/test/test-store.p12 -storetype PKCS12 -storepass testpwd1!
-Keystore type: PKCS12
-Keystore provider: SUN
-
-Your keystore contains 1 entries
-
-ldaptest_ldap__secret/passwordcredential/clear/, Oct 12, 2020, SecretKeyEntry,</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Configure the vault SPI in Keycloak.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=keycloak-server/spi=vault:add(default-provider=elytron-cs-keystore)
-
-/subsystem=keycloak-server/spi=vault/provider=elytron-cs-keystore:add(enabled=true, properties={location=&gt;/home/test/test-store.p12, secret=&gt;testpwd1!, keyStoreType=&gt;PKCS12})</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>At this point, the vault and credentials store passwords are not masked.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">        &lt;spi name=&quot;vault&quot;&gt;
-                &lt;default-provider&gt;elytron-cs-keystore&lt;/default-provider&gt;
-                &lt;provider name=&quot;elytron-cs-keystore&quot; enabled=&quot;true&quot;&gt;
-                    &lt;properties&gt;
-                        &lt;property name=&quot;location&quot; value=&quot;/home/test/test-store.p12&quot;/&gt;
-                        &lt;property name=&quot;secret&quot; value=&quot;testpwd1!&quot;/&gt;
-                        &lt;property name=&quot;keyStoreType&quot; value=&quot;PKCS12&quot;/&gt;
-                    &lt;/properties&gt;
-                &lt;/provider&gt;
-            &lt;/spi&gt;
-
-         &lt;credential-stores&gt;
-                &lt;credential-store name=&quot;test-store&quot; location=&quot;/home/test/test-store.p12&quot; create=&quot;true&quot;&gt;
-                    &lt;implementation-properties&gt;
-                        &lt;property name=&quot;keyStoreType&quot; value=&quot;PKCS12&quot;/&gt;
-                    &lt;/implementation-properties&gt;
-                    &lt;credential-reference clear-text=&quot;testpwd1!&quot;/&gt;
-                &lt;/credential-store&gt;
-         &lt;/credential-stores&gt;</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>In the LDAP provider, replace <code>binDN credential</code> with <code>${vault.ldap_secret}</code>.</p>
-</li>
-<li>
-<p>Test your LDAP connection.</p>
-<div class="paragraph">
-<div class="title">LDAP Vault</div>
-<p><span class="image"><img src="./images/ldap-vault.png" alt="LDAP Vault"></span></p>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="masking-the-password-in-the-credential-store-and-vault"><a class="anchor" href="#masking-the-password-in-the-credential-store-and-vault"></a>Masking the password in the credential store and vault</h4>
-<div class="paragraph">
-<p>You can now update the credential store and vault to have passwords that use a mask provided by <code>elytron-tool.sh</code>.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Create a masked password using values for the <code>salt</code> and the <code>iteration</code> parameters:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ EAP_HOME/bin/elytron-tool.sh mask --salt SALT --iteration ITERATION_COUNT --secret PASSWORD</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">elytron-tool.sh mask --salt 12345678 --iteration 123 --secret testpwd1!
-MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Update the Elytron credential store configuration to use the masked password.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=elytron/credential-store=cs-store:write-attribute(name=credential-reference.clear-text,value=&quot;MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123&quot;)</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Update the Keycloak vault configuration to use the masked password.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=keycloak-server/spi=vault/provider=elytron-cs-keystore:remove()
-/subsystem=keycloak-server/spi=vault/provider=elytron-cs-keystore:add(enabled=true, properties={location=&gt;/home/test/test-store.p12, secret=&gt;???MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123???, keyStoreType=&gt;PKCS12})</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The vault and credential store are now masked:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">        &lt;spi name=&quot;vault&quot;&gt;
-                &lt;default-provider&gt;elytron-cs-keystore&lt;/default-provider&gt;
-                &lt;provider name=&quot;elytron-cs-keystore&quot; enabled=&quot;true&quot;&gt;
-                    &lt;properties&gt;
-                        &lt;property name=&quot;location&quot; value=&quot;/home/test/test-store.p12&quot;/&gt;
-                        &lt;property name=&quot;secret&quot; value=&quot;MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123&quot;/&gt;
-                        &lt;property name=&quot;keyStoreType&quot; value=&quot;PKCS12&quot;/&gt;
-                    &lt;/properties&gt;
-                &lt;/provider&gt;
-            &lt;/spi&gt;
-         ....
-         .....
-         &lt;credential-stores&gt;
-                &lt;credential-store name=&quot;test-store&quot; location=&quot;/home/test/test-store.p12&quot; create=&quot;true&quot;&gt;
-                    &lt;implementation-properties&gt;
-                        &lt;property name=&quot;keyStoreType&quot; value=&quot;PKCS12&quot;/&gt;
-                    &lt;/implementation-properties&gt;
-                    &lt;credential-reference clear-text=&quot;MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123&quot;/&gt;
-                &lt;/credential-store&gt;
-         &lt;/credential-stores&gt;</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>You can now test the connection to the LDAP using <code>${vault.ldap_secret}</code>.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph _additional-resources">
-<div class="title">Additional resources</div>
-<p>For more information about the Elytron tool, see <a href="https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.3/html/how_to_configure_server_security/securely_storing_credentials#cred_store_elytron_client">Using Credential Stores with Elytron Client</a>.</p>
-</div>
 </div>
 </div>
 </div>
@@ -14879,7 +14236,7 @@ MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123</code></pre>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Edit the <code>standalone.xml</code> file.</p>
+<p>Change the log level for the <code>org.keycloak.events</code> category</p>
 </li>
 <li>
 <p>Change the log level used by the Logging Event listener.</p>
@@ -14887,37 +14244,11 @@ MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123</code></pre>
 </ol>
 </div>
 <div class="paragraph">
-<p>Alternately, you can configure the log level for <code>org.keycloak.events</code>.</p>
-</div>
-<div class="paragraph">
-<p>For example, to change the log level add the following:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:logging:...</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    ...
-    <span class="tag">&lt;logger</span> <span class="attribute-name">category</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">org.keycloak.events</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;level</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">DEBUG</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-    <span class="tag">&lt;/logger&gt;</span>
-<span class="tag">&lt;/subsystem&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
 <p>To change the log level used by the Logging Event listener, add the following:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:keycloak-server:...</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    ...
-    <span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">eventsListener</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-      <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">jboss-logging</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;properties&gt;</span>
-          <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">success-level</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">info</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-          <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">error-level</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">error</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/properties&gt;</span>
-      <span class="tag">&lt;/provider&gt;</span>
-    <span class="tag">&lt;/spi&gt;</span>
-<span class="tag">&lt;/subsystem&gt;</span></code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">bin/kc.[sh|bat] start --spi-events-listener-jboss-logging-success-level=info --spi-events-listener-jboss-logging-error-level=error</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -14966,35 +14297,20 @@ MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123</code></pre>
 </ol>
 </div>
 <div class="paragraph">
-<p>You can exclude events by editing the <code>standalone.xml</code>, <code>standalone-ha.xml</code>, or <code>domain.xml</code> configuration files included in your distribution. For example:</p>
+<p>You can exclude events by using the <code>--spi-events-listener-email-exclude-events</code> argument. For example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">eventsListener</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-  <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">email</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    <span class="tag">&lt;properties&gt;</span>
-      <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">exclude-events</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">[</span><span class="entity">&amp;quot;</span><span class="content">UPDATE_TOTP</span><span class="entity">&amp;quot;</span><span class="content">,</span><span class="entity">&amp;quot;</span><span class="content">REMOVE_TOTP</span><span class="entity">&amp;quot;</span><span class="content">]</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-    <span class="tag">&lt;/properties&gt;</span>
-  <span class="tag">&lt;/provider&gt;</span>
-<span class="tag">&lt;/spi&gt;</span></code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">kc.[sh|bat] --spi-events-listener-email-exclude-events=UPDATE_TOTP,REMOVE_TOTP</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>You can set a maximum length of the Event detail in the database by editing the <code>standalone.xml</code>, <code>standalone-ha.xml</code>, or <code>domain.xml</code> configuration files. This setting is useful if a field (for example, redirect_uri) is long. For example:</p>
+<p>You can set a maximum length of the Event detail in the database by using the <code>--spi-events-listener-email-exclude-events</code> argument. This setting is useful if a field (for example, redirect_uri) is long. For example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">eventsStore</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">jpa</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;properties&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">max-detail-length</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">1000</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/properties&gt;</span>
-    <span class="tag">&lt;/provider&gt;</span>
-<span class="tag">&lt;/spi&gt;</span></code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">kc.[sh|bat] --spi-events-listener-email-max-detail-length=1000</code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p>See the <a href="https://www.keycloak.org/docs/latest/server_installation/">Server Installation and Configuration Guide</a> for more details on the location of the <code>standalone.xml</code>, <code>standalone-ha.xml</code>, or <code>domain.xml</code> files.</p>
 </div>
 </div>
 </div>
@@ -15066,265 +14382,6 @@ MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="assembly-exporting-importing_server_administration_guide"><a class="anchor" href="#assembly-exporting-importing_server_administration_guide"></a>Importing and exporting the database</h2>
-<div class="sectionbody">
-<div class="sidebarblock page-links">
-<div class="content">
-<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/export-import.adoc" target="_blank">Edit this section</a>
-<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/export-import.adoc" target="_blank">Report an issue</a>
-</div>
-</div>
-<div class="paragraph _abstract">
-<p>Keycloak includes the ability to export and import its entire database.</p>
-</div>
-<div class="paragraph">
-<p>You can migrate the whole Keycloak database from one environment to another or migrate to another database. The export/import triggers at server boot time, and its parameters pass through Java properties.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Because import and export trigger at server startup, take no actions on the server or the database during export/import.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>You can export/import your database to:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>A directory on the filesystem.</p>
-</li>
-<li>
-<p>A single JSON file on your filesystem.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>When importing from a directory, the filenames must follow this naming convention:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>&lt;REALM_NAME&gt;-realm.json. For example, "acme-roadrunner-affairs-realm.json" for the realm named "acme-roadrunner-affairs".</p>
-</li>
-<li>
-<p>&lt;REALM_NAME&gt;-users-&lt;INDEX&gt;.json. For example, "acme-roadrunner-affairs-users-0.json" for the first user&#8217;s file of the realm named "acme-roadrunner-affairs"</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>If you export to a directory, you can specify the number of users stored in each JSON file.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Exporting into single files can produce large files, so if your database contains more than 500 users, export to a directory and not a single file. Exporting many users into a directory performs optimally as the directory provider uses a separate transaction for each "page" (a file of users).</p>
-</div>
-<div class="paragraph">
-<p>The default count of users per file and per transaction is fifty, but you can override this number. See <a href="#_keycloak-migration-usersPerFile">keycloak.migration.usersPerFile</a> for more information.</p>
-</div>
-<div class="paragraph">
-<p>Exporting to or importing from a single file uses one transaction, which can impair performance if the database contains many users.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>To export into an unencrypted directory:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>bin/standalone.sh -Dkeycloak.migration.action=export
--Dkeycloak.migration.provider=dir -Dkeycloak.migration.dir=&lt;DIR TO EXPORT TO&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To export into single JSON file:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>bin/standalone.sh -Dkeycloak.migration.action=export
--Dkeycloak.migration.provider=singleFile -Dkeycloak.migration.file=&lt;FILE TO EXPORT TO&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Similarly, for importing,use <code>-Dkeycloak.migration.action=import</code> rather than <code>export</code>. For example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>bin/standalone.sh -Dkeycloak.migration.action=import
--Dkeycloak.migration.provider=singleFile -Dkeycloak.migration.file=&lt;FILE TO IMPORT&gt;
--Dkeycloak.migration.strategy=OVERWRITE_EXISTING</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Other command line options include:</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">-Dkeycloak.migration.realmName</dt>
-<dd>
-<p>Use this property to export one specifically named realm. If this parameter is not specified, all realms export.</p>
-</dd>
-<dt class="hdlist1">-Dkeycloak.migration.usersExportStrategy</dt>
-<dd>
-<p>This property specifies where users export to. Possible values include:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>DIFFERENT_FILES - Users export into different files subject to the maximum <a href="#_keycloak-migration-usersPerFile">number of users per file</a>. DIFFERENT_FILES is the default value for this property.</p>
-</li>
-<li>
-<p>SKIP - Keycloak skips exporting users.</p>
-</li>
-<li>
-<p>REALM_FILE - Users export to the same file with the realm settings. The file is similar to "foo-realm.json" with realm data and users.</p>
-</li>
-<li>
-<p>SAME_FILE - Users export to the same file but different from the realm file. The result is similar to "foo-realm.json" with realm data and "foo-users.json" with users.</p>
-</li>
-</ul>
-</div>
-</dd>
-</dl>
-</div>
-<div id="_keycloak-migration-usersPerFile" class="dlist">
-<dl>
-<dt class="hdlist1">-Dkeycloak.migration.usersPerFile</dt>
-<dd>
-<p>This property specifies the number of users per file and database transaction. By default, its value is fifty. Keycloak uses this property if keycloak.migration.usersExportStrategy is DIFFERENT_FILES.</p>
-</dd>
-<dt class="hdlist1">-Dkeycloak.migration.strategy</dt>
-<dd>
-<p>Keycloak uses this property when importing. It specifies how to proceed when a realm with the same name already exists in the database.</p>
-</dd>
-</dl>
-</div>
-<div class="paragraph">
-<p>Possible values are:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>IGNORE_EXISTING - Do not import a realm if a realm with the same name already exists.</p>
-</li>
-<li>
-<p>OVERWRITE_EXISTING - Remove the existing realm and import the realm again with new data from the JSON file. Use this value to migrate from one environment to another fully.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>If you are importing files that are not from a Keycloak export, use the <code>keycloak.import</code> option. If you are importing more than one realm file, specify a comma-separated list of filenames. A list of filenames is more suitable than the previous cases because this happens after Keycloak initializes the master realm.</p>
-</div>
-<div class="paragraph">
-<p>Examples:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>-Dkeycloak.import=/tmp/realm1.json</p>
-</li>
-<li>
-<p>-Dkeycloak.import=/tmp/realm1.json,/tmp/realm2.json</p>
-</li>
-</ul>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>You cannot use the <code>keycloak.import</code> parameter with <code>keycloak.migration.X</code> parameters. If you use these parameters together, Keycloak ignores the <code>keycloak.import</code> parameter. The <code>keycloak.import</code> mechanism ignores the realms which already exist in Keycloak. The <code>keycloak.import</code> mechanism is convenient for development purposes, but if more flexibility is needed, use the <code>keycloak.migration.X</code> parameters.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="sect2">
-<h3 id="admin-console-export-import"><a class="anchor" href="#admin-console-export-import"></a>Admin console export/import</h3>
-<div class="paragraph">
-<p>Keycloak imports most resources from the Admin Console as well as exporting most resources. Keycloak does not support the export of users.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Keycloak masks attributes containing secrets or private information in the export file. Export files from the Admin Console are not suitable for backups or data transfer between servers. Only boot-time exports are suitable for backups or data transfer between servers.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>You can use the files created during an export to import from the Admin Console. You can export from one realm and import to another realm, or you can export from one server and import to another.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The admin console export/import permits one realm per file only.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The Admin Console import can overwrite resources. Use this feature with caution, especially on a production server. JSON files from the Admin Console Export operation are not appropriate for data import because they contain invalid values for secrets.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>You can use the Admin Console to export clients, groups, and roles. If the database in your realm contains many clients, groups, and roles, the export may take a long time to conclude, and the Keycloak server may not respond to user requests. Use this feature with caution, especially on a production server.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
 <h2 id="mitigating-security-threats"><a class="anchor" href="#mitigating-security-threats"></a>Mitigating security threats</h2>
 <div class="sectionbody">
 <div class="sidebarblock page-links">
@@ -15352,122 +14409,6 @@ MASK-3BUbFEyWu0lRAu8.fCqyUk;12345678;123</code></pre>
 </div>
 <div class="paragraph">
 <p>The hostname&#8217;s Service Provider Interface (SPI) provides a way to configure the hostname for requests. You can use this built-in provider to set a fixed URL for frontend requests while allowing backend requests based on the request URI. If the built-in provider does not have the required capability, you can develop a customized provider.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="admin-endpoints-and-admin-console"><a class="anchor" href="#admin-endpoints-and-admin-console"></a>Admin endpoints and Admin Console</h3>
-<div class="sidebarblock page-links">
-<div class="content">
-<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/threat/admin.adoc" target="_blank">Edit this section</a>
-<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/threat/admin.adoc" target="_blank">Report an issue</a>
-</div>
-</div>
-<div class="paragraph">
-<p>Keycloak exposes the administrative REST API and the web console on the same port as non-administrative usage by default. Do not expose administrative endpoints externally if external access is not necessary. If you need to expose administrative endpoints externally, you can expose them directly in Keycloak or use a proxy.</p>
-</div>
-<div class="paragraph">
-<p>To expose endpoints by using a proxy, consult the documentation for the proxy. You need to control access to requests to the <code>/auth/admin</code> endpoint.</p>
-</div>
-<div class="paragraph">
-<p>Two options are available in Keycloak to expose endpoints directly, IP restriction and separate ports.</p>
-</div>
-<div class="paragraph">
-<p>When the Admin Console becomes inaccessible on the frontend URL of Keycloak, configure a fixed admin URL in the default hostname provider.</p>
-</div>
-<div class="sect3">
-<h4 id="ip-restriction"><a class="anchor" href="#ip-restriction"></a>IP restriction</h4>
-<div class="paragraph">
-<p>You can restrict access to <code>/auth/admin</code> to only specific IP addresses. For example, restrict access to <code>/auth/admin</code> to IP addresses in the range <code>10.0.0.1</code> to <code>10.0.0.255</code>.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:12.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    ...
-    <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        ...
-        <span class="tag">&lt;host</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-host</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">alias</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">localhost</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-            ...
-            <span class="tag">&lt;filter-ref</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ipAccess</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/host&gt;</span>
-    <span class="tag">&lt;/server&gt;</span>
-    <span class="tag">&lt;filters&gt;</span>
-        <span class="tag">&lt;expression-filter</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ipAccess</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">expression</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">path-prefix('/auth/admin') -</span></span><span class="error">&gt;</span> ip-access-control(acl={'10.0.0.0/24 allow'})&quot;/<span class="error">&gt;</span>
-    <span class="tag">&lt;/filters&gt;</span>
-    ...
-<span class="tag">&lt;/subsystem&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You can also restrict access to specific IP addresses by using these CLI commands.:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=undertow/configuration=filter/expression-filter=ipAccess:add(,expression=&quot;path-prefix[/auth/admin] -&gt; ip-access-control(acl={'10.0.0.0/24 allow'})&quot;)
-/subsystem=undertow/server=default-server/host=default-host/filter-ref=ipAccess:add()</code></pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>For IP restriction using a proxy, configure the proxy to ensure Keycloak receives the client IP address and not the proxy IP address.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect3">
-<h4 id="port-restriction"><a class="anchor" href="#port-restriction"></a>Port restriction</h4>
-<div class="paragraph">
-<p>You can expose <code>/auth/admin</code> to a different unexposed port. For example, expose <code>/auth/admin</code> on port <code>8444</code> and prevent access to the default port <code>8443</code>.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:undertow:12.0</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    ...
-    <span class="tag">&lt;server</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-server</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        ...
-        <span class="tag">&lt;https-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">security-realm</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ApplicationRealm</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enable-http2</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;https-listener</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https-admin</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">socket-binding</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https-admin</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">security-realm</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ApplicationRealm</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enable-http2</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;host</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">default-host</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">alias</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">localhost</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-            ...
-            <span class="tag">&lt;filter-ref</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">portAccess</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/host&gt;</span>
-    <span class="tag">&lt;/server&gt;</span>
-    <span class="tag">&lt;filters&gt;</span>
-        <span class="tag">&lt;expression-filter</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">portAccess</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">expression</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">path-prefix('/auth/admin') and not equals(%p, 8444) -</span></span><span class="error">&gt;</span> response-code(403)&quot;/<span class="error">&gt;</span>
-    <span class="tag">&lt;/filters&gt;</span>
-    ...
-<span class="tag">&lt;/subsystem&gt;</span>
-
-...
-
-<span class="tag">&lt;socket-binding-group</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">standard-sockets</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">default-interface</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">public</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">port-offset</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${jboss.socket.binding.port-offset:0}</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    ...
-    <span class="tag">&lt;socket-binding</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">port</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${jboss.https.port:8443}</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-    <span class="tag">&lt;socket-binding</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https-admin</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">port</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">${jboss.https.port:8444}</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-    ...
-<span class="tag">&lt;/socket-binding-group&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You can expose <code>/auth/admin</code> on port <code>8444</code> and prevent access to the default port <code>8443</code> by using CLI commands:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">/socket-binding-group=standard-sockets/socket-binding=https-admin/:add(port=8444)
-
-/subsystem=undertow/server=default-server/https-listener=https-admin:add(socket-binding=https-admin, security-realm=ApplicationRealm, enable-http2=true)
-
-/subsystem=undertow/configuration=filter/expression-filter=portAccess:add(,expression=&quot;path-prefix('/auth/admin') and not equals(%p, 8444) -&gt; response-code(403)&quot;)
-/subsystem=undertow/server=default-server/host=default-host/filter-ref=portAccess:add()</code></pre>
-</div>
-</div>
 </div>
 </div>
 <div class="sect2">
@@ -15784,30 +14725,14 @@ at the server level.</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>System administrators have a way to add additional attributes to this list. The configuration is currently available at the server level.
-You can add this configuration to your <code>standalone(-*).xml</code> files to the configuration of the Keycloak server subsystem:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">&lt;spi name="userProfile"&gt;
-    &lt;provider name="legacy-user-profile" enabled="true"&gt;
-        &lt;properties&gt;
-            &lt;property name="read-only-attributes" value="[&amp;quot;foo&amp;quot;,&amp;quot;bar*&amp;quot;]"/&gt;
-            &lt;property name="admin-read-only-attributes" value="[&amp;quot;foo&amp;quot;]"/&gt;
-        &lt;/properties&gt;
-    &lt;/provider&gt;
-&lt;/spi&gt;</pre>
-</div>
+<p>System administrators have a way to add additional attributes to this list. The configuration is currently available at the server level.</p>
 </div>
 <div class="paragraph">
-<p>The same can be configured with the usage of the JBoss CLI with the commands:</p>
+<p>You can add this configuration by using the <code>spi-user-profile-legacy-user-profile-read-only-attributes</code> and <code>`spi-user-profile-legacy-user-profile-admin-read-only-attributes</code> options. For example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">/subsystem=keycloak-server/spi=userProfile/:add
-/subsystem=keycloak-server/spi=userProfile/provider=legacy-user-profile/:add(properties={},enabled=true)
-/subsystem=keycloak-server/spi=userProfile/provider=legacy-user-profile/:map-put(name=properties,key=read-only-attributes,value=[foo,bar*])
-/subsystem=keycloak-server/spi=userProfile/provider=legacy-user-profile/:map-put(name=properties,key=admin-read-only-attributes,value=[foo])</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="bash">kc.[sh|bat] start --spi-user-profile-legacy-user-profile-read-only-attributes=foo,bar*</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -16071,27 +14996,7 @@ and update the authentication session record in the owner node which involves a 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;subsystem</span> <span class="attribute-name">xmlns</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">urn:jboss:domain:keycloak-server:1.1</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    ...
-    <span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">authenticationSessions</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;default-provider&gt;</span>infinispan<span class="tag">&lt;/default-provider&gt;</span>
-        <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">infinispan</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-            <span class="tag">&lt;properties&gt;</span>
-                <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">authSessionsLimit</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">100</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-            <span class="tag">&lt;/properties&gt;</span>
-        <span class="tag">&lt;/provider&gt;</span>
-    <span class="tag">&lt;/spi&gt;</span>
-    ...
-<span class="tag">&lt;/subsystem&gt;</span></code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Equivalent configuration using CLI commands:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">/subsystem=keycloak-server/spi=authenticationSessions:add(default-provider=infinispan)
-/subsystem=keycloak-server/spi=authenticationSessions/provider=infinispan:add(properties={authSessionsLimit =&gt; &quot;100&quot;},enabled=true)</code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">bin/kc.[sh|bat] start --spi-authentication-sessions-infinispan-auth-sessions-limit=100</code></pre>
 </div>
 </div>
 </div>
@@ -16141,7 +15046,7 @@ and update the authentication session record in the owner node which involves a 
 <p>Make note of the realm name and IP address for the Keycloak server where your account exists.</p>
 </li>
 <li>
-<p>In a web browser, enter a URL in this format: <code>&lt;server-root&gt;/auth/realms/{realm-name}/account</code>.</p>
+<p>In a web browser, enter a URL in this format: <code>&lt;server-root&gt;/realms/{realm-name}/account</code>.</p>
 </li>
 <li>
 <p>Enter your login name and password.</p>
@@ -16457,7 +15362,7 @@ c:\&gt; kcadm</pre>
 <p>Linux:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh config credentials --server http://localhost:8080/auth --realm demo --user admin --client admin
+<pre class="nowrap">$ kcadm.sh config credentials --server http://localhost:8080 --realm demo --user admin --client admin
 $ kcadm.sh create realms -s realm=demorealm -s enabled=true -o
 $ CID=$(kcadm.sh create clients -r demorealm -s clientId=my_client -s 'redirectUris=["http://localhost:8980/myapp/*"]' -i)
 $ kcadm.sh get clients/$CID/installation/providers/keycloak-oidc-keycloak-json</pre>
@@ -16468,7 +15373,7 @@ $ kcadm.sh get clients/$CID/installation/providers/keycloak-oidc-keycloak-json</
 <p>Windows:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">c:\&gt; kcadm config credentials --server http://localhost:8080/auth --realm demo --user admin --client admin
+<pre class="nowrap">c:\&gt; kcadm config credentials --server http://localhost:8080 --realm demo --user admin --client admin
 c:\&gt; kcadm create realms -s realm=demorealm -s enabled=true -o
 c:\&gt; kcadm create clients -r demorealm -s clientId=my_client -s "redirectUris=[\"http://localhost:8980/myapp/*\"]" -i &gt; clientid.txt
 c:\&gt; set /p CID=&lt;clientid.txt
@@ -16540,7 +15445,7 @@ c:\&gt; kcadm get clients/%CID%/installation/providers/keycloak-oidc-keycloak-js
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh config credentials --server http://localhost:8080/auth --realm master --user admin --password admin</pre>
+<pre class="nowrap">$ kcadm.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -16554,7 +15459,7 @@ c:\&gt; kcadm get clients/%CID%/installation/providers/keycloak-oidc-keycloak-js
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh get realms --no-config --server http://localhost:8080/auth --realm master --user admin --password admin</pre>
+<pre class="nowrap">$ kcadm.sh get realms --no-config --server http://localhost:8080 --realm master --user admin --password admin</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -16621,10 +15526,10 @@ ENDPOINT is a target resource URI and can be absolute (starting with <code>http:
 </div>
 </div>
 <div class="paragraph">
-<p>For example, if you authenticate against the server <a href="http://localhost:8080/auth" class="bare">http://localhost:8080/auth</a> and realm is <code>master</code>, using <code>users</code> as ENDPOINT creates the <a href="http://localhost:8080/auth/admin/realms/master/users" class="bare">http://localhost:8080/auth/admin/realms/master/users</a> resource URL.</p>
+<p>For example, if you authenticate against the server <a href="http://localhost:8080" class="bare">http://localhost:8080</a> and realm is <code>master</code>, using <code>users</code> as ENDPOINT creates the <a href="http://localhost:8080/admin/realms/master/users" class="bare">http://localhost:8080/admin/realms/master/users</a> resource URL.</p>
 </div>
 <div class="paragraph">
-<p>If you set ENDPOINT to <code>clients</code>, the effective resource URI is <a href="http://localhost:8080/auth/admin/realms/master/clients" class="bare">http://localhost:8080/auth/admin/realms/master/clients</a>.</p>
+<p>If you set ENDPOINT to <code>clients</code>, the effective resource URI is <a href="http://localhost:8080/admin/realms/master/clients" class="bare">http://localhost:8080/admin/realms/master/clients</a>.</p>
 </div>
 <div class="paragraph">
 <p>Keycloak has a <code>realms</code> endpoint that is the container for realms. It resolves to:</p>
@@ -16650,12 +15555,12 @@ ENDPOINT is a target resource URI and can be absolute (starting with <code>http:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh config credentials --server http://localhost:8080/auth --realm master --user admin --password admin
+<pre class="nowrap">$ kcadm.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin
 $ kcadm.sh create users -s username=testuser -s enabled=true -r demorealm</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>In this example, you start a session authenticated as the <code>admin</code> user in the <code>master</code> realm. You then perform a POST call against the resource URL <code><a href="http://localhost:8080/auth/admin/realms/demorealm/users" class="bare">http://localhost:8080/auth/admin/realms/demorealm/users</a></code>.</p>
+<p>In this example, you start a session authenticated as the <code>admin</code> user in the <code>master</code> realm. You then perform a POST call against the resource URL <code><a href="http://localhost:8080/admin/realms/demorealm/users" class="bare">http://localhost:8080/admin/realms/demorealm/users</a></code>.</p>
 </div>
 <div class="paragraph">
 <p>The <code>create</code> and <code>update</code> commands send a JSON body to the server. You can use <code>-f FILENAME</code> to read a pre-made document from a file. When you can use the <code>-f -</code> option, Keycloak reads the message body from the standard input. You can specify individual attributes and their values, as seen in the <code>create users</code> example. Keycloak composes the attributes into a JSON body and sends them to the server.</p>
@@ -17672,7 +16577,7 @@ $ kcadm.sh create clear-keys-cache -r demorealm -s realm=demorealm</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh get http://localhost:8080/auth/admin/realms/demorealm/clients/8f271c35-44e3-446f-8953-b0893810ebe7/installation/providers/docker-v2-compose-yaml -r demorealm &gt; keycloak-docker-compose-yaml.zip</pre>
+<pre class="nowrap">$ kcadm.sh get http://localhost:8080/admin/realms/demorealm/clients/8f271c35-44e3-446f-8953-b0893810ebe7/installation/providers/docker-v2-compose-yaml -r demorealm &gt; keycloak-docker-compose-yaml.zip</pre>
 </div>
 </div>
 <h4 id="updating-a-client" class="discrete">Updating a client</h4>
@@ -18148,7 +17053,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh create groups/51204821-0580-46db-8f2d-27106c6b5ded/children -r demorealm -s id=08d410c6-d585-4059-bb07-54dcb92c5094</pre>
+<pre class="nowrap">$ kcadm.sh create groups/51204821-0580-46db-8f2d-27106c6b5ded/children -r demorealm -s id=08d410c6-d585-4059-bb07-54dcb92c5094 -s name=SubGroup</pre>
 </div>
 </div>
 <h4 id="get-groups-for-a-specific-user" class="discrete">Get groups for a specific user</h4>
@@ -18350,7 +17255,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh create identity-provider/instances -r demorealm -s alias=keycloak-oidc -s providerId=keycloak-oidc -s enabled=true -s 'config.useJwksUrl="true"' -s config.authorizationUrl=http://localhost:8180/auth/realms/demorealm/protocol/openid-connect/auth -s config.tokenUrl=http://localhost:8180/auth/realms/demorealm/protocol/openid-connect/token -s config.clientId=demo-oidc-provider -s config.clientSecret=secret</pre>
+<pre class="nowrap">$ kcadm.sh create identity-provider/instances -r demorealm -s alias=keycloak-oidc -s providerId=keycloak-oidc -s enabled=true -s 'config.useJwksUrl="true"' -s config.authorizationUrl=http://localhost:8180/realms/demorealm/protocol/openid-connect/auth -s config.tokenUrl=http://localhost:8180/realms/demorealm/protocol/openid-connect/token -s config.clientId=demo-oidc-provider -s config.clientSecret=secret</pre>
 </div>
 </div>
 </li>
@@ -18376,7 +17281,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ kcadm.sh create identity-provider/instances -r demorealm -s alias=saml -s providerId=saml -s enabled=true -s 'config.useJwksUrl="true"' -s config.singleSignOnServiceUrl=http://localhost:8180/auth/realms/saml-broker-realm/protocol/saml -s config.nameIDPolicyFormat=urn:oasis:names:tc:SAML:2.0:nameid-format:persistent -s config.signatureAlgorithm=RSA_SHA256</pre>
+<pre class="nowrap">$ kcadm.sh create identity-provider/instances -r demorealm -s alias=saml -s providerId=saml -s enabled=true -s 'config.useJwksUrl="true"' -s config.singleSignOnServiceUrl=http://localhost:8180/realms/saml-broker-realm/protocol/saml -s config.nameIDPolicyFormat=urn:oasis:names:tc:SAML:2.0:nameid-format:persistent -s config.signatureAlgorithm=RSA_SHA256</pre>
 </div>
 </div>
 <h4 id="configuring-a-facebook-identity-provider" class="discrete">Configuring a Facebook identity provider</h4>
@@ -19022,7 +17927,7 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2022-01-25 10:50:30 UTC
+Last updated 2022-02-11 19:59:04 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
