@@ -1,0 +1,534 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Keycloak - Server - Running Keycloak in a container</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Running Keycloak in a container</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Running Keycloak in a container</h1>
+                    <span class="text-muted">Learn how to run Keycloak from a container image</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak handles containerized environments such as Kubernetes or OpenShift as first-class citizens. This guide describes how to optimize and run the Keycloak container image to provide the best experience running a Keycloak container.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_an_optimized_container_image">Creating an optimized container image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For the best start up of your Keycloak container, build an optimized container image by running the <code>build</code> step before starting.</p>
+</div>
+<div class="sect2">
+<h3 id="_building_your_optimized_keycloak_docker_image">Building your optimized Keycloak docker image</h3>
+<div class="paragraph">
+<p>The following <code>Dockerfile</code> creates a pre-configured Keycloak image that enables the metrics endpoint, enables the token exchange feature, and uses a PostgreSQL database.</p>
+</div>
+<div class="listingblock">
+<div class="title">Dockerfile:</div>
+<div class="content">
+<pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">FROM quay.io/keycloak/keycloak-x:latest as builder
+
+ENV KC_METRICS_ENABLED=true
+ENV KC_FEATURES=token-exchange
+ENV KC_DB=postgres
+RUN /opt/keycloak/bin/kc.sh build
+
+FROM quay.io/keycloak/keycloak-x:latest
+COPY --from=builder /opt/keycloak/lib/quarkus/ /opt/keycloak/lib/quarkus/
+WORKDIR /opt/keycloak
+# for demonstration purposes only, please make sure to use proper certificates in production instead
+RUN keytool -genkeypair -storepass password -storetype PKCS12 -keyalg RSA -keysize 2048 -dname "CN=server" -alias server -ext "SAN:c=DNS:localhost,IP:127.0.0.1" -keystore conf/server.keystore
+ENV KEYCLOAK_ADMIN=admin
+ENV KEYCLOAK_ADMIN_PASSWORD=change_me
+# change these values to point to a running postgres instance
+ENV KC_DB_URL=&lt;DBURL&gt;
+ENV KC_DB_USERNAME=&lt;DBUSERNAME&gt;
+ENV KC_DB_PASSWORD=&lt;DBPASSWORD&gt;
+ENV KC_HOSTNAME=localhost:8443
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start"]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The build process includes multiple stages:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>build</code> command applies options that create an optimized image.</p>
+</li>
+<li>
+<p>The files generated by the <code>build</code> process are copied into a new image.</p>
+</li>
+<li>
+<p>In this runner image, the specific run configuration is applied. That configuration contains a keystore, the environment-specific hostname configuration, and database configuration.</p>
+</li>
+<li>
+<p>In the entrypoint, the <code>start</code> command starts the image in production mode.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This example uses a multi-staged build to demonstrate the build and run steps.  However, you can also run this process as a single-staged docker build.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_building_the_docker_image">Building the docker image</h3>
+<div class="paragraph">
+<p>To build the actual docker image, run the following command from the directory containing your Dockerfile:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">podman|docker build . -t prebuilt_keycloak</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_starting_the_optimized_keycloak_docker_image">Starting the optimized Keycloak docker image</h3>
+<div class="paragraph">
+<p>To start the image, run:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">podman|docker run --name optimized_keycloak -p 8443:8443 prebuilt_keycloak</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keycloak starts in production mode, using only secured HTTPS communication, and is available on <code><a href="https://localhost:8443" class="bare">https://localhost:8443</a></code>.
+Notice that the startup log contains the following line:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">INFO  [org.key.com.Profile] (main) Preview feature enabled: token_exchange</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This message shows the desired feature is enabled.</p>
+</div>
+<div class="paragraph">
+<p>Opening up <code><a href="https://localhost:8443/metrics" class="bare">https://localhost:8443/metrics</a></code> leads to a page containing operational metrics that could be used by your monitoring solution.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trying_keycloak_in_development_mode">Trying Keycloak in development mode</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The easiest way to try Keycloak from a container for development or testing purposes is to use the Development mode.
+You use the <code>start-dev</code> command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">podman|docker run --name keycloak_test -p 8080:8080 \
+        -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=change_me \
+        quay.io/keycloak/keycloak-x:latest \
+        start-dev</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Invoking this command starts the Keycloak server in development mode.</p>
+</div>
+<div class="paragraph">
+<p>This mode should be strictly avoided in production environments because it has insecure defaults.
+For more information about running Keycloak in production, take a look at the <a href="https://www.keycloak.org/server/configuration-production">Configuring Keycloak for production</a>
+ guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_use_auto_build_to_run_a_standard_keycloak_container">Use auto-build to run a standard keycloak container</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In keeping with concepts such as immutable infrastructure, containers need to be re-provisioned routinely.
+In these environments, you need containers that start fast, therefore you need to create an optimized image as described in the preceding section.
+However, if your environment has different requirements, you can run a standard Keycloak image using the <code>--auto-build</code> flag.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">podman|docker run --name keycloak_auto_build -p 8080:8080 \
+        -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=change_me \
+        quay.io/keycloak/keycloak-x:latest \
+        start \
+        --auto-build \
+        --db=postgres --features=token-exchange \
+        --db-url=&lt;JDBC-URL&gt; --db-username=&lt;DB-USER&gt; --db-password=&lt;DB-PASSWORD&gt; \
+        --https-key-store-file=&lt;file&gt; --https-key-store-password=&lt;password&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Running this command starts a Keycloak server that detects and applies the build options first.
+In the example, the line  <code>--db=postgres --features=token-exchange</code> sets the database vendor to PostgreSQL and enables the token exchange feature.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak then starts up and applies the configuration for the specific environment.
+This approach significantly increases startup time and creates an image that is mutable, which is not the best practice.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 57.1428%;">
+<col style="width: 19.0476%;">
+<col style="width: 19.0476%;">
+<col style="width: 4.762%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The database vendor.</span></p>
+</div>
+<table id="option-extended-db" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">Possible values are: dev-file, dev-mem, mariadb, mssql, mysql, oracle, postgres</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">dev-file, dev-mem, mariadb, mssql, mysql, oracle, postgres</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-password</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the database user.</span></p>
+</div>
+<table id="option-extended-db-password" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-password</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_PASSWORD</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-url</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The full database JDBC URL.</span></p>
+</div>
+<table id="option-extended-db-url" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If not provided, a default URL is set based on the selected database vendor. For instance, if using 'postgres', the default JDBC URL would be 'jdbc:postgresql://localhost/keycloak'.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-url</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_URL</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-username</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The username of the database user.</span></p>
+</div>
+<table id="option-extended-db-username" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-username</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_USERNAME</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">features</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables a set of one or more features.</span></p>
+</div>
+<table id="option-extended-features" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--features</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_FEATURES</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">authorization, account2, account-api, admin-fine-grained-authz, admin2, docker, impersonation, openshift-integration, scripts, token-exchange, upload-scripts, web-authn, client-policies, ciba, map-storage, par, declarative-user-profile, dynamic-scopes, preview</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">hostname</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Hostname for the Keycloak server.</span></p>
+</div>
+<table id="option-extended-hostname" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--hostname</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HOSTNAME</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-key-store-file</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The key store which holds the certificate information instead of specifying separate files.</span></p>
+</div>
+<table id="option-extended-https-key-store-file" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-key-store-file</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_FILE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-key-store-password</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the key store file.</span></p>
+</div>
+<table id="option-extended-https-key-store-password" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-key-store-password</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_PASSWORD</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">password</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">metrics-enabled</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose metrics and healthcheck.</span></p>
+</div>
+<table id="option-extended-metrics-enabled" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If enabled, metrics are available at the '/metrics' endpoint and healthcheck at the '/health' endpoint.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--metrics-enabled</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_METRICS_ENABLED</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">true, false</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">false</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/containers.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

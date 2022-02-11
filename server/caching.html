@@ -1,0 +1,554 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Keycloak - Server - Configuring distributed caches</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Configuring distributed caches</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Configuring distributed caches</h1>
+                    <span class="text-muted">Understand how to configure the caching layer</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak is designed for high availability and multi-node clustered setups.
+The current distributed cache implementation is built on top of <a href="https://infinispan.org">Infinispan</a>, a high-performance, distributable in-memory data grid.</p>
+</div>
+<div class="paragraph">
+<p>All available cache options are build options, so they need to be applied to a <code>build</code> of Keycloak before starting.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_distributed_caching">Enable distributed caching</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When you start Keycloak in production mode, by using the <code>start</code> command, caching is enabled and all Keycloak nodes in your network are discovered.</p>
+</div>
+<div class="paragraph">
+<p>To explicitly enable distributed infinispan caching, enter this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --cache=ispn</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you start Keycloak in development mode, by using the <code>start-dev</code> command, Keycloak uses only local caches, applying the <code>--cache=local</code> option.
+The <code>local</code> cache mode is intended only for development and testing purposes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_caches">Configuring caches</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides a cache configuration file with sensible defaults located at <code>conf/cache-ispn.xml</code>.</p>
+</div>
+<div class="paragraph">
+<p>The cache configuration is a regular <a href="https://infinispan.org/docs/stable/titles/configuring/configuring.html">Infinispan configuration file</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="_cache_types_and_defaults">Cache types and defaults</h3>
+<div class="paragraph">
+<div class="title">Local caches</div>
+<p>Keycloak caches persistent data locally to avoid unnecessary database requests.
+The following caches are used:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>realms</p>
+</li>
+<li>
+<p>users</p>
+</li>
+<li>
+<p>authorization</p>
+</li>
+<li>
+<p>keys</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">Invalidation of local caches</div>
+<p>Local caching improves performance, but adds a challenge in multi-node setups.
+When one Keycloak node updates data in the shared database, all other nodes need to be aware of it, so they invalidate that data from their caches.
+The <code>work</code> cache is used for sending these invalidation messages.</p>
+</div>
+<div class="paragraph">
+<div class="title">Authentication sessions</div>
+<p>Authentication sessions are started when an unauthenticated user or service tries to log in to Keycloak.
+The <code>authenticationSessions</code> distributed cache is used to save data during authentication of a particular user.</p>
+</div>
+<div class="paragraph">
+<div class="title">User sessions</div>
+<p>The following are the distributed caches for sessions of authenticated users and services:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>sessions</p>
+</li>
+<li>
+<p>clientSessions</p>
+</li>
+<li>
+<p>offlineSessions</p>
+</li>
+<li>
+<p>offlineClientSessions</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These caches are used to save data about user sessions and clients attached to the sessions.</p>
+</div>
+<div class="paragraph">
+<div class="title">Password brute force detection</div>
+<p>The <code>loginFailures</code> distributed cache is used to track data about failed login attempts.
+This cache is needed for the Brute Force Protection feature to work in a multi-node Keycloak setup.</p>
+</div>
+<div class="paragraph">
+<div class="title">Action tokens</div>
+<p>Action tokens are used for scenarios when a user needs to confirm an action asynchronously, for example in the emails sent by the forgot password flow.
+The <code>actionTokens</code> distributed cache is used to track metadata about action tokens.</p>
+</div>
+<div class="paragraph">
+<p>The following table gives an overview of the specific caches Keycloak uses.
+You configure these caches in <code>conf/cache-ispn.xml</code>:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache Type</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">realms</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted realm data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">users</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted user data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">authorization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted authorization data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">keys</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache external public keys</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">work</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Replicated</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Propagate invalidation messages across nodes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches user sessions, when user is authenticated</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">authenticationSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches authentication sessions, when user is authenticating</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">offlineSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches offline sessions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">clientSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches sessions for each client a user is authenticated with</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">offlineClientSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches offline client sessions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">loginFailures</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">keep track of failed logins, fraud detection</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">actionTokens</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches action Tokens</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Local caches for realms, users, and authorization are configured to have 10,000 entries per default.
+The local key cache can hold up to 1,000 entries per default and defaults to expire every one hour.
+Therefore, keys are forced to be periodically downloaded from external clients or identity providers.</p>
+</div>
+<div class="paragraph">
+<p>Each distributed cache has two owners per default, which means that two nodes have a copy of the specific cache entries.
+Non-owner nodes query the owners of a specific cache to obtain data.
+When both owner nodes are offline, all data is lost.
+This situation usually leads to users being logged out at the next request and having to log in again.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_specify_your_own_cache_configuration_file">Specify your own cache configuration file</h3>
+<div class="paragraph">
+<p>To specify your own cache configuration file, enter this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --cache-config-file=my-cache-file.xml</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_transport_stacks">Transport stacks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Transport stacks ensure that distributed cache nodes in a cluster communicate in a reliable fashion.
+Keycloak supports a wide range of transport stacks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>tcp</p>
+</li>
+<li>
+<p>udp</p>
+</li>
+<li>
+<p>kubernetes</p>
+</li>
+<li>
+<p>ec2</p>
+</li>
+<li>
+<p>azure</p>
+</li>
+<li>
+<p>google</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To apply a specific cache stack, enter this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --cache-stack=&lt;stack&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The default stack is set to <code>UDP</code> when distributed caches are enabled.</p>
+</div>
+<div class="sect2">
+<h3 id="_available_transport_stacks">Available transport stacks</h3>
+<div class="paragraph">
+<p>The following table shows transport stacks that are available without any further configuration than using the <code>--cache-stack</code> build option:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stack name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Transport protocol</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Discovery</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">tcp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MPING (uses UDP multicast).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">udp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDP multicast</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kubernetes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DNS_PING</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_additional_transport_stacks">Additional transport stacks</h3>
+<div class="paragraph">
+<p>The following table shows transport stacks that are supported by Keycloak, but need some extra steps to work.
+Note that <em>none</em>  of these stacks are Kubernetes / OpenShift stacks, so no need exists to enable the "google" stack if you want to run Keycloak on top of the Google Kubernetes engine.
+In that case, use the <code>kubernetes</code> stack.
+Instead, when you have a distributed cache setup running on AWS EC2 instances, you would need to set the stack to <code>ec2</code>, because ec2 does not support a default discovery mechanism such as <code>UDP</code>.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stack name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Transport protocol</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Discovery</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ec2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NATIVE_S3_PING</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">google</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GOOGLE_PING2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">azure</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AZURE_PING</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Cloud vendor specific stacks have additional dependencies for Keycloak.
+For more information and links to repositories with these dependencies, see the <a href="https://infinispan.org/docs/dev/titles/embedding/embedding.html#jgroups-cloud-discovery-protocols_cluster-transport">Infinispan documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p>To provide the dependencies to Keycloak, put the respective JAR in the <code>providers</code> directory and <code>build</code> Keycloak by entering this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --cache-stack=&lt;ec2|google|azure&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_securing_cache_communication">Securing cache communication</h3>
+<div class="paragraph">
+<p>The current Infinispan cache implementation should be secured by various security measures such as RBAC, ACLs, and Transport stack encryption. For more information about securing cache communication, see the <a href="https://infinispan.org/docs/dev/titles/security/security.html#">Infinispan security guide</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 57.1428%;">
+<col style="width: 19.0476%;">
+<col style="width: 19.0476%;">
+<col style="width: 4.762%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">cache</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Defines the cache mechanism for high-availability.</span></p>
+</div>
+<table id="option-extended-cache" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">By default, a 'ispn' cache is used to create a cluster between multiple server nodes. A 'local' cache disables clustering and is intended for development and testing purposes.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--cache</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_CACHE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">local, ispn</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">ispn</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">cache-config-file</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Defines the file from which cache configuration should be loaded from.</span></p>
+</div>
+<table id="option-extended-cache-config-file" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--cache-config-file</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_CACHE_CONFIG_FILE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">cache-stack</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Define the default stack to use for cluster communication and node discovery.</span></p>
+</div>
+<table id="option-extended-cache-stack" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">This option only takes effect if 'cache' is set to 'ispn'. Default: udp.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--cache-stack</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_CACHE_STACK</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">tcp, udp, kubernetes, ec2, azure, google</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/caching.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

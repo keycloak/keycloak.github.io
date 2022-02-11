@@ -1,0 +1,633 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Keycloak - Server - Configuring TLS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Configuring TLS</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Configuring TLS</h1>
+                    <span class="text-muted">Learn how to configure Keycloak's https certificates for ingoing and outgoing requests as well as mTLS.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Transport Layer Security (short: TLS) is crucial to exchange data over a secured channel.
+For production environments, you should never expose Keycloak endpoints through HTTP, as sensitive data is at the core of what Keycloak exchanges with other applications.
+In this guide, you will learn how to configure Keycloak to use HTTPS/TLS.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_tls_in_keycloak">Configuring TLS in Keycloak</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak can be configured to load the required certificate infrastructure using files in PEM format or from a Java Keystore.
+When both alternatives are configured, the PEM files takes precedence over the Java Keystores.</p>
+</div>
+<div class="sect2">
+<h3 id="_providing_certificates_in_pem_format">Providing certificates in PEM format</h3>
+<div class="paragraph">
+<p>When you use a pair of matching certificate and private key files in PEM format, you configure Keycloak to use them by running the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-certificate-file=/path/to/certfile.pem --https-certificate-key-file=/path/to/keyfile.pem</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keycloak creates a keystore out of these files in memory and uses this keystore afterwards.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_providing_a_java_keystore">Providing a Java Keystore</h3>
+<div class="paragraph">
+<p>When no keystore file is explicitly configured, but <code>http.enabled</code> is set to false, Keycloak looks for a <code>conf/server.keystore</code> file.</p>
+</div>
+<div class="paragraph">
+<p>As an alternative, you can use an existing keystore by running the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-key-store-file=/path/to/existing-keystore-file</code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_setting_the_keystore_password">Setting the Keystore password</h4>
+<div class="paragraph">
+<p>You can set a secure password for your keystore using the <code>https.key-store.password</code> option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-key-store-password=&lt;value&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If no password is set, the default password <code>password</code> is used.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_tls_protocols">Configuring TLS protocols</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, Keycloak does not enable deprecated TLS protocols.
+If your client supports only deprecated protocols, consider upgrading the client.
+However, as a temporary work-around, you can enable deprecated protocols by running the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-protocols=&lt;protocol&gt;[,&lt;protocol&gt;]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To also allow TLSv1.2, use a command such as the following: <code>kc.sh start --https-protocols=TLSv1.3,TLSv1.2</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_switching_the_https_port">Switching the HTTPS port</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak listens for HTTPS traffic on port <code>8443</code>. To change this port, use the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-port=&lt;port&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_a_truststore">Using a truststore</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak uses a truststore to store certificates to verify clients that are communicating with Keycloak.
+Examples of client requests are for using mutualTLS, certificate-bound tokens or X.509 authentication.
+This truststore is used for outgoing https requests as well as mTLS requests.</p>
+</div>
+<div class="paragraph">
+<p>You can configure the location of this truststore by running the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-trust-store-file=/path/to/file</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_setting_the_truststore_password">Setting the truststore password</h3>
+<div class="paragraph">
+<p>You can set a secure password for your truststore using the <code>https.trust-store.password</code> option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https.trust-store.password=&lt;value&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If no password is set, the default password <code>password</code> is used.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_securing_credentials">Securing credentials</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Avoid setting a password in plaintext by using the CLI or adding it to <code>conf/keycloak.conf</code> file.
+Instead use good practices such as using a vault / mounted secret. For more detail, see the Vault Guide / Production deployment guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enabling_mutual_tls">Enabling mutual TLS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Authentication using mTLS is disabled by default. To enable mTLS certificate handling when Keycloak is the server and needs to validate certificates from requests made to Keycloaks endpoints, put the appropriate certificates in Keycloaks truststore and use the following command to enable mTLS:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-client-auth=&lt;none|request|required&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Using the value <code>required</code> sets up Keycloak to always ask for certificates and fail if no certificate is provided in a request. By setting the value to <code>request</code>, Keycloak will also accept requests without a certificate and only validate the correctness of a certificate if it exists.</p>
+</div>
+<div class="paragraph">
+<p>Be aware that this is the basic certificate configuration for mTLS use cases where Keycloak acts as server. When Keycloak acts as client instead, e.g. when Keycloak tries to get a token from a token endpoint of a brokered identity provider that is secured by mTLS, you need to set up the HttpClient to provide the right certificates in the keystore for the outgoing request. To configure mTLS in these scenarios, see the <a href="https://www.keycloak.org/server/outgoinghttp">Configuring outgoing HTTP requests</a>
+ guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 57.1428%;">
+<col style="width: 19.0476%;">
+<col style="width: 19.0476%;">
+<col style="width: 4.762%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">http-enabled</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables the HTTP listener.</span></p>
+</div>
+<table id="option-extended-http-enabled" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--http-enabled</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTP_ENABLED</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">true, false</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">false</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-certificate-file</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a server certificate or certificate chain in PEM format.</span></p>
+</div>
+<table id="option-extended-https-certificate-file" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-certificate-file</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_CERTIFICATE_FILE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-certificate-key-file</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a private key in PEM format.</span></p>
+</div>
+<table id="option-extended-https-certificate-key-file" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-certificate-key-file</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_CERTIFICATE_KEY_FILE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-cipher-suites</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The cipher suites to use.</span></p>
+</div>
+<table id="option-extended-https-cipher-suites" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If none is given, a reasonable default is selected.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-cipher-suites</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_CIPHER_SUITES</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-client-auth</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Configures the server to require/request client authentication.</span></p>
+</div>
+<table id="option-extended-https-client-auth" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">Possible Values: none, request, required.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-client-auth</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_CLIENT_AUTH</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">none, request, required</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">none</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-key-store-file</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The key store which holds the certificate information instead of specifying separate files.</span></p>
+</div>
+<table id="option-extended-https-key-store-file" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-key-store-file</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_FILE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-key-store-password</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the key store file.</span></p>
+</div>
+<table id="option-extended-https-key-store-password" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-key-store-password</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_PASSWORD</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">password</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-key-store-type</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The type of the key store file.</span></p>
+</div>
+<table id="option-extended-https-key-store-type" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If not given, the type is automatically detected based on the file name.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-key-store-type</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_TYPE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-port</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The used HTTPS port.</span></p>
+</div>
+<table id="option-extended-https-port" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-port</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_PORT</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">8443</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-protocols</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The list of protocols to explicitly enable.</span></p>
+</div>
+<table id="option-extended-https-protocols" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-protocols</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_PROTOCOLS</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">TLSv1.3</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-trust-store-file</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The trust store which holds the certificate information of the certificates to trust.</span></p>
+</div>
+<table id="option-extended-https-trust-store-file" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-trust-store-file</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_TRUST_STORE_FILE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-trust-store-password</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the trust store file.</span></p>
+</div>
+<table id="option-extended-https-trust-store-password" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-trust-store-password</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_TRUST_STORE_PASSWORD</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">https-trust-store-type</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The type of the trust store file.</span></p>
+</div>
+<table id="option-extended-https-trust-store-type" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If not given, the type is automatically detected based on the file name.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--https-trust-store-type</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTPS_TRUST_STORE_TYPE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/enabletls.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

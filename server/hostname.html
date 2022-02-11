@@ -1,0 +1,510 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Keycloak - Server - Configuring the hostname</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Configuring the hostname</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Configuring the hostname</h1>
+                    <span class="text-muted">Learn how to configure the frontend and backchannel endpoints exposed by Keycloak.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>When running Keycloak in environments such as Kubernetes, OpenShift, or on-premise, you want to protect the internal URLs from exposure to the public facing internet.
+You want to use your public hostname.
+This guide describes how to configure Keycloak to use the right hostname for different scenarios.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_keycloak_api_endpoint_categories">Keycloak API Endpoint categories</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As this section explains, Keycloak exposes three API endpoint categories: frontend, backend, and administrative.
+Each category uses a specific base URL.</p>
+</div>
+<div class="sect2">
+<h3 id="_frontend_endpoints">Frontend Endpoints</h3>
+<div class="paragraph">
+<p>Frontend endpoints are used to externally access Keycloak.
+When no hostname is set, the base URL used for the frontend is taken from the incoming request.
+This choice has some major disadvantages.
+For example, in a high availability scenario, you may have multiple Keycloak instances.
+The choice of URL should not depend on the instance where the request lands.
+The URL should be used for all instances, so they are seen as one system from the outside.</p>
+</div>
+<div class="paragraph">
+<p>To set the hostname part of the frontend base URL, enter this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=&lt;value&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_backend_endpoints">Backend Endpoints</h3>
+<div class="paragraph">
+<p>Backend endpoints are used for direct communication between Keycloak and applications.
+Examples of backend endpoints are the Token endpoint and the User info endpoint.
+Backend endpoints are also taking the base URL from the request by default.
+To override this behavior, set the <code>hostname-strict-backchannel</code> configuration option by entering this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=&lt;value&gt; --hostname-strict-backchannel=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When all applications connected to Keycloak communicate through the public URL, set <code>hostname-strict-backchannel</code> to true.
+Otherwise, leave this parameter as false to allow internal applications to communicate with Keycloak through an internal URL.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_administrative_endpoints">Administrative Endpoints</h3>
+<div class="paragraph">
+<p>When the Admin Console is exposed on a different hostname, use <code>--hostname-admin</code> to link to it as shown in this example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=&lt;hostname&gt; --hostname-admin=&lt;adminHostname&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When <code>hostname-admin</code> is configured, all links and static resources used to render the Admin Console are served from the value you enter for <code>&lt;adminHostname&gt;</code> instead of the value for <code>&lt;hostname&gt;</code>.</p>
+</div>
+<div class="paragraph">
+<p>To reduce attack surface, the administration endpoints for Keycloak and the Admin Console should not be publicly accessible.
+Therefore, you can secure them by using a reverse proxy.
+For more information about which paths to expose using a reverse proxy, see the <a href="{links_server_proxy_url}">{links_server_proxy_name}</a>
+ Guide.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_overriding_the_hostname_path">Overriding the hostname path</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When running Keycloak behind a reverse proxy, you may expose Keycloak using a different context path such as <code>myproxy.url/mykeycloak</code>.
+To perform this action, you can override the hostname path to use the path defined in your reverse proxyas shown in this example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=myurl --hostname-path=mykeycloak</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>hostname-path</code> configuration takes effect when a reverse proxy is enabled.
+For details, see the <a href="{links_server_proxy_url}">{links_server_proxy_name}</a>
+ Guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_the_hostname_in_development_mode">Using the hostname in development mode</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You run Keycloak in development mode by using <code>start-dev</code>.
+In this mode, the hostname setting is optional.
+When it is omitted, the incoming request headers are used.</p>
+</div>
+<div class="sect2">
+<h3 id="_example_hostname_in_development_mode">Example: Hostname in development mode</h3>
+<div class="listingblock">
+<div class="title">Keycloak configuration:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start-dev</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Invoked command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl GET "https://localhost:8080/realms/master/.well-known/openid-configuration" | jq .</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Result:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Frontend endpoints: request://request:request -&gt; http://localhost:8080
+# Backend endpoints: request://request:request -&gt; http://localhost:8080</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example of using a curl GET request, the result shows the current OpenID Discovery configuration.
+All base URLS are taken from the incoming request, so <code><a href="http://localhost:8080" class="bare">http://localhost:8080</a></code> is used for all endpoints.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenarios">Example Scenarios</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following are more example scenarios and the corresponding commands for setting up a hostname.</p>
+</div>
+<div class="sect2">
+<h3 id="_assumptions_for_all_scenarios">Assumptions for all scenarios</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Keycloak is set up using HTTPS certificates and Port 8443.</p>
+</li>
+<li>
+<p><code>intlUrl</code> refers to an internal IP/DNS for Keycloak.</p>
+</li>
+<li>
+<p><code>myUrl</code> refers to an exposed public URL</p>
+</li>
+<li>
+<p>Keycloak runs in production mode using the <code>start</code> command.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_1_hostname_configuration_without_reverse_proxy">Example 1: Hostname configuration without reverse proxy</h3>
+<div class="listingblock">
+<div class="title">Keycloak configuration:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=myurl</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Invoked command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl GET "https://intUrl:8443/realms/master/.well-known/openid-configuration" | jq .</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Result:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Frontend Endpoints: request://myurl:request -&gt; https://myurl:8443
+# Backend Endpoints: request://request:request -&gt; https://internal:8443</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_2_hostname_configuration_without_reverse_proxy_strict_backchannel_enabled">Example 2: Hostname configuration without reverse proxy - strict backchannel enabled</h3>
+<div class="listingblock">
+<div class="title">Keycloak configuration:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=myurl --hostname-strict-backchannel=true</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Invoked command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl GET "https://intUrl:8443/realms/master/.well-known/openid-configuration" | jq .</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Result:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Frontend: request://myurl:request -&gt; https://myurl:8443
+# Backend: request://myurl:request -&gt; https://myurl:8443</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_3_hostname_configuration_with_reverse_proxy">Example 3: Hostname configuration with reverse proxy</h3>
+<div class="listingblock">
+<div class="title">Keycloak configuration:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=myurl --proxy=passthrough</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Invoked command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl GET "https://intUrl:8443/realms/master/.well-known/openid-configuration" | jq .</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Result:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Frontend Endpoints: request://myurl -&gt;  https://myurl
+# Backend Endpoints: request://request:request -&gt; https://internal:8443</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hostname_configuration_with_reverse_proxy_and_different_path">Hostname configuration with reverse proxy and different path</h3>
+<div class="listingblock">
+<div class="title">Keycloak configuration:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=myurl --proxy=passthrough --hostname-path=mykeycloak</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Invoked command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl GET "https://intUrl:8443/realms/master/.well-known/openid-configuration" | jq .</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Result:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Frontend Endpoints: request://myurl -&gt;  https://myurl/mykeycloak
+# Backend Endpoints: request://request:request -&gt; https://internal:8443</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 57.1428%;">
+<col style="width: 19.0476%;">
+<col style="width: 19.0476%;">
+<col style="width: 4.762%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">hostname-admin</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Overrides the hostname for the admin console and APIs.</span></p>
+</div>
+<table id="option-extended-hostname-admin" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--hostname-admin</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HOSTNAME_ADMIN</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">hostname-path</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">This should be set if proxy uses a different context-path for Keycloak.</span></p>
+</div>
+<table id="option-extended-hostname-path" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--hostname-path</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HOSTNAME_PATH</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">hostname-strict</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Disables dynamically resolving the hostname from request headers.</span></p>
+</div>
+<table id="option-extended-hostname-strict" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">Should always be set to true in production, unless proxy verifies the Host header.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--hostname-strict</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HOSTNAME_STRICT</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">true, false</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">true</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">hostname-strict-backchannel</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">By default backchannel URLs are dynamically resolved from request headers to allow internal an external applications.</span></p>
+</div>
+<table id="option-extended-hostname-strict-backchannel" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If all applications use the public URL this option should be enabled.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--hostname-strict-backchannel</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HOSTNAME_STRICT_BACKCHANNEL</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">true, false</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">false</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">proxy</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The proxy address forwarding mode if the server is behind a reverse proxy.</span></p>
+</div>
+<table id="option-extended-proxy" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">Possible values are: none,edge,reencrypt,passthrough</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--proxy</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_PROXY</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">none, edge, reencrypt, passthrough</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">none</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/hostname.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

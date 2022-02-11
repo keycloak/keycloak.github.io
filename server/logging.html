@@ -1,0 +1,442 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Keycloak - Server - Configuring logging</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Configuring logging</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Configuring logging</h1>
+                    <span class="text-muted">Learn how to configure Logging</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Logging is done on a per-category basis in Keycloak. You can configure logging for the root log level, or for more specific categories like <code>org.hibernate</code> or <code>org.keycloak</code>. In this guide, you will learn how to configure the log level and format.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_log_level">Log level</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The available log levels are listed in the following Table:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Level</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FATAL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">critical failures / complete inability to serve requests of any kind.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ERROR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">significant error or problem leading to the inability to process requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">WARN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A non-critical error or problem that may not require immediate correction.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INFO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Keycloak lifecycle events or important information. Low frequency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DEBUG</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">More detailed information for debugging purposes, including e.g. database logs. Higher frequency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TRACE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Most detailed debugging information. Very high frequency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ALL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Special level for all log messages</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OFF</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Special level to turn logging off entirely (not recommended)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_configuring_the_root_log_level">Configuring the root log level</h3>
+<div class="paragraph">
+<p>The root loggers log level can be set using the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-level=&lt;root-level&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>using one of the levels mentioned in the table above. When no log level configuration exists for a more specific category logger, the enclosing category is used instead. When there is no enclosing category, the root logger level is used.</p>
+</div>
+<div class="paragraph">
+<p>Setting the log level is case-insensitive, so you could either use for example <code>DEBUG</code> or <code>debug</code>.</p>
+</div>
+<div class="paragraph">
+<p>When you accidentally set the log level twice, for example when you invoke <code>--log-level=info,&#8230;&#8203;,debug,&#8230;&#8203;</code> the last occurence in the list will be used as the log level, so for the example the root logger would be set to <code>DEBUG</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_category_specific_log_levels">Configuring category-specific log levels</h3>
+<div class="paragraph">
+<p>It is possible to set a different log level for specific areas in Keycloak. To enable category-specific logging, provide a comma-separated list containing the categories you want another log level than for the root category to the <code>--log-level</code> configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-level=&lt;root-level&gt;,&lt;org.category1&gt;:&lt;org.category1-level&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A configuration that applies to a category also applies to all sub-categories of that category, unless a more specific matching sub-category configuration is provided in the list.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-level=INFO,org.hibernate:debug,org.hibernate.hql.internal.ast:info</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The example above sets the root log level for all loggers to INFO, and the hibernate log level in general to debug. But as we don&#8217;t want SQL abstract syntax trees to make the log output verbose, we set the more specific sub category <code>org.hibernate.hql.internal.ast</code> to info, so the SQL abstract syntax trees, which would be shown at <code>debug</code> level, don&#8217;t show up anymore.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_logging_format">Configuring the logging format</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak uses a pattern-based logging formatter that generates human-readable text logs by default.</p>
+</div>
+<div class="paragraph">
+<p>The logging format template for these lines can be applied at the root level.</p>
+</div>
+<div class="paragraph">
+<p>The default format template is:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The format string supports the following symbols:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Symbol</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Summary</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders a simple % character.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%c</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Category</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the log category name.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%d{xxx}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Date</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders a date with the given date format string.String syntax defined by <code>java.text.SimpleDateFormat</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%e</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exception</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the thrown exception, if any.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%h</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hostname</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the simple host name.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%H</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Qualified host name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the fully qualified hostname, which may be the same as the simple host name, depending on the OS configuration.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%i</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Process ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the current process PID.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%m</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Full Message</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the log message plus exception (if any).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%n</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Newline</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the platform-specific line separator string.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%N</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Process name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the name of the current process.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%p</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Level</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the log level of the message.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%r</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Relative time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Render the time in milliseconds since the start of the application log.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simple message</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders only the log message, without exception trace.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%t</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Thread name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the thread name.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%t{id}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Thread ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Render the thread ID.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%z{&lt;zone name&gt;}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Time zone</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set the time zone of log output to &lt;zone name&gt;.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_set_the_logging_format">Set the logging format</h3>
+<div class="paragraph">
+<p>To set the logging format for a logged line, build your desired format template using the table above and run the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-format="'&lt;format&gt;'"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Be aware that you need to escape characters when invoking commands containing special shell characters such as <code>;</code> using the CLI, so you might want to set it in the configuration file instead.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Abbreviate the fully qualified category name</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start "'%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n'"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The example above abbreviates the category name, which could get rather long in some cases, to three characters by setting <code>[%c{3.}]</code> in the template instead of the default <code>[%c]</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_raw_quarkus_logging_properties">Configuring raw quarkus logging properties</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At the time of writing, the logging features of the quarkus based Keycloak are basic, yet powerful. Nevertheless, expect more to come and feel free to join the <a href="https://github.com/keycloak/keycloak/discussions/8870">discussion</a> at GitHub.</p>
+</div>
+<div class="paragraph">
+<p>When you need a temporary solution, e.g. for logging to a file or using syslog isntead of console, you can check out the <a href="https://github.com/keycloak/keycloak/discussions/8870">Quarkus logging guide</a>. It is possible to use all properties mentioned there, as long as no other than the base logging dependency is involved. For example it is possible to set the log handler to file, but not to use json output, yet, as you would need to provide another dependency for json output to work.</p>
+</div>
+<div class="paragraph">
+<p>To use raw quarkus properties, please refer to the <a href="https://www.keycloak.org/server/configuration">Configuring Keycloak</a>
+ guide at section <em>Using unsupported server options</em>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 57.1428%;">
+<col style="width: 19.0476%;">
+<col style="width: 19.0476%;">
+<col style="width: 4.762%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">log-format</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The format of log entries.</span></p>
+</div>
+<table id="option-extended-log-format" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If the format has spaces in it, you need to escape the value such as "&lt;format&gt;".</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--log-format</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_LOG_FORMAT</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">log-level</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The log level of the root category or a comma-separated list of individual categories and their levels.</span></p>
+</div>
+<table id="option-extended-log-level" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">For the root category, you don&#8217;t need to specify a category.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--log-level</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_LOG_LEVEL</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">info</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/logging.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

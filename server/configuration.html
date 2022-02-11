@@ -1,0 +1,418 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Keycloak - Server - Configuring Keycloak</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Configuring Keycloak</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Configuring Keycloak</h1>
+                    <span class="text-muted">An overview of the server configuration</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide, you will learn the core concepts around the server configuration and how to configure the server using the different
+server options available. You will also learn how to properly configure the server to achieve an optimal runtime for faster
+startup and low memory footprint.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_server_options">Understanding Server Options</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>All the server options can be found by using the <code>help</code> option for individual commands:</p>
+</div>
+<div class="listingblock">
+<div class="title">Listing all build options</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --help</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Listing all configuration options</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --help</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can instead look at all the server options at <a href="https://www.keycloak.org/server/all-config">All configuration</a>
+.</p>
+</div>
+<div class="paragraph">
+<p>Server options are loaded from different sources in a specific order and they use different formats. If an option is defined in different sources the order of resolution is first in the list of:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Source</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Format</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CLI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">--db-url-host=&lt;value&gt;</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Environment Variable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">KC_DB_URL_HOST</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>conf/keycloak.conf</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">db-url-host=&lt;value&gt;</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Given the <code>db-url-host</code> option as an example, you would set this property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="title">Command-line argument</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db-url-host=mykeycloakdb</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Environment variable</div>
+<div class="content">
+<pre class="highlight"><code>export KC_DB_URL_HOST=mykeycloakdb</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title"><code>conf/keycloak.conf</code></div>
+<div class="content">
+<pre class="highlight"><code>db-url-host=mykeycloakdb</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The configuration source and the corresponding format you should use is use-case specific. That decision depends on the platform the server is deployed to
+as well as on the optimizations you can get for an optimal runtime. For instance, when deploying the server into Kubernetes you would probably rely
+on environment variables to configure the server. However, you are not limited to use a single configuration source and format.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_server">Configuring the server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The server options are narrowed to a specific command or configuration stage. This clear separation is one of the key aspects
+of the server configuration and is related to a series of optimizations that are done in order to deliver the best runtime when starting and running the server.</p>
+</div>
+<div class="paragraph">
+<p>Configuration is basically done in two stages:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Before starting the server in order to build an optimized server image for an optimal runtime</p>
+</li>
+<li>
+<p>When starting the server</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The first stage involves running the <code>build</code> command and set any <strong>build option</strong> available from this command to configure the server.</p>
+</div>
+<div class="paragraph">
+<p>By looking at the individual configuration options at <a href="https://www.keycloak.org/server/all-config">All configuration</a>
+, you notice
+that some options are marked with an icon to indicate they are a build option. In other words, they can only be set and only take effect when running the <code>build</code> command.
+You can also check all the options that require a build by looking at the <code>help</code> message of the <code>build</code> command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --help</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>build</code> command is responsible for producing an immutable and optimized server image, which is similar to building a container image. In addition to persisting
+any build option you have set, this command also performs a series of optimizations to deliver the best runtime when starting and running the server. As a result,
+a lot of processing that would usually happen when starting and running the server is no longer necessary and the server can start and run faster.</p>
+</div>
+<div class="paragraph">
+<p>Some optimizations performed by the <code>build</code> command are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Closed-world assumption about installed providers, which means that no need to re-create the registry every time the server starts</p>
+</li>
+<li>
+<p>Configuration files are pre-parsed to reduce IO when starting the server</p>
+</li>
+<li>
+<p>Database specific resources are configured and prepared to run against a specific database vendor</p>
+</li>
+<li>
+<p>By persisting build options into the server image, the server does not perform any additional step to interpret configuration options and (re)configure itself</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Once you run the <code>build</code> command, you won&#8217;t need to set the same <strong>build options</strong> again when starting the server.</p>
+</div>
+<div class="listingblock">
+<div class="title">First stage, run the <code>build</code> command to set any build option</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --db=postgres</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The second stage involves starting the server using any <strong>configuration option</strong> available from the <code>start</code> command.</p>
+</div>
+<div class="listingblock">
+<div class="title">Second stage, run the <code>start</code> command to set any configuration option when starting the server</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db-url-host=keycloak-postgres --db-username=keycloak --db-password=change_me --hostname mykeycloak.acme.com</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this stage, you are free to set any value you want to any of the configuration options.</p>
+</div>
+<div class="paragraph">
+<p>Be aware that you need to escape characters when invoking commands containing special shell characters such as <code>;</code> using the CLI, so you might want to set it in the configuration file instead.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_server_for_an_optimal_startup_time">Configuring the server for an optimal startup time</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In addition to the optimizations performed when you run the <code>build</code> command, you might want to avoid using CLI options when running the
+<code>start</code> command in favor of using environment variables or configuration options from the <code>conf/keycloak.conf</code> file.</p>
+</div>
+<div class="listingblock">
+<div class="title">Set any build option</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --db=postgres</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Set any configuration option to <code>conf/keycloak.conf</code></div>
+<div class="content">
+<pre class="highlight"><code>db-url-host=keycloak-postgres
+db-username=keycloak
+db-password=change_me
+hostname mykeycloak.acme.com</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Start the server</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By following that approach, the server is going to skip some steps at startup and start faster.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_the_auto_build_option_when_starting_the_server">Using the <code>auto-build</code> option when starting the server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>auto-build</code> option allows you to perform the two configuration stages using a single command. Under certain circumstances, you might want to sacrifice the server startup time and update the values of build options when starting the server.</p>
+</div>
+<div class="paragraph">
+<p>For that, you can start the server as follows:</p>
+</div>
+<div class="listingblock">
+<div class="title">Using the <code>auto-build</code> option</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --auto-build --db postgres --db-url-host keycloak-postgres --db-username keycloak --db-password change_me --hostname mykeycloak.acme.com</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By using this option, the server is going to calculate the build options that have changed and automatically runs the <code>build</code> command, if necessary, before starting the server.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_server_using_configuration_files">Configuring the server using configuration files</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the server is going to always fetch any configuration option you set from the <code>conf/keycloak.conf</code> file. When you are using a fresh distribution,
+this file holds only the recommended settings for running in production, which are initially commented out.</p>
+</div>
+<div class="paragraph">
+<p>You can also specify a different configuration file by using the `[-cf|--config-file] option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="title">Running the <code>build</code> command using a custom configuration file</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] -cf myconfig.conf build</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Running the <code>start</code> command using a custom configuration file</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] -cf myconfig.conf start</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Changes to any <strong>build option</strong> defined in the <code>keycloak.conf</code> file that is targeted for the <code>build</code> command are ignored
+if the value differs from the value used to previously run the <code>build</code> command. In this case, make sure you run the <code>build</code> command again so that
+any build option is updated accordingly.</p>
+</div>
+<div class="sect2">
+<h3 id="_understanding_the_development_and_production_modes">Understanding the development and production modes</h3>
+<div class="paragraph">
+<p>By default, the server defines two main operating modes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Development</p>
+</li>
+<li>
+<p>Production</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The development mode is activated every time you run the <code>start-dev</code> command. In this mode, some key configuration options are set to make it possible to start the
+server for development purposes without the burden of having to define additional settings that are mandatory for production.</p>
+</div>
+<div class="paragraph">
+<p>The production mode is activated by default when you run the <code>build</code> or the <code>start</code> command. Use this mode to set any configuration option that
+is needed for deploying Keycloak in production.</p>
+</div>
+<div class="paragraph">
+<p>By default, the configurations options for the production mode are commented out in the <code>conf/keycloak.conf</code>. These examples
+ are meant to give you an idea about the main settings that needs to be considered when running in production.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_unsupported_server_options">Using unsupported server options</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Most of the time the available options from the server configuration should be enough to configure the server.
+However, you might need to use properties directly from Quarkus in order to enable a specific behavior or capability that is missing from the server configuration.</p>
+</div>
+<div class="paragraph">
+<p>You should avoid as much as possible using properties directly from Quarkus. If you really need to, consider opening an <a href="https://github.com/keycloak/keycloak/issues/new?assignees=&amp;labels=kind%2Fenhancement%2Cstatus%2Ftriage&amp;template=enhancement.yml">issue</a> first and help us
+to improve the server configuration.</p>
+</div>
+<div class="paragraph">
+<p>To configure the server using Quarkus properties you should follow these steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create a <code>conf/quarkus.properties</code> file and define any property you need</p>
+</li>
+<li>
+<p>Run the <code>build</code> command to apply the settings to the server</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For a complete list of Quarkus properties, consider looking at this <a href="https://quarkus.io/guides/all-config">documentation</a> .</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/configuration.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

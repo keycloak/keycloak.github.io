@@ -1,0 +1,636 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Keycloak - Server - Configuring the database</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Configuring the database</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Configuring the database</h1>
+                    <span class="text-muted">An overview about how to configure relational databases</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide, you are going to understand how to configure the server to store data using different relational databases. You should also learn
+You will also learn what databases are supported by the server.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_querying_the_list_of_supported_databases">Querying the list of supported databases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The server has built-in support for different databases. You should be able to query the available databases by looking at the expected values
+for the <code>db</code> configuration option.</p>
+</div>
+<div class="paragraph">
+<p>The list of supported databases and their corresponding versions are:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Database</th>
+<th class="tableblock halign-left valign-top">Tested Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mariadb</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mssql</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2016</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mysql</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">oracle</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">12c</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">postgres</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>By default, the server uses the <code>dev-file</code> database. This is the default database that the server will use to persist data and
+only exists for development use-cases. The <code>dev-file</code> database is not suitable for production use-cases, and must be replaced before deploying to production.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_a_database">Configuring a database</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For each supported database, the server provides some opinionated defaults to make it simpler to configure a database. The defaults allow
+you to easily configure a database by just providing some key settings like the database host and credentials.</p>
+</div>
+<div class="paragraph">
+<p>To configure the database vendor, run the <code>build</code> command to build a server image using the <code>db</code> build option to configure the server for specific database:</p>
+</div>
+<div class="listingblock">
+<div class="title">Configuring a database vendor</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --db postgres</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the database vendor is set, you can start the server and set the configuration options to configure the database host and credentials:</p>
+</div>
+<div class="listingblock">
+<div class="title">Starting the server</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db-url-host mypostgres --db-username myuser --db-password change_me</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These are the bare minimum settings that you need to set in order to successfully connect to a database.</p>
+</div>
+<div class="paragraph">
+<p>By default, the default schema is set to <code>keycloak</code>. You can change that by using the <code>db-schema</code> configuration option.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_overriding_the_default_connection_settings">Overriding the default connection settings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The server uses JDBC as the underlying technology to communicate with the relational database. In case the default connection settings are not enough, you are able to specify your own JDBC URL using the <code>db-url</code> configuration option.</p>
+</div>
+<div class="listingblock">
+<div class="title">Starting the server</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db-url jdbc:postgresql://mypostgres/mydatabase</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Be aware that you need to escape characters when invoking commands containing special shell characters such as <code>;</code> using the CLI, so you might want to set it in the configuration file instead.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_database_for_unicode">Configuring the database for Unicode</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Database schema only accounts for Unicode strings in the following special fields:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Realms</strong>: display name, HTML display name, localization texts (keys and values)</p>
+</li>
+<li>
+<p><strong>Federation</strong> Providers: display name</p>
+</li>
+<li>
+<p><strong>Users</strong>: username, given name, last name, attribute names and values</p>
+</li>
+<li>
+<p><strong>Groups</strong>: name, attribute names and values</p>
+</li>
+<li>
+<p><strong>Roles</strong>: name</p>
+</li>
+<li>
+<p>Descriptions of objects</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Otherwise, characters are limited to those contained in database encoding which is often 8-bit. However, for some database systems, it is possible to enable UTF-8 encoding of Unicode characters and use full Unicode character set in all text fields. Often, this is counterbalanced by shorter maximum length of the strings than in case of 8-bit encodings.</p>
+</div>
+<div class="paragraph">
+<p>Some of the databases require special settings to database and/or JDBC driver to be able to handle Unicode characters. Please find the settings for your database below. Note that if a database is listed here, it can still work properly provided it handles UTF-8 encoding properly both on the level of database and JDBC driver.</p>
+</div>
+<div class="paragraph">
+<p>Technically, the key criterion for Unicode support for all fields is whether the database allows setting of Unicode character set for VARCHAR and CHAR fields. If yes, there is a high chance that Unicode will be plausible, usually at the expense of field length. If it only supports Unicode in NVARCHAR and NCHAR fields, Unicode support for all text fields is unlikely as the server schema uses VARCHAR and CHAR fields extensively.</p>
+</div>
+<div class="sect2">
+<h3 id="_oracle_database">Oracle database</h3>
+<div class="paragraph">
+<p>Unicode characters are properly handled provided the database was created with Unicode support in VARCHAR and CHAR fields (e.g. by using AL32UTF8 character set as the database character set). No special settings is needed for JDBC driver.</p>
+</div>
+<div class="paragraph">
+<p>If the database character set is not Unicode, then to use Unicode characters in the special fields, the JDBC driver needs to be configured with the connection property oracle.jdbc.defaultNChar set to true. It might be wise, though not strictly necessary, to also set the oracle.jdbc.convertNcharLiterals connection property to true. These properties can be set either as system properties or as connection properties. Please note that setting oracle.jdbc.defaultNChar may have negative impact on performance. For details, please refer to Oracle JDBC driver configuration documentation.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_microsoft_sql_server_database">Microsoft SQL Server database</h3>
+<div class="paragraph">
+<p>Unicode characters are properly handled only for the special fields. No special settings of JDBC driver or database is necessary.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_mysql_database">MySQL database</h3>
+<div class="paragraph">
+<p>Unicode characters are properly handled provided the database was created with Unicode support in VARCHAR and CHAR fields in the CREATE DATABASE command (e.g. by using utf8 character set as the default database character set in MySQL 5.5. Please note that utf8mb4 character set does not work due to different storage requirements to utf8 character set [1]). Note that in this case, length restriction to non-special fields does not apply because columns are created to accommodate given amount of characters, not bytes. If the database default character set does not allow storing Unicode, only the special fields allow storing Unicode values.</p>
+</div>
+<div class="paragraph">
+<p>At the side of JDBC driver settings, it is necessary to add a connection property characterEncoding=UTF-8 to the JDBC connection settings.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_postgresql_database">PostgreSQL database</h3>
+<div class="paragraph">
+<p>Unicode is supported when the database character set is UTF8. In that case, Unicode characters can be used in any field, there is no reduction of field length for non-special fields. No special settings of JDBC driver is necessary.</p>
+</div>
+<div class="paragraph">
+<p>The character set of a PostgreSQL database is determined at the time it is created. You can determine the default character set for a PostgreSQL cluster with the SQL command</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>show server_encoding;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the default character set is not UTF 8, then you can create the database with UTF8 as its character set like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>create database keycloak with encoding 'UTF8';</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_changing_database_locking_timeout_when_running_in_a_cluster">Changing database locking timeout when running in a cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Cluster nodes are allowed to boot concurrently. When the server instance boots up it may do some database migration, importing, or first time initializations. A DB lock is used to prevent start actions from conflicting with one another when cluster nodes boot up concurrently.</p>
+</div>
+<div class="paragraph">
+<p>By default, the maximum timeout for this lock is 900 seconds. If a node is waiting on this lock for more than the timeout it will fail to boot. Typically you won’t need to increase/decrease the default value, but just in case it’s possible to configure it as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-dblock-jpa-lock-wait-timeout 900</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 57.1428%;">
+<col style="width: 19.0476%;">
+<col style="width: 19.0476%;">
+<col style="width: 4.762%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The database vendor.</span></p>
+</div>
+<table id="option-extended-db" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">Possible values are: dev-file, dev-mem, mariadb, mssql, mysql, oracle, postgres</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">dev-file, dev-mem, mariadb, mssql, mysql, oracle, postgres</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-password</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the database user.</span></p>
+</div>
+<table id="option-extended-db-password" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-password</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_PASSWORD</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-pool-initial-size</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The initial size of the connection pool.</span></p>
+</div>
+<table id="option-extended-db-pool-initial-size" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-pool-initial-size</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_POOL_INITIAL_SIZE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-pool-max-size</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum size of the connection pool.</span></p>
+</div>
+<table id="option-extended-db-pool-max-size" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-pool-max-size</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_POOL_MAX_SIZE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">100</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-pool-min-size</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The minimal size of the connection pool.</span></p>
+</div>
+<table id="option-extended-db-pool-min-size" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-pool-min-size</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_POOL_MIN_SIZE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-schema</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The database schema to be used.</span></p>
+</div>
+<table id="option-extended-db-schema" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-schema</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_SCHEMA</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-url</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The full database JDBC URL.</span></p>
+</div>
+<table id="option-extended-db-url" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If not provided, a default URL is set based on the selected database vendor. For instance, if using 'postgres', the default JDBC URL would be 'jdbc:postgresql://localhost/keycloak'.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-url</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_URL</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-url-database</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the database name of the default JDBC URL of the chosen vendor.</span></p>
+</div>
+<table id="option-extended-db-url-database" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If the <code>db-url</code> option is set, this option is ignored.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-url-database</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_URL_DATABASE</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-url-host</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the hostname of the default JDBC URL of the chosen vendor.</span></p>
+</div>
+<table id="option-extended-db-url-host" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If the <code>db-url</code> option is set, this option is ignored.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-url-host</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_URL_HOST</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-url-properties</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the properties of the default JDBC URL of the chosen vendor.</span></p>
+</div>
+<table id="option-extended-db-url-properties" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">If the <code>db-url</code> option is set, this option is ignored.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-url-properties</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_URL_PROPERTIES</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">db-username</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The username of the database user.</span></p>
+</div>
+<table id="option-extended-db-username" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db-username</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_DB_USERNAME</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/db.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>
