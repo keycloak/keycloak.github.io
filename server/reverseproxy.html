@@ -91,11 +91,6 @@ For Keycloak, your choice of proxy modes depends on the TLS termination in your 
 </div>
 <div class="dlist">
 <dl>
-<dt class="hdlist1">none</dt>
-<dd>
-<p>Disables proxy support.
-It is the default mode.</p>
-</dd>
 <dt class="hdlist1">edge</dt>
 <dd>
 <p>Enables communication through HTTP between the proxy and Keycloak.
@@ -228,6 +223,92 @@ The following table shows the recommended paths to expose.</p>
 If not, prefix the path with your desired one.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_enabling_client_certificate_lookup">Enabling client certificate lookup</h3>
+<div class="paragraph">
+<p>When the proxy is configured as a TLS termination proxy the client certificate information can be forwarded to the server through specific HTTP request headers and then used to authenticate
+clients. You are able to configure how the server is going to retrieve client certificate information depending on the proxy you are using.</p>
+</div>
+<div class="paragraph">
+<p>The server supports some of the most commons TLS termination proxies such as:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Proxy</th>
+<th class="tableblock halign-left valign-top">Provider</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Apache HTTP Server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">apache</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HAProxy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">haproxy</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NGINX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nginx</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>To configure how client certificates are retrieved from the requests you need to:</p>
+</div>
+<div class="listingblock">
+<div class="title">Enable the corresponding proxy provider</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --spi-x509cert-lookup-provider=&lt;provider&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Configure the HTTP headers</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-x509cert-lookup-&lt;provider&gt;-ssl-client-cert=SSL_CLIENT_CERT --spi-x509cert-lookup-&lt;provider&gt;-ssl-cert-chain-prefix=CERT_CHAIN --spi-x509cert-lookup-&lt;provider&gt;-certificate-chain-length=10</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When configuring the HTTP headers, you need to make sure the values you are using correspond to the name of the headers
+forwarded by the proxy with the client certificate information.</p>
+</div>
+<div class="paragraph">
+<p>The available options for configuring a provider are:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-client-cert</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the header holding the client certificate</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain-prefix</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The prefix of the headers holding additional certificates in the chain and used to retrieve individual
+certificates accordingly to the length of the chain. For instance, a value <code>CERT_CHAIN</code> will tell the server
+to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>CERT_CHAIN_9</code> if <code>certificate-chain-length</code> is set to <code>10</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">certificate-chain-length</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The maximum length of the certificate chain.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -262,7 +343,7 @@ If not, prefix the path with your desired one.</p>
 </colgroup>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">Possible values are: none,edge,reencrypt,passthrough</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">Possible values are: edge,reencrypt,passthrough</span></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--proxy</code></span></p></td>
@@ -272,7 +353,7 @@ If not, prefix the path with your desired one.</p>
 </tr>
 </tbody>
 </table></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">none, edge, reencrypt, passthrough</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">edge, reencrypt, passthrough</span></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">none</span></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
