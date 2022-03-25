@@ -1,1 +1,0 @@
-/usr/lib/jvm/java-11/bin/javadoc -J-Xmx2400m -J-Xms128m @options @packages
