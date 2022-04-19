@@ -95,6 +95,9 @@
 <li>
 <p>Custom providers are packaged and deployed differently</p>
 </li>
+<li>
+<p>A new operator and CRDs for Kubernetes and OpenShift</p>
+</li>
 </ul>
 </div>
 <div class="paragraph">
@@ -187,6 +190,48 @@ Once the first user with administrative rights exists, use the command line tool
 </div>
 <div class="paragraph">
 <p>Depending on what APIs your providers use you may also need to make some changes to the providers. If you only leveraged classes from Keycloak SPIs you shouldn&#8217;t need to, but if you used other APIs from WildFly you may need to make some changes. In addition, JavaEE APIs like session/stateless beans are no longer supported.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_migrating_using_the_operator">Migrating using the Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To use the Quarkus distribution on Kubernetes and OpenShift you need to use the new Operator, the <a href="https://github.com/keycloak/keycloak-operator">old Operator</a> does not support the new distribution.</p>
+</div>
+<div class="paragraph">
+<p>There is no "direct" migration path, to install Keycloak using the new Operator you need to create a new Custom Resource (CR) to end up with a new Keycloak Deployment based on the Quarkus distribution.</p>
+</div>
+<div class="paragraph">
+<p>The old and new operator can co-exist even in the same namespace since they are using a different API Group and Version in the CRDs.</p>
+</div>
+<div class="paragraph">
+<p>For the old operator, the apiVersion is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: keycloak.org/v1alpha1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For the new operator, the apiVersion is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When using <code>kubectl</code> commands, and the 2 CRDs are installed in the cluster, make sure to use fully qualified names including the API Group, e.g.:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ kubectl get keycloaks.k8s.keycloak.org</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The new operator doesn&#8217;t support Client, User and Realm CRDs directly. Instead, it provides one CRD to perform a <a href="https://www.keycloak.org/operator/realm-import.html">Realm import</a>.
+Using this new CR you can import Users, Clients and more through the wrapping Realm.</p>
 </div>
 </div>
 </div>            </div>
