@@ -785,6 +785,7 @@ span.image img {
 <ul class="sectlevel3">
 <li><a href="#enabling-forgot-password">Enabling forgot password</a></li>
 <li><a href="#enabling-remember-me">Enabling Remember Me</a></li>
+<li><a href="#_mapping-acr-to-loa-realm">ACR to Level of Authentication (LoA) Mapping</a></li>
 </ul>
 </li>
 <li><a href="#realm_keys">Configuring realm keys</a>
@@ -952,6 +953,12 @@ span.image img {
 <li><a href="#attestation-statement-verification">Attestation statement verification</a></li>
 <li><a href="#managing-webauthn-credentials-as-a-user">Managing WebAuthn credentials as a user</a></li>
 <li><a href="#_webauthn_passwordless">Passwordless WebAuthn together with Two-Factor</a></li>
+<li><a href="#_webauthn_loginless">LoginLess WebAuthn</a></li>
+</ul>
+</li>
+<li><a href="#_recovery-codes">Recovery Codes (RecoveryCodes)</a></li>
+<li><a href="#conditions-in-conditional-flows">Conditions in conditional flows</a>
+<ul class="sectlevel3">
 <li><a href="#available-conditions">Available conditions</a></li>
 <li><a href="#explicitly-deny-allow-access-in-conditional-flows">Explicitly deny/allow access in conditional flows</a></li>
 </ul>
@@ -1053,6 +1060,8 @@ span.image img {
 <li><a href="#con-basic-settings_server_administration_guide">Basic settings</a></li>
 <li><a href="#con-advanced-settings_server_administration_guide">Advanced settings</a></li>
 <li><a href="#_client-credentials">Confidential client credentials</a></li>
+<li><a href="#_secret_rotation">Client Secret Rotation</a></li>
+<li><a href="#_proc-secret-rotation">Creating an OIDC Client Secret Rotation Policy</a></li>
 <li><a href="#_service_accounts">Using a service account</a></li>
 <li><a href="#audience-support">Audience support</a></li>
 </ul>
@@ -1090,6 +1099,7 @@ span.image img {
 <li><a href="#architecture">Architecture</a></li>
 <li><a href="#configuration">Configuration</a></li>
 <li><a href="#backward-compatibility">Backward Compatibility</a></li>
+<li><a href="#client-secret-rotation-example">Client Secret Rotation Example</a></li>
 </ul>
 </li>
 </ul>
@@ -1208,7 +1218,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>17.0.1</strong> <em>Latest</em></p>
+<p>Version <strong>18.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1501,7 +1511,7 @@ must be used to filter out bots.  Credential reset flow defines what actions a u
 </div>
 </div>
 <div class="paragraph">
-<p>After installing Keycloak, you need an administrator account that can act as a <em>super</em> admin with full permisions to manage all parts of Keycloak. With this account, you can log into the Keycloak Admin Console where you create realms and users and register applications that are secured by Keycloak.</p>
+<p>After installing Keycloak, you need an administrator account that can act as a <em>super</em> admin with full permissions to manage all parts of Keycloak. With this account, you can log into the Keycloak Admin Console where you create realms and users and register applications that are secured by Keycloak.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -2126,6 +2136,28 @@ this point.</p>
 <p><span class="image"><img src="./keycloak-images/remember-me.png" alt="remember me"></span></p>
 </div>
 </div>
+<div class="sect3">
+<h4 id="_mapping-acr-to-loa-realm"><a class="anchor" href="#_mapping-acr-to-loa-realm"></a>ACR to Level of Authentication (LoA) Mapping</h4>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/login-settings/acr-to-loa-mapping.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/login-settings/acr-to-loa-mapping.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="paragraph">
+<p>In the login settings of a realm, you can define which <code>Authentication Context Class Reference (ACR)</code> value is mapped to which <code>Level of Authentication (LoA)</code>. The ACR can be any value, whereas the LoA must be numeric.
+The acr claim can be requested in the <code>claims</code> or <code>acr_values</code> parameter sent in the OIDC request and it is also included in the access token and ID token. The mapped number is used in the authentication flow conditions.</p>
+</div>
+<div class="paragraph">
+<p>Mapping can be also specified at the client level in case that particular client needs to use different values than realm. However, a best practice is to stick to realm mappings.</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="./images/realm-oidc-map-acr-to-loa.png" alt="ACR to LoA mapping"></span></p>
+</div>
+<div class="paragraph">
+<p>For further details see  <a href="#_step-up-flow">Step-up Authentication</a> and  <a href="https://openid.net/specs/openid-connect-core-1_0.html#acrSemantics">the offical OIDC specification</a>.</p>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="realm_keys"><a class="anchor" href="#realm_keys"></a>Configuring realm keys</h3>
@@ -2568,7 +2600,7 @@ then immediately remove the compromised keypair.</p>
 </dd>
 <dt class="hdlist1">WRITABLE</dt>
 <dd>
-<p>You cannot change the username, email, first name, last name, and other mapped attributes and passwords and synchronize them automatically with the LDAP store.</p>
+<p>You can change the username, email, first name, last name, and other mapped attributes and passwords and synchronize them automatically with the LDAP store.</p>
 </dd>
 <dt class="hdlist1">UNSYNCED</dt>
 <dd>
@@ -3521,7 +3553,7 @@ If <strong>Temporary</strong> is <strong>ON</strong>, the user must change the p
 <p>Any user with the <code>impersonation</code> role in the realm can impersonate a user.</p>
 </div>
 <div class="paragraph">
-<p>Image:keycloak-images/user-details.png[]</p>
+<p><span class="image"><img src="./keycloak-images/user-details.png" alt="user details"></span></p>
 </div>
 <div class="ulist">
 <ul>
@@ -6495,7 +6527,9 @@ Passwordless Authenticator.</p>
 <p>Enter <code>1</code> for the Level of Authentication (LoA).</p>
 </li>
 <li>
-<p>Set Store LoA in user session <strong>ON</strong>.</p>
+<p>Set Max Age to <strong>36000</strong>. This value is in seconds and it is equivalent to 10 hours, which is the default <code>SSO Session Max</code> timeout set in the realm.
+As a result, when a user authenticates with this level, subsequent SSO logins can re-use this level and the user does not need to authenticate
+with this level until the end of the user session, which is 10 hours by default.</p>
 </li>
 <li>
 <p>Click <strong>Save</strong></p>
@@ -6569,7 +6603,8 @@ Passwordless Authenticator.</p>
 <p>Enter <code>2</code> for the Level of Authentication (LoA).</p>
 </li>
 <li>
-<p>Set Store LoA in user session <strong>OFF</strong>.</p>
+<p>Set Max Age to <strong>0</strong>. As a result, when a user authenticates, this level is valid just for the current authentication, but not any
+subsequent SSO authentications. So the user will always need to authenticate again with this level when this level is requested.</p>
 </li>
 <li>
 <p>Click <strong>Save</strong></p>
@@ -6620,7 +6655,7 @@ Passwordless Authenticator.</p>
 </div>
 <div class="paragraph">
 <div class="title">Request a certain authentication level</div>
-<p>To use the step-up mechanism, you have to specify a requested level of authentication (LoA) in your authentication request. The claims parameter is used for this purpose:</p>
+<p>To use the step-up mechanism, you specify a requested level of authentication (LoA) in your authentication request. The <code>claims</code> parameter is used for this purpose:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -6628,7 +6663,7 @@ Passwordless Authenticator.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>The claims parameter is specified in a JSON representation:</p>
+<p>The <code>claims</code> parameter is specified in a JSON representation:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -6642,6 +6677,18 @@ Passwordless Authenticator.</p>
         }</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>The Keycloak javascript adapter has support for easy construct of this JSON and sending it in the login request.
+See <a href="https://www.keycloak.org/docs/latest/securing_apps/#_javascript_adapter">Javascript adapter documentation</a> for more details.</p>
+</div>
+<div class="paragraph">
+<p>You can also use simpler parameter <code>acr_values</code> instead of <code>claims</code> parameter to request particular levels as non-essential. This is mentioned
+in the OIDC specification.</p>
+</div>
+<div class="paragraph">
+<p>You can also configure the default level for the particular client, which is used when the parameter <code>acr_values</code> or the parameter <code>claims</code> with the <code>acr</code> claim is not present.
+For further details, see <a href="#_mapping-acr-to-loa-client">Client ACR configuration</a>).</p>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -6649,7 +6696,8 @@ Passwordless Authenticator.</p>
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-To request the acr_vale as text (such as <code>gold</code>) instead of a numeric value, you have to configure the mapping between the ACR and the LoA at the client level. For configuration see <a href="#_mapping-acr-to-loa">ACR to LoA Mapping</a>)
+To request the acr_values as text (such as <code>gold</code>) instead of a numeric value, you configure the mapping between the ACR and the LoA.
+It is possible to configure it at the realm level (recommended) or at the client level. For configuration see <a href="#_mapping-acr-to-loa-realm">ACR to LoA Mapping</a>.
 </td>
 </tr>
 </table>
@@ -6658,44 +6706,45 @@ To request the acr_vale as text (such as <code>gold</code>) instead of a numeric
 <p>For more details see the <a href="https://openid.net/specs/openid-connect-core-1_0.html#acrSemantics">official OIDC specification</a>.</p>
 </div>
 <div class="paragraph">
-<div class="title">Flow logic</div>
-<p>The logic for the previous configured authentication flow is as follows:<br>
-If a client request a high authentication level, meaning Level of Authentication 2 (LoA 2), a user has to perform full 2-factor authentication: Username/Password + OTP. However, if a user already has a session in Keycloak, that was logged in with username and password (LoA 1), the user is only asked for the second authenticaton factor (OTP).</p>
+<p><strong>Flow logic</strong></p>
 </div>
 <div class="paragraph">
-<p>The <strong>option in the condition to store the achieved LoA in the user session</strong> determines wheather the user will be asked to present the authentication factor again during a subsequent authentication. If true, the user will not be re-authenticated with this level during subsequent authentication. If false, it means that subsequent authentications will re-authentication with that level again. This is useful for operations that require higher security in the application (e.g. send payment) and always require authentication with the specific level.</p>
+<p>The logic for the previous configured authentication flow is as follows:<br>
+If a client request a high authentication level, meaning Level of Authentication 2 (LoA 2), a user has to perform full 2-factor authentication: Username/Password + OTP.
+However, if a user already has a session in Keycloak, that was logged in with username and password (LoA 1), the user is only asked for the second authentication factor (OTP).</p>
 </div>
-<table class="tableblock frame-all grid-all spread">
-<caption class="title">Table 1. Implications about possible acr inputs in authentication request</caption>
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
+<div class="paragraph">
+<p>The option <strong>Max Age</strong> in the condition determines how long (how much seconds) the subsequent authentication level is valid. This settings helps to decide
+whether the user will be asked to present the authentication factor again during a subsequent authentication. If the particular level X is requested
+by the <code>claims</code> or <code>acr_values</code> parameter and user already authenticated with level X, but it is expired (for example max age is configured to 300 and user authenticated before 310 seconds)
+then the user will be asked to re-authenticate again with the particular level. However if the level is not yet expired, the user will be automatically
+considered as authenticated with that level.</p>
+</div>
+<div class="paragraph">
+<p>Using <strong>Max Age</strong> with the value 0 means, that particular level is valid just for this single authentication. Hence every re-authentication requesting that level
+will need to authenticate again with that level. This is useful for operations that require higher security in the application (e.g. send payment) and always require authentication
+with the specific level.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
 <tr>
-<th class="tableblock halign-left valign-top">Authentication Request</th>
-<th class="tableblock halign-left valign-top">Implication</th>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Note that parameters such as <code>claims</code> or <code>acr_values</code> might be changed by the user in the URL when the login request is sent from the client to the Keycloak via the user&#8217;s browser.
+This situation can be mitigated if client uses PAR (Pushed authorization request), a request object, or other mechanisms that prevents the user from rewrite the parameters in the URL.
+Hence after the authentication, clients are encouraged to check the ID Token to doublecheck that <code>acr</code> in the token corresponds to the expected level.
+</td>
 </tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>No acr claim</strong> is requested</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum authentication  (<strong>1st Condition Flow</strong>) is executed</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>No essential claim</strong> is requested in the acr claim</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Default is <strong>false</strong></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Unknown acr</strong> value is requested</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">If essential false, minimum authentication is executed. If essential true, the outcome is a failed authentication attempt</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">User is re-authenticated via a <strong>cookie</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Acr value in access token und ID token is <code>0</code></p></td>
-</tr>
-</tbody>
 </table>
+</div>
+<div class="paragraph">
+<p>If no explicit level is requested by parameters, the Keycloak will require the authentication with the first LoA
+condition found in the authentication flow, such as the Username/Password in the preceding example. When a user was already authenticated with that level
+and that level expired, the user is not required to re-authenticate, but <code>acr</code> in the token will have the value 0. This result is considered as authentication
+based solely on <code>long-lived browser cookie</code> as mentioned in the section 2 of OIDC Core 1.0 specification.</p>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -6707,6 +6756,103 @@ A conflict situation may arise when an admin specifies several flows, sets diffe
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p><strong>Example scenario</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Max Age is configured as 300 seconds for level 1 condition.</p>
+</li>
+<li>
+<p>Login request is sent without requesting any acr. Level 1 will be used and the user needs to authenticate with username and password. The token will have <code>acr=1</code>.</p>
+</li>
+<li>
+<p>Another login request is sent after 100 seconds. The user is automatically authenticated due to the SSO and the token will return <code>acr=1</code>.</p>
+</li>
+<li>
+<p>Another login request is sent after another 201 seconds (301 seconds since authentication in point 2). The user is automatically authenticated due to the SSO, but the token will return <code>acr=0</code> due the level 1 is considered expired.</p>
+</li>
+<li>
+<p>Another login request is sent, but now it will explicitly request ACR of level 1 in the <code>claims</code> parameter. User will be asked to re-authenticate with username/password
+and then <code>acr=1</code> will be returned in the token.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>ACR claim in the token</strong></p>
+</div>
+<div class="paragraph">
+<p>ACR claim is added to the token by the <code>acr loa level</code> protocol mapper defined in the <code>acr</code> client scope. This client scope is the realm default client scope
+and hence will be added to all newly created clients in the realm.</p>
+</div>
+<div class="paragraph">
+<p>In case you do not want <code>acr</code> claim inside tokens or you need some custom logic for adding it, you can remove the client scope from your client.</p>
+</div>
+<div class="paragraph">
+<p>Note when the login request initiates a request with the <code>claims</code> parameter requesting <code>acr</code> as <code>essential</code> claim, then Keycloak will always return
+one of the specified levels. If it is not able to return one of the specified levels (For example if the requested level is unknown or bigger than configured conditions
+in the authentication flow), then Keycloak will throw an error.</p>
+</div>
+<div id="_user_session_limits" class="paragraph">
+<p><strong>User session limits</strong></p>
+</div>
+<div class="paragraph">
+<p>Limits on the number of session that a user can have can be configured. Sessions can be limited per realm or per client.</p>
+</div>
+<div class="paragraph">
+<p>To add session limits to a flow, perform the following steps.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click <strong>Add execution</strong> for the flow.</p>
+</li>
+<li>
+<p>Select <strong>User Session Count Limiter</strong> from the item list.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Required</strong> for the <strong>User Session Count Limiter</strong> authentication type to set its requirement to required.</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> for the <strong>User Session Count Limiter</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Config</strong>.</p>
+</li>
+<li>
+<p>Enter an alias for this config.</p>
+</li>
+<li>
+<p>Enter the required maximum number of sessions a user can have in this realm. If a value of 0 is used, this check is disabled.</p>
+</li>
+<li>
+<p>Enter the required maximum number of sessions a user can have for the client. If a value of 0 is used, this check is disabled.</p>
+</li>
+<li>
+<p>Select the behavior that is required when the user tries to create a session after the limit is reached. Available bahaviors are:</p>
+<div class="literalblock">
+<div class="content">
+<pre>Deny new session - when a new session is requested and the session limit is reached, no new sessions can be created.
+Terminate oldest session - when a new session is requested and the session limit has been reached, the oldest session will be removed and the new session created.</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optionally, add a custom error message to be displayed when the limit is reached.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Note that the user session limits should be added to your bound <strong>Browser Flow</strong>, <strong>Direct Grant Flow</strong>, <strong>Reset Credentials</strong> and also to any <strong>Post Broker Login Flow</strong>.
+Currently, the administrator is responsible for maintaining consistency between the different configurations.</p>
+</div>
+<div class="paragraph">
+<p>Note also that the user session limit feature is not available for CIBA.</p>
 </div>
 </div>
 </div>
@@ -7647,21 +7793,7 @@ Leave this parameter empty to disable the Key Usage validation. See <a href="htt
 </div>
 </div>
 <div class="paragraph">
-<p>Keycloak provides limited support for <a href="https://www.w3.org/TR/webauthn/">W3C Web Authentication (WebAuthn)</a>. Keycloak works as a WebAuthn&#8217;s <a href="https://www.w3.org/TR/webauthn/#webauthn-relying-party">Relying Party (RP)</a>.</p>
-</div>
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Please note that WebAuthn support is in development. Use this feature experimentally.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>Keycloak provides support for <a href="https://www.w3.org/TR/webauthn/">W3C Web Authentication (WebAuthn)</a>. Keycloak works as a WebAuthn&#8217;s <a href="https://www.w3.org/TR/webauthn/#webauthn-relying-party">Relying Party (RP)</a>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -8089,6 +8221,7 @@ Leave this parameter empty to disable the Key Usage validation. See <a href="htt
 <div class="sect4">
 <h5 id="setup-2"><a class="anchor" href="#setup-2"></a>Setup</h5>
 <div class="paragraph">
+<div class="title">Procedure</div>
 <p>Set up WebAuthn passwordless support as follows:</p>
 </div>
 <div class="olist arabic">
@@ -8124,12 +8257,132 @@ Leave this parameter empty to disable the Key Usage validation. See <a href="htt
 <p>The final configuration of the flow looks similar to this:</p>
 </div>
 <div class="paragraph">
-<p><span class="image"><img src="./images/webauthn-passwordless-flow.png" alt="webauthn passwordless flow"></span></p>
+<div class="title">PasswordLess flow</div>
+<p><span class="image"><img src="./images/webauthn-passwordless-flow.png" alt="PasswordLess flow"></span></p>
 </div>
 <div class="paragraph">
-<p>You can now add <strong>WebAuthn Register Passwordless</strong> as the required action to a user, already known to Keycloak, to test this. During the first authentication, the user must use the password and second-factor WebAuthn credential. The user does not need to provide the password and second-factor WebAuthn credential if they use the WebAuthn Passwordless credential.
-=== Conditions in conditional flows</p>
+<p>You can now add <strong>WebAuthn Register Passwordless</strong> as the required action to a user, already known to Keycloak, to test this. During the first authentication, the user must use the password and second-factor WebAuthn credential. The user does not need to provide the password and second-factor WebAuthn credential if they use the WebAuthn Passwordless credential.</p>
 </div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_webauthn_loginless"><a class="anchor" href="#_webauthn_loginless"></a>LoginLess WebAuthn</h4>
+<div class="paragraph">
+<p>Keycloak uses WebAuthn for two-factor authentication, but you can use WebAuthn as the first-factor authentication. In this case, users with <code>passwordless</code> WebAuthn credentials can authenticate to Keycloak without submitting a login or a password. Keycloak can use WebAuthn as both the loginless/passwordless and two-factor authentication mechanism in the context of a realm.</p>
+</div>
+<div class="paragraph">
+<p>An administrator typically requires that Security Keys registered by users for the WebAuthn loginless authentication meet different requirements. Loginless authentication requires users to authenticate to the security key (for example by using a PIN code or a fingerprint) and that the cryptographic keys associated with the loginless credential are stored physically on the security key. Not all security keys meet that kind of requirements. Check with your security key vendor if your device supports 'user verification' and 'resident key'. See <a href="#_webauthn-supported-keys">Supported Security Keys</a>.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak permits administrators to configure the <code>WebAuthn Passwordless Policy</code> in a way that allows loginless authentication. Note that loginless authentication can only be configured with <code>WebAuthn Passwordless Policy</code> and with <code>WebAuthn Passwordless</code> credentials. WebAuthn loginless authentication and WebAuthn passwordless authentication can be configured on the same realm but will share the same policy <code>WebAuthn Passwordless Policy</code>.</p>
+</div>
+<div class="sect4">
+<h5 id="setup-3"><a class="anchor" href="#setup-3"></a>Setup</h5>
+<div class="paragraph">
+<div class="title">Procedure</div>
+<p>Set up WebAuthn Loginless support as follows:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Register a new required action for WebAuthn passwordless support. Use the steps described in <a href="#_webauthn-register">Enable WebAuthn Authenticator Registration</a>. Register the <code>Webauthn Register Passwordless</code> action.</p>
+</li>
+<li>
+<p>Configure the <code>WebAuthn Passwordless Policy</code>. Perform the configuration in the Admin Console, <code>Authentication</code> section,  in the tab <code>WebAuthn Passwordless Policy</code>. You have to set <strong>User Verification Requirement</strong> to <strong>required</strong> and <strong>Require Resident Key</strong> to <strong>Yes</strong> when you configure the policy for loginless scenario. Note that since there isn&#8217;t a dedicated Loginless policy it won&#8217;t be possible to mix authentication scenarios with user verification=no/resident key=no and loginless scenarios (user verification=yes/resident key=yes). Storage capacity is usually very limited on security keys meaning that you won&#8217;t be able to store many resident keys on your security key.</p>
+</li>
+<li>
+<p>Configure the authentication flow. Create a new authentication flow, add the "WebAuthn Passwordless" execution and set the Requirement setting of the execution to <strong>Required</strong></p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The final configuration of the flow looks similar to this:</p>
+</div>
+<div class="paragraph">
+<div class="title">LoginLess flow</div>
+<p><span class="image"><img src="./images/webauthn-loginless-flow.png" alt="LoginLess flow"></span></p>
+</div>
+<div class="paragraph">
+<p>You can now add the required action <code>WebAuthn Register Passwordless</code> to a user, already known to Keycloak, to test this. The user with the required action configured will have to authenticate (with a username/password for example) and will then be prompted to register a security key to be used for loginless authentication.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="vendor-specific-remarks"><a class="anchor" href="#vendor-specific-remarks"></a>Vendor specific remarks</h5>
+<div class="sect5">
+<h6 id="compatibility-check-list"><a class="anchor" href="#compatibility-check-list"></a>Compatibility check list</h6>
+<div class="paragraph">
+<p>Loginless authentication with Keycloak requires the security key to meet the following features</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>FIDO2 compliance: not to be confused with FIDO/U2F</p>
+</li>
+<li>
+<p>User verification: the ability for the security key to authenticate the user (prevents someone finding your security key to be able to authenticate loginless and passwordless)</p>
+</li>
+<li>
+<p>Resident key: the ability for the security key to store the login and the cryptographic keys associated with the client application</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect5">
+<h6 id="windows-hello"><a class="anchor" href="#windows-hello"></a>Windows Hello</h6>
+<div class="paragraph">
+<p>To use Windows Hello based credentials to authenticate against Keycloak, configure the <strong>Signature Algorithms</strong> setting of the <code>WebAuthn Passwordless Policy</code> to include the <strong>RS256</strong> value. Note that some browsers don&#8217;t allow access to platform security key (like Windows Hello) inside private windows.</p>
+</div>
+</div>
+<div class="sect5">
+<h6 id="_webauthn-supported-keys"><a class="anchor" href="#_webauthn-supported-keys"></a>Supported security keys</h6>
+<div class="paragraph">
+<p>The following security keys have been successfuly tested for loginless authentication with Keycloak:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Windows Hello (Windows 10 21H1/21H2)</p>
+</li>
+<li>
+<p>Yubico Yubikey 5 NFC</p>
+</li>
+<li>
+<p>Feitian ePass FIDO-NFC</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_recovery-codes"><a class="anchor" href="#_recovery-codes"></a>Recovery Codes (RecoveryCodes)</h3>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/authentication/recovery-codes.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/authentication/recovery-codes.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="paragraph">
+<p>You can configure Recovery codes for two-factor authentication by adding 'Recovery Authentication Code Form' as a two-factor authenticator to your authentication flow. For an example of configuring this authenticator, see the WebAuthn section in <a href="#configuring-authentication">Configuring authentication</a>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Please note that Recovery Codes support is in development. Use this feature experimentally.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="conditions-in-conditional-flows"><a class="anchor" href="#conditions-in-conditional-flows"></a>Conditions in conditional flows</h3>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/authentication/conditions.adoc" target="_blank">Edit this section</a>
@@ -8141,8 +8394,6 @@ Leave this parameter empty to disable the Key Usage validation. See <a href="htt
 If all <em>Condition</em> executions evaluate as true, then the <em>Conditional</em> sub-flow acts as <em>Required</em>.
 You can process the next execution in the <em>Conditional</em> sub-flow.
 If some executions included in the <em>Conditional</em> sub-flow evaluate as false, then the whole sub-flow is considered as <em>Disabled</em>.</p>
-</div>
-</div>
 </div>
 <div class="sect3">
 <h4 id="available-conditions"><a class="anchor" href="#available-conditions"></a>Available conditions</h4>
@@ -8477,7 +8728,7 @@ If the user already exists, Keycloak may ask the user to link the identity retur
 <p>Although each type of identity provider has its configuration options, all share a common configuration. The following configuration options available:</p>
 </div>
 <table class="tableblock frame-all grid-all spread">
-<caption class="title">Table 2. Common Configuration</caption>
+<caption class="title">Table 1. Common Configuration</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -8643,7 +8894,7 @@ If the user already exists, Keycloak may ask the user to link the identity retur
 </div>
 </li>
 <li>
-<p>Enter the <a href="https://developers.facebook.com/docs/facebook-login/access-tokens/"><code>Client ID</code> and <code>Client Secret</code></a> values from your Facebook app into the <code>Client ID</code> and <code>Client Secret</code> fields in Keycloak.</p>
+<p>Enter the <a href="https://developers.facebook.com/docs/facebook-login/guides/access-tokens"><code>Client ID</code> and <code>Client Secret</code></a> values from your Facebook app into the <code>Client ID</code> and <code>Client Secret</code> fields in Keycloak.</p>
 </li>
 <li>
 <p>Enter the required scopes into the <strong>Default Scopes</strong> field. By default, Keycloak uses the <code>email</code> scope. See <a href="https://developers.facebook.com/docs/graph-api">Graph API</a> for more information about Facebook scopes.</p>
@@ -9403,7 +9654,7 @@ grantMethod: prompt <i class="conum" data-value="4"></i><b>(4)</b>
 <li>
 <p>Enter your initial configuration options. See <a href="#_general-idp-config">General IDP Configuration</a> for more information about configuration options.</p>
 <table class="tableblock frame-all grid-all spread">
-<caption class="title">Table 3. OpenID connect config</caption>
+<caption class="title">Table 2. OpenID connect config</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -9637,7 +9888,7 @@ In the case of JWT signed with private key or Client secret as jwt, it is requir
 <p>You can list the criteria your Service Provider requires by adding ClassRefs or DeclRefs in the Requested AuthnContext Constraints section. Usually, you need to provide either ClassRefs or DeclRefs, so check with your Identity Provider documentation which values are supported. If no ClassRefs or DeclRefs are present, the Identity Provider does not enforce additional constraints.</p>
 </div>
 <table class="tableblock frame-all grid-all spread">
-<caption class="title">Table 4. Requested AuthnContext Constraints</caption>
+<caption class="title">Table 3. Requested AuthnContext Constraints</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -9730,7 +9981,7 @@ Host: localhost:8080</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="javascript"><span class="keyword">var</span> keycloak = <span class="keyword">new</span> Keycloak(<span class="string"><span class="delimiter">'</span><span class="content">keycloak.json</span><span class="delimiter">'</span></span>);
+<pre class="CodeRay highlight"><code data-lang="javascript">const keycloak = <span class="keyword">new</span> Keycloak(<span class="string"><span class="delimiter">'</span><span class="content">keycloak.json</span><span class="delimiter">'</span></span>);
 
 keycloak.createLoginUrl({
         <span class="key">idpHint</span>: <span class="string"><span class="delimiter">'</span><span class="content">facebook</span><span class="delimiter">'</span></span>
@@ -10456,14 +10707,7 @@ redirects to the application using the callback URL and additionally adds the <e
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;spi</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ciba-auth-channel</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-    <span class="tag">&lt;default-provider&gt;</span>ciba-http-auth-channel<span class="tag">&lt;/default-provider&gt;</span>
-    <span class="tag">&lt;provider</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">ciba-http-auth-channel</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">enabled</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
-        <span class="tag">&lt;properties&gt;</span>
-            <span class="tag">&lt;property</span> <span class="attribute-name">name</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">httpAuthenticationChannelUri</span><span class="delimiter">&quot;</span></span> <span class="attribute-name">value</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">https://backend.internal.example.com</span><span class="delimiter">&quot;</span></span><span class="tag">/&gt;</span>
-        <span class="tag">&lt;/properties&gt;</span>
-    <span class="tag">&lt;/provider&gt;</span>
-<span class="tag">&lt;/spi&gt;</span></code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">kc.[sh|bat] start --spi-ciba-auth-channel-ciba-http-auth-channel-http-authentication-channel-uri=https://backend.internal.example.com</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -10482,7 +10726,7 @@ redirects to the application using the callback URL and additionally adds the <e
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">httpAuthenticationChannelUri</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">http-authentication-channel-uri</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Specifying URI of the entity that actually authenticates the user via AD (Authentication Device).</p></td>
 </tr>
 </tbody>
@@ -10838,12 +11082,15 @@ It must be one of the following status.<br>
 <div class="sect3">
 <h4 id="_oidc-logout"><a class="anchor" href="#_oidc-logout"></a>OIDC Logout</h4>
 <div class="paragraph">
-<p>OIDC has three different specifications relevant to logout mechanisms, all of these are currently in draft status:</p>
+<p>OIDC has four specifications relevant to logout mechanisms. These specifications are in draft status:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
 <p><a href="https://openid.net/specs/openid-connect-session-1_0.html">Session Management</a></p>
+</li>
+<li>
+<p><a href="https://openid.net/specs/openid-connect-rpinitiated-1_0.html">RP-Initiated Logout</a></p>
 </li>
 <li>
 <p><a href="https://openid.net/specs/openid-connect-frontchannel-1_0.html">Front-Channel Logout</a></p>
@@ -10864,18 +11111,25 @@ When the session is terminated at Keycloak the application will notice and trigg
 </div>
 </div>
 <div class="sect4">
-<h5 id="frontchannel-logout"><a class="anchor" href="#frontchannel-logout"></a>Frontchannel Logout</h5>
+<h5 id="rp-initiated-logout"><a class="anchor" href="#rp-initiated-logout"></a>RP-Initiated Logout</h5>
 <div class="paragraph">
-<p>This is also a browser-based logout where the logout starts by redirecting the user to a specific endpoint at Keycloak.</p>
+<p>This is also a browser-based logout where the logout starts by redirecting the user to a specific endpoint at Keycloak.
+This redirect usually happens when the user clicks the <code>Log Out</code> link on the page of some application, which previously used Keycloak to authenticate the user.</p>
 </div>
 <div class="paragraph">
 <p>Once the user is redirected to the logout endpoint, Keycloak is going to send logout requests to
 clients to let them to invalidate their local user sessions, and potentially redirect the user to some URL
-once the logout process is finished.</p>
+once the logout process is finished. The user might be optionally requested to confirm the logout in case that <code>id_token_hint</code> parameter was not used
+or the client referenced in the ID Token from <code>id_token_hint</code> has <code>Consent Required</code> enabled.</p>
 </div>
 <div class="paragraph">
-<p>Depending on the client configuration, logout requests can be sent to clients through the front-channel or through the back-channel.</p>
+<p>Depending on the client configuration, logout requests can be sent to clients through the front-channel or through the back-channel. For the frontend browser clients, which rely on the
+Session Management described in the previous section, Keycloak does not need to send any logout requests to them; these clients automatically detect that SSO session
+in the browser is logged out.</p>
 </div>
+</div>
+<div class="sect4">
+<h5 id="frontchannel-logout"><a class="anchor" href="#frontchannel-logout"></a>Frontchannel Logout</h5>
 <div class="paragraph">
 <p>To configure clients to receive logout requests through the front-channel, look at the <a href="#_front-channel-logout">Front-Channel Logout</a> client setting. When using this method, consider the following:</p>
 </div>
@@ -12305,12 +12559,32 @@ JavaScript code came from, the request must use CORS. The server must handle COR
 </li>
 </ol>
 </div>
-<div id="_mapping-acr-to-loa" class="paragraph">
+<div id="_mapping-acr-to-loa-client" class="paragraph">
 <p><strong>ACR to Level of Authentication (LoA) Mapping</strong></p>
 </div>
 <div class="paragraph">
-<p>In the advanced settings of a client, you can define which <code>Authentication Context Class Reference (ACR)</code> value is mapped to which <code>Level of Authentication (LoA)</code>. The ACR can be any value, whereas the LoA must be numeric.
-The acr claim in also included in the access token and ID token.</p>
+<p>In the advanced settings of a client, you can define which <code>Authentication Context Class Reference (ACR)</code> value is mapped to which <code>Level of Authentication (LoA)</code>.
+This mapping can be specified also at the realm as mentioned in the <a href="#_mapping-acr-to-loa-realm">ACR to LoA Mapping</a>. A best practice is to configure this mapping at the
+realm level, which allows to share the same settings across multiple clients.</p>
+</div>
+<div class="paragraph">
+<p>The <code>Default ACR Values</code> can be used to specify the default values when the login request is sent from this client to Keycloak without <code>acr_values</code> parameter and without
+a <code>claims</code> parameter that has an <code>acr</code> claim attached. See <a href="https://openid.net/specs/openid-connect-registration-1_0.html#ClientMetadata">offical OIDC dynamic client registration specification</a>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Note that default ACR values are used as the default level, however it cannot be reliably used to enforce login with the particular level.
+For example, assume that you configure the <code>Default ACR Values</code> to level 2. Then by default, users will be required to authenticate with level 2.
+However when the user explicitly attaches the parameter into login request such as <code>acr_values=1</code>, then the level 1 will be used. As a result, if the client
+really requires level 2, the client is encouraged to check the presence of the <code>acr</code> claim inside ID Token and doublecheck that it contains the requested level 2.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p><span class="image"><img src="./images/client-oidc-map-acr-to-loa.png" alt="ACR to LoA mapping"></span></p>
@@ -12465,6 +12739,301 @@ use cases, it is sufficient to accept all certificates. In that case, you can us
 </li>
 <li>
 <p>Supply <code>client_id</code> as a form parameter.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_secret_rotation"><a class="anchor" href="#_secret_rotation"></a>Client Secret Rotation</h4>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/clients/oidc/con-secret-rotation.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/clients/oidc/con-secret-rotation.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="admonitionblock important _abstract">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Please note that Client Secret Rotation support is in development. Use this feature experimentally.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For a client with <a href="#_client-credentials">Confidential</a> <a href="#_access-type">Access Type</a> Keycloak supports the functionality of rotating client secrets through <a href="#_client_policies">Client Policies</a>.</p>
+</div>
+<div class="paragraph">
+<p>The client secrets rotation policy provides greater security in order to alleviate problems such as secret leakage. Once enabled, Keycloak supports up to two concurrently active secrets for each client. The policy manages rotations according to the following settings:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Secret expiration:</strong> [seconds] - When the secret is rotated, this is the expiration of time of the new secret. The amount, <em>in seconds</em>, added to the secret creation date. Calculated at policy execution time.</p>
+</li>
+<li>
+<p><strong>Rotated secret expiration:</strong> [seconds] - When the secret is rotated, this value is the remaining expiration time for the old secret. This value should be always smaller than Secret expiration. When the value is 0, the old secret will be immediately removed during client rotation. The amount, <em>in seconds</em>, added to the secret rotation date. Calculated at policy execution time.</p>
+</li>
+<li>
+<p><strong>Remaining expiration time for rotation during update:</strong> [seconds] - Time period when an update to a dynamic client should perform client secret rotation. Calculated at policy execution time.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When a client secret rotation occurs, a new main secret is generated and the old client main secret becomes the secondary secret with a new expiration date.</p>
+</div>
+<div class="sect4">
+<h5 id="rules-for-client-secret-rotation"><a class="anchor" href="#rules-for-client-secret-rotation"></a>Rules for client secret rotation</h5>
+<div class="paragraph">
+<p>Rotations do not occur automatically or through a background process. In order to perform the rotation, an update action is required on the client, either through the Keycloak Admin Console through the function of <strong>Regenerate Secret</strong>, in the client&#8217;s credentials tab or Admin REST API. When invoking a client update action, secret rotation occurs according to the rules:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>When the value of <strong>Secret expiration</strong> is less than the current date.</p>
+</li>
+<li>
+<p>During dynamic client registration client-update request, the client secret will be automatically rotated if the value of  <strong>Remaining expiration time for rotation during update</strong> match the period between the current date and the <strong>Secret expiration</strong>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Additionally it is possible through Admin REST API to force a client secret rotation at any time.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>During the creation of new clients, if the client secret rotation policy is active, the behavior will be applied automatically.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+To apply the secret rotation behavior to an existing client, update that client after you define the policy so that the behavior is applied.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_proc-secret-rotation"><a class="anchor" href="#_proc-secret-rotation"></a>Creating an OIDC Client Secret Rotation Policy</h4>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak-documentation/blob/master/server_admin/topics/clients/oidc/proc-secret-rotation.adoc" target="_blank">Edit this section</a>
+<a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_admin/topics/clients/oidc/proc-secret-rotation.adoc" target="_blank">Report an issue</a>
+</div>
+</div>
+<div class="paragraph _abstract">
+<p>The following is an example of defining a secret rotation policy:</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Click <strong>Realm Settings</strong> in the left menu.</p>
+</li>
+<li>
+<p>Click <strong>Client Policies</strong> tab.</p>
+</li>
+<li>
+<p>On Profiles Page, Click <strong>Create</strong></p>
+<div class="paragraph">
+<div class="title">Create a profile</div>
+<p><span class="image"><img src="./images/create-oidc-client-profile.png" alt="Create Client Profile"></span></p>
+</div>
+</li>
+<li>
+<p>Enter any name for <strong>Name</strong>.</p>
+</li>
+<li>
+<p>Enter a description that helps you identify the purpose of the profile for <strong>Description</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+<div class="paragraph">
+<p>This action creates the profile and enables you to configure executors.</p>
+</div>
+</li>
+<li>
+<p>Click <strong>Create</strong> to configure an executor for this profile.</p>
+<div class="paragraph">
+<div class="title">Create a profile executors</div>
+<p><span class="image"><img src="./images/create-oidc-client-secret-rotation-executor.png" alt="Client Profile Executor"></span></p>
+</div>
+</li>
+<li>
+<p>Select <em>secret-rotation</em> for <strong>Executor Type</strong>.</p>
+</li>
+<li>
+<p>Enter the maximum duration time of each secret, in seconds, for <strong>Secret Expiration</strong>.</p>
+</li>
+<li>
+<p>Enter the maximum duration time of each rotated secret, in seconds, for <strong>Rotated Secret Expiration</strong>.</p>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Remember that the <strong>Rotated Secret Expiration</strong> value must always be less than <strong>Secret Expiration</strong>.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Enter the amount of time, in seconds, after which any update action will update the client for <strong>Remain Expiration Time</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>In the example above:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Each secret is valid for one week.</p>
+</li>
+<li>
+<p>The rotated secret expires after two days.</p>
+</li>
+<li>
+<p>The window for updating dynamic clients starts one day before the secret expires.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Return to the <strong>Client Policies</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Policies</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create</strong>.</p>
+<div class="paragraph">
+<div class="title">Create the Client Secret Rotation Policy</div>
+<p><span class="image"><img src="./images/create-oidc-client-secret-rotation-policy.png" alt="Client Rotation Policy"></span></p>
+</div>
+</li>
+<li>
+<p>Enter any name for <strong>Name</strong>.</p>
+</li>
+<li>
+<p>Enter a description that helps you identify the purpose of the policy for <strong>Description</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+<div class="paragraph">
+<p>This action creates the policy and enables you to associate policies with profiles. It also allows you to configure the conditions for policy execution.</p>
+</div>
+</li>
+<li>
+<p>Under Conditions, click <strong>Create</strong>.</p>
+<div class="paragraph">
+<div class="title">Create the Client Secret Rotation Policy Condition</div>
+<p><span class="image"><img src="./images/create-oidc-client-secret-rotation-condition.png" alt="Client Rotation Policy Condition"></span></p>
+</div>
+</li>
+<li>
+<p>To apply the behavior to all confidential clients select <em>client-access-type</em> in the <strong>Condition Type</strong> field</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To apply to a specific group of clients, another approach would be to select the <em>client-roles</em> type in the <strong>Condition Type</strong> field. In this way, you could create specific roles and assign a custom rotation configuration to each role.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Add <em>confidential</em> to the field <strong>Client Access Type</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Back in the policy setting, under <em>Client Profiles</em>, in the <strong>Add client profile</strong> selection menu, select the profile <strong>Weekly Client Secret Rotation Profile</strong> created earlier.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Client Secret Rotation Policy</div>
+<p><span class="image"><img src="./images/oidc-client-secret-rotation-policy.png" alt="Client Rotation Policy"></span></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To apply the secret rotation behavior to an existing client, follow the following steps:</p>
+</div>
+<div class="olist arabic">
+<div class="title">Using the Admin Console</div>
+<ol class="arabic">
+<li>
+<p>Go to some client.</p>
+</li>
+<li>
+<p>Go to tab <strong><em>Credentials</em></strong>.</p>
+</li>
+<li>
+<p>Click <strong><em>Re-generate secret</em></strong>.</p>
+</li>
+</ol>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<hr>
+<div class="ulist">
+<div class="title">Using client REST services it can be executed in two ways:</div>
+<ul>
+<li>
+<p>Through an update operation on a client</p>
+</li>
+<li>
+<p>Through the regenerate client secret endpoint</p>
 </li>
 </ul>
 </div>
@@ -12660,7 +13229,7 @@ on the Keycloak side upon successful authentication by default. Due to the lack 
 <p>Use this value to invoke the <strong>&lt;trusted service&gt;</strong>.</p>
 </div>
 <div class="sect4">
-<h5 id="setup-3"><a class="anchor" href="#setup-3"></a>Setup</h5>
+<h5 id="setup-4"><a class="anchor" href="#setup-4"></a>Setup</h5>
 <div class="paragraph">
 <p>When setting up audience checking:</p>
 </div>
@@ -12946,6 +13515,10 @@ the name, set up a replacement string value. For example, a string value such as
 <dt class="hdlist1"><strong>Force Name ID Format</strong></dt>
 <dd>
 <p>If a request has a name ID policy, ignore it and use the value configured in the Admin Console under <strong>Name ID Format</strong>.</p>
+</dd>
+<dt class="hdlist1"><strong>Allow ECP Flow</strong></dt>
+<dd>
+<p>If true, this application is allowed to use SAML ECP profile for authentication.</p>
 </dd>
 <dt class="hdlist1"><strong>Name ID Format</strong></dt>
 <dd>
@@ -13871,6 +14444,9 @@ settings. After that, the executor validates this configuration in validation ph
 <li>
 <p>Enforce <code>binding_message</code> parameter is used for CIBA requests</p>
 </li>
+<li>
+<p>Enforce <a href="#_secret_rotation">Client Secret Rotation</a></p>
+</li>
 </ul>
 </div>
 </div>
@@ -13912,6 +14488,12 @@ client registration policies are applied.</p>
 </div>
 <div class="paragraph">
 <p>The current plans are for the Client Registration Policies feature to be removed and the existing client registration policies will be migrated into new client policies automatically.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="client-secret-rotation-example"><a class="anchor" href="#client-secret-rotation-example"></a>Client Secret Rotation Example</h4>
+<div class="paragraph">
+<p>See an example configuration for <a href="#_proc-secret-rotation">client secret rotation</a>.</p>
 </div>
 </div>
 </div>
@@ -14754,13 +15336,13 @@ as a normal character.</p>
 <p>Clickjacking is a technique of tricking users into clicking on a user interface element different from what users perceive. A malicious site loads the target site in a transparent iFrame, overlaid on top of a set of dummy buttons placed directly under important buttons on the target site. When a user clicks a visible button, they are clicking a button on the hidden page. An attacker can steal a user&#8217;s authentication credentials and access their resources by using this method.</p>
 </div>
 <div class="paragraph">
-<p>By default, every response by Keycloak sets some specific browser headers that can prevent this from happening.
-Specifically, it sets <a href="https://datatracker.ietf.org/doc/html/rfc7034">X-FRAME_OPTIONS</a> and <a href="http://www.w3.org/TR/CSP/">Content-Security-Policy</a>.
+<p>By default, every response by Keycloak sets some specific HTTP headers that can prevent this from happening.
+Specifically, it sets <a href="https://datatracker.ietf.org/doc/html/rfc7034">X-Frame-Options</a> and <a href="http://www.w3.org/TR/CSP/">Content-Security-Policy</a>.
 You should take a look at the definition of both of these headers as there is a lot of fine-grain browser access you can control.</p>
 </div>
 <div class="paragraph">
 <div class="title">Procedure</div>
-<p>In the Admin Console, you can specify the values of the X-FRAME_OPTIONS and Content-Security-Policy headers.</p>
+<p>In the Admin Console, you can specify the values of the X-Frame-Options and Content-Security-Policy headers.</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -14771,7 +15353,7 @@ You should take a look at the definition of both of these headers as there is a 
 <p>Click the <strong>Security Defenses</strong> tab.</p>
 <div class="paragraph">
 <div class="title">Security Defenses</div>
-<p><span class="image"><img src="./keycloak-images/security-headers.png" alt="Security Defences"></span></p>
+<p><span class="image"><img src="./keycloak-images/security-headers.png" alt="Security Defenses"></span></p>
 </div>
 </li>
 </ol>
@@ -17927,14 +18509,14 @@ $ kcadm.sh get users -r demorealm -q username=testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2022-03-23 08:52:09 UTC
+Last updated 2022-04-20 19:51:38 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
 
 <script>
-    var oldtoc = document.getElementById('toctitle').nextElementSibling;
-    var newtoc = document.createElement('div');
+    const oldtoc = document.getElementById('toctitle').nextElementSibling;
+    const newtoc = document.createElement('div');
     newtoc.setAttribute('id', 'tocbot');
     newtoc.setAttribute('class', 'js-toc');
     oldtoc.parentNode.replaceChild(newtoc, oldtoc);
@@ -17942,8 +18524,8 @@ Last updated 2022-03-23 08:52:09 UTC
         headingSelector: 'h2, h3, h4',
         smoothScroll: false
     });
-    var handleTocOnResize = function() {
-        var width = window.innerWidth
+    const handleTocOnResize = function() {
+        const width = window.innerWidth
                     || document.documentElement.clientWidth
                     || document.body.clientWidth;
         if (width < 768) {
