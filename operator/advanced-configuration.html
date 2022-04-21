@@ -1,0 +1,230 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Advanced configuration - Keycloak</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#operator">Operator</a></li>
+                    <li class="breadcrumb-item active">Advanced configuration</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Advanced configuration</h1>
+                    <span class="text-muted">How to tune advanced aspects of the Keycloak CR</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div class="sect1">
+<h2 id="_advanced_configuration">Advanced Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide, you&#8217;ll learn how to configure your Keycloak deployment using advanced concepts and options provided by Custom Resources (CR).</p>
+</div>
+<div class="sect2">
+<h3 id="_server_configuration_details">Server Configuration details</h3>
+<div class="paragraph">
+<p>The <code>serverConfiguration</code> field of the Keycloak CR allows to pass to Keycloak any available configuration in the form of key-value pairs.
+For all the available configuration options, refer to <a href="https://www.keycloak.org/server/all-config">All configuration</a>
+.</p>
+</div>
+<div class="paragraph">
+<p>The values can be expressed as plain text strings or Kubernetes Secret references.
+e.g:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  ...
+  serverConfiguration:
+    - name: db
+      value: postgres # plain text value
+    - name: db-url-host
+      value: postgres-db # plain text value
+    - name: db-username
+      secret: # Secret reference
+        name: keycloak-db-secret # name of the Secret
+        key: username # name of the Key in the Secret
+    - name: db-password
+      secret: # secret reference
+        name: keycloak-db-secret # name of the Secret
+        key: password # name of the Key in the Secret</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_secret_references">Secret References</h3>
+<div class="paragraph">
+<p>A Secret Reference can be either a value in <code>serverConfiguration</code> or the <code>tlsSecret</code>.</p>
+</div>
+<div class="paragraph">
+<p>When specifying a Secret Reference, you have to make sure that a Secret containing the referenced keys is present in the same namespace as the CR referencing it.
+Along with the Keycloak Server Deployment, the operator adds special labels to the referenced Secrets in order to watch for changes.</p>
+</div>
+<div class="paragraph">
+<p>When a referenced Secret is modified, the operator automatically performs a rolling restart of the Keycloak Deployment to pick up the changes.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_unsupported_features">Unsupported features</h3>
+<div class="paragraph">
+<p>The <code>unsupported</code> field of the CR contains highly experimental configuration options that are not completely tested and supported.</p>
+</div>
+<div class="sect3">
+<h4 id="_pod_template">Pod Template</h4>
+<div class="paragraph">
+<p>Pod Template is a raw API representation that is used for the Kubernetes Deployment Template.
+This field is intended to be used as a temporary workaround if there is no officially supported field at the top level of the CR to cover your use-case.
+Please consider opening an issue on GitHub to help us make the experience better.</p>
+</div>
+<div class="paragraph">
+<p>The operator will merge the fields of the provided template with the values generated by the operator for the specific Deployment.
+Using this feature, you have access to a high level of customizations, but there are no guarantees that the Deployment will work as expected.</p>
+</div>
+<div class="paragraph">
+<p>As an example you can inject labels, annotations, or even volumes and volume mounts:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  ...
+  unsupported:
+    podTemplate:
+      metadata:
+        labels:
+          my-label: "keycloak"
+      spec:
+        containers:
+          - volumeMounts:
+              - name: test-volume
+                mountPath: /mnt/test
+        volumes:
+          - name: test-volume
+            secret:
+              secretName: keycloak-additional-secret</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_disabling_required_cr_fields">Disabling required CR fields</h3>
+<div class="paragraph">
+<p>By default, the Keycloak operator is designed to provide you with the best production-ready Deployment of Keycloak with security in mind.
+Although, for development purposes, you can still disable key security features.</p>
+</div>
+<div class="paragraph">
+<p>Specifically, you can disable the required fields with a special value <code>INSECURE-DISABLE</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  ...
+  hostname: INSECURE-DISABLE
+  tlsSecret: INSECURE-DISABLE</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/operator/advanced-configuration.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

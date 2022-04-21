@@ -1,0 +1,340 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Basic Keycloak Deployment - Keycloak</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#operator">Operator</a></li>
+                    <li class="breadcrumb-item active">Basic Keycloak Deployment</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Basic Keycloak Deployment</h1>
+                    <span class="text-muted">How to install Keycloak using the Operator on Kubernetes or OpenShift</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div class="sect1">
+<h2 id="_basic_keycloak_deployment">Basic Keycloak Deployment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide we will show how to have a basic Keycloak Deployment on Kubernetes or OpenShift using the Operator.
+We assume that the Operator is correctly installed and running in the cluster namespace.</p>
+</div>
+<div class="sect2">
+<h3 id="_pre_requisites">Pre-requisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Database</p>
+</li>
+<li>
+<p>Hostname</p>
+</li>
+<li>
+<p>TLS Certificate and associated keys</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_database">Database</h4>
+<div class="paragraph">
+<p>A database should be available and accessible from the cluster namespace where you want to install Keycloak.
+Please refer to <a href="https://www.keycloak.org/server/db">Configuring the database</a>
+ for the list of supported databases.
+The Keycloak Operator does not manage the database and you need to provision it yourself, we suggest to verify your cloud provider offering or use a database Operator such as <a href="https://access.crunchydata.com/documentation/postgres-operator/latest/">Crunchy</a>.</p>
+</div>
+<div class="paragraph">
+<p>For development purposes you can use an ephemeral Postgres pod installation.
+You can provision it using the following commands:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">cat &lt;&lt;EOF &gt;&gt; example-postgres.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql-db
+spec:
+  serviceName: postgresql-db-service
+  selector:
+    matchLabels:
+      app: postgresql-db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgresql-db
+    spec:
+      containers:
+        - name: postgresql-db
+          image: postgres:latest
+          env:
+            - name: POSTGRES_PASSWORD
+              value: testpassword
+            - name: PGDATA
+              value: /data/pgdata
+            - name: POSTGRES_DB
+              value: keycloak
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-db
+spec:
+  selector:
+    app: postgresql-db
+  type: LoadBalancer
+  ports:
+  - port: 5432
+    targetPort: 5432
+EOF
+kubectl apply -f example-postgres.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_hostname">Hostname</h4>
+<div class="paragraph">
+<p>To have a production ready installation you need to provide the hostname that will be used to contact Keycloak.
+Please refer to <a href="https://www.keycloak.org/server/hostname">Configuring the hostname</a>
+ for the available configurations.</p>
+</div>
+<div class="paragraph">
+<p>For development purposes we will use from now on <code>test.keycloak.org</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_tls_certificate_and_key">TLS Certificate and key</h4>
+<div class="paragraph">
+<p>Please refer to Certification Authority of choice to obtain the certificate and the key.</p>
+</div>
+<div class="paragraph">
+<p>For development purposes you can use this command to obtain a self-signed certificate:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">openssl req -subj '/CN=test.keycloak.org/O=Test Keycloak./C=US' -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and you should install it in the cluster namespace as a Secret by running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create secret tls example-tls-secret --cert certificate.pem --key key.pem</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_deploying_keycloak">Deploying Keycloak</h3>
+<div class="paragraph">
+<p>To deploy Keycloak you have to create a Custom Resource (CR from now on) shaped after the Keycloak Custom Resource Definition (CRD).</p>
+</div>
+<div class="paragraph">
+<p>We suggest you to first store the Database credentials in a separate Secret, you can do it for example by running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create secret generic keycloak-db-secret \
+  --from-literal=username=[your_database_username] \
+  --from-literal=password=[your_database_password]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Keycloak CRD allow you to customize several fields but, for a simple deployment you can use the following example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">cat &lt;&lt;EOF &gt;&gt; example-kc.yaml
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  instances: 1
+  serverConfiguration:
+    - name: db
+      value: postgres
+    - name: db-url-host
+      value: postgres-db
+    - name: db-username
+      secret:
+        name: keycloak-db-secret
+        key: username
+    - name: db-password
+      secret:
+        name: keycloak-db-secret
+        key: password
+  hostname: test.keycloak.org
+  tlsSecret: example-tls-secret
+EOF
+kubectl apply -f example-kc.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And you can check that the Keycloak instance has been provisioned in the cluster by looking at the status of the created CR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get keycloaks/example-kc -o go-template='{{range .status.conditions}}CONDITION: {{.type}}{{"\n"}}  STATUS: {{.status}}{{"\n"}}  MESSAGE: {{.message}}{{"\n"}}{{end}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the Deployment is ready the output will look like the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">CONDITION: Ready
+  STATUS: true
+  MESSAGE:
+CONDITION: HasErrors
+  STATUS: false
+  MESSAGE:
+CONDITION: RollingUpdate
+  STATUS: false
+  MESSAGE:</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_accessing_the_keycloak_deployment">Accessing the Keycloak Deployment</h3>
+<div class="paragraph">
+<p>The Keycloak deployment is, by default, exposed through a basic nginx ingress and it will be accessible through the provided hostname.</p>
+</div>
+<div class="paragraph">
+<p>For debugging and development purposes we suggest you to directly connect to the Keycloak service using a port forward:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl port-forward service/example-kc-service 8443:8443</code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_accessing_the_admin_console">Accessing the Admin Console</h4>
+<div class="paragraph">
+<p>When deploying Keycloak, the operator generates an arbitrary initial admin <code>username</code> and <code>password</code> and stores those credentials as a Kubernetes basic-auth Secret in the same namespace as the CR.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Warning:</div>
+Change the default admin credentials and enable MFA in Keycloak before going to production.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To fetch the initial admin credentials you have to read and decode a Kubernetes Secret.
+The Secret name is derived from the Keycloak CR name plus the fixed suffix <code>-initial-admin</code>.
+To get the username and password for the <code>example-kc</code> CR use the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get secret example-kc-initial-admin -o jsonpath='{.data.username}' | base64 --decode
+kubectl get secret example-kc-initial-admin -o jsonpath='{.data.password}' | base64 --decode</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can use those credentials to access the Admin Console or the Admin REST API.</p>
+</div>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/operator/basic-deployment.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

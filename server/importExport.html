@@ -1,0 +1,285 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Importing and Exporting Realms - Keycloak</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Importing and Exporting Realms</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Importing and Exporting Realms</h1>
+                    <span class="text-muted">An overview about how to import and export realms</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide, you are going to understand the different approaches for importing and exporting realms using JSON files.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exporting_a_realm_to_a_directory">Exporting a Realm to a Directory</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To export a realm, you can use the <code>export</code> command. Your Keycloak server instance must not be started when invoking this command.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] export --help</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To export a realm to a directory, you can use the <code>--dir &lt;dir&gt;</code> option.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] export --dir &lt;dir&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When exporting realms to a directory, the server is going to create separate files for each realm being exported.</p>
+</div>
+<div class="sect2">
+<h3 id="_configuring_how_users_are_exported">Configuring how users are exported</h3>
+<div class="paragraph">
+<p>You are also able to configure how users are going to be exported by setting the <code>--users &lt;strategy&gt;</code> option. The values available for this
+option are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>different_files</strong>: Users export into different json files, depending on the maximum number of users per file set by <code>--users-per-file</code>. This is the default value.</p>
+</li>
+<li>
+<p><strong>skip</strong>: Skips exporting users.</p>
+</li>
+<li>
+<p><strong>realm_file</strong>:  Users will be exported to the same file as the realm settings. For a realm named "foo", this would be "foo-realm.json" with realm data and users.</p>
+</li>
+<li>
+<p><strong>same_file</strong>:  All users are exported to one explicit file. So you will get two json files for a realm, one with realm data and one with users.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If you are exporting users using the <code>different_files</code> strategy, you can set how many users per file you want by setting the <code>--users-per-file</code> option. The default value is <code>50</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] export --dir &lt;dir&gt; --users different_files --users-per-file 100</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exporting_a_realm_to_a_file">Exporting a Realm to a File</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To export a realm to a file, you can use the <code>--file &lt;file&gt;</code> option.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] export --file &lt;file&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When exporting realms to a file, the server is going to use the same file to store the configuration for all the realms being exported.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exporting_a_specific_realm">Exporting a specific realm</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you do not specify a specific realm to export, all realms are exported. To export a single realm, you can use the <code>--realm</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] export [--dir|--file] &lt;path&gt; --realm my-realm</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_importing_a_realm_from_a_directory">Importing a Realm from a Directory</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To import a realm, you can use the <code>import</code> command. Your Keycloak server instance must not be started when invoking this command.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] import --help</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After exporting a realm to a directory, you can use the <code>--dir &lt;dir&gt;</code> option to import the realm back to the server as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] import --dir &lt;dir&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When importing realms using the <code>import</code> command, you are able to set if existing realms should be skipped, or if they should be overridden with the new configuration. For that,
+you can set the <code>--override</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] import --dir &lt;dir&gt; --override false</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, the <code>--override</code> option is set to <code>true</code> so that realms are always overridden with the new configuration.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_importing_a_realm_from_a_file">Importing a Realm from a File</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To import a realm previously exported in a single file, you can use the <code>--file &lt;file&gt;</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] import --file &lt;file&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_importing_a_realm_during_startup">Importing a Realm during Startup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You are also able to import realms when the server is starting by using the <code>--import-realm</code> option.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --import-realm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you set the <code>--import-realm</code> option, the server is going to try to import any realm configuration file from the <code>data/import</code> directory. Each file in this directory should
+contain a single realm configuration.</p>
+</div>
+<div class="paragraph">
+<p>If a realm already exists in the server, the import operation is skipped.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_environment_variables_within_the_realm_configuration_files">Using Environment Variables within the Realm Configuration Files</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When importing a realm, you are able to use placeholders to resolve values from environment variables for any realm configuration.</p>
+</div>
+<div class="listingblock">
+<div class="title">Realm configuration using placeholders</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">{
+    "realm": "${MY_REALM_NAME}",
+    "enabled": true,
+    ...
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the example above, the value set to the <code>MY_REALM_NAME</code> environment variable is going to be used to set the <code>realm</code> property.</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/importExport.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>
