@@ -167,7 +167,7 @@
 	  return parts.join('')
 	}
 
-	var sha256 = {exports: {}};
+	var sha256$1 = {exports: {}};
 
 	/**
 	 * [js-sha256]{@link https://github.com/emn178/js-sha256}
@@ -682,7 +682,9 @@
 	    root.sha224 = exports.sha224;
 	  }
 	})();
-	}(sha256));
+	}(sha256$1));
+
+	var sha256 = sha256$1.exports;
 
 	if (typeof es6Promise_min.exports.Promise === 'undefined') {
 	    throw Error('Keycloak requires an environment that supports Promises. Make sure that you include the appropriate polyfill.');
@@ -1034,7 +1036,7 @@
 	            // The use of the "plain" method is considered insecure and therefore not supported.
 	            case "S256":
 	                // hash codeVerifier, then encode as url-safe base64 without padding
-	                var hashBytes = new Uint8Array(sha256.exports.sha256.arrayBuffer(codeVerifier));
+	                var hashBytes = new Uint8Array(sha256.arrayBuffer(codeVerifier));
 	                var encodedHash = base64Js.fromByteArray(hashBytes)
 	                    .replace(/\+/g, '-')
 	                    .replace(/\//g, '_')
@@ -1043,6 +1045,15 @@
 	            default:
 	                throw 'Invalid value for pkceMethod';
 	        }
+	    }
+
+	    function buildClaimsParameter(requestedAcr){
+	        var claims = {
+	            id_token: {
+	                acr: requestedAcr
+	            }
+	        };
+	        return JSON.stringify(claims);
 	    }
 
 	    kc.createLoginUrl = function(options) {
@@ -1112,6 +1123,11 @@
 	            url += '&ui_locales=' + encodeURIComponent(options.locale);
 	        }
 
+	        if (options && options.acr) {
+	            var claimsParameter = buildClaimsParameter(options.acr);
+	            url += '&claims=' + encodeURIComponent(claimsParameter);
+	        }
+
 	        if (kc.pkceMethod) {
 	            var codeVerifier = generateCodeVerifier(96);
 	            callbackState.pkceCodeVerifier = codeVerifier;
@@ -1131,7 +1147,8 @@
 
 	    kc.createLogoutUrl = function(options) {
 	        var url = kc.endpoints.logout()
-	            + '?redirect_uri=' + encodeURIComponent(adapter.redirectUri(options, false));
+	            + '?post_logout_redirect_uri=' + encodeURIComponent(adapter.redirectUri(options, false))
+	            + '&id_token_hint=' + encodeURIComponent(kc.idToken);
 
 	        return url;
 	    };
