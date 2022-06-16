@@ -2712,6 +2712,66 @@ of the script file will be used instead</p>
 <div class="paragraph">
 <p>Once you have a JAR file with a descriptor and the scripts you want to deploy, you just need to copy the JAR to the Keycloak <code>providers/</code> directory, then run <code>bin/kc.[sh|bat] build</code>.</p>
 </div>
+<div class="sect4">
+<h5 id="deploy-the-script-engine-on-java-15-and-later"><a class="anchor" href="#deploy-the-script-engine-on-java-15-and-later"></a>Deploy the script engine on Java 15 and later</h5>
+<div class="paragraph">
+<p>To run the scripts, JavaScript providers require that a JavaScript engine is available in your Java application. Java 14 and lower versions include the Nashorn JavaScript Engine. It is
+automatically available as part of the Java itself and JavaScript providers are able to use this script engine by default. However, for Java 15 or higher versions, the script engine is not part
+of the Java itself. It needs to be added to your server because Keycloak does not have any script engine by default. Java 15 and higher versions require an extra step when deploying script
+providers - adding the script engine of your choice to your distribution.</p>
+</div>
+<div class="paragraph">
+<p>You can use any script engine. However, we only test with the Nashorn JavaScript Engine. The following steps assume that this engine is used:</p>
+</div>
+<div class="paragraph">
+<p>Install the script engine by copying the nashorn script engine JAR and its dependencies directly to the <code>KEYCLOAK_HOME/providers</code> directory. In the <code>pom.xml</code> file
+of your script project, you can declare the dependency such as this in the <code>dependencies</code> section:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;dependency&gt;</span>
+    <span class="tag">&lt;groupId&gt;</span>org.openjdk.nashorn<span class="tag">&lt;/groupId&gt;</span>
+    <span class="tag">&lt;artifactId&gt;</span>nashorn-core<span class="tag">&lt;/artifactId&gt;</span>
+    <span class="tag">&lt;version&gt;</span>15.3<span class="tag">&lt;/version&gt;</span>
+<span class="tag">&lt;/dependency&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and declare <code>maven-dependency-plugin</code> in the <code>plugins</code> section to copy the dependencies to the specified directory:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;plugin&gt;</span>
+    <span class="tag">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/groupId&gt;</span>
+    <span class="tag">&lt;artifactId&gt;</span>maven-dependency-plugin<span class="tag">&lt;/artifactId&gt;</span>
+    <span class="tag">&lt;executions&gt;</span>
+        <span class="tag">&lt;execution&gt;</span>
+                <span class="tag">&lt;id&gt;</span>copy-dependencies-quarkus<span class="tag">&lt;/id&gt;</span>
+                <span class="tag">&lt;phase&gt;</span>package<span class="tag">&lt;/phase&gt;</span>
+            <span class="tag">&lt;goals&gt;</span>
+                <span class="tag">&lt;goal&gt;</span>copy-dependencies<span class="tag">&lt;/goal&gt;</span>
+            <span class="tag">&lt;/goals&gt;</span>
+            <span class="tag">&lt;configuration&gt;</span>
+                <span class="tag">&lt;outputDirectory&gt;</span>${project.build.directory}/keycloak-server-copy/providers<span class="tag">&lt;/outputDirectory&gt;</span>
+                <span class="tag">&lt;includeArtifactIds&gt;</span>nashorn-core,asm,asm-util,asm-commons<span class="tag">&lt;/includeArtifactIds&gt;</span>
+            <span class="tag">&lt;/configuration&gt;</span>
+        <span class="tag">&lt;/execution&gt;</span>
+    <span class="tag">&lt;/executions&gt;</span>
+<span class="tag">&lt;/plugin&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the project is built, copy the script engine and its dependencies to the <code>KEYCLOAK_HOME/providers</code> directory.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">cp target/keycloak-server-copy/providers/*.jar KEYCLOAK_HOME/providers/</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After re-augment the distribution with <code>kc.sh build</code>, the script engine should be deployed and your script providers should work.</p>
+</div>
+</div>
 </div>
 <div class="sect3">
 <h4 id="using-the-keycloak-admin-console-to-upload-scripts"><a class="anchor" href="#using-the-keycloak-admin-console-to-upload-scripts"></a>Using the Keycloak Admin Console to upload scripts</h4>
@@ -6651,7 +6711,7 @@ plain byte and character arrays and buffers is preferable.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2022-04-20 19:51:22 UTC
+Last updated 2022-06-16 12:47:26 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
