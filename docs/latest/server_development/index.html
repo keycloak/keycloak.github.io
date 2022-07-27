@@ -1006,7 +1006,7 @@ span.image img {
 <div class="exampleblock top-menu-version">
 <div class="content">
 <div class="paragraph versionlatest">
-<p>Version <strong>18.0.2</strong> <em>Latest</em></p>
+<p>Version <strong>19.0.0</strong> <em>Latest</em></p>
 </div>
 </div>
 </div>
@@ -1188,7 +1188,7 @@ RealmRepresentation realm = keycloak.realm(<span class="string"><span class="del
 </div>
 </div>
 <div class="paragraph">
-<p>Complete Javadoc for the admin client is available at <a href="https://www.keycloak.org/docs/18.0/api_documentation/">API Documentation</a>.</p>
+<p>Complete Javadoc for the admin client is available at <a href="https://www.keycloak.org/docs/19.0/api_documentation/">API Documentation</a>.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1202,7 +1202,7 @@ RealmRepresentation realm = keycloak.realm(<span class="string"><span class="del
 <p><a href="https://www.keycloak.org/docs/latest/securing_apps/">Securing Applications and Services Guide</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/docs/18.0/api_documentation/">API Documentation</a></p>
+<p><a href="https://www.keycloak.org/docs/19.0/api_documentation/">API Documentation</a></p>
 </li>
 </ul>
 </div>
@@ -2711,6 +2711,66 @@ of the script file will be used instead</p>
 <h4 id="deploy-the-script-jar"><a class="anchor" href="#deploy-the-script-jar"></a>Deploy the script JAR</h4>
 <div class="paragraph">
 <p>Once you have a JAR file with a descriptor and the scripts you want to deploy, you just need to copy the JAR to the Keycloak <code>providers/</code> directory, then run <code>bin/kc.[sh|bat] build</code>.</p>
+</div>
+<div class="sect4">
+<h5 id="deploy-the-script-engine-on-java-15-and-later"><a class="anchor" href="#deploy-the-script-engine-on-java-15-and-later"></a>Deploy the script engine on Java 15 and later</h5>
+<div class="paragraph">
+<p>To run the scripts, JavaScript providers require that a JavaScript engine is available in your Java application. Java 14 and lower versions include the Nashorn JavaScript Engine. It is
+automatically available as part of the Java itself and JavaScript providers are able to use this script engine by default. However, for Java 15 or higher versions, the script engine is not part
+of the Java itself. It needs to be added to your server because Keycloak does not have any script engine by default. Java 15 and higher versions require an extra step when deploying script
+providers - adding the script engine of your choice to your distribution.</p>
+</div>
+<div class="paragraph">
+<p>You can use any script engine. However, we only test with the Nashorn JavaScript Engine. The following steps assume that this engine is used:</p>
+</div>
+<div class="paragraph">
+<p>Install the script engine by copying the nashorn script engine JAR and its dependencies directly to the <code>KEYCLOAK_HOME/providers</code> directory. In the <code>pom.xml</code> file
+of your script project, you can declare the dependency such as this in the <code>dependencies</code> section:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;dependency&gt;</span>
+    <span class="tag">&lt;groupId&gt;</span>org.openjdk.nashorn<span class="tag">&lt;/groupId&gt;</span>
+    <span class="tag">&lt;artifactId&gt;</span>nashorn-core<span class="tag">&lt;/artifactId&gt;</span>
+    <span class="tag">&lt;version&gt;</span>15.3<span class="tag">&lt;/version&gt;</span>
+<span class="tag">&lt;/dependency&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and declare <code>maven-dependency-plugin</code> in the <code>plugins</code> section to copy the dependencies to the specified directory:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;plugin&gt;</span>
+    <span class="tag">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/groupId&gt;</span>
+    <span class="tag">&lt;artifactId&gt;</span>maven-dependency-plugin<span class="tag">&lt;/artifactId&gt;</span>
+    <span class="tag">&lt;executions&gt;</span>
+        <span class="tag">&lt;execution&gt;</span>
+                <span class="tag">&lt;id&gt;</span>copy-dependencies-quarkus<span class="tag">&lt;/id&gt;</span>
+                <span class="tag">&lt;phase&gt;</span>package<span class="tag">&lt;/phase&gt;</span>
+            <span class="tag">&lt;goals&gt;</span>
+                <span class="tag">&lt;goal&gt;</span>copy-dependencies<span class="tag">&lt;/goal&gt;</span>
+            <span class="tag">&lt;/goals&gt;</span>
+            <span class="tag">&lt;configuration&gt;</span>
+                <span class="tag">&lt;outputDirectory&gt;</span>${project.build.directory}/keycloak-server-copy/providers<span class="tag">&lt;/outputDirectory&gt;</span>
+                <span class="tag">&lt;includeArtifactIds&gt;</span>nashorn-core,asm,asm-util,asm-commons<span class="tag">&lt;/includeArtifactIds&gt;</span>
+            <span class="tag">&lt;/configuration&gt;</span>
+        <span class="tag">&lt;/execution&gt;</span>
+    <span class="tag">&lt;/executions&gt;</span>
+<span class="tag">&lt;/plugin&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the project is built, copy the script engine and its dependencies to the <code>KEYCLOAK_HOME/providers</code> directory.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">cp target/keycloak-server-copy/providers/*.jar KEYCLOAK_HOME/providers/</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After re-augment the distribution with <code>kc.sh build</code>, the script engine should be deployed and your script providers should work.</p>
+</div>
 </div>
 </div>
 <div class="sect3">
@@ -4720,6 +4780,21 @@ properly set in the adapter configuration.</p>
 <a href="https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12313920&amp;components=12323375&amp;issuetype=1&amp;priority=3&amp;description=File:%20server_development/topics/user-storage.adoc" target="_blank">Report an issue</a>
 </div>
 </div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This functionality depends on APIs bundled in the <code>keycloak-model-legacy</code> module.
+It will soon be replaced with the new map storage API which provides a uniform way to access both local and external information about users and other entities, and the old APIs will be removed eventually.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>You can use the User Storage SPI to write extensions to Keycloak to connect to external user databases and credential stores. The built-in LDAP and ActiveDirectory support is an implementation of this SPI in action. Out of the box, Keycloak uses its local database to create, update, and look up users and validate credentials. Often though, organizations have existing external proprietary user databases that they cannot migrate to Keycloak&#8217;s data model. For those situations, application developers can write implementations of the User Storage SPI to bridge the external user store and the internal user object model that Keycloak uses to log in users and manage them.</p>
 </div>
@@ -6651,7 +6726,7 @@ plain byte and character arrays and buffers is preferable.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2022-06-24 15:54:07 UTC
+Last updated 2022-07-27 10:30:51 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
