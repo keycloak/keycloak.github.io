@@ -110,6 +110,79 @@ through the RESTful Admin API.</p>
 please take a look at <a href="https://www.keycloak.org/docs/latest/server_development/#_script_providers">JavaScript Providers</a>.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_userinfo_endpoint_changes">UserInfo Endpoint Changes</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Error response changes</dt>
+<dd>
+<p>The UserInfo endpoint is now returning error responses fully compliant with <a href="https://datatracker.ietf.org/doc/html/rfc6750">RFC 6750</a> (The OAuth 2.0 Authorization Framework: Bearer Token Usage). Error code and description (if available) are provided as <code>WWW-Authenticate</code> challenge attributes rather than JSON object fields.
+The responses will be the following, depending on the error condition:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>In case no access token is provided:</p>
+<div class="listingblock">
+<div class="content">
+<pre>401 Unauthorized
+WWW-Authenticate: Bearer realm="myrealm"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In case several methods are used simultaneously to provide an access token (for example, Authorization header + POST access_token parameter), or POST parameters are duplicated:</p>
+<div class="listingblock">
+<div class="content">
+<pre>400 Bad Request
+WWW-Authenticate: Bearer realm="myrealm", error="invalid_request", error_description="..."</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In case an access token is missing <code>openid</code> scope:</p>
+<div class="listingblock">
+<div class="content">
+<pre>403 Forbidden
+WWW-Authenticate: Bearer realm="myrealm", error="insufficient_scope", error_description="Missing openid scope"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In case of inability to resolve cryptographic keys for UserInfo response signing/encryption:</p>
+<div class="listingblock">
+<div class="content">
+<pre>500 Internal Server Error</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In case of a token validation error, a <code>401 Unauthorized</code> is returned in combination with the <code>invalid_token</code> error code. This error includes user and client related checks and actually captures all the remaining error cases:</p>
+<div class="listingblock">
+<div class="content">
+<pre>401 Unauthorized
+WWW-Authenticate: Bearer realm="myrealm", error="invalid_token", error_description="..."</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">Other Changes</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>It is now required for access tokens to have the <code>openid</code> scope, which is stipulated by UserInfo being a feature specific to OpenID Connect and not OAuth 2.0. If the <code>openid</code> scope is missing from the token, the request will be denied with a <code>403 Forbidden</code> (see above).</p>
+</li>
+<li>
+<p>UserInfo now checks the user status, and returns the <code>invalid_token</code> response if the user is disabled.</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+</div>
 <h2>All resolved issues</h2>
 
 
@@ -117,6 +190,9 @@ please take a look at <a href="https://www.keycloak.org/docs/latest/server_devel
 <h3>Enhancements</h3>
 <ul>
 <li><a href="https://github.com/keycloak/keycloak-documentation/issues/1659">#1659</a> Document compatibility mode for oidc logout endpoint suppression <span class="badge bg-secondary">keycloak-documentation </span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/1889">#1889</a> A flow can be created with seemly the same name of another <span class="badge bg-secondary">keycloak-ui </span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/1920">#1920</a> Sort the realm localization texts alphabetically <span class="badge bg-secondary">keycloak-ui </span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3141">#3141</a> Better fine-grained permission support <span class="badge bg-secondary">keycloak-ui section/groups</span></li>
 <li><a href="https://github.com/keycloak/keycloak/issues/13524">#13524</a> Allow setting a URL to configure frontend and admin URLs <span class="badge bg-secondary">keycloak dist/quarkus</span></li>
 <li><a href="https://github.com/keycloak/keycloak/issues/13657">#13657</a> Make compatibility mode for oidc logout endpoint fully compatible to previous keyloak versions <span class="badge bg-secondary">keycloak oidc</span></li>
 <li><a href="https://github.com/keycloak/keycloak/issues/14247">#14247</a> Add basic auth compliant RFC 6749 <span class="badge bg-secondary">keycloak </span></li>
@@ -125,6 +201,39 @@ please take a look at <a href="https://www.keycloak.org/docs/latest/server_devel
 <h3>Bugs</h3>
 <ul>
 <li><a href="https://github.com/keycloak/keycloak-documentation/issues/1676">#1676</a> SAML javascript protocol mapper: disable uploading scripts through admin console by default <span class="badge bg-secondary">keycloak-documentation </span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/1969">#1969</a> [UX Review] Add 3 new settings in the Advanced tab of OIDC client <span class="badge bg-secondary">keycloak-ui section/clients</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2777">#2777</a> Navigation links cannot be opened in new tab <span class="badge bg-secondary">keycloak-ui section/other</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2811">#2811</a> View client > Client scopes > Setup > Removing client scope from the list is not showing a standard Delete dialog <span class="badge bg-secondary">keycloak-ui section/clients</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2815">#2815</a> [UX Review] Mark the select option with a right mark <span class="badge bg-secondary">keycloak-ui section/authentication</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2839">#2839</a> [Accessibility Review] Serious - Home page issues <span class="badge bg-secondary">keycloak-ui section/other</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2841">#2841</a> [Accessibility Review] Serious - Clients page issues <span class="badge bg-secondary">keycloak-ui section/clients</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2850">#2850</a> [Accessibility Review] Serious - Client scopes page issues <span class="badge bg-secondary">keycloak-ui section/client scopes</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2926">#2926</a> [UX Review] Consider changing the layout of Groups from table to tree view <span class="badge bg-secondary">keycloak-ui section/groups</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2953">#2953</a> Removal of English language not possible <span class="badge bg-secondary">keycloak-ui section/realm settings</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2958">#2958</a> UI crash when lots of subgroups <span class="badge bg-secondary">keycloak-ui section/groups</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2983">#2983</a> Save/Revert toolbar covers content <span class="badge bg-secondary">keycloak-ui section/clients</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2986">#2986</a> Cannot see roles of user when lots of clients <span class="badge bg-secondary">keycloak-ui section/clients</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/2988">#2988</a> New admin UI : no support for array in custom attributes <span class="badge bg-secondary">keycloak-ui </span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3003">#3003</a> New admin console - Client credentials: Page is missing components <span class="badge bg-secondary">keycloak-ui section/clients</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3004">#3004</a> [UX Review] Fine-tuning of the multiple values field  <span class="badge bg-secondary">keycloak-ui </span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3022">#3022</a> Identity Provider Mapper can not save name of Hardcoded Attribute <span class="badge bg-secondary">keycloak-ui section/identity providers</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3024">#3024</a> [Fine grain admin permissions] Can't view the client details with the "view" permission. Permission required: "view-clients" <span class="badge bg-secondary">keycloak-ui section/other</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3029">#3029</a> Constants for clientAuthenticationTypes differ from backend <span class="badge bg-secondary">keycloak-ui section/identity providers</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3030">#3030</a> Fix forgotPassword label in the new admin console <span class="badge bg-secondary">keycloak-ui section/realm settings</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3034">#3034</a> Importing realms is buggy with the new keycloak.v2 theme <span class="badge bg-secondary">keycloak-ui section/realm settings</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3048">#3048</a> "Unexpected token u in JSON at position 0" error when opening identity provider mappers created in a previous Keycloak version <span class="badge bg-secondary">keycloak-ui section/identity providers</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3050">#3050</a> Missing Options "Use PKCE" and "PKCE Method" in new Admin UI <span class="badge bg-secondary">keycloak-ui section/identity providers</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3057">#3057</a> Homepage URL is wrong in Client list in ClientSection <span class="badge bg-secondary">keycloak-ui section/clients</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3059">#3059</a> User Storage Provider settings not visible in admin UI <span class="badge bg-secondary">keycloak-ui section/user federation</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3061">#3061</a> The new GUI does not support -http-relative-path <span class="badge bg-secondary">keycloak-ui section/other</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3077">#3077</a> Cancel button wrong variant <span class="badge bg-secondary">keycloak-ui section/realm settings</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3081">#3081</a> There is no spacing between the table row and navigation. <span class="badge bg-secondary">keycloak-ui section/users</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3082">#3082</a> Identity provider "Sync Mode" not visible <span class="badge bg-secondary">keycloak-ui </span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3090">#3090</a> Admin2: Fine Grained permissions/policies are ignored <span class="badge bg-secondary">keycloak-ui section/other</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3097">#3097</a> Realm Email doesn't default to port 25 <span class="badge bg-secondary">keycloak-ui section/realm settings</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3163">#3163</a> Group search endpoints don't return access. <span class="badge bg-secondary">keycloak-ui section/groups</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3180">#3180</a> Cannot update user on new Keycloak Administration Console theme <span class="badge bg-secondary">keycloak-ui section/users</span></li>
+<li><a href="https://github.com/keycloak/keycloak-ui/issues/3228">#3228</a> Assign roles filter causes crash <span class="badge bg-secondary">keycloak-ui section/users</span></li>
 <li><a href="https://github.com/keycloak/keycloak-ui/issues/3323">#3323</a> Release failed due to missing javadoc and sources jar  <span class="badge bg-secondary">keycloak-ui </span></li>
 <li><a href="https://github.com/keycloak/keycloak/issues/9855">#9855</a> PolicyEnforcer sometimes looses provided adapterconfig while executing resource matching <span class="badge bg-secondary">keycloak authorization-services</span></li>
 <li><a href="https://github.com/keycloak/keycloak/issues/11096">#11096</a> Do not empty attributes if they are not provided when user profile is enabled <span class="badge bg-secondary">keycloak user-profile</span></li>
