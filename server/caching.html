@@ -81,9 +81,6 @@
 <p>Keycloak is designed for high availability and multi-node clustered setups.
 The current distributed cache implementation is built on top of <a href="https://infinispan.org">Infinispan</a>, a high-performance, distributable in-memory data grid.</p>
 </div>
-<div class="paragraph">
-<p>All available cache options are build options, so they need to be applied to a <code>build</code> of Keycloak before starting.</p>
-</div>
 </div>
 </div>
 <div class="sect1">
@@ -91,6 +88,9 @@ The current distributed cache implementation is built on top of <a href="https:/
 <div class="sectionbody">
 <div class="paragraph">
 <p>When you start Keycloak in production mode, by using the <code>start</code> command, caching is enabled and all Keycloak nodes in your network are discovered.</p>
+</div>
+<div class="paragraph">
+<p>By default, caches are using a <code>UDP</code> transport stack so that nodes are discovered using IP multicast transport based on UDP. For most production environments, there are better discovery alternatives to UDP available. Keycloak allows you to either choose from a set of pre-defined default transport stacks, or to define your own custom stack, as you will see later in this guide.</p>
 </div>
 <div class="paragraph">
 <p>To explicitly enable distributed infinispan caching, enter this command:</p>
@@ -101,7 +101,7 @@ The current distributed cache implementation is built on top of <a href="https:/
 </div>
 </div>
 <div class="paragraph">
-<p>When you start Keycloak in development mode, by using the <code>start-dev</code> command, Keycloak uses only local caches, applying the <code>--cache=local</code> option.
+<p>When you start Keycloak in development mode, by using the <code>start-dev</code> command, Keycloak uses only local caches and distributed caches are completely disabled by implicitly setting the <code>--cache=local</code> option.
 The <code>local</code> cache mode is intended only for development and testing purposes.</p>
 </div>
 </div>
@@ -114,73 +114,6 @@ The <code>local</code> cache mode is intended only for development and testing p
 </div>
 <div class="paragraph">
 <p>The cache configuration is a regular <a href="https://infinispan.org/docs/stable/titles/configuring/configuring.html">Infinispan configuration file</a>.</p>
-</div>
-<div class="sect2">
-<h3 id="_cache_types_and_defaults">Cache types and defaults</h3>
-<div class="paragraph">
-<div class="title">Local caches</div>
-<p>Keycloak caches persistent data locally to avoid unnecessary database requests.
-The following caches are used:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>realms</p>
-</li>
-<li>
-<p>users</p>
-</li>
-<li>
-<p>authorization</p>
-</li>
-<li>
-<p>keys</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<div class="title">Invalidation of local caches</div>
-<p>Local caching improves performance, but adds a challenge in multi-node setups.
-When one Keycloak node updates data in the shared database, all other nodes need to be aware of it, so they invalidate that data from their caches.
-The <code>work</code> cache is used for sending these invalidation messages.</p>
-</div>
-<div class="paragraph">
-<div class="title">Authentication sessions</div>
-<p>Authentication sessions are started when an unauthenticated user or service tries to log in to Keycloak.
-The <code>authenticationSessions</code> distributed cache is used to save data during authentication of a particular user.</p>
-</div>
-<div class="paragraph">
-<div class="title">User sessions</div>
-<p>The following are the distributed caches for sessions of authenticated users and services:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>sessions</p>
-</li>
-<li>
-<p>clientSessions</p>
-</li>
-<li>
-<p>offlineSessions</p>
-</li>
-<li>
-<p>offlineClientSessions</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>These caches are used to save data about user sessions and clients attached to the sessions.</p>
-</div>
-<div class="paragraph">
-<div class="title">Password brute force detection</div>
-<p>The <code>loginFailures</code> distributed cache is used to track data about failed login attempts.
-This cache is needed for the Brute Force Protection feature to work in a multi-node Keycloak setup.</p>
-</div>
-<div class="paragraph">
-<div class="title">Action tokens</div>
-<p>Action tokens are used for scenarios when a user needs to confirm an action asynchronously, for example in the emails sent by the forgot password flow.
-The <code>actionTokens</code> distributed cache is used to track metadata about action tokens.</p>
 </div>
 <div class="paragraph">
 <p>The following table gives an overview of the specific caches Keycloak uses.
@@ -224,29 +157,29 @@ You configure these caches in <code>conf/cache-ispn.xml</code>:</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Propagate invalidation messages across nodes</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">sessions</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Caches user sessions, when user is authenticated</p></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">authenticationSessions</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Caches authentication sessions, when user is authenticating</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches authentication sessions, created/destroyed/expired during the authentication process</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">offlineSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sessions</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Caches offline sessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches user sessions, created upon successful authentication and destroyed during logout, token revocation, or due to expiration</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">clientSessions</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Caches sessions for each client a user is authenticated with</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches client sessions, created upon successful authentication to a specific client and destroyed during logout, token revocation, or due to expiration</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">offlineSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches offline user sessions, created upon successful authentication and destroyed during logout, token revocation, or due to expiration</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">offlineClientSessions</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Caches offline client sessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches client sessions, created upon successful authentication to a specific client and destroyed during logout, token revocation, or due to expiration</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">loginFailures</p></td>
@@ -260,16 +193,141 @@ You configure these caches in <code>conf/cache-ispn.xml</code>:</p>
 </tr>
 </tbody>
 </table>
+<div class="sect2">
+<h3 id="_cache_types_and_defaults">Cache types and defaults</h3>
 <div class="paragraph">
-<p>Local caches for realms, users, and authorization are configured to have 10,000 entries per default.
+<div class="title">Local caches</div>
+<p>Keycloak caches persistent data locally to avoid unnecessary round-trips to the database.</p>
+</div>
+<div class="paragraph">
+<p>The following data is kept local to each node in the cluster using local caches:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>realms</strong> and related data like clients, roles, and groups.</p>
+</li>
+<li>
+<p><strong>users</strong> and related data like granted roles and group memberships.</p>
+</li>
+<li>
+<p><strong>authorization</strong> and related data like resources, permissions, and policies.</p>
+</li>
+<li>
+<p><strong>keys</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Local caches for realms, users, and authorization are configured to hold up to 10,000 entries per default.
 The local key cache can hold up to 1,000 entries per default and defaults to expire every one hour.
 Therefore, keys are forced to be periodically downloaded from external clients or identity providers.</p>
+</div>
+<div class="paragraph">
+<p>In order to achieve an optimal runtime and avoid additional round-trips to the database you should consider looking at
+the configuration for each cache to make sure the maximum number of entries is aligned with the size of your database. More entries
+you can cache, less often the server needs to fetch data from the database. You should evaluate the trade-offs between memory utilization and performance.</p>
+</div>
+<div class="paragraph">
+<div class="title">Invalidation of local caches</div>
+<p>Local caching improves performance, but adds a challenge in multi-node setups.</p>
+</div>
+<div class="paragraph">
+<p>When one Keycloak node updates data in the shared database, all other nodes need to be aware of it, so they invalidate that data from their caches.</p>
+</div>
+<div class="paragraph">
+<p>The <code>work</code> cache is a replicated cache and used for sending these invalidation messages. The entries/messages in this cache are very short-lived,
+and you should not expect this cache growing in size over time.</p>
+</div>
+<div class="paragraph">
+<div class="title">Authentication sessions</div>
+<p>Authentication sessions are created whenever a user tries to authenticate. They are automatically destroyed once the authentication process
+completes or due to reaching their expiration time.</p>
+</div>
+<div class="paragraph">
+<p>The <code>authenticationSessions</code> distributed cache is used to store authentication sessions and any other data associated with it
+during the authentication process.</p>
+</div>
+<div class="paragraph">
+<p>By relying on a distributable cache, authentication sessions are available to any node in the cluster so that users can be redirected
+to any node without losing their authentication state. However, production-ready deployments should always consider session affinity and favor redirecting users
+to the node where their sessions were initially created. By doing that, you are going to avoid unnecessary state transfer between nodes and improve
+CPU, memory, and network utilization.</p>
+</div>
+<div class="paragraph">
+<div class="title">User sessions</div>
+<p>Once the user is authenticated, a user session is created. The user session tracks your active users and their state so that they can seamlessly
+authenticate to any application without being asked for their credentials again. For each application, the user authenticates with a client session
+is created too, so that the server can track the applications the user is authenticated with and their state on a per-application basis.</p>
+</div>
+<div class="paragraph">
+<p>User and client sessions are automatically destroyed whenever the user performs a logout, the client performs a token revocation, or due to reaching their expiration time.</p>
+</div>
+<div class="paragraph">
+<p>The following caches are used to store both user and client sessions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>sessions</p>
+</li>
+<li>
+<p>clientSessions</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By relying on a distributable cache, user and client sessions are available to any node in the cluster so that users can be redirected
+to any node without loosing their state. However, production-ready deployments should always consider session affinity and favor redirecting users
+to the node where their sessions were initially created. By doing that, you are going to avoid unnecessary state transfer between nodes and improve
+CPU, memory, and network utilization.</p>
+</div>
+<div class="paragraph">
+<p>As an OpenID Connect Provider, the server is also capable of authenticating users and issuing offline tokens. Similarly to regular user and client sessions,
+when an offline token is issued by the server upon successful authentication, the server also creates a user and client sessions. However, due to the nature
+of offline tokens, offline sessions are handled differently as they are long-lived and should survive a complete cluster shutdown. Because of that, they are also persisted to the database.</p>
+</div>
+<div class="paragraph">
+<p>The following caches are used to store offline sessions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>offlineSessions</p>
+</li>
+<li>
+<p>offlineClientSessions</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Upon a cluster restart, offline sessions are lazily loaded from the database and kept in a shared cache using the two caches above.</p>
+</div>
+<div class="paragraph">
+<div class="title">Password brute force detection</div>
+<p>The <code>loginFailures</code> distributed cache is used to track data about failed login attempts.
+This cache is needed for the Brute Force Protection feature to work in a multi-node Keycloak setup.</p>
+</div>
+<div class="paragraph">
+<div class="title">Action tokens</div>
+<p>Action tokens are used for scenarios when a user needs to confirm an action asynchronously, for example in the emails sent by the forgot password flow.
+The <code>actionTokens</code> distributed cache is used to track metadata about action tokens.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_caches_for_availability">Configuring caches for availability</h3>
+<div class="paragraph">
+<p>Distributed caches replicate cache entries on a subset of nodes in a cluster and assigns entries to fixed owner nodes.</p>
 </div>
 <div class="paragraph">
 <p>Each distributed cache has two owners per default, which means that two nodes have a copy of the specific cache entries.
 Non-owner nodes query the owners of a specific cache to obtain data.
 When both owner nodes are offline, all data is lost.
 This situation usually leads to users being logged out at the next request and having to log in again.</p>
+</div>
+<div class="paragraph">
+<p>The default number of owners is enough to survive 1 node (owner) failure in a cluster setup with at least three nodes. You are free
+to change the number of owners accordingly to better fit into your availability requirements. To change the number of owners, open <code>conf/cache-ispn.xml</code> and change the value for <code>owners=&lt;value&gt;</code> for the distributed caches to your desired value.</p>
 </div>
 </div>
 <div class="sect2">
@@ -431,6 +489,45 @@ For more information and links to repositories with these dependencies, see the 
 </div>
 </div>
 <div class="sect2">
+<h3 id="_custom_transport_stacks">Custom transport stacks</h3>
+<div class="paragraph">
+<p>If none of the available transport stacks are enough for your deployment, you are able to change your cache configuration file
+and define your own transport stack.</p>
+</div>
+<div class="paragraph">
+<p>For more details, see <a href="https://infinispan.org/docs/stable/titles/server/server.html#using-inline-jgroups-stacks_cluster-transport">Using inline JGroups stacks</a>.</p>
+</div>
+<div class="listingblock">
+<div class="title">defining a custom transport stack</div>
+<div class="content">
+<pre class="highlight"><code>&lt;jgroups&gt;
+    &lt;stack name="my-encrypt-udp" extends="udp"&gt;
+    &lt;SSL_KEY_EXCHANGE keystore_name="server.jks"
+        keystore_password="password"
+        stack.combine="INSERT_AFTER"
+        stack.position="VERIFY_SUSPECT"/&gt;
+        &lt;ASYM_ENCRYPT asym_keylength="2048"
+        asym_algorithm="RSA"
+        change_key_on_coord_leave = "false"
+        change_key_on_leave = "false"
+        use_external_key_exchange = "true"
+        stack.combine="INSERT_BEFORE"
+        stack.position="pbcast.NAKACK2"/&gt;
+    &lt;/stack&gt;
+&lt;/jgroups&gt;
+
+&lt;cache-container name="keycloak"&gt;
+    &lt;transport lock-timeout="60000" stack="my-encrypt-udp"/&gt;
+    ...
+&lt;/cache-container&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, the value set to the <code>cache-stack</code> option has precedence over the transport stack you define in the cache configuration file.
+If you are defining a custom stack, make sure the <code>cache-stack</code> option is not used for the custom changes to take effect.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_securing_cache_communication">Securing cache communication</h3>
 <div class="paragraph">
 <p>The current Infinispan cache implementation should be secured by various security measures such as RBAC, ACLs, and Transport stack encryption. For more information about securing cache communication, see the <a href="https://infinispan.org/docs/dev/titles/security/security.html#">Infinispan security guide</a>.</p>
@@ -480,7 +577,7 @@ For more information and links to repositories with these dependencies, see the 
 </tr>
 </tbody>
 </table></div></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">ispn, local</span></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">ispn</span></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
 </tr>

@@ -132,7 +132,7 @@ The proxy instead is forwarding requests to the Keycloak server so that secure c
 <p>Some Keycloak features rely on the assumption that the remote address of the HTTP request connecting to Keycloak is the real IP address of the clients machine.</p>
 </div>
 <div class="paragraph">
-<p>When you have a reverse proxy or loadbalancer in front of Keycloak, this might not be the case, so please make sure your reverse proxy is configured correctly by performing these actions:</p>
+<p>When you have a reverse proxy or a load balancer in front of Keycloak, this might not be the case, so please make sure your reverse proxy is configured correctly by performing these actions:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -147,7 +147,32 @@ The proxy instead is forwarding requests to the Keycloak server so that secure c
 <div class="paragraph">
 <p>Take extra precautions to ensure that the X-Forwarded-For header is set by your reverse proxy.
 If this header is incorrectly configured, rogue clients can set this header and trick Keycloak into thinking the client is connected from a different IP address than the actual address.
-This precaution can more be critical if you do any deny or allow listing of IP addresses.</p>
+This precaution can be more critical if you do any deny or allow listing of IP addresses.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_different_context_path_on_reverse_proxy">Different context-path on reverse proxy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak assumes it is exposed through the reverse proxy under the same context path as Keycloak is configured for. By default Keycloak is exposed through the root (<code>/</code>), which means it expects to be exposed through the reverse proxy on <code>/</code> as well.
+You can use <code>hostname-path</code> or <code>hostname-url</code> in these cases, for example using <code>--hostname-path=/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>.</p>
+</div>
+<div class="paragraph">
+<p>Alternatively you can also change the context path of Keycloak itself to match the context path for the reverse proxy using the <code>http-relative-path</code> option, which will change the context-path of Keycloak itself to match the context path used by the reverse proxy.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trust_the_proxy_to_set_hostname">Trust the proxy to set hostname</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, Keycloak needs to know under which hostname it will be called. If your reverse proxy is configured to check for the correct hostname, you can set Keycloak to accept any hostname.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy &lt;mode&gt; --hostname-strict=false</code></pre>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_exposing_the_administration_console">Exposing the administration console</h3>
@@ -340,6 +365,10 @@ to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>
 <td class="tableblock halign-left valign-top"><p class="tableblock">certificate-chain-length</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The maximum length of the certificate chain.</p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">trust-proxy-verification</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable trusting NGINX proxy certificate verification, instead of forwarding the certificate to keycloak and verifying it in keycloak.</p></td>
+</tr>
 </tbody>
 </table>
 <div class="sect3">
@@ -348,7 +377,7 @@ to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>
 <p>The NGINX SSL/TLS module does not expose the client certificate chain. Keycloak’s NGINX certificate lookup provider rebuilds it by using the Keycloak truststore.</p>
 </div>
 <div class="paragraph">
-<p>If you are using this provider, please take a look at the <a href="https://www.keycloak.org/server/keycloak-truststore">Configuring a Truststore</a>
+<p>If you are using this provider, please take a look at the <a href="https://www.keycloak.org/server/keycloak-truststore">Configuring trusted certificates for outgoing requests</a>
  guide about how
 to configure a Keycloak Truststore.</p>
 </div>
@@ -377,6 +406,87 @@ to configure a Keycloak Truststore.</p>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">hostname-path</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">This should be set if proxy uses a different context-path for Keycloak.</span></p>
+</div>
+<table id="option-extended-hostname-path" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--hostname-path</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HOSTNAME_PATH</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">hostname-url</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the base URL for frontend URLs, including scheme, host, port and path.</span></p>
+</div>
+<table id="option-extended-hostname-url" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--hostname-url</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HOSTNAME_URL</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key">http-relative-path</span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the path relative to '/' for serving resources.</span></p>
+</div>
+<table id="option-extended-http-relative-path" class="tableblock frame-all grid-all stretch options-extended">
+<colgroup>
+<col style="width: 100%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">The path must start with a '/'.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--http-relative-path</code></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTP_RELATIVE_PATH</code></span></p></td>
+</tr>
+</tbody>
+</table></div></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">/</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key">proxy</span></p>
 </div>
 <div class="paragraph">
@@ -388,7 +498,7 @@ to configure a Keycloak Truststore.</p>
 </colgroup>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">Possible values are: edge,reencrypt,passthrough</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--proxy</code></span></p></td>

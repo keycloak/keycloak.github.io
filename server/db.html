@@ -78,20 +78,15 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>In this guide, you are going to understand how to configure the server to store data using different relational databases.
-You will also learn what databases are supported by the server.</p>
+<p>This guide explains how to configure the Keycloak server to store data in a relational database.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_querying_the_list_of_supported_databases">Querying the list of supported databases</h2>
+<h2 id="_supported_databases">Supported databases</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The server has built-in support for different databases. You should be able to query the available databases by looking at the expected values
-for the <code>db</code> configuration option.</p>
-</div>
-<div class="paragraph">
-<p>The list of supported databases and their corresponding versions are:</p>
+<p>The server has built-in support for different databases. You can query the available databases by viewing the expected values for the <code>db</code> configuration option. The following table lists the supported databases and their tested versions.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -137,45 +132,40 @@ only exists for development use-cases. The <code>dev-file</code> database is not
 <h2 id="_configuring_a_database">Configuring a database</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>For each supported database, the server provides some opinionated defaults to make it simpler to configure a database. The defaults allow
-you to easily configure a database by just providing some key settings like the database host and credentials.</p>
+<p>For each supported database, the server provides some opinionated defaults to simplify database configuration. You complete the configuration by providing some key settings such as the database host and credentials.</p>
 </div>
-<div class="paragraph">
-<p>To configure the database vendor, run the <code>build</code> command to build a server image using the <code>db</code> build option to configure the server for specific database:</p>
-</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Start the server and set the basic options to configure a database</p>
 <div class="listingblock">
-<div class="title">Configuring a database vendor</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --db postgres</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db postgres --db-url-host mypostgres --db-username myuser --db-password change_me</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Once the database vendor is set, you can start the server and set the configuration options to configure the database host and credentials:</p>
+<p>This command includes the minimum settings needed to connect to the database.</p>
 </div>
-<div class="listingblock">
-<div class="title">Starting the server</div>
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db-url-host mypostgres --db-username myuser --db-password change_me</code></pre>
-</div>
+</li>
+</ol>
 </div>
 <div class="paragraph">
-<p>These are the bare minimum settings that you need to set in order to successfully connect to a database.</p>
-</div>
-<div class="paragraph">
-<p>By default, the default schema is set to <code>keycloak</code>. You can change that by using the <code>db-schema</code> configuration option.</p>
+<p>The default schema is <code>keycloak</code>, but you can change it by using the <code>db-schema</code> configuration option.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_overriding_the_default_connection_settings">Overriding the default connection settings</h2>
+<h2 id="_overriding_default_connection_settings">Overriding default connection settings</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The server uses JDBC as the underlying technology to communicate with the relational database. In case the default connection settings are not enough, you are able to specify your own JDBC URL using the <code>db-url</code> configuration option.</p>
+<p>The server uses JDBC as the underlying technology to communicate with the database. If the default connection settings are insufficient, you can specify a JDBC URL using the <code>db-url</code> configuration option.</p>
+</div>
+<div class="paragraph">
+<p>The following is a sample command for a PostgreSQL database.</p>
 </div>
 <div class="listingblock">
-<div class="title">Starting the server</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db-url jdbc:postgresql://mypostgres/mydatabase</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db postgres --db-url jdbc:postgresql://mypostgres/mydatabase</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -184,10 +174,23 @@ you to easily configure a database by just providing some key settings like the 
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configuring_the_database_for_unicode">Configuring the database for Unicode</h2>
+<h2 id="_configuring_unicode_support_for_the_database">Configuring Unicode support for the database</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Database schema only accounts for Unicode strings in the following special fields:</p>
+<p>Unicode support for all fields depends on whether the database allows VARCHAR and CHAR fields to use the Unicode character set.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If these fields can be set, Unicode is likely to work, usually at the expense of field length.</p>
+</li>
+<li>
+<p>If the database only supports Unicode in the NVARCHAR and NCHAR fields, Unicode support for all text fields is unlikely to work because the server schema uses VARCHAR and CHAR fields extensively.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The database schema provides support for Unicode strings only for the following special fields:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -212,70 +215,105 @@ you to easily configure a database by just providing some key settings like the 
 </ul>
 </div>
 <div class="paragraph">
-<p>Otherwise, characters are limited to those contained in database encoding which is often 8-bit. However, for some database systems, it is possible to enable UTF-8 encoding of Unicode characters and use full Unicode character set in all text fields. Often, this is counterbalanced by shorter maximum length of the strings than in case of 8-bit encodings.</p>
-</div>
-<div class="paragraph">
-<p>Some of the databases require special settings to database and/or JDBC driver to be able to handle Unicode characters. Please find the settings for your database below. Note that if a database is listed here, it can still work properly provided it handles UTF-8 encoding properly both on the level of database and JDBC driver.</p>
-</div>
-<div class="paragraph">
-<p>Technically, the key criterion for Unicode support for all fields is whether the database allows setting of Unicode character set for VARCHAR and CHAR fields. If yes, there is a high chance that Unicode will be plausible, usually at the expense of field length. If it only supports Unicode in NVARCHAR and NCHAR fields, Unicode support for all text fields is unlikely as the server schema uses VARCHAR and CHAR fields extensively.</p>
+<p>Otherwise, characters are limited to those contained in database encoding, which is often 8-bit. However, for some database systems, you can enable UTF-8 encoding of Unicode characters and use the full Unicode character set in all text fields. For a given database, this choice might result in a shorter maximum string length than the maximum string length supported by 8-bit encodings.</p>
 </div>
 <div class="sect2">
-<h3 id="_oracle_database">Oracle database</h3>
+<h3 id="_configuring_unicode_support_for_an_oracle_database">Configuring Unicode support for an Oracle database</h3>
 <div class="paragraph">
-<p>Unicode characters are properly handled provided the database was created with Unicode support in VARCHAR and CHAR fields (e.g. by using AL32UTF8 character set as the database character set). No special settings is needed for JDBC driver.</p>
+<p>Unicode characters are supported in an Oracle database if the database was created with Unicode support in the VARCHAR and CHAR fields. For example, you configured AL32UTF8 as the database character set. In this case, the JDBC driver requires no special settings.</p>
 </div>
 <div class="paragraph">
-<p>If the database character set is not Unicode, then to use Unicode characters in the special fields, the JDBC driver needs to be configured with the connection property oracle.jdbc.defaultNChar set to true. It might be wise, though not strictly necessary, to also set the oracle.jdbc.convertNcharLiterals connection property to true. These properties can be set either as system properties or as connection properties. Please note that setting oracle.jdbc.defaultNChar may have negative impact on performance. For details, please refer to Oracle JDBC driver configuration documentation.</p>
+<p>If the database was not created with Unicode support, you need to configure the JDBC driver to support Unicode characters in the special fields. You configure two properties. Note that you can configure these properties as system properties or as connection properties.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Set <code>oracle.jdbc.defaultNChar</code> to <code>true</code>.</p>
+</li>
+<li>
+<p>Optionally, set <code>oracle.jdbc.convertNcharLiterals</code> to <code>true</code>.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For details on these properties and any performance implications, see the Oracle JDBC driver configuration documentation.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_microsoft_sql_server_database">Microsoft SQL Server database</h3>
+<h3 id="_unicode_support_for_a_microsoft_sql_server_database">Unicode support for a Microsoft SQL Server database</h3>
 <div class="paragraph">
-<p>Unicode characters are properly handled only for the special fields. No special settings of JDBC driver or database is necessary.</p>
+<p>Unicode characters are supported only for the special fields for a Microsoft SQL Server database. The JDBC driver and database require no special settings.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_mysql_database">MySQL database</h3>
+<h3 id="_configuring_unicode_support_for_a_mysql_database">Configuring Unicode support for a MySQL database</h3>
 <div class="paragraph">
-<p>Unicode characters are properly handled provided the database was created with Unicode support in VARCHAR and CHAR fields in the CREATE DATABASE command (e.g. by using utf8 character set as the default database character set in MySQL 5.5. Please note that utf8mb4 character set does not work due to different storage requirements to utf8 character set [1]). Note that in this case, length restriction to non-special fields does not apply because columns are created to accommodate given amount of characters, not bytes. If the database default character set does not allow storing Unicode, only the special fields allow storing Unicode values.</p>
+<p>Unicode characters are supported in a MySQL database if the database was created with Unicode support in the VARCHAR and CHAR fields when using the CREATE DATABASE command.</p>
 </div>
 <div class="paragraph">
-<p>At the side of JDBC driver settings, it is necessary to add a connection property characterEncoding=UTF-8 to the JDBC connection settings.</p>
+<p>Note that the utf8mb4 character set is not supported due to different storage requirements for the utf8 character set. See MySQL documentation for details. In that situation, the length restriction on non-special fields does not apply because columns are created to accommodate the number of characters, not bytes.  If the database default character set does not allow Unicode storage, only the special fields allow storing Unicode values.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Start MySQL Server.</p>
+</li>
+<li>
+<p>Under JDBC driver settings, locate the <strong>JDBC connection settings</strong>.</p>
+</li>
+<li>
+<p>Add this connection property: <code>characterEncoding=UTF-8</code></p>
+</li>
+</ol>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_postgresql_database">PostgreSQL database</h3>
+<h3 id="_configuring_unicode_support_for_a_postgresql_database">Configuring Unicode support for a PostgreSQL database</h3>
 <div class="paragraph">
-<p>Unicode is supported when the database character set is UTF8. In that case, Unicode characters can be used in any field, there is no reduction of field length for non-special fields. No special settings of JDBC driver is necessary.</p>
+<p>Unicode is supported for a PostgreSQL database when the database character set is UTF8. Unicode characters can be used in any field with no reduction of field length for non-special fields. The JDBC driver requires no special settings. The character set is determined when the PostgreSQL database is created.</p>
 </div>
-<div class="paragraph">
-<p>The character set of a PostgreSQL database is determined at the time it is created. You can determine the default character set for a PostgreSQL cluster with the SQL command</p>
-</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Check the default character set for a PostgreSQL cluster by entering the following SQL command.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code>show server_encoding;</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>If the default character set is not UTF 8, then you can create the database with UTF8 as its character set like this:</p>
-</div>
+</li>
+<li>
+<p>If the default character set is not UTF 8, create the database with the UTF8 as the default character set using a command such as:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code>create database keycloak with encoding 'UTF8';</code></pre>
 </div>
 </div>
+</li>
+</ol>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_changing_database_locking_timeout_when_running_in_a_cluster">Changing database locking timeout when running in a cluster</h2>
+<h2 id="_changing_database_locking_timeout_in_a_cluster_configuration">Changing database locking timeout in a cluster configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Cluster nodes are allowed to boot concurrently. When the server instance boots up it may do some database migration, importing, or first time initializations. A DB lock is used to prevent start actions from conflicting with one another when cluster nodes boot up concurrently.</p>
+<p>Because cluster nodes can boot concurrently, they take extra time for database actions. For example, a booting server instance may perform some database migration, importing, or first time initializations. A database lock prevents start actions from conflicting with each other when cluster nodes boot up concurrently.</p>
 </div>
 <div class="paragraph">
-<p>By default, the maximum timeout for this lock is 900 seconds. If a node is waiting on this lock for more than the timeout it will fail to boot. Typically you won’t need to increase/decrease the default value, but just in case it’s possible to configure it as follows:</p>
+<p>The maximum timeout for this lock is 900 seconds. If a node waits on this lock for more than the timeout, the boot fails. The need to change the default value is unlikely, but you can change it by entering this command:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -288,7 +326,7 @@ you to easily configure a database by just providing some key settings like the 
 <h2 id="_using_database_vendors_without_xa_transaction_support">Using Database Vendors without XA transaction support</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak uses XA transactions and the appropriate database drivers by default. There are vendors like Azure SQL and MariaDB Galera, that do not support or rely on the XA transaction mechanism. To use Keycloak without XA transaction support using the appropriate jdbc driver, invoke the following command:</p>
+<p>Keycloak uses XA transactions and the appropriate database drivers by default. Certain vendors, such as Azure SQL and MariaDB Galera, do not support or rely on the XA transaction mechanism. To use Keycloak without XA transaction support using the appropriate JDBC driver, enter the following command:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -296,7 +334,39 @@ you to easily configure a database by just providing some key settings like the 
 </div>
 </div>
 <div class="paragraph">
-<p>Keycloak will automatically choose the appropriate jdbc driver for your vendor.</p>
+<p>Keycloak automatically chooses the appropriate JDBC driver for your vendor.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setting_jpa_provider_configuration_option_for_migrationstrategy">Setting JPA provider configuration option for migrationStrategy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To setup the JPA migrationStrategy (manual/update/validate) you should setup JPA provider as follows:</p>
+</div>
+<div class="listingblock">
+<div class="title">Setting the <code>migration-strategy</code> for the <code>quarkus</code> provider of the <code>connections-jpa</code> SPI</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-jpa-legacy-migration-strategy=manual</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you want to get a SQL file for DB initialization, too, you have to add this additional SPI initializeEmpty (true/false):</p>
+</div>
+<div class="listingblock">
+<div class="title">Setting the <code>initialize-empty</code> for the <code>quarkus</code> provider of the <code>connections-jpa</code> SPI</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-jpa-legacy-initialize-empty=false</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the same way the migrationExport to point to a specific file and location:</p>
+</div>
+<div class="listingblock">
+<div class="title">Setting the <code>migration-export</code> for the <code>quarkus</code> provider of the <code>connections-jpa</code> SPI</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-jpa-legacy-migration-export=&lt;path&gt;/&lt;file.sql&gt;</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -332,7 +402,7 @@ you to easily configure a database by just providing some key settings like the 
 </colgroup>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">Possible values are: dev-file, dev-mem, mariadb, mssql, mysql, oracle, postgres.</span></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--db</code></span></p></td>

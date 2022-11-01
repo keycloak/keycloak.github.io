@@ -84,7 +84,69 @@
 <div class="sect2">
 <h3 id="_server_configuration_details">Server Configuration details</h3>
 <div class="paragraph">
-<p>The <code>serverConfiguration</code> field of the Keycloak CR allows to pass to Keycloak any available configuration in the form of key-value pairs.
+<p>Many server options are exposed as first-class citizen fields in the Keycloak CR. The structure of the CR is inspired
+by the configuration structure of Keycloak itself. E.g. in order to configure <code>https-port</code> of the server, simply follow
+similar pattern in the CR and use <code>httpsPort</code> field. The following example with a more complex server configuration
+should give you a better picture of the relationship between server options and the Keycloak CR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  db:
+    vendor: postgres
+    usernameSecret:
+      name: usernameSecret
+      key: usernameSecretKey
+    passwordSecret:
+      name: passwordSecret
+      key: passwordSecretKey
+    host: host
+    database: database
+    port: 123
+    schema: schema
+    poolInitialSize: 1
+    poolMinSize: 2
+    poolMaxSize: 3
+  http:
+    httpEnabled: true
+    httpPort: 8180
+    httpsPort: 8543
+    tlsSecret: my-tls-secret
+  hostname:
+    hostname: my-hostname
+    admin: my-admin-hostname
+    strict: false
+    strictBackchannel: false
+  features:
+    enabled:
+      - docker
+      - authorization
+    disabled:
+      - admin
+      - step-up-authentication
+  transaction:
+    xaEnabled: false</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For all available options please see the Keycloak CRD. For a documentation of the individual options, refer to <a href="https://www.keycloak.org/server/all-config">All configuration</a>
+.</p>
+</div>
+<div class="sect3">
+<h4 id="_additional_options">Additional options</h4>
+<div class="paragraph">
+<p>Some of the expert server options are not available as dedicated fields in the Keycloak CR. Omitted are mostly fields
+that require deeper understanding of underlying Keycloak implementation and/or their usability is limited in a Kubernetes
+environment. Omitted are also options for providers configuration as they are dynamic based on the used provider
+implementation.</p>
+</div>
+<div class="paragraph">
+<p>The <code>additionalOptions</code> field of the Keycloak CR allows to pass to Keycloak any available configuration in the form of key-value pairs.
+This allows you to specify any of the options that are omitted in the Keycloak CR.
 For all the available configuration options, refer to <a href="https://www.keycloak.org/server/all-config">All configuration</a>
 .</p>
 </div>
@@ -100,26 +162,21 @@ metadata:
   name: example-kc
 spec:
   ...
-  serverConfiguration:
-    - name: db
-      value: postgres # plain text value
-    - name: db-url-host
-      value: postgres-db # plain text value
-    - name: db-username
+  additionalOptions:
+    - name: spi-connections-http-client-default-connection-pool-size
       secret: # Secret reference
-        name: keycloak-db-secret # name of the Secret
-        key: username # name of the Key in the Secret
-    - name: db-password
-      secret: # secret reference
-        name: keycloak-db-secret # name of the Secret
-        key: password # name of the Key in the Secret</code></pre>
+        name: http-client-secret # name of the Secret
+        key: poolSize # name of the Key in the Secret
+    - name: spi-email-template-mycustomprovider-enabled
+      value: true # plain text value</code></pre>
+</div>
 </div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_secret_references">Secret References</h3>
 <div class="paragraph">
-<p>A Secret Reference can be either a value in <code>serverConfiguration</code> or the <code>tlsSecret</code>.</p>
+<p>A Secret References are used by some of the dedicated options in the Keycloak CR (e.g. <code>tlsSecret</code>) or as a value in <code>additionalOptions</code>.</p>
 </div>
 <div class="paragraph">
 <p>When specifying a Secret Reference, you have to make sure that a Secret containing the referenced keys is present in the same namespace as the CR referencing it.
@@ -175,13 +232,13 @@ spec:
 </div>
 </div>
 <div class="sect2">
-<h3 id="_disabling_required_cr_fields">Disabling required CR fields</h3>
+<h3 id="_disabling_required_options">Disabling required options</h3>
 <div class="paragraph">
-<p>By default, the Keycloak operator is designed to provide you with the best production-ready Deployment of Keycloak with security in mind.
+<p>By default, Keycloak and its Operator are designed to provide you with the best production-ready experience with security in mind.
 Although, for development purposes, you can still disable key security features.</p>
 </div>
 <div class="paragraph">
-<p>Specifically, you can disable the required fields with a special value <code>INSECURE-DISABLE</code>:</p>
+<p>Specifically, you can disable the hostname and TLS as shown in the following example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -191,8 +248,11 @@ metadata:
   name: example-kc
 spec:
   ...
-  hostname: INSECURE-DISABLE
-  tlsSecret: INSECURE-DISABLE</code></pre>
+  http:
+    httpEnabled: true
+  hostname:
+    strict: false
+    strictBackchannel: false</code></pre>
 </div>
 </div>
 </div>
