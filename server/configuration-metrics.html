@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Using Kubernetes secrets - Keycloak</title>
+    <title>Enabling Keycloak Metrics - Keycloak</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Keycloak is an open source identity and access management solution">
     <meta name="author" content="Keycloak Team">
@@ -63,13 +63,13 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
-                    <li class="breadcrumb-item active">Using Kubernetes secrets</li>
+                    <li class="breadcrumb-item active">Enabling Keycloak Metrics</li>
                 </ol>
             </nav>
 
             <div class="mb-4">
-                <h1>Using Kubernetes secrets</h1>
-                    <span class="text-muted">Learn how to use Kubernetes/OpenShift secrets in Keycloak</span>
+                <h1>Enabling Keycloak Metrics</h1>
+                    <span class="text-muted">Learn how to enable and expose metrics from the server</span>
             </div>
 
 
@@ -78,119 +78,109 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak supports a file-based vault implementation for Kubernetes/OpenShift secrets. Mount Kubernetes secrets into the Keycloak Container, and the data fields will be available in the mounted folder with a flat-file structure.</p>
+<p>Keycloak has built in support for metrics. This guide describes how to enable and configure server metrics.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_available_integrations">Available integrations</h2>
+<h2 id="_enabling_metrics">Enabling Metrics</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>You can use Kubernetes/OpenShift secrets for the following purposes:</p>
+<p>It is possible to enable metrics using the build time option <code>metrics-enabled</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --metrics-enabled=true</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_querying_metrics">Querying Metrics</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak exposes metrics at the following endpoint:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Obtain the SMTP Mail server Password</p>
-</li>
-<li>
-<p>Obtain the LDAP Bind Credential when using LDAP-based User Federation</p>
-</li>
-<li>
-<p>Obtain the OIDC identity providers Client Secret when integrating external identity providers</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_enabling_the_vault">Enabling the vault</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Enable the file based vault by building Keycloak using the following build option:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --vault=file</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_setting_the_base_directory_to_lookup_secrets">Setting the base directory to lookup secrets</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Kubernetes/OpenShift secrets are basically mounted files. To configure a directory where these files should be mounted, enter this command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --vault-dir=/my/path</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_realm_specific_secret_files">Realm-specific secret files</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Kubernetes/OpenShift Secrets are used on a per-realm basis in Keycloak, which requires a naming convention for the file in place:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">${vault.&lt;realmname&gt;_&lt;secretname&gt;}</code></pre>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_using_underscores_in_the_name">Using underscores in the Name</h3>
-<div class="paragraph">
-<p>To process the secret correctly, you double all underscores in the &lt;realmname&gt; or the &lt;secretname&gt;, separated by a single underscore.</p>
-</div>
-<div class="ulist">
-<div class="title">Example</div>
-<ul>
-<li>
-<p>Realm Name: <code>sso_realm</code></p>
-</li>
-<li>
-<p>Desired Name: <code>ldap_credential</code></p>
-</li>
-<li>
-<p>Resulting file Name:</p>
-</li>
-</ul>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>sso__realm_ldap__credential</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Note the doubled underscores between <em>sso</em> and <em>realm</em> and also between <em>ldap</em> and <em>credential</em>.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_example_use_an_ldap_bind_credential_secret_in_the_admin_console">Example: Use an LDAP bind credential secret in the Admin Console</h2>
-<div class="sectionbody">
-<div class="ulist">
-<div class="title">Example setup</div>
-<ul>
-<li>
-<p>A realm named <code>secrettest</code></p>
-</li>
-<li>
-<p>A desired Name <code>ldapBc</code> for the bind Credential</p>
-</li>
-<li>
-<p>Resulting file name: <code>secrettest_ldapBc</code></p>
+<p><code>/metrics</code></p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<div class="title">Usage in Admin Console</div>
-<p>You can then use this secret from the Admin Console by using <code>${vault.ldapBc}</code> as the value for the <code>Bind Credential</code> when configuring your LDAP User federation.</p>
+<p>The response from the endpoint uses a <code>text/plain</code> content type and it is based on the Prometheus text format. The snippet bellow
+is an example of a response:</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># HELP base_gc_total Displays the total number of collections that have occurred. This attribute lists -1 if the collection count is undefined for this collector.
+# TYPE base_gc_total counter
+base_gc_total{name="G1 Young Generation",} 14.0
+# HELP jvm_memory_usage_after_gc_percent The percentage of long-lived heap pool used after the last GC event, in the range [0..1]
+# TYPE jvm_memory_usage_after_gc_percent gauge
+jvm_memory_usage_after_gc_percent{area="heap",pool="long-lived",} 0.0
+# HELP jvm_threads_peak_threads The peak live thread count since the Java virtual machine started or peak was reset
+# TYPE jvm_threads_peak_threads gauge
+jvm_threads_peak_threads 113.0
+# HELP agroal_active_count Number of active connections. These connections are in use and not available to be acquired.
+# TYPE agroal_active_count gauge
+agroal_active_count{datasource="default",} 0.0
+# HELP base_memory_maxHeap_bytes Displays the maximum amount of memory, in bytes, that can be used for memory management.
+# TYPE base_memory_maxHeap_bytes gauge
+base_memory_maxHeap_bytes 1.6781410304E10
+# HELP process_start_time_seconds Start time of the process since unix epoch.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.675188449054E9
+# HELP system_load_average_1m The sum of the number of runnable entities queued to available processors and the number of runnable entities running on the available processors averaged over a period of time
+# TYPE system_load_average_1m gauge
+system_load_average_1m 4.005859375
+
+...</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_available_metrics">Available Metrics</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The table below summarizes the available metrics groups:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Metric</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">System</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A set of system-level metrics related to CPU and memory usage.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JVM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A set of metrics from the Java Virtual Machine (JVM) related to GC, and heap.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A set of metrics from the database connection pool, if using a database.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A set of global and individual metrics from the HTTP endpoints</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A set of metrics from Infinispan caches. See <a href="https://www.keycloak.org/server/caching">Configuring distributed caches</a> guide for more details.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="sect1">
@@ -210,37 +200,23 @@
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>vault</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+<p><span class="options-key"><code>metrics-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">Enables a vault provider.</span></p>
+<p><span class="options-description">If the server should expose metrics.</span></p>
 </div>
-<div id="option-extended-vault" class="openblock options-extended">
+<div id="option-extended-metrics-enabled" class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><strong>CLI:</strong> <code>--vault</code><br>
-<strong>Env:</strong> <code>KC_VAULT</code></p>
+<p><span class="options-description-extended">If enabled, metrics are available at the <code>/metrics</code> endpoint.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--metrics-enabled</code><br>
+<strong>Env:</strong> <code>KC_METRICS_ENABLED</code></p>
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>file</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>vault-dir</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">If set, secrets can be obtained by reading the content of files within the given directory.</span></p>
-</div>
-<div id="option-extended-vault-dir" class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--vault-dir</code><br>
-<strong>Env:</strong> <code>KC_VAULT_DIR</code></p>
-</div>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
 </tr>
 </tbody>
 </table>
@@ -253,7 +229,7 @@
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/vault.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/src/main/server/configuration-metrics.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

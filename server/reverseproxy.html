@@ -132,12 +132,18 @@ The proxy instead is forwarding requests to the Keycloak server so that secure c
 <p>Some Keycloak features rely on the assumption that the remote address of the HTTP request connecting to Keycloak is the real IP address of the clients machine.</p>
 </div>
 <div class="paragraph">
-<p>When you have a reverse proxy or a load balancer in front of Keycloak, this might not be the case, so please make sure your reverse proxy is configured correctly by performing these actions:</p>
+<p>When you have a reverse proxy or a load balancer in front of Keycloak, please make sure your reverse proxy is overriding the following headers:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Set the X-Forwarded-For, X-Forwarded-Proto, and X-Forwarded-Host HTTP headers.</p>
+<p><code>Forwarded</code> as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC7239</a></p>
+</li>
+<li>
+<p>Non-standard <code>X-Forwarded</code></p>
+</li>
+<li>
+<p>Non-standard <code>X-Forwarded-*</code>, such as <code>X-Forwarded-For</code>, <code>X-Forwarded-Proto</code>, <code>X-Forwarded-Host</code>, and <code>X-Forwarded-Port</code></p>
 </li>
 </ul>
 </div>
@@ -145,7 +151,7 @@ The proxy instead is forwarding requests to the Keycloak server so that secure c
 <p>To set these headers, consult the documentation for your reverse proxy.</p>
 </div>
 <div class="paragraph">
-<p>Take extra precautions to ensure that the X-Forwarded-For header is set by your reverse proxy.
+<p>Take extra precautions to ensure that the client address is properly set by your reverse proxy via the <code>Forwarded</code> or <code>X-Forwarded-For</code> headers.
 If this header is incorrectly configured, rogue clients can set this header and trick Keycloak into thinking the client is connected from a different IP address than the actual address.
 This precaution can be more critical if you do any deny or allow listing of IP addresses.</p>
 </div>
@@ -173,6 +179,66 @@ You can use <code>hostname-path</code> or <code>hostname-url</code> in these cas
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy &lt;mode&gt; --hostname-strict=false</code></pre>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_sticky_sessions">Enable sticky sessions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Typical cluster deployment consists of the load balancer (reverse proxy) and 2 or more Keycloak servers on private network.
+For performance purposes, it may be useful if load balancer forwards all requests related to particular browser session to the same Keycloak backend node.</p>
+</div>
+<div class="paragraph">
+<p>The reason is, that Keycloak is using Infinispan distributed cache under the covers for save data related to current authentication session and user session.
+The Infinispan distributed caches are configured with two owners by default. That means that particular session is primarily stored on two cluster nodes and the other nodes need to lookup the session remotely if they want to access it.</p>
+</div>
+<div class="paragraph">
+<p>For example if authentication session with ID 123 is saved in the Infinispan cache on node1, and then node2 needs to lookup this session, it needs to send the request to node1 over the network to return the particular session entity.</p>
+</div>
+<div class="paragraph">
+<p>It is beneficial if particular session entity is always available locally, which can be done with the help of sticky sessions. The workflow in the cluster environment with the public frontend load balancer and two backend Keycloak nodes can be like this:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>User sends initial request to see the Keycloak login screen</p>
+</li>
+<li>
+<p>This request is served by the frontend load balancer, which forwards it to some random node (eg. node1). Strictly said, the node doesn’t need to be random, but can be chosen according to some other criterias (client IP address etc). It all depends on the implementation and configuration of underlying load balancer (reverse proxy).</p>
+</li>
+<li>
+<p>Keycloak creates authentication session with random ID (eg. 123) and saves it to the Infinispan cache.</p>
+</li>
+<li>
+<p>Infinispan distributed cache assigns the primary owner of the session based on the hash of session ID. See Infinispan documentation for more details around this. Let’s assume that Infinispan assigned node2 to be the owner of this session.</p>
+</li>
+<li>
+<p>Keycloak creates the cookie AUTH_SESSION_ID with the format like &lt;session-id&gt;.&lt;owner-node-id&gt; . In our example case, it will be 123.node2 .</p>
+</li>
+<li>
+<p>Response is returned to the user with the Keycloak login screen and the AUTH_SESSION_ID cookie in the browser</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>From this point, it is beneficial if load balancer forwards all the next requests to the node2 as this is the node, who is owner of the authentication session with ID 123 and hence Infinispan can lookup this session locally. After authentication is finished, the authentication session is converted to user session, which will be also saved on node2 because it has same ID 123 .</p>
+</div>
+<div class="paragraph">
+<p>The sticky session is not mandatory for the cluster setup, however it is good for performance for the reasons mentioned above. You need to configure your loadbalancer to sticky over the AUTH_SESSION_ID cookie. How exactly do this is dependent on your loadbalancer.</p>
+</div>
+<div class="paragraph">
+<p>If your proxy supports session affinity without processing cookies from backend nodes, you should set the <code>spi-sticky-session-encoder-infinispan-should-attach-route</code> option
+to <code>false</code> in order to avoid attaching the node to cookies and just rely on the reverse proxy capabilities.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-sticky-session-encoder-infinispan-should-attach-route=false</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, the <code>spi-sticky-session-encoder-infinispan-should-attach-route</code> option value is <code>true</code> so that the node name is attached to
+cookies to indicate to the reverse proxy the node that subsequent requests should be sent to.</p>
 </div>
 <div class="sect2">
 <h3 id="_exposing_the_administration_console">Exposing the administration console</h3>
@@ -271,7 +337,6 @@ The following table shows the recommended paths to expose.</p>
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<div class="title">Note:</div>
 As it&#8217;s true that the <code>js</code> path is needed for internal clients like the account console, it&#8217;s good practice to use <code>keycloak.js</code> from a JavaScript package manager like npm or yarn for your external clients.
 </td>
 </tr>
@@ -377,8 +442,7 @@ to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>
 <p>The NGINX SSL/TLS module does not expose the client certificate chain. Keycloak’s NGINX certificate lookup provider rebuilds it by using the Keycloak truststore.</p>
 </div>
 <div class="paragraph">
-<p>If you are using this provider, please take a look at the <a href="https://www.keycloak.org/server/keycloak-truststore">Configuring trusted certificates for outgoing requests</a>
- guide about how
+<p>If you are using this provider, please take a look at the <a href="https://www.keycloak.org/server/keycloak-truststore">Configuring trusted certificates for outgoing requests</a> guide about how
 to configure a Keycloak Truststore.</p>
 </div>
 </div>
@@ -390,127 +454,86 @@ to configure a Keycloak Truststore.</p>
 <div class="sectionbody">
 <table class="tableblock frame-all grid-all stretch options">
 <colgroup>
-<col style="width: 57.1428%;">
-<col style="width: 19.0476%;">
-<col style="width: 19.0476%;">
-<col style="width: 4.762%;">
+<col style="width: 75%;">
+<col style="width: 25%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">Type</th>
-<th class="tableblock halign-left valign-top">Default</th>
-<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key">hostname-path</span></p>
+<p><span class="options-key"><code>hostname-path</code></span></p>
 </div>
 <div class="paragraph">
 <p><span class="options-description">This should be set if proxy uses a different context-path for Keycloak.</span></p>
 </div>
-<table id="option-extended-hostname-path" class="tableblock frame-all grid-all stretch options-extended">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--hostname-path</code></span></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HOSTNAME_PATH</code></span></p></td>
-</tr>
-</tbody>
-</table></div></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<div id="option-extended-hostname-path" class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--hostname-path</code><br>
+<strong>Env:</strong> <code>KC_HOSTNAME_PATH</code></p>
+</div>
+</div>
+</div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key">hostname-url</span></p>
+<p><span class="options-key"><code>hostname-url</code></span></p>
 </div>
 <div class="paragraph">
 <p><span class="options-description">Set the base URL for frontend URLs, including scheme, host, port and path.</span></p>
 </div>
-<table id="option-extended-hostname-url" class="tableblock frame-all grid-all stretch options-extended">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--hostname-url</code></span></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HOSTNAME_URL</code></span></p></td>
-</tr>
-</tbody>
-</table></div></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<div id="option-extended-hostname-url" class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--hostname-url</code><br>
+<strong>Env:</strong> <code>KC_HOSTNAME_URL</code></p>
+</div>
+</div>
+</div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key">http-relative-path</span></p>
+<p><span class="options-key"><code>http-relative-path</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">Set the path relative to '/' for serving resources.</span></p>
+<p><span class="options-description">Set the path relative to <code>/</code> for serving resources.</span></p>
 </div>
-<table id="option-extended-http-relative-path" class="tableblock frame-all grid-all stretch options-extended">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-extended">The path must start with a '/'.</span></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--http-relative-path</code></span></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_HTTP_RELATIVE_PATH</code></span></p></td>
-</tr>
-</tbody>
-</table></div></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">/</span></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="icon options-build"><i class="fa fa-tools"></i></span></p></td>
+<div id="option-extended-http-relative-path" class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The path must start with a <code>/</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-relative-path</code><br>
+<strong>Env:</strong> <code>KC_HTTP_RELATIVE_PATH</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>/</code></span> (default)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key">proxy</span></p>
+<p><span class="options-key"><code>proxy</code></span></p>
 </div>
 <div class="paragraph">
 <p><span class="options-description">The proxy address forwarding mode if the server is behind a reverse proxy.</span></p>
 </div>
-<table id="option-extended-proxy" class="tableblock frame-all grid-all stretch options-extended">
-<colgroup>
-<col style="width: 100%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>CLI:</strong> <code>--proxy</code></span></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-description-example"><strong>Env:</strong> <code>KC_PROXY</code></span></p></td>
-</tr>
-</tbody>
-</table></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-type">none, edge, reencrypt, passthrough</span></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default">none</span></p></td>
-<td class="tableblock halign-left valign-top"></td>
+<div id="option-extended-proxy" class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--proxy</code><br>
+<strong>Env:</strong> <code>KC_PROXY</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default), <code>edge</code>, <code>reencrypt</code>, <code>passthrough</code></p></td>
 </tr>
 </tbody>
 </table>
