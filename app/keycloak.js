@@ -2084,6 +2084,8 @@
 	                return formatCordovaOptions(cordovaOptions);
 	            };
 
+	            var cordovaRedirectUri = kc.redirectUri || 'http://localhost';
+	            
 	            return {
 	                login: function(options) {
 	                    var promise = createPromise();
@@ -2100,7 +2102,7 @@
 	                    };
 
 	                    ref.addEventListener('loadstart', function(event) {
-	                        if (event.url.indexOf('http://localhost') == 0) {
+	                        if (event.url.indexOf(cordovaRedirectUri) == 0) {
 	                            var callback = parseCallback(event.url);
 	                            processCallback(callback, promise);
 	                            closeBrowser();
@@ -2110,7 +2112,7 @@
 
 	                    ref.addEventListener('loaderror', function(event) {
 	                        if (!completed) {
-	                            if (event.url.indexOf('http://localhost') == 0) {
+	                            if (event.url.indexOf(cordovaRedirectUri) == 0) {
 	                                var callback = parseCallback(event.url);
 	                                processCallback(callback, promise);
 	                                closeBrowser();
@@ -2142,13 +2144,13 @@
 	                    var error;
 
 	                    ref.addEventListener('loadstart', function(event) {
-	                        if (event.url.indexOf('http://localhost') == 0) {
+	                        if (event.url.indexOf(cordovaRedirectUri) == 0) {
 	                            ref.close();
 	                        }
 	                    });
 
 	                    ref.addEventListener('loaderror', function(event) {
-	                        if (event.url.indexOf('http://localhost') == 0) {
+	                        if (event.url.indexOf(cordovaRedirectUri) == 0) {
 	                            ref.close();
 	                        } else {
 	                            error = true;
@@ -2174,7 +2176,7 @@
 	                    var cordovaOptions = createCordovaOptions(options);
 	                    var ref = cordovaOpenWindowWrapper(registerUrl, '_blank', cordovaOptions);
 	                    ref.addEventListener('loadstart', function(event) {
-	                        if (event.url.indexOf('http://localhost') == 0) {
+	                        if (event.url.indexOf(cordovaRedirectUri) == 0) {
 	                            ref.close();
 	                            var oauth = parseCallback(event.url);
 	                            processCallback(oauth, promise);
@@ -2188,7 +2190,7 @@
 	                    if (typeof accountUrl !== 'undefined') {
 	                        var ref = cordovaOpenWindowWrapper(accountUrl, '_blank', 'location=no');
 	                        ref.addEventListener('loadstart', function(event) {
-	                            if (event.url.indexOf('http://localhost') == 0) {
+	                            if (event.url.indexOf(cordovaRedirectUri) == 0) {
 	                                ref.close();
 	                            }
 	                        });
@@ -2198,7 +2200,7 @@
 	                },
 
 	                redirectUri: function(options) {
-	                    return 'http://localhost';
+	                    return cordovaRedirectUri;
 	                }
 	            }
 	        }
