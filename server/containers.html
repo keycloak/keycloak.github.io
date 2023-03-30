@@ -93,7 +93,7 @@
 This step will save time in every subsequent start phase of the container image.</p>
 </div>
 <div class="sect2">
-<h3 id="_building_your_optimized_keycloak_docker_image">Building your optimized Keycloak docker image</h3>
+<h3 id="_writing_your_optimized_keycloak_dockerfile">Writing your optimized Keycloak Dockerfile</h3>
 <div class="paragraph">
 <p>The following <code>Dockerfile</code> creates a pre-configured Keycloak image that enables the health and metrics endpoints, enables the token exchange feature, and uses a PostgreSQL database.</p>
 </div>
@@ -151,8 +151,71 @@ ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]</code></pre>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile"># A example build step that downloads a JAR file from a URL and adds it to the providers directory
-RUN curl -sL &lt;MY_PROVIDER_JAR_URL&gt; -o /opt/keycloak/providers/myprovider.jar</code></pre>
+ADD --chown=keycloak:keycloak &lt;MY_PROVIDER_JAR_URL&gt; /opt/keycloak/providers/myprovider.jar</code></pre>
 </div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_installing_additional_rpm_packages">Installing additional RPM packages</h3>
+<div class="paragraph">
+<p>If you try to install new software in a stage <code>FROM quay.io/keycloak/keycloak</code>, you will notice that <code>microdnf</code>, <code>dnf</code>, and even <code>rpm</code> are not installed. Also, very few packages are available, only enough for a <code>bash</code> shell, and to run Keycloak itself. This is due to security hardening measures, which reduce the attack surface of the Keycloak container.</p>
+</div>
+<div class="paragraph">
+<p>First, consider if your use case can be implemented in a different way, and so avoid installing new RPMs into the final container:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A <code>RUN curl</code> instruction in your Dockerfile can be replaced with <code>ADD</code>, since that instruction natively supports remote URLs.</p>
+</li>
+<li>
+<p>Some common CLI tools can be replaced by creative use of the Linux filesystem. For example, <code>ip addr show tap0</code> becomes <code>cat /sys/class/net/tap0/address</code></p>
+</li>
+<li>
+<p>Tasks that need RPMs can be moved to a former stage of an image build, and the results copied across instead.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Here is an example. Running <code>update-ca-trust</code> in a former build stage, then copying the result forward:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">FROM registry.access.redhat.com/ubi9 AS ubi-micro-build
+COPY mycertificate.crt /etc/pki/ca-trust/source/anchors/mycertificate.crt
+RUN update-ca-trust
+
+FROM quay.io/keycloak/keycloak
+COPY --from=ubi-micro-build /etc/pki /etc/pki</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is possible to install new RPMs if absolutely required, following this two-stage pattern established by ubi-micro:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">FROM registry.access.redhat.com/ubi9 AS ubi-micro-build
+RUN mkdir -p /mnt/rootfs
+RUN dnf install --installroot /mnt/rootfs &lt;package names go here&gt; --releasever 9 --setopt install_weak_deps=false --nodocs -y; dnf --installroot /mnt/rootfs clean all
+
+FROM quay.io/keycloak/keycloak
+COPY --from=ubi-micro-build /mnt/rootfs /</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This approach uses a chroot, <code>/mnt/rootfs</code>, so that only the packages you specify and their dependencies are installed, and so can be easily copied into the second stage without guesswork.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Some packages have a large tree of dependencies. By installing new RPMs you may unintentionally increase the container&#8217;s attack surface. Check the list of installed packages carefully.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
