@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Using Kubernetes secrets - Keycloak</title>
+    <title>Using a vault - Keycloak</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Keycloak is an open source identity and access management solution">
     <meta name="author" content="Keycloak Team">
@@ -63,13 +63,13 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
-                    <li class="breadcrumb-item active">Using Kubernetes secrets</li>
+                    <li class="breadcrumb-item active">Using a vault</li>
                 </ol>
             </nav>
 
             <div class="mb-4">
-                <h1>Using Kubernetes secrets</h1>
-                    <span class="text-muted">Learn how to use Kubernetes/OpenShift secrets in Keycloak</span>
+                <h1>Using a vault</h1>
+                    <span class="text-muted">Learn how to use and configure a vault in Keycloak</span>
             </div>
 
 
@@ -78,7 +78,13 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak supports a file-based vault implementation for Kubernetes/OpenShift secrets. Mount Kubernetes secrets into the Keycloak Container, and the data fields will be available in the mounted folder with a flat-file structure.</p>
+<p>Keycloak provides two out-of-the-box implementations of the Vault SPI: a plain-text file-based vault and Java KeyStore-based vault.</p>
+</div>
+<div class="paragraph">
+<p>The file-based vault implementation is especially useful for Kubernetes/OpenShift secrets. You can mount Kubernetes secrets into the Keycloak Container, and the data fields will be available in the mounted folder with a flat-file structure.</p>
+</div>
+<div class="paragraph">
+<p>The Java KeyStore-based vault implementation is useful for storing secrets in bare metal installations. You can use the KeyStore vault, which is encrypted using a password.</p>
 </div>
 </div>
 </div>
@@ -86,7 +92,7 @@
 <h2 id="_available_integrations">Available integrations</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>You can use Kubernetes/OpenShift secrets for the following purposes:</p>
+<p>Secrets stored in the vaults can be used at the following places of the Administration Console:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -104,21 +110,31 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_enabling_the_vault">Enabling the vault</h2>
+<h2 id="_enabling_a_vault">Enabling a vault</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Enable the file based vault by building Keycloak using the following build option:</p>
+<p>For enabling the file-based vault you need to build Keycloak first using the following build option:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --vault=file</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>Analogically, for the Java KeyStore-based you need to specify the following build option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --vault=keystore</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_setting_the_base_directory_to_lookup_secrets">Setting the base directory to lookup secrets</h2>
+<h2 id="_configuring_the_file_based_vault">Configuring the file-based vault</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_setting_the_base_directory_to_lookup_secrets">Setting the base directory to lookup secrets</h3>
 <div class="paragraph">
 <p>Kubernetes/OpenShift secrets are basically mounted files. To configure a directory where these files should be mounted, enter this command:</p>
 </div>
@@ -128,16 +144,15 @@
 </div>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_realm_specific_secret_files">Realm-specific secret files</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_realm_specific_secret_files">Realm-specific secret files</h3>
 <div class="paragraph">
 <p>Kubernetes/OpenShift Secrets are used on a per-realm basis in Keycloak, which requires a naming convention for the file in place:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">${vault.&lt;realmname&gt;_&lt;secretname&gt;}</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -167,6 +182,39 @@
 <div class="paragraph">
 <p>Note the doubled underscores between <em>sso</em> and <em>realm</em> and also between <em>ldap</em> and <em>credential</em>.</p>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_java_keystore_based_vault">Configuring the Java KeyStore-based vault</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In order to use the Java KeyStore-based vault, you need to create a KeyStore file first. You can use the following command for doing so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">keytool -importpass -alias &lt;realm-name&gt;_&lt;alias&gt; -keystore keystore.p12 -storepass keystorepassword</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and then enter a value you want to store in the vault. Note that the format of the <code>-alias</code> parameter depends on the key resolver used. The default key resolver is <code>REALM_UNDERSCORE_KEY</code>.</p>
+</div>
+<div class="paragraph">
+<p>This by default results to storing the value in a form of generic PBEKey (password based encryption) within SecretKeyEntry.</p>
+</div>
+<div class="paragraph">
+<p>You can then start Keycloak using the following runtime options:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start  --vault-file=/path/to/keystore.p12 --vault-pass=&lt;value&gt; --vault-type=&lt;value&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that the <code>--vault-type</code> parameter is optional and defaults to <code>PKCS12</code>.</p>
+</div>
+<div class="paragraph">
+<p>Secrets stored in the vault can then be accessed in a realm via the following placeholder (assuming using the <code>REALM_UNDERSCORE_KEY</code> key resolver): <code>${vault.realm-name_alias}</code>.</p>
 </div>
 </div>
 </div>
@@ -223,7 +271,7 @@
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>file</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>file</code>, <code>keystore</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -241,6 +289,57 @@
 </div>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>vault-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Path to the keystore file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--vault-file</code><br>
+<strong>Env:</strong> <code>KC_VAULT_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>vault-pass</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Password for the vault keystore.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--vault-pass</code><br>
+<strong>Env:</strong> <code>KC_VAULT_PASS</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>vault-type</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Specifies the type of the keystore file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--vault-type</code><br>
+<strong>Env:</strong> <code>KC_VAULT_TYPE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>PKCS12</code></span> (default)</p></td>
 </tr>
 </tbody>
 </table>

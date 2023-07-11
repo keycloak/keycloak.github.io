@@ -107,12 +107,14 @@ For a list of supported databases, see <a href="https://www.keycloak.org/server/
 The Keycloak Operator does not manage the database and you need to provision it yourself. Consider verifying your cloud provider offering or using a database operator such as <a href="https://access.crunchydata.com/documentation/postgres-operator/latest/">Crunchy</a>.</p>
 </div>
 <div class="paragraph">
-<p>For development purposes, you can use an ephemeral PostgreSQL pod installation. To provision it, enter the following commands:</p>
+<p>For development purposes, you can use an ephemeral PostgreSQL pod installation. To provision it, follow the approach below:</p>
+</div>
+<div class="paragraph">
+<p>Create YAML file <code>example-postgres.yaml</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">cat &lt;&lt;EOF &gt;&gt; example-postgres.yaml
-apiVersion: apps/v1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgresql-db
@@ -130,6 +132,9 @@ spec:
       containers:
         - name: postgresql-db
           image: postgres:latest
+          volumeMounts:
+            - mountPath: /data
+              name: cache-volume
           env:
             - name: POSTGRES_PASSWORD
               value: testpassword
@@ -137,6 +142,9 @@ spec:
               value: /data/pgdata
             - name: POSTGRES_DB
               value: keycloak
+      volumes:
+        - name: cache-volume
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -148,9 +156,15 @@ spec:
   type: LoadBalancer
   ports:
   - port: 5432
-    targetPort: 5432
-EOF
-kubectl apply -f example-postgres.yaml</code></pre>
+    targetPort: 5432</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the changes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f example-postgres.yaml</code></pre>
 </div>
 </div>
 </div>
@@ -203,12 +217,14 @@ See <a href="https://www.keycloak.org/server/hostname">Configuring the hostname<
 </div>
 </div>
 <div class="paragraph">
-<p>You can customize several fields using the Keycloak CRD. However, for a basic deployment, you can enter the following example commands:</p>
+<p>You can customize several fields using the Keycloak CRD. For a basic deployment, you can stick to the following approach:</p>
+</div>
+<div class="paragraph">
+<p>Create YAML file <code>example-kc.yaml</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">cat &lt;&lt;EOF &gt;&gt; example-kc.yaml
-apiVersion: k8s.keycloak.org/v2alpha1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
 kind: Keycloak
 metadata:
   name: example-kc
@@ -226,9 +242,15 @@ spec:
   http:
     tlsSecret: example-tls-secret
   hostname:
-    hostname: test.keycloak.org
-EOF
-kubectl apply -f example-kc.yaml</code></pre>
+    hostname: test.keycloak.org</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the changes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f example-kc.yaml</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -259,22 +281,48 @@ CONDITION: RollingUpdate
 <div class="sect2">
 <h3 id="_accessing_the_keycloak_deployment">Accessing the Keycloak deployment</h3>
 <div class="paragraph">
-<p>The Keycloak deployment is exposed through a basic Ingress and is accessible through the provided hostname.
-If the default ingress does not fit your use case, disable it by setting <code>ingress</code> spec with <code>enabled</code> property to <code>false</code> value:</p>
+<p>The Keycloak deployment is exposed through a basic Ingress and is accessible through the provided hostname.  On installations with multiple default IngressClass instances
+or when running on OpenShift 4.12+ you should provide an ingressClassName by setting <code>ingress</code> spec with <code>className</code> property to the desired class name:</p>
+</div>
+<div class="paragraph">
+<p>Edit YAML file <code>example-kc.yaml</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">cat &lt;&lt;EOF &gt;&gt; example-kc.yaml
-apiVersion: k8s.keycloak.org/v2alpha1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
 kind: Keycloak
 metadata:
   name: example-kc
 spec:
     ...
     ingress:
-      enabled: false
-EOF
-kubectl apply -f example-kc.yaml</code></pre>
+      className: openshift-default</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the default ingress does not fit your use case, disable it by setting <code>ingress</code> spec with <code>enabled</code> property to <code>false</code> value:</p>
+</div>
+<div class="paragraph">
+<p>Edit YAML file <code>example-kc.yaml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+    ...
+    ingress:
+      enabled: false</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the changes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f example-kc.yaml</code></pre>
 </div>
 </div>
 <div class="paragraph">

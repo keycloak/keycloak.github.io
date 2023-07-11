@@ -127,7 +127,23 @@ When Keycloak executes in fips-mode, it will use the BCFIPS bits instead of the 
 <p>You can create either <code>pkcs12</code> or <code>bcfks</code> keystore to be used for the Keycloak server SSL. The <code>pkcs12</code> works well in BCFIPS non-approved mode.</p>
 </div>
 <div class="paragraph">
-<p>PKCS12 keystore can be generated with OpenJDK 17 Java on RHEL 9 in the standard way.</p>
+<p>PKCS12 keystore can be generated with OpenJDK 17 Java on RHEL 9 in the standard way. Make sure that the system is in FIPS mode, you can check it with the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">fips-mode-setup --check</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the system is not in FIPS mode, you can enable it with the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">fips-mode-setup --enable</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command changes the default <code>java.security</code> file in order to use FIPS enabled security providers, so no additional configuration is needed. Additionally, in PKCS12 keystore you can store PBE (password-based encryption) keys simply via the keytool command, which makes it ideal for using it with Keycloak KeyStore Vault and/or to store configuration properties in the KeyStore Config Source. For more details, see the <a href="https://www.keycloak.org/server/configuration">Configuration Guide</a> and the <a href="https://www.keycloak.org/server/vault">Vault Guide</a>.</p>
 </div>
 <div class="paragraph">
 <p>BCFKS keystore generation requires the use of the BouncyCastle FIPS libraries and a custom security file.</p>
@@ -145,7 +161,7 @@ When Keycloak executes in fips-mode, it will use the BCFIPS bits instead of the 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>keytool -keystore $KEYCLOAK_HOME/conf/server.keystore \
+<pre class="highlight"><code class="language-bash" data-lang="bash">keytool -keystore $KEYCLOAK_HOME/conf/server.keystore \
   -storetype bcfks \
   -providername BCFIPS \
   -providerclass org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider \
@@ -454,8 +470,8 @@ earlier. If you prefer to avoid this option, you can for instance ask all your u
 <h2 id="_keycloak_fips_mode_on_the_non_fips_system">Keycloak FIPS mode on the non-fips system</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak is tested on a FIPS enabled RHEL 9 system and <code>ubi9</code> image. Running on the non-RHEL compatible platform or on the non-FIPS enabled platform, the FIPS compliance cannot be
-strictly guaranteed and cannot be officially supported.</p>
+<p>Keycloak is tested on a FIPS enabled RHEL 8 system and <code>ubi8</code> image. It is supported with RHEL 9 (and <code>ubi9</code> image) as well. Running on
+the non-RHEL compatible platform or on the non-FIPS enabled platform, the FIPS compliance cannot be strictly guaranteed and cannot be officially supported.</p>
 </div>
 <div class="paragraph">
 <p>If you are still restricted to run Keycloak on such a system, you can at least update your security providers configured in <code>java.security</code> file. This update does not mean FIPS compliance, but
