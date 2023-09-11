@@ -1,0 +1,207 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Keycloak 22.0.2 released - Keycloak</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/keycloak_logo_200px.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <h1>Keycloak 22.0.2 released</h1>
+    <p class="blog-date text-muted">September 11 2023</p>
+
+
+<p>To download the release go to <a href="https://www.keycloak.org/downloads.html">Keycloak downloads</a>.</p>
+
+    <h2>Release notes</h2>
+<div class="sect2">
+<h3 id="_improvements_in_ldap_and_kerberos_integration">Improvements in LDAP and Kerberos integration</h3>
+<div class="paragraph">
+<p>Keycloak now supports multiple LDAP providers in a realm, which support Kerberos integration with the same Kerberos realm. When an LDAP provider is not able to find the user which was authenticated through
+Kerberos/SPNEGO, Keycloak ties to fallback to the next LDAP provider. Keycloak has also better support for the case when single LDAP provider supports multiple Kerberos realms, which are in trust with each other.</p>
+</div>
+</div>
+<h2>Migration from 21.1</h2>
+<p>Before you upgrade remember to backup your database. If you are not on the previous release refer to <a href="https://www.keycloak.org/docs/latest/upgrading/index.html#migration-changes">the documentation</a> for a complete list of migration changes.</p>
+
+<div class="sect2">
+<h3 id="_never_expires_option_removed_from_client_advanced_settings_combos">Never expires option removed from client advanced settings combos</h3>
+<div class="paragraph">
+<p>The option <code>Never expires</code> is now removed from all the combos of the Advanced Settings client tab. This option was misleading because the different lifespans or idle timeouts were never infinite, but limited by the general user session or realm values. Therefore, this option is removed in favor of the other two remaining options: <code>Inherits from the realm settings</code> (the client uses general realm timeouts) and <code>Expires in</code> (the value is overriden for the client). Internally the <code>Never expires</code> was represented by <code>-1</code>. Now that value is shown with a warning in the Admin Console and cannot be set directly by the administrator.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_new_linkedin_openid_connect_social_provider">New LinkedIn OpenID Connect social provider</h3>
+<div class="paragraph">
+<p>A new social identity provider called <strong>LinkedIn OpenID Connect</strong> has been introduced for the business and employment-focused platform. LinkedIn released recently a new product for developers called <a href="https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin-v2">Sign In with LinkedIn using OpenID Connect</a>. The product provides a new way to authenticate members using OpenID Connect, but the default <strong>OpenID Connect v1.0</strong> identity provider does not work with it at present time. For that reason, Keycloak adds this new identity provider as the specific social provider for the new product.</p>
+</div>
+<div class="paragraph">
+<p>The old LinkedIn way based on OAuth seems to be completely removed from the <a href="https://developer.linkedin.com">developer portal</a>. How the existing LinkedIn social provider is working with current applications is not clear. Keycloak maintains the old provider renamed to <strong>LinkedIn (deprecated)</strong>, but in a deprecated feature called <strong>linkedin-oauth</strong> which is disabled by default. It will be removed in future versions. Please enable it again at startup if needed:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>kc.[sh|bat] start --features linkedin-oauth ...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_a_new_parameter_spi_user_profile_declarative_user_profile_max_email_local_part_length_is_added_to_set_max_email_local_part_length_taking_backwards_compatibility_into_consideration_the_default_value_is_64">A new parameter --spi-user-profile-declarative-user-profile-max-email-local-part-length is added to set max email local part length taking backwards compatibility into consideration. The default value is 64.</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>kc.[sh|bat] start --spi-user-profile-declarative-user-profile-max-email-local-part-length=100 ...</code></pre>
+</div>
+</div>
+</div>
+<h2>All resolved issues</h2>
+
+
+
+<h3>Enhancements</h3>
+<ul>
+<li><a href="https://github.com/keycloak/keycloak/issues/9422">#9422</a> Support kerberos realm filter on LDAP provider <span class="badge bg-secondary">keycloak ldap</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/10232">#10232</a> Kill sessions after a password reset or MFA modification <span class="badge bg-secondary">keycloak authentication</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/14665">#14665</a> map a kerberos provider to one or more ldap provider stores <span class="badge bg-secondary">keycloak ldap</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/20931">#20931</a> Improvements on Documentation/Guides for "Hostname/Proxy/Admin Console" Settings <span class="badge bg-secondary">keycloak </span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21564">#21564</a> Upgrade to Infinispan 14.0.13.Final  <span class="badge bg-secondary">keycloak </span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22452">#22452</a> Ask admins to install the Oracle Database driver separately <span class="badge bg-secondary">keycloak </span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22500">#22500</a> Correct Getting Started guide <span class="badge bg-secondary">keycloak </span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22745">#22745</a> Upgrade to Quarkus 3.2.5.Final <span class="badge bg-secondary">keycloak dist/quarkus</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22762">#22762</a> Provide support for determining community/product guides <span class="badge bg-secondary">keycloak docs</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22793">#22793</a> Remove log-level property for `ClassTransformingBuildStep` in Quarkus <span class="badge bg-secondary">keycloak dist/quarkus</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22795">#22795</a> Error message when JDBC driver is missing is not helpful <span class="badge bg-secondary">keycloak </span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22800">#22800</a> Blank Java adapter section in Securing Apps Guide <span class="badge bg-secondary">keycloak </span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22871">#22871</a> Operator guide screen shot should show fast channel <span class="badge bg-secondary">keycloak </span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/23067">#23067</a> Add "LinkedIn (deprecated)" provider to the DEPRECATED profile <span class="badge bg-secondary">keycloak identity-brokering</span></li>
+</ul>
+
+<h3>Bugs</h3>
+<ul>
+<li><a href="https://github.com/keycloak/keycloak/issues/10981">#10981</a> Keycloak "forgets" ui_locales parameter when using Reset Password functionality <span class="badge bg-secondary">keycloak authentication</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/12137">#12137</a> IdP Mappers ignored when performing external -> internal token exchange <span class="badge bg-secondary">keycloak token-exchange</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/19954">#19954</a> Admin UI hangs with many subgroups <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/20005">#20005</a> JavaScript Authenticator Providers not updated automatically on build and SQL error when removing/adding in flow <span class="badge bg-secondary">keycloak core</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/20045">#20045</a> Use an original domain name of Kerberos Principal in UserModel attribute instead of configured value of Kerberos realm in User federation <span class="badge bg-secondary">keycloak authentication</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/20455">#20455</a> MigrationTest » IllegalArgument argument type mismatch [JDK Temurin 17] <span class="badge bg-secondary">keycloak testsuite</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/20718">#20718</a> NullPointerException in GroupTreeResolver with LDAP <span class="badge bg-secondary">keycloak ldap</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/20837">#20837</a> [Declarative User Profile] Attributes tab doesn't dipslay attributes, values get lost and multi values get stored as single ones <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/20983">#20983</a> Flaky test: org.keycloak.testsuite.model.session.SessionTimeoutsTest#testOnlineUserClientMaxLifespanSmallerThanSessionOverrideInClient <span class="badge bg-secondary">keycloak storage</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21092">#21092</a> Keycloak fails to start due to infinispan state transfer exception <span class="badge bg-secondary">keycloak infinispan</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21173">#21173</a> User administration: It is not possible to assign a user to a subgroup of an assigned parent group in order to obtain more rights <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21256">#21256</a> State transfer never completes <span class="badge bg-secondary">keycloak storage</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21421">#21421</a> After switching the Admin UI theme to "Base," an error occurred when attempting to access the keycloak login <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21514">#21514</a> Can create a user without the registration flow finished properly (reopened #17644) <span class="badge bg-secondary">keycloak storage</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21528">#21528</a> Declarative User Profile validators are not saved <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21595">#21595</a> LGPL license header in files incompatible with Apache v2.0 <span class="badge bg-secondary">keycloak core</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21693">#21693</a> New Admin UI: Group Attribute UI does not refresh, shows stale values <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21710">#21710</a> Liquibase CustomChange are executed twice because of a Liquibase bug fixed in 4.21.0 <span class="badge bg-secondary">keycloak storage</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21719">#21719</a> New Admin UI: User attributes UI does not refresh, shows stale values <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21739">#21739</a> CRD incompatible with Flux reconcilation <span class="badge bg-secondary">keycloak operator</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21745">#21745</a> Re-instate authenticator alias in authentication flow GUI <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21751">#21751</a> v 22.0.0 rest-api, cleans user email when updating attributes (with user-profile enabled) <span class="badge bg-secondary">keycloak user-profile</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21778">#21778</a> Flaky test: org.keycloak.testsuite.script.DeployedScriptAuthenticatorTest#testScriptAuthenticatorNotAvailable <span class="badge bg-secondary">keycloak authentication</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21791">#21791</a> User unable to save user profile attributes <span class="badge bg-secondary">keycloak user-profile</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21801">#21801</a> Warnings about quarkus.http.ssl.certificate.file and quarkus.http.ssl.certificate.key-file on startup <span class="badge bg-secondary">keycloak dist/quarkus</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21814">#21814</a> Keycloak operator lacks RBAC for Pods <span class="badge bg-secondary">keycloak operator</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21851">#21851</a> v22.0.1 - Windows: kcadm.bat gives Java Exception <span class="badge bg-secondary">keycloak admin/cli</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21927">#21927</a> Client Session Max set never expires is not working anymore since 22.0.0 <span class="badge bg-secondary">keycloak oidc</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/21960">#21960</a> Configuration of flow execution is wiped after using admin UI drag and drop <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22002">#22002</a> Admin UI v2 : client credentials tab is hidden with view-client fine grained permission <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22032">#22032</a> Example postgres deployment used in Operator test is sometimes hitting rate limits <span class="badge bg-secondary">keycloak operator</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22039">#22039</a> Link to freeipa broken in documentation <span class="badge bg-secondary">keycloak docs</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22079">#22079</a> In assign role dialog, the filter dropdown is missing when having only manage-user role <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22140">#22140</a> KeycloakIngressTest failing in OCP <span class="badge bg-secondary">keycloak ci</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22142">#22142</a> PodTemplateTest.testPodTemplateIncorrectNamespace error in OCP <span class="badge bg-secondary">keycloak ci</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22172">#22172</a> Keycloak SAML Adapter subsystem does not support Wildfly 29  <span class="badge bg-secondary">keycloak adapter/jee-saml</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22175">#22175</a> Missing ":providerId" param - Error when viewing users from federated provider with limited admin roles <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22186">#22186</a> ExternalLinksTest fails for https://nodejs.org (invalid redirect to /en/) <span class="badge bg-secondary">keycloak docs</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22198">#22198</a> User session expire task shouldn't run concurrently in a cluster <span class="badge bg-secondary">keycloak storage</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22243">#22243</a> Flaky test: org.keycloak.testsuite.oauth.OfflineTokenTest#offlineTokenBrowserFlowIdleTimeExpired <span class="badge bg-secondary">keycloak storage</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22352">#22352</a> Only first kerberos provider is checked <span class="badge bg-secondary">keycloak authentication</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22383">#22383</a> LinkedIn as Identity provider not working <span class="badge bg-secondary">keycloak oidc</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22570">#22570</a> Unable to remove user attributes <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22581">#22581</a> idp jwt userinfo broken <span class="badge bg-secondary">keycloak identity-brokering</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22593">#22593</a> Update the Keycloak SAML adapter subsystem to no longer use the AttributeDefinition#getAttributeMarshaller method <span class="badge bg-secondary">keycloak adapter/jee-saml</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22602">#22602</a> UserSyncTest does not clean LDAP properly <span class="badge bg-secondary">keycloak testsuite</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22707">#22707</a> `start-dev` by default starts with cache `local`, but docs state otherwise <span class="badge bg-secondary">keycloak dist/quarkus</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22709">#22709</a> Incorrect event types in the events overview (eventTypes.Refresh token error.name & eventTypes.User info refresh error.name) <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22760">#22760</a> Translations missing for theme select placeholder text  <span class="badge bg-secondary">keycloak translations</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22823">#22823</a> Support EAP8 with SAML Adapter Galleon Feature Pack  <span class="badge bg-secondary">keycloak adapter/jee-saml</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22888">#22888</a> Surefire reports not triggered when a test suite fails. <span class="badge bg-secondary">keycloak ci</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22900">#22900</a> User data is incorrectly erased in Keycloak Admin UI <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22924">#22924</a> Incorrect help Text for the field 'Temporary' while setting password for new user <span class="badge bg-secondary">keycloak admin/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/22961">#22961</a> Attributes without a value set are not rendered in the account console <span class="badge bg-secondary">keycloak account/ui</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/23001">#23001</a> Conditional store tests do not run if tests are updated <span class="badge bg-secondary">keycloak ci</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/23027">#23027</a> Broker user attribute mapper not obtaing user info claims when creating users through token exchange <span class="badge bg-secondary">keycloak token-exchange</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/23058">#23058</a> Quarkus IT that use Oracle DB don't work with `-Dproduct` <span class="badge bg-secondary">keycloak testsuite</span></li>
+<li><a href="https://github.com/keycloak/keycloak/issues/23118">#23118</a> Failure in identity_providers_test.spec.ts <span class="badge bg-secondary">keycloak testsuite</span></li>
+</ul>
+
+
+<h2>Upgrading</h2>
+<p>Before you upgrade remember to backup your database and check the <a href="https://www.keycloak.org/docs/latest/upgrading/index.html">upgrade guide</a> for anything that may have changed.</p>
+</div>
+
+
+<div class="container">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center pt-2 mt-3 mb-3">
+        <div class="col-md-4 d-flex align-items-center">
+            <span class="text-muted me-3">Sponsored by</span>
+            <a href="http://www.redhat.com/" target="_blank" class="">
+                <img alt="Red Hat" src="https://www.keycloak.org/resources/images/Logo-RedHat-A-Standard-RGB.svg" width="100">
+            </a>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>
