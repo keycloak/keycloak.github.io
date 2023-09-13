@@ -64,125 +64,9 @@
 <p>To download the release go to <a href="https://www.keycloak.org/downloads.html">Keycloak downloads</a>.</p>
 
 
-<h2>Migration from 21.1</h2>
-<p>Before you upgrade remember to backup your database. If you are not on the previous release refer to <a href="https://www.keycloak.org/docs/latest/upgrading/index.html#migration-changes">the documentation</a> for a complete list of migration changes.</p>
+<h2>Upgrading</h2>
+<p>Before upgrading refer to <a href="https://www.keycloak.org/docs/latest/upgrading/index.html#migration-changes">the migration guide</a> for a complete list of changes.</p>
 
-<div class="sect2">
-<h3 id="_openid_connect_logout_prompt">OpenID Connect Logout Prompt</h3>
-<div class="paragraph">
-<p>At Keycloak 18.0.0, the logout is now compatible with the new OIDC specification, which changed the handling for the url parameters. However, to also remain compatible with earlier versions, a compatibility flag is introduced. See the <a href="https://www.keycloak.org/docs/DEV/upgrading/#openid-connect-logout">Upgrading Guide</a> for further information for the backwards compatibility option, which allows your application to still use the old format for the url parameters.</p>
-</div>
-<div class="paragraph">
-<p>While the url parameters can now be configured to be compatible, there was still one incompatibility with keycloak 17 and earlier releases. If the user does not provide a valid <code>idTokenHint</code>, a logout prompt appears instead of a successful logout redirect. Therefore, a new compatibility flag <code>suppress-logout-confirmation-screen</code> is introduced to suppress the logout screen.</p>
-</div>
-<div class="paragraph">
-<p>You can enable this parameter when you start the server by entering the following command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>bin/kc.[sh|bat] --spi-login-protocol-openid-connect-suppress-logout-confirmation-screen=true start</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>With this configuration, you can still use the logout endpoint without a user prompt.</p>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Warning</div>
-</td>
-<td class="content">
-The backwards compatibility switch will be removed in some future version - probably Keycloak 23. You are encouraged to update your clients as soon as possible as described above rather than rely on this switch.
-</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_deploying_scripts_through_saml_javascript_protocol_mapper">Deploying scripts through SAML javascript protocol mapper</h3>
-<div class="paragraph">
-<p>Until now, administrators, which used SAML javascript protocol mapper on their SAML clients or client scopes, were allowed to upload scripts to the server through the Keycloak Administration Console as well as
-through the RESTful Admin API.</p>
-</div>
-<div class="paragraph">
-<p>For now on, this capability is <strong>disabled</strong> and users should deploy scripts directly to the server. This behaviour is aligned with other script based providers. For more details,
-please take a look at <a href="https://www.keycloak.org/docs/DEV/server_development/#_script_providers">JavaScript Providers</a>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_userinfo_endpoint_changes">UserInfo Endpoint Changes</h3>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Error response changes</dt>
-<dd>
-<p>The UserInfo endpoint is now returning error responses fully compliant with <a href="https://datatracker.ietf.org/doc/html/rfc6750">RFC 6750</a> (The OAuth 2.0 Authorization Framework: Bearer Token Usage). Error code and description (if available) are provided as <code>WWW-Authenticate</code> challenge attributes rather than JSON object fields.
-The responses will be the following, depending on the error condition:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>In case no access token is provided:</p>
-<div class="listingblock">
-<div class="content">
-<pre>401 Unauthorized
-WWW-Authenticate: Bearer realm="myrealm"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>In case several methods are used simultaneously to provide an access token (for example, Authorization header + POST access_token parameter), or POST parameters are duplicated:</p>
-<div class="listingblock">
-<div class="content">
-<pre>400 Bad Request
-WWW-Authenticate: Bearer realm="myrealm", error="invalid_request", error_description="..."</pre>
-</div>
-</div>
-</li>
-<li>
-<p>In case an access token is missing <code>openid</code> scope:</p>
-<div class="listingblock">
-<div class="content">
-<pre>403 Forbidden
-WWW-Authenticate: Bearer realm="myrealm", error="insufficient_scope", error_description="Missing openid scope"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>In case of inability to resolve cryptographic keys for UserInfo response signing/encryption:</p>
-<div class="listingblock">
-<div class="content">
-<pre>500 Internal Server Error</pre>
-</div>
-</div>
-</li>
-<li>
-<p>In case of a token validation error, a <code>401 Unauthorized</code> is returned in combination with the <code>invalid_token</code> error code. This error includes user and client related checks and actually captures all the remaining error cases:</p>
-<div class="listingblock">
-<div class="content">
-<pre>401 Unauthorized
-WWW-Authenticate: Bearer realm="myrealm", error="invalid_token", error_description="..."</pre>
-</div>
-</div>
-</li>
-</ul>
-</div>
-</dd>
-<dt class="hdlist1">Other Changes</dt>
-<dd>
-<div class="ulist">
-<ul>
-<li>
-<p>It is now required for access tokens to have the <code>openid</code> scope, which is stipulated by UserInfo being a feature specific to OpenID Connect and not OAuth 2.0. If the <code>openid</code> scope is missing from the token, the request will be denied with a <code>403 Forbidden</code> (see above).</p>
-</li>
-<li>
-<p>UserInfo now checks the user status, and returns the <code>invalid_token</code> response if the user is disabled.</p>
-</li>
-</ul>
-</div>
-</dd>
-</dl>
-</div>
-</div>
 <h2>All resolved issues</h2>
 
 
@@ -253,9 +137,6 @@ WWW-Authenticate: Bearer realm="myrealm", error="invalid_token", error_descripti
 <li><a href="https://github.com/keycloak/keycloak/issues/14309">#14309</a> Credential validation not taking into account if the user is already cached <span class="badge bg-secondary">keycloak storage</span></li>
 </ul>
 
-
-<h2>Upgrading</h2>
-<p>Before you upgrade remember to backup your database and check the <a href="https://www.keycloak.org/docs/latest/upgrading/index.html">upgrade guide</a> for anything that may have changed.</p>
 </div>
 
 
