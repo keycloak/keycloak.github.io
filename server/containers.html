@@ -196,7 +196,9 @@ COPY --from=ubi-micro-build /etc/pki /etc/pki</code></pre>
 <div class="content">
 <pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">FROM registry.access.redhat.com/ubi9 AS ubi-micro-build
 RUN mkdir -p /mnt/rootfs
-RUN dnf install --installroot /mnt/rootfs &lt;package names go here&gt; --releasever 9 --setopt install_weak_deps=false --nodocs -y; dnf --installroot /mnt/rootfs clean all
+RUN dnf install --installroot /mnt/rootfs &lt;package names go here&gt; --releasever 9 --setopt install_weak_deps=false --nodocs -y &amp;&amp; \
+    dnf --installroot /mnt/rootfs clean all &amp;&amp; \
+    rpm --root /mnt/rootfs -e --nodeps setup
 
 FROM quay.io/keycloak/keycloak
 COPY --from=ubi-micro-build /mnt/rootfs /</code></pre>
