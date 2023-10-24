@@ -1753,13 +1753,13 @@
 	        var supportedParams;
 	        switch (kc.flow) {
 	            case 'standard':
-	                supportedParams = ['code', 'state', 'session_state', 'kc_action_status'];
+	                supportedParams = ['code', 'state', 'session_state', 'kc_action_status', 'iss'];
 	                break;
 	            case 'implicit':
-	                supportedParams = ['access_token', 'token_type', 'id_token', 'state', 'session_state', 'expires_in', 'kc_action_status'];
+	                supportedParams = ['access_token', 'token_type', 'id_token', 'state', 'session_state', 'expires_in', 'kc_action_status', 'iss'];
 	                break;
 	            case 'hybrid':
-	                supportedParams = ['access_token', 'token_type', 'id_token', 'code', 'state', 'session_state', 'expires_in', 'kc_action_status'];
+	                supportedParams = ['access_token', 'token_type', 'id_token', 'code', 'state', 'session_state', 'expires_in', 'kc_action_status', 'iss'];
 	                break;
 	        }
 
