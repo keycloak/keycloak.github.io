@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-	typeof define === 'function' && define.amd ? define('keycloak', factory) :
-	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Keycloak = factory());
-})(this, (function () { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('crypto'), require('buffer')) :
+	typeof define === 'function' && define.amd ? define('keycloak', ['crypto', 'buffer'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Keycloak = factory(global.require$$0, global.require$$1));
+})(this, (function (require$$0, require$$1) { 'use strict';
 
 	var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -178,9 +178,9 @@
 	/**
 	 * [js-sha256]{@link https://github.com/emn178/js-sha256}
 	 *
-	 * @version 0.9.0
+	 * @version 0.10.1
 	 * @author Chen, Yi-Cyuan [emn178@gmail.com]
-	 * @copyright Chen, Yi-Cyuan 2014-2017
+	 * @copyright Chen, Yi-Cyuan 2014-2023
 	 * @license MIT
 	 */
 
@@ -257,9 +257,17 @@
 		  };
 
 		  var nodeWrap = function (method, is224) {
-		    var crypto = eval("require('crypto')");
-		    var Buffer = eval("require('buffer').Buffer");
+		    var crypto = require$$0;
+		    var Buffer = require$$1.Buffer;
 		    var algorithm = is224 ? 'sha224' : 'sha256';
+		    var bufferFrom;
+		    if (Buffer.from && !root.JS_SHA256_NO_BUFFER_FROM) {
+		      bufferFrom = Buffer.from;
+		    } else {
+		      bufferFrom = function (message) {
+		        return new Buffer(message);
+		      };
+		    }
 		    var nodeMethod = function (message) {
 		      if (typeof message === 'string') {
 		        return crypto.createHash(algorithm).update(message, 'utf8').digest('hex');
@@ -272,7 +280,7 @@
 		      }
 		      if (Array.isArray(message) || ArrayBuffer.isView(message) ||
 		        message.constructor === Buffer) {
-		        return crypto.createHash(algorithm).update(new Buffer(message)).digest('hex');
+		        return crypto.createHash(algorithm).update(bufferFrom(message)).digest('hex');
 		      } else {
 		        return method(message);
 		      }
@@ -505,6 +513,7 @@
 		      t2 = s0 + maj;
 		      e = a + t1 << 0;
 		      a = t1 + t2 << 0;
+		      this.chromeBugWorkAround = true;
 		    }
 
 		    this.h0 = this.h0 + a << 0;
@@ -693,6 +702,64 @@
 	var sha256Exports = sha256$1.exports;
 	var sha256 = /*@__PURE__*/getDefaultExportFromCjs(sha256Exports);
 
+	class InvalidTokenError extends Error {
+	}
+	InvalidTokenError.prototype.name = "InvalidTokenError";
+	function b64DecodeUnicode(str) {
+	    return decodeURIComponent(atob(str).replace(/(.)/g, (m, p) => {
+	        let code = p.charCodeAt(0).toString(16).toUpperCase();
+	        if (code.length < 2) {
+	            code = "0" + code;
+	        }
+	        return "%" + code;
+	    }));
+	}
+	function base64UrlDecode(str) {
+	    let output = str.replace(/-/g, "+").replace(/_/g, "/");
+	    switch (output.length % 4) {
+	        case 0:
+	            break;
+	        case 2:
+	            output += "==";
+	            break;
+	        case 3:
+	            output += "=";
+	            break;
+	        default:
+	            throw new Error("base64 string is not of the correct length");
+	    }
+	    try {
+	        return b64DecodeUnicode(output);
+	    }
+	    catch (err) {
+	        return atob(output);
+	    }
+	}
+	function jwtDecode(token, options) {
+	    if (typeof token !== "string") {
+	        throw new InvalidTokenError("Invalid token specified: must be a string");
+	    }
+	    options || (options = {});
+	    const pos = options.header === true ? 0 : 1;
+	    const part = token.split(".")[pos];
+	    if (typeof part !== "string") {
+	        throw new InvalidTokenError(`Invalid token specified: missing part #${pos + 1}`);
+	    }
+	    let decoded;
+	    try {
+	        decoded = base64UrlDecode(part);
+	    }
+	    catch (e) {
+	        throw new InvalidTokenError(`Invalid token specified: invalid base64 for part #${pos + 1} (${e.message})`);
+	    }
+	    try {
+	        return JSON.parse(decoded);
+	    }
+	    catch (e) {
+	        throw new InvalidTokenError(`Invalid token specified: invalid json for part #${pos + 1} (${e.message})`);
+	    }
+	}
+
 	if (typeof es6Promise_minExports.Promise === 'undefined') {
 	    throw Error('Keycloak requires an environment that supports Promises. Make sure that you include the appropriate polyfill.');
 	}
@@ -823,6 +890,10 @@
 
 	            if (typeof initOptions.scope === 'string') {
 	                kc.scope = initOptions.scope;
+	            }
+
+	            if (typeof initOptions.acrValues === 'string') {
+	                kc.acrValues = initOptions.acrValues;
 	            }
 
 	            if (typeof initOptions.messageReceiveTimeout === 'number' && initOptions.messageReceiveTimeout > 0) {
@@ -1134,6 +1205,10 @@
 	        if (options && options.acr) {
 	            var claimsParameter = buildClaimsParameter(options.acr);
 	            url += '&claims=' + encodeURIComponent(claimsParameter);
+	        }
+
+	        if ((options && options.acrValues) || kc.acrValues) {
+	            url += '&acr_values=' + encodeURIComponent(options.acrValues || kc.acrValues);
 	        }
 
 	        if (kc.pkceMethod) {
@@ -1645,7 +1720,7 @@
 
 	        if (refreshToken) {
 	            kc.refreshToken = refreshToken;
-	            kc.refreshTokenParsed = decodeToken(refreshToken);
+	            kc.refreshTokenParsed = jwtDecode(refreshToken);
 	        } else {
 	            delete kc.refreshToken;
 	            delete kc.refreshTokenParsed;
@@ -1653,7 +1728,7 @@
 
 	        if (idToken) {
 	            kc.idToken = idToken;
-	            kc.idTokenParsed = decodeToken(idToken);
+	            kc.idTokenParsed = jwtDecode(idToken);
 	        } else {
 	            delete kc.idToken;
 	            delete kc.idTokenParsed;
@@ -1661,7 +1736,7 @@
 
 	        if (token) {
 	            kc.token = token;
-	            kc.tokenParsed = decodeToken(token);
+	            kc.tokenParsed = jwtDecode(token);
 	            kc.sessionId = kc.tokenParsed.session_state;
 	            kc.authenticated = true;
 	            kc.subject = kc.tokenParsed.sub;
@@ -1694,30 +1769,6 @@
 
 	            kc.authenticated = false;
 	        }
-	    }
-
-	    function decodeToken(str) {
-	        str = str.split('.')[1];
-
-	        str = str.replace(/-/g, '+');
-	        str = str.replace(/_/g, '/');
-	        switch (str.length % 4) {
-	            case 0:
-	                break;
-	            case 2:
-	                str += '==';
-	                break;
-	            case 3:
-	                str += '=';
-	                break;
-	            default:
-	                throw 'Invalid token';
-	        }
-
-	        str = decodeURIComponent(escape(atob(str)));
-
-	        str = JSON.parse(str);
-	        return str;
 	    }
 
 	    function createUUID() {
@@ -2079,7 +2130,9 @@
 	                return formatCordovaOptions(cordovaOptions);
 	            };
 
-	            var cordovaRedirectUri = kc.redirectUri || 'http://localhost';
+	            var getCordovaRedirectUri = function() {
+	                return kc.redirectUri || 'http://localhost';
+	            };
 	            
 	            return {
 	                login: function(options) {
@@ -2097,7 +2150,7 @@
 	                    };
 
 	                    ref.addEventListener('loadstart', function(event) {
-	                        if (event.url.indexOf(cordovaRedirectUri) == 0) {
+	                        if (event.url.indexOf(getCordovaRedirectUri()) == 0) {
 	                            var callback = parseCallback(event.url);
 	                            processCallback(callback, promise);
 	                            closeBrowser();
@@ -2107,7 +2160,7 @@
 
 	                    ref.addEventListener('loaderror', function(event) {
 	                        if (!completed) {
-	                            if (event.url.indexOf(cordovaRedirectUri) == 0) {
+	                            if (event.url.indexOf(getCordovaRedirectUri()) == 0) {
 	                                var callback = parseCallback(event.url);
 	                                processCallback(callback, promise);
 	                                closeBrowser();
@@ -2139,13 +2192,13 @@
 	                    var error;
 
 	                    ref.addEventListener('loadstart', function(event) {
-	                        if (event.url.indexOf(cordovaRedirectUri) == 0) {
+	                        if (event.url.indexOf(getCordovaRedirectUri()) == 0) {
 	                            ref.close();
 	                        }
 	                    });
 
 	                    ref.addEventListener('loaderror', function(event) {
-	                        if (event.url.indexOf(cordovaRedirectUri) == 0) {
+	                        if (event.url.indexOf(getCordovaRedirectUri()) == 0) {
 	                            ref.close();
 	                        } else {
 	                            error = true;
@@ -2171,7 +2224,7 @@
 	                    var cordovaOptions = createCordovaOptions(options);
 	                    var ref = cordovaOpenWindowWrapper(registerUrl, '_blank', cordovaOptions);
 	                    ref.addEventListener('loadstart', function(event) {
-	                        if (event.url.indexOf(cordovaRedirectUri) == 0) {
+	                        if (event.url.indexOf(getCordovaRedirectUri()) == 0) {
 	                            ref.close();
 	                            var oauth = parseCallback(event.url);
 	                            processCallback(oauth, promise);
@@ -2185,7 +2238,7 @@
 	                    if (typeof accountUrl !== 'undefined') {
 	                        var ref = cordovaOpenWindowWrapper(accountUrl, '_blank', 'location=no');
 	                        ref.addEventListener('loadstart', function(event) {
-	                            if (event.url.indexOf(cordovaRedirectUri) == 0) {
+	                            if (event.url.indexOf(getCordovaRedirectUri()) == 0) {
 	                                ref.close();
 	                            }
 	                        });
@@ -2195,7 +2248,7 @@
 	                },
 
 	                redirectUri: function(options) {
-	                    return cordovaRedirectUri;
+	                    return getCordovaRedirectUri();
 	                }
 	            }
 	        }
