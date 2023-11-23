@@ -1,0 +1,280 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Switch over to the secondary site - Keycloak</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Switch over to the secondary site</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Switch over to the secondary site</h1>
+                    <span class="text-muted">This topic describes the operational procedures necessary</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This guide is describing a feature which is currently in preview. Please provide your feedback while we’re continuing to work on this.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This procedure switches from the primary site to the secondary site when using a setup as outlined in <a href="https://www.keycloak.org/high-availability/concepts-active-passive-sync">Concepts for active-passive deployments</a> together with the blueprints outlined in <a href="https://www.keycloak.org/high-availability/bblocks-active-passive-sync">Building blocks active-passive deployments</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_when_to_use_this_procedure">When to use this procedure</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this procedure to gracefully take the primary offline.</p>
+</div>
+<div class="paragraph">
+<p>Once the primary site is back online, use the guides <a href="https://www.keycloak.org/high-availability/operate-network-partition-recovery">Recover from an out-of-sync passive site</a> and <a href="https://www.keycloak.org/high-availability/operate-switch-back">Switch back to the primary site</a> to return to the original state with the primary site being active.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/high-availability/introduction">Multi-site deployments</a> guide for different operational procedures.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_procedures">Procedures</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_infinispan_cluster">Infinispan Cluster</h3>
+<div class="paragraph">
+<p>For the context of this guide, <code>Site-A</code> is the primary site and <code>Site-B</code> is the secondary site.</p>
+</div>
+<div class="paragraph">
+<p>When you are ready to take a site offline, a good practice is to disable the replication towards it.
+This action prevents errors or delays when the channels are disconnected between the primary and the secondary site.</p>
+</div>
+<div class="sect3">
+<h4 id="_procedures_to_transfer_state_from_secondary_to_primary_site">Procedures to transfer state from secondary to primary site</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Log in into your secondary site</p>
+</li>
+<li>
+<p>Connect into Infinispan Cluster using the Infinispan CLI tool:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n keycloak exec -it pods/infinispan-0 -- ./bin/cli.sh --trustall --connect https://127.0.0.1:11222</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It asks for the username and password for the Infinispan cluster.
+Those credentials are the one set in the <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploy Infinispan for HA with the Infinispan Operator</a> guide in the configuring credentials section.</p>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">Username: developer
+Password:
+[infinispan-0-29897@ISPN//containers/default]&gt;</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The pod name depends on the cluster name defined in the Infinispan CR.
+The connection can be done with any pod in the Infinispan cluster.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Disable the replication to the primary site by running the following command:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">site take-offline --all-caches --site=site-a</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">{
+  "offlineClientSessions" : "ok",
+  "authenticationSessions" : "ok",
+  "sessions" : "ok",
+  "clientSessions" : "ok",
+  "work" : "ok",
+  "offlineSessions" : "ok",
+  "loginFailures" : "ok",
+  "actionTokens" : "ok"
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check the replication status is <code>offline</code>.</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">site status --all-caches --site=site-a</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">{
+  "status" : "offline"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the status is not <code>offline</code>, repeat the previous step.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The Infinispan cluster in the secondary site is ready to handle requests without trying to replicate to the primary site.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_aws_aurora_database">AWS Aurora Database</h3>
+<div class="paragraph">
+<p>Assuming a Regional multi-AZ Aurora deployment, the current writer instance should be in the same region as the active Keycloak cluster to avoid latencies and communication across availability zones.</p>
+</div>
+<div class="paragraph">
+<p>Switching the writer instance of Aurora will lead to a short downtime. The writer instance in the other site with a slightly longer latency might be acceptable for some deployments.
+Therefore, this situation might be deferred to a maintenance window or skipped depending on the circumstances of the deployment.</p>
+</div>
+<div class="paragraph">
+<p>To change the writer instance, run a failover.
+This change will make the database unavailable for a short time.
+Keycloak will need to re-establish database connections.</p>
+</div>
+<div class="paragraph">
+<p>To fail over the writer instance to the other AZ, issue the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws rds failover-db-cluster  --db-cluster-identifier ...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_keycloak_cluster">Keycloak Cluster</h3>
+<div class="paragraph">
+<p>No action required.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_route53">Route53</h3>
+<div class="paragraph">
+<p>To force Route53 to mark the primary site as not available, edit the health check in AWS to point to a non-existent route (<code>health/down</code>).  After some minutes, the clients will notice the change and traffic will gradually move over to the secondary site.</p>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/operate-switch-over.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2023. &copy; 2023 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,318 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Deploy Keycloak for HA with the Keycloak Operator - Keycloak</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Deploy Keycloak for HA with the Keycloak Operator</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Deploy Keycloak for HA with the Keycloak Operator</h1>
+                    <span class="text-muted">Building block for a Keycloak deployment</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This guide is describing a feature which is currently in preview. Please provide your feedback while we’re continuing to work on this.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This guide describes advanced Keycloak configurations for Kubernetes which are load tested and will recover from single Pod failures.</p>
+</div>
+<div class="paragraph">
+<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/high-availability/concepts-active-passive-sync">Concepts for active-passive deployments</a> guide.
+Use it together with the other building blocks outlined in the <a href="https://www.keycloak.org/high-availability/bblocks-active-passive-sync">Building blocks active-passive deployments</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites">Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift or Kubernetes cluster running.</p>
+</li>
+<li>
+<p>Understanding of a <a href="https://www.keycloak.org/operator/basic-deployment">Basic Keycloak deployment</a> of Keycloak with the Keycloak Operator.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_procedure">Procedure</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Determine the sizing of the deployment using the <a href="https://www.keycloak.org/high-availability/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> guide.</p>
+</li>
+<li>
+<p>Install the Keycloak Operator as described in the <a href="https://www.keycloak.org/operator/installation">Keycloak Operator Installation</a> guide.</p>
+</li>
+<li>
+<p>Deploy the Keycloak CR with the following values with the resource requests and limits calculated in the first step:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  labels:
+    app: keycloak
+  name: keycloak
+  namespace: keycloak
+spec:
+  hostname:
+    hostname: keycloak-keycloak.minikube.nip.io
+  db:
+    vendor: postgres
+    url: jdbc:postgresql://postgres:5432/keycloak
+    poolMinSize: 30 <i class="conum" data-value="1"></i><b>(1)</b>
+    poolInitialSize: 30
+    poolMaxSize: 30
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+  additionalOptions:
+    - name: log-console-output
+      value: json
+    - name: metrics-enabled <i class="conum" data-value="2"></i><b>(2)</b>
+      value: 'true'
+  http:
+    tlsSecret: keycloak-tls-secret
+  instances: 3
+  unsupported:
+    podTemplate:
+      spec:
+
+        containers:
+          - env:
+              - name: 'QUARKUS_THREAD_POOL_MAX_THREADS' <i class="conum" data-value="3"></i><b>(3)</b>
+                value: "66"
+              - name: JAVA_OPTS_APPEND <i class="conum" data-value="4"></i><b>(4)</b>
+                value: &gt;
+                  -Xms512m -Xmx1524m -Djgroups.thread_dumps_threshold=1
+
+            resources:
+              requests:
+                cpu: "2"
+                memory: "1250M"
+              limits:
+                cpu: "6"
+                memory: "2250M"</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The database connection pool initial, max and min size should be identical to allow statement caching for the database.
+Adjust this number to meet the needs of your system.
+As most requests will not touch the database due to the Keycloak embedded cache, this change can server several hundreds of requests per second.
+See the <a href="https://www.keycloak.org/high-availability/concepts-database-connections">Concepts for database connection pools</a> guide for details.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>To be able to analyze the system under load, enable the metrics endpoint.
+The disadvantage of the setting is that the metrics will be available at the external Keycloak endpoint, so you must add a filter so that the endpoint is not available from the outside.
+Use a reverse proxy in front of Keycloak to filter out those URLs.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The default setting for the internal JGroup thread pools is 200 threads maximum.
+The number of all Keycloak threads in the StatefulSet should not exceed the number of JGroup threads to avoid a JGroup thread pool exhaustion which could stall Keycloak request processing.
+You might consider limiting the number of Keycloak threads further because multiple concurrent threads will lead to throttling by Kubernetes once the requested CPU limit is reached.
+See the <a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide for details.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The JVM options set additional parameters:
+<div class="ulist">
+<ul>
+<li>
+<p><code>jgroups.thread_dumps_threshold</code> ensures that a log message &#8220;thread pool is full&#8221; appears once the JGroup thread pool is full for the first time.
+See the <a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide for details.</p>
+</li>
+<li>
+<p>Adjust the memory settings for the heap.</p>
+</li>
+</ul>
+</div></td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verifying_the_deployment">Verifying the deployment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Confirm that the Keycloak deployment is ready.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl wait --for=condition=Ready keycloaks.k8s.keycloak.org/keycloak
+kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keycloak</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_optional_load_shedding">Optional: Load shedding</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To enable load shedding, limit the number of queued requests.</p>
+</div>
+<div class="listingblock">
+<div class="title">Load shedding with Quarkus thread pool size</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">env:
+  - name: 'QUARKUS_THREAD_POOL_QUEUE_SIZE' <i class="conum" data-value="1"></i><b>(1)</b>
+    value: '1000'</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>This change limits the number of queued Keycloak requests.
+All exceeding requests are served with an HTTP 503.
+See the <a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide about load shedding for details.</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_optional_disable_sticky_sessions">Optional: Disable sticky sessions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When running on OpenShift and the default passthrough Ingress setup as provided by the Keycloak Operator, the load balancing done by HAProxy is done by using sticky sessions based on the IP address of the source.
+When running load tests, or when having a reverse proxy in front of HAProxy, you might want to disable this setup to avoid receiving all requests on a single Keycloak Pod.</p>
+</div>
+<div class="paragraph">
+<p>Add the following supplementary configuration under the <code>spec</code> in the Keycloak Custom Resource to disable sticky sessions.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">spec:
+    ingress:
+        enabled: true
+        annotations:
+          # When running load tests, disable sticky sessions on the OpenShift HAProxy router
+          # to avoid receiving all requests on a single {project_name} Pod.
+          haproxy.router.openshift.io/balance: roundrobin
+          haproxy.router.openshift.io/disable_cookies: 'true'</code></pre>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/deploy-keycloak-kubernetes.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2023. &copy; 2023 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

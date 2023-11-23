@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Keycloak Realm Import - Keycloak</title>
+    <title>Multi-site deployments - Keycloak</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Keycloak is an open source identity and access management solution">
     <meta name="author" content="Keycloak Team">
@@ -62,139 +62,114 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
-                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#operator">Operator</a></li>
-                    <li class="breadcrumb-item active">Keycloak Realm Import</li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Multi-site deployments</li>
                 </ol>
             </nav>
 
             <div class="mb-4">
-                <h1>Keycloak Realm Import</h1>
-                    <span class="text-muted">How to perform an automated Keycloak Realm Import using the operator</span>
+                <h1>Multi-site deployments</h1>
+                    <span class="text-muted">Connect multiple Keycloak deployments in different sites to increase the overall availability</span>
             </div>
 
 
 
             <div class="kc-asciidoc" id="guide-body">
-<div class="sect1">
-<h2 id="_importing_a_keycloak_realm">Importing a Keycloak Realm</h2>
+<div id="preamble">
 <div class="sectionbody">
-<div class="paragraph">
-<p>Using the Keycloak Operator, you can perform a realm import for the Keycloak Deployment.</p>
-</div>
-<div class="admonitionblock note">
+<div class="admonitionblock warning">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-<div class="ulist">
-<ul>
-<li>
-<p>If a Realm with the same name already exists in Keycloak, it will not be overwritten.</p>
-</li>
-<li>
-<p>The Realm Import CR only supports creation of new realms and does not update or delete those. Changes to the realm performed directly on Keycloak are not synced back in the CR.</p>
-</li>
-</ul>
-</div>
+This guide is describing a feature which is currently in preview. Please provide your feedback while we’re continuing to work on this.
 </td>
 </tr>
 </table>
 </div>
-<div class="sect2">
-<h3 id="_creating_a_realm_import_custom_resource">Creating a Realm Import Custom Resource</h3>
 <div class="paragraph">
-<p>The following is an example of a Realm Import Custom Resource (CR):</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
-kind: KeycloakRealmImport
-metadata:
-  name: my-realm-kc
-spec:
-  keycloakCRName: &lt;name of the keycloak CR&gt;
-  realm:
-    ...</code></pre>
-</div>
+<p>Keycloak supports deployments that consist of multiple Keycloak instances that connect to each other using its embedded Infinispan; load balancers can distribute the load evenly across those instances.
+Those setups are intended for a transparent network on a single site.</p>
 </div>
 <div class="paragraph">
-<p>This CR should be created in the same namespace as the Keycloak Deployment CR, defined in the field <code>keycloakCRName</code>.
-The <code>realm</code> field accepts a full <a href="https://www.keycloak.org/docs-api/23.0.0/rest-api/index.html#RealmRepresentation">RealmRepresentation</a>.</p>
+<p>The Keycloak high-availability guide goes one step further to describe setups across multiple sites.
+While this setup adds additional complexity, that extra amount of high availability may be needed for some enviroments.</p>
 </div>
 <div class="paragraph">
-<p>The recommended way to obtain a <code>RealmRepresentation</code> is by leveraging the export functionality <a href="https://www.keycloak.org/server/importExport">Importing and Exporting Realms</a>.</p>
+<p>The different guides introduce the necessary concepts and building blocks.
+For each building block, a blueprint shows how to set a fully functional example.
+Additional performance tuning and security hardening are still recommended when preparing a production setup.</p>
 </div>
-<div class="olist arabic">
-<ol class="arabic">
+</div>
+</div>
+<div class="sect1">
+<h2 id="_concept_and_building_block_overview">Concept and building block overview</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
 <li>
-<p>Export the Realm to a single file.</p>
+<p><a href="https://www.keycloak.org/high-availability/concepts-active-passive-sync">Concepts for active-passive deployments</a></p>
 </li>
 <li>
-<p>Convert the JSON file to YAML.</p>
+<p><a href="https://www.keycloak.org/high-availability/bblocks-active-passive-sync">Building blocks active-passive deployments</a></p>
 </li>
 <li>
-<p>Copy and paste the obtained YAML file as body for the <code>realm</code> key, making sure the indentation is correct.</p>
+<p><a href="https://www.keycloak.org/high-availability/concepts-database-connections">Concepts for database connection pools</a></p>
 </li>
-</ol>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a></p>
+</li>
+</ul>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_applying_the_realm_import_cr">Applying the Realm Import CR</h3>
-<div class="paragraph">
-<p>Use <code>kubectl</code> to create the CR in the correct cluster namespace:</p>
 </div>
-<div class="paragraph">
-<p>Create YAML file <code>example-realm-import.yaml</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
-kind: KeycloakRealmImport
-metadata:
-  name: my-realm-kc
-spec:
-  keycloakCRName: &lt;name of the keycloak CR&gt;
-  realm:
-    id: example-realm
-    realm: example-realm
-    displayName: ExampleRealm
-    enabled: true</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Apply the changes:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f example-realm-import.yaml</code></pre>
+<div class="sect1">
+<h2 id="_blueprints_for_building_blocks">Blueprints for building blocks</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/deploy-aurora-multi-az">Deploy AWS Aurora in multiple availability zones</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploy Infinispan for HA with the Infinispan Operator</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/connect-keycloak-to-external-infinispan">Connect Keycloak with an external Infinispan</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/deploy-aws-route53-loadbalancer">Deploy an AWS Route 53 loadbalancer</a></p>
+</li>
+</ul>
 </div>
 </div>
-<div class="paragraph">
-<p>To check the status of the running import, enter the following command:</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get keycloakrealmimports/my-realm-kc -o go-template='{{range .status.conditions}}CONDITION: {{.type}}{{"\n"}}  STATUS: {{.status}}{{"\n"}}  MESSAGE: {{.message}}{{"\n"}}{{end}}'</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>When the import has successfully completed, the output will look like the following example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">CONDITION: Done
-  STATUS: true
-  MESSAGE:
-CONDITION: Started
-  STATUS: false
-  MESSAGE:
-CONDITION: HasErrors
-  STATUS: false
-  MESSAGE:</code></pre>
-</div>
-</div>
+<div class="sect1">
+<h2 id="_operational_procedures">Operational procedures</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/operate-failover">Fail over to the secondary site</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/operate-switch-over">Switch over to the secondary site</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/operate-network-partition-recovery">Recover from an out-of-sync passive site</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/operate-switch-back">Switch back to the primary site</a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>            </div>
@@ -205,7 +180,7 @@ CONDITION: HasErrors
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/operator/realm-import.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/introduction.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

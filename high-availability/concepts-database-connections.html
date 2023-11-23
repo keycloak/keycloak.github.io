@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Keycloak Realm Import - Keycloak</title>
+    <title>Concepts for database connection pools - Keycloak</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Keycloak is an open source identity and access management solution">
     <meta name="author" content="Keycloak Team">
@@ -62,139 +62,58 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
-                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#operator">Operator</a></li>
-                    <li class="breadcrumb-item active">Keycloak Realm Import</li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Concepts for database connection pools</li>
                 </ol>
             </nav>
 
             <div class="mb-4">
-                <h1>Keycloak Realm Import</h1>
-                    <span class="text-muted">How to perform an automated Keycloak Realm Import using the operator</span>
+                <h1>Concepts for database connection pools</h1>
+                    <span class="text-muted">Understand these concepts to avoid resource exhaustion and congestion</span>
             </div>
 
 
 
             <div class="kc-asciidoc" id="guide-body">
-<div class="sect1">
-<h2 id="_importing_a_keycloak_realm">Importing a Keycloak Realm</h2>
+<div id="preamble">
 <div class="sectionbody">
-<div class="paragraph">
-<p>Using the Keycloak Operator, you can perform a realm import for the Keycloak Deployment.</p>
-</div>
-<div class="admonitionblock note">
+<div class="admonitionblock warning">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-<div class="ulist">
-<ul>
-<li>
-<p>If a Realm with the same name already exists in Keycloak, it will not be overwritten.</p>
-</li>
-<li>
-<p>The Realm Import CR only supports creation of new realms and does not update or delete those. Changes to the realm performed directly on Keycloak are not synced back in the CR.</p>
-</li>
-</ul>
-</div>
+This guide is describing a feature which is currently in preview. Please provide your feedback while we’re continuing to work on this.
 </td>
 </tr>
 </table>
 </div>
-<div class="sect2">
-<h3 id="_creating_a_realm_import_custom_resource">Creating a Realm Import Custom Resource</h3>
 <div class="paragraph">
-<p>The following is an example of a Realm Import Custom Resource (CR):</p>
+<p>This section is intended when you want to understand considerations and best practices on how to configure database connection pools for Keycloak.
+For a configuration where this is applied, visit <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a>.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
-kind: KeycloakRealmImport
-metadata:
-  name: my-realm-kc
-spec:
-  keycloakCRName: &lt;name of the keycloak CR&gt;
-  realm:
-    ...</code></pre>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_concepts">Concepts</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Creating new database connections is expensive as it takes time.
+Creating them when a request arrives will delay the response, so it is good to have them created before the request arrives.
+It can also contribute to a <a href="https://en.wikipedia.org/wiki/Cache_stampede">stampede effect</a> where creating a lot of connections in a short time makes things worse as it slows down the system and blocks threads.
+Closing a connection also invalidates all server side statements caching for that connection.</p>
 </div>
 <div class="paragraph">
-<p>This CR should be created in the same namespace as the Keycloak Deployment CR, defined in the field <code>keycloakCRName</code>.
-The <code>realm</code> field accepts a full <a href="https://www.keycloak.org/docs-api/23.0.0/rest-api/index.html#RealmRepresentation">RealmRepresentation</a>.</p>
+<p>For the best performance, the values for the initial, minimal and maximum database connection pool size should all be equal.
+This avoids creating new database connections when a new request comes in which is costly.</p>
 </div>
 <div class="paragraph">
-<p>The recommended way to obtain a <code>RealmRepresentation</code> is by leveraging the export functionality <a href="https://www.keycloak.org/server/importExport">Importing and Exporting Realms</a>.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Export the Realm to a single file.</p>
-</li>
-<li>
-<p>Convert the JSON file to YAML.</p>
-</li>
-<li>
-<p>Copy and paste the obtained YAML file as body for the <code>realm</code> key, making sure the indentation is correct.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_applying_the_realm_import_cr">Applying the Realm Import CR</h3>
-<div class="paragraph">
-<p>Use <code>kubectl</code> to create the CR in the correct cluster namespace:</p>
+<p>Keeping the database connection open for as long as possible allows for server side statement caching bound to a connection.
+In the case of PostgreSQL, to use a server-side prepared statement, <a href="https://jdbc.postgresql.org/documentation/server-prepare/#activation">a query needs to be executed (by default) at least five times</a>.</p>
 </div>
 <div class="paragraph">
-<p>Create YAML file <code>example-realm-import.yaml</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
-kind: KeycloakRealmImport
-metadata:
-  name: my-realm-kc
-spec:
-  keycloakCRName: &lt;name of the keycloak CR&gt;
-  realm:
-    id: example-realm
-    realm: example-realm
-    displayName: ExampleRealm
-    enabled: true</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Apply the changes:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f example-realm-import.yaml</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To check the status of the running import, enter the following command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get keycloakrealmimports/my-realm-kc -o go-template='{{range .status.conditions}}CONDITION: {{.type}}{{"\n"}}  STATUS: {{.status}}{{"\n"}}  MESSAGE: {{.message}}{{"\n"}}{{end}}'</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>When the import has successfully completed, the output will look like the following example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">CONDITION: Done
-  STATUS: true
-  MESSAGE:
-CONDITION: Started
-  STATUS: false
-  MESSAGE:
-CONDITION: HasErrors
-  STATUS: false
-  MESSAGE:</code></pre>
-</div>
-</div>
+<p>See the <a href="https://www.postgresql.org/docs/current/sql-prepare.html">PostgreSQL docs on prepared statements</a> for more information.</p>
 </div>
 </div>
 </div>            </div>
@@ -205,7 +124,7 @@ CONDITION: HasErrors
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/operator/realm-import.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/concepts-database-connections.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>
