@@ -84,7 +84,8 @@
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-This guide is describing a feature which is currently in preview. Please provide your feedback while we’re continuing to work on this.
+This guide is describing a feature which is currently in preview.
+Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/25269">joining this discussion</a> while we’re continuing to work on this.
 </td>
 </tr>
 </table>
@@ -150,10 +151,13 @@ spec:
     passwordSecret:
       name: keycloak-db-secret
       key: password
+  features:
+    enabled:
+      - multi-site <i class="conum" data-value="2"></i><b>(2)</b>
   additionalOptions:
     - name: log-console-output
       value: json
-    - name: metrics-enabled <i class="conum" data-value="2"></i><b>(2)</b>
+    - name: metrics-enabled <i class="conum" data-value="3"></i><b>(3)</b>
       value: 'true'
   http:
     tlsSecret: keycloak-tls-secret
@@ -164,9 +168,9 @@ spec:
 
         containers:
           - env:
-              - name: 'QUARKUS_THREAD_POOL_MAX_THREADS' <i class="conum" data-value="3"></i><b>(3)</b>
+              - name: 'QUARKUS_THREAD_POOL_MAX_THREADS' <i class="conum" data-value="4"></i><b>(4)</b>
                 value: "66"
-              - name: JAVA_OPTS_APPEND <i class="conum" data-value="4"></i><b>(4)</b>
+              - name: JAVA_OPTS_APPEND <i class="conum" data-value="5"></i><b>(5)</b>
                 value: &gt;
                   -Xms512m -Xmx1524m -Djgroups.thread_dumps_threshold=1
 
@@ -190,19 +194,23 @@ See the <a href="https://www.keycloak.org/high-availability/concepts-database-co
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Enable additional features for multi-site support like the loadbalancer probe <code>/lb-check</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>To be able to analyze the system under load, enable the metrics endpoint.
 The disadvantage of the setting is that the metrics will be available at the external Keycloak endpoint, so you must add a filter so that the endpoint is not available from the outside.
 Use a reverse proxy in front of Keycloak to filter out those URLs.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>The default setting for the internal JGroup thread pools is 200 threads maximum.
 The number of all Keycloak threads in the StatefulSet should not exceed the number of JGroup threads to avoid a JGroup thread pool exhaustion which could stall Keycloak request processing.
 You might consider limiting the number of Keycloak threads further because multiple concurrent threads will lead to throttling by Kubernetes once the requested CPU limit is reached.
 See the <a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide for details.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>The JVM options set additional parameters:
 <div class="ulist">
 <ul>
