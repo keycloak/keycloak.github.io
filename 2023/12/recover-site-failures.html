@@ -1,0 +1,278 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Recover from site failures with a Multi-Site Setup - Keycloak</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Keycloak is an open source identity and access management solution">
+    <meta name="author" content="Keycloak Team">
+    <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+
+    
+
+    
+
+    <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+
+    <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <h1>Recover from site failures with a Multi-Site Setup</h1>
+    <p class="blog-date text-muted">December 18 2023 by Alexander Schwartz, Kamesh Akella</p>
+
+
+<div class="paragraph">
+<p>For a Customer Identity and Access Management (CIAM) system, high availability is essential as it is a single point for all systems where customers log in.
+For Keycloak 23, there is a new and updated High Availability guide describing multi-site setups.
+With detailed instructions and blueprints targeting cloud infrastructure, this is documented, tested, and ready to be tried out.</p>
+</div>
+<div class="paragraph">
+<p>Read on to find out what is new, and take a peek behind the scenes how this setup has been evaluated, tested and improved.
+And finally, we are providing an outlook when this will no longer be a preview feature.</p>
+</div>
+<div class="sect1">
+<h2 id="_improved_documentation_and_new_blueprints">Improved documentation and new blueprints</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The recent updates to Keycloak&#8217;s multi-site setup mark a significant milestone.
+Keycloak 23 includes an <a href="https://www.keycloak.org/high-availability/introduction">opinionated guide</a> on setting up Keycloak in a multi-site configuration including blueprints for a cloud setup.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<a class="image" href="https://www.keycloak.org/high-availability/concepts-active-passive-sync"><img src="https://www.keycloak.org/resources/images/guides/high-availability/active-passive-sync.dio.svg" alt="active passive sync.dio"></a>
+</div>
+</div>
+<div class="paragraph">
+<p>The high-level topics of this documentation are:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><a href="https://www.keycloak.org/high-availability/introduction#_concept_and_building_block_overview">Concept and building block overview</a></dt>
+<dd>
+<p>These guides include step-by-step instructions to bring up different components of the Keycloak multi-site architecture such as:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>What does an active-passive setup with Keycloak architecture look like?</p>
+</li>
+<li>
+<p>How to use an external database?</p>
+</li>
+<li>
+<p>How to tune the resources for each of these architectural components?</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1"><a href="https://www.keycloak.org/high-availability/introduction#_blueprints_for_building_blocks">Blueprints for building blocks</a></dt>
+<dd>
+<p>A series of guides around how to deploy Keycloak in various configurations on Amazon Web Service.</p>
+</dd>
+<dt class="hdlist1"><a href="https://www.keycloak.org/high-availability/introduction#_operational_procedures">Operational procedures</a></dt>
+<dd>
+<p>These guides include detailed operational procedures, ensuring that users can set up and operate their multi-site Keycloak instances efficiently.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_validation_of_the_multi_site_setup">Validation of the multi-site setup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before we published the guides above, we worked on the tooling that allows us both experimenting and getting reproducible results for performance, scalability and chaos testing our solution.</p>
+</div>
+<div class="paragraph">
+<p>With these tools, we tested first a single-site setup, and once that worked sufficiently well, also a multi-site setup.</p>
+</div>
+<div class="paragraph">
+<p>All these tools are available as open source, and we invite you to review them to give us feedback, and use them in your environment to run your own performance benchmark and regression tests:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><a href="https://www.keycloak.org/keycloak-benchmark/dataset-guide/latest/">Dataset Provider</a></dt>
+<dd>
+<p>Install this into a Keycloak server in a test environment, and create as many users, clients, groups, etc. as you need to run your performance benchmark.
+Keycloak caches a lot of information in its internal caches, and so does the database, so you will be able to spot some problems only when you have the right amount of data in your database.</p>
+</dd>
+<dt class="hdlist1"><a href="https://www.keycloak.org/keycloak-benchmark/benchmark-guide/latest/">Benchmark</a></dt>
+<dd>
+<p>This contains ready-to-be used scenarios for authentication flows and for Keycloak&#8217;s admin REST endpoints.
+If it does not fit your needs yet, use it as a library to create your own Gatling scenarios based on existing and custom steps.
+These tests are deployed as a JAR and a shell script wrapper, so you will only need to install Java on your load runners and you are ready to go.</p>
+</dd>
+<dt class="hdlist1"><a href="https://www.keycloak.org/keycloak-benchmark/benchmark-guide/latest/run/running-benchmark-ansible">Dedicated EC2 load drivers</a></dt>
+<dd>
+<p>Use these Ansible playbooks to spin up a set of EC2 instances to drive load against a Keycloak test installation, and aggregate the results.</p>
+</dd>
+<dt class="hdlist1"><a href="https://www.keycloak.org/keycloak-benchmark/kubernetes-guide/latest/prerequisite/prerequisite-rosa">Automated OpenShift installation on AWS</a></dt>
+<dd>
+<p>Based on Red Hat OpenShift Service on AWS (ROSA), use the scripts to provision an instance with monitoring, logging and useful Operators preconfigured, ready to deploy Keycloak.</p>
+</dd>
+<dt class="hdlist1"><a href="https://www.keycloak.org/keycloak-benchmark/kubernetes-guide/latest/storage/aurora-regional-postgres">Automated Aurora installation</a></dt>
+<dd>
+<p>Set up an Aurora in different variants regional or global, and connect it to a ROSA environment.</p>
+</dd>
+<dt class="hdlist1"><a href="https://www.keycloak.org/keycloak-benchmark/kubernetes-guide/latest/openshift/">Opinionated Keycloak deployment for Minikube or OpenShift</a></dt>
+<dd>
+<p>This deploys Keycloak with additional monitoring and debugging tools so we can look at metrics, logs and traces as needed</p>
+</dd>
+<dt class="hdlist1"><a href="https://www.keycloak.org/keycloak-benchmark/kubernetes-guide/latest/openshift/installation-route53-loadbalancer">Scripted AWS Route 53 load balancer</a></dt>
+<dd>
+<p>Set up Route 53 for an active-passive setup to distribute the load to two Keycloak deployments in different OpenShift clusters</p>
+</dd>
+<dt class="hdlist1"><a href="https://github.com/keycloak/keycloak-benchmark/blob/main/.github/workflows/rosa-multi-az-cluster-create.yml">Scripted Multi-AZ deployment</a></dt>
+<dd>
+<p>Every weekday we create a new Multi-AZ setup from scratch using GitHub actions, a performance testsuite, and record the results.
+This way we catch functional and performance regressions as they occur.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Thank you to everyone in the community who has already tried out these tools, found bugs and submitted ideas for improvements!</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_keycloak_got_better_for_everyone">Keycloak got better for everyone</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When using the tools listed above, we were able to reproduce several situations where Keycloak needed to improve.
+Here are of the improvements which are available in Keycloak 23 for both single-site and multi-site setups:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Non-Blocking liveness probe</dt>
+<dd>
+<p>When running Keycloak under a high load, requests might queue up in a Keycloak instance.
+The more requests queue up, the longer it takes to reply to the requests.
+In previous versions also the requests to the liveness probe (<code>/health/live</code>) were queued, and the probe eventually timed out, and then Kubernetes restarted the Pod.
+In the latest version of Keycloak, the probe is <a href="https://github.com/keycloak/keycloak/issues/22109">re-implemented to be non-blocking</a>, so it will not queue, and therefore will not time out and the Pod is not restarted under a high load.</p>
+</dd>
+<dt class="hdlist1">Load Shedding</dt>
+<dd>
+<p>When requests are queued as described above, the caller will not get a response in time, and the Pod might eventually run out of resources like memory or network connections.
+The recommended recipe is to drop requests early when an instance will not be able to serve the requests in time, which is called load shedding.
+Keycloak 23 now supports the <a href="https://www.keycloak.org/server/configuration-production">new option <code>http-max-queued-requests</code></a> that can limit the number of concurrent blocking requests.
+When the number is exceeded, Keycloak immediately returns the response <code>503 Server not Available</code>.
+This has two benefits: The caller receives an immediate response and can retry later, and resources are freed on the server side immediately.</p>
+</dd>
+<dt class="hdlist1">Prevented cache stampede for realms and clients</dt>
+<dd>
+<p>When a new Keycloak instance starts or restarts, its caches are empty.
+If under high load parallel requests arrive for the same realm or the same client on a node of Keycloak, previous versions of Keycloak loaded the data from the database in each parallel request.
+This caused a spike in database connection usage and an initial response delay.
+The same happens when a cache or realm entry in the cache is evicted, for example, because it was modified.
+The latest version of Keycloak prevents this so that each Keycloak instance will fetch the data from the database once, and all other parallel requests then use this data without querying the database again (see <a href="https://github.com/keycloak/keycloak/issues/21521">#21521</a> and <a href="https://github.com/keycloak/keycloak/issues/22988">#22988</a>, <a href="https://github.com/keycloak/keycloak/issues/24202">#24202</a>).</p>
+</dd>
+<dt class="hdlist1">Align the number of JGroup threads with the number of Quarkus threads</dt>
+<dd>
+<p>The more Keycloak instances run in a cluster, and the more requests are processed in parallel, the higher is the load on the JGroups thread pool.
+The JGroups thread pool ensures smooth communication for the embedded Infinispan of Keycloak, and could lead to timeouts on the internal Infinispan communications if its capacity is exceeded.
+The high-availability docs now contain documentation on <a href="https://www.keycloak.org/high-availability/concepts-threads">how to set the Quarkus thread pool to not exceed the JGroup thread pool</a>.</p>
+</dd>
+<dt class="hdlist1">Improved Infinispan Metrics</dt>
+<dd>
+<p>The embedded Infinispan provides improved metrics that allow you to monitor your cluster.
+The metrics exposed by the Keycloak&#8217;s metrics endpoint now contain only Infinispan metrics for the current node, so they will not block if another Pod is currently starting up or shutting down (<a href="https://issues.redhat.com/browse/ISPN-15042">ISPN-15042</a> and <a href="https://issues.redhat.com/browse/ISPN-15072">ISPN-15072</a>).
+This way you have better visibility of your cluster during those critical moments.
+The metrics can now expose the cache names as labels, so they can be plotted simpler in dashboards by adding a <code>&lt;metrics names-as-tags="true" /&gt;</code> to the Infinispan XML configuration.
+Additional metrics are available for the latencies between sites.</p>
+</dd>
+<dt class="hdlist1">Reliable Infinispan operations</dt>
+<dd>
+<p>We tested Infinispan and its communication layer JGroups thoroughly, and we were able to fix situations where a state transfer stalled (<a href="https://issues.redhat.com/browse/ISPN-14982">ISPN-14982</a>), or an initial state transfer failed.
+The Gossip router used in the multi-site setup now works even in situations where a load balancer has multiple IP addresses.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_can_the_blueprints_or_scripts_be_used_in_production">Can the blueprints or scripts be used in production?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As part of the testing we did, we optimized Keycloak and those optimizations are built into Keycloak.
+They are available without the need for additional configuration except for the JGroup thread pool configuration.
+While the configuration of Keycloak on Kubernetes might match a production environment quite closely, we expect the database, network, load balancer and security hardening to be different in every organization, so you will need to adapt it to your needs.</p>
+</div>
+<div class="paragraph">
+<p>This is why we chose to document the blueprints as text, so you can learn about the choices we made and why different aspects are configured in one setup, while others are at their default settings.</p>
+</div>
+<div class="paragraph">
+<p>The scripts we use for the automated setup in the Keycloak Benchmark project focus on high availability and mix this with configurations that are simple to debug and analyze from an engineering perspective.
+A production-ready setup would not have that functionality, so we do not recommend using the scripts as is.
+Still, they can serve as a starting point for your own automation.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_read_the_guides_and_give_it_a_try">Read the guides and give it a try!</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At the moment, we are running the final tests for an active/passive setup and work toward automating more tests.
+We are also looking for feedback from the community in this <a href="https://github.com/keycloak/keycloak/discussions/25269">GitHub discussion on multi-site setups</a>: Do you like what you see here?
+Is something missing?
+Your feedback is essential!</p>
+</div>
+<div class="paragraph">
+<p>Once our tests are complete, and we receive feedback from the community, we plan to make it a fully supported feature.
+This is a huge opportunity for the community to engage with this setup, try it in your environment, and share your findings.
+Let&#8217;s build a stronger and more resilient Keycloak together!</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2023. &copy; 2023 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>
