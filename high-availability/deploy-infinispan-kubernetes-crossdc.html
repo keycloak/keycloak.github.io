@@ -216,21 +216,51 @@ The Infinispan Operator uses it to inspect the network configuration from the re
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>First, create the service account and generate an access token in both OpenShift clusters.</p>
+<p>Create a <code>service-account-token</code> secret type as follows.
+The same YAML file can be used in both OpenShift clusters.</p>
+<div class="listingblock">
+<div class="title">xsite-sa-secret-token.yaml</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: ispn-xsite-sa-token <i class="conum" data-value="1"></i><b>(1)</b>
+  annotations:
+    kubernetes.io/service-account.name: "xsite-sa" <i class="conum" data-value="2"></i><b>(2)</b>
+type: kubernetes.io/service-account-token</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The secret name.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The service account name.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Create the service account and generate an access token in both OpenShift clusters.</p>
 <div class="listingblock">
 <div class="title">Create the service account in <code>Site-A</code></div>
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create sa -n keycloak xsite-sa
-kubectl policy add-role-to-user view -n keycloak -z xsite-sa
-kubectl create token -n keycloak xsite-sa &gt; Site-A-token.txt</code></pre>
+oc policy add-role-to-user view -n keycloak -z xsite-sa
+kubectl create -f xsite-sa-secret-token.yaml
+kubectl get secrets ispn-xsite-sa-token -o jsonpath="{.data.token}" | base64 -d &gt; Site-A-token.txt</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">Create the service account in <code>Site-B</code></div>
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create sa -n keycloak xsite-sa
-kubectl policy add-role-to-user view -n keycloak -z xsite-sa
-kubectl create token -n keycloak xsite-sa &gt; Site-B-token.txt</code></pre>
+oc policy add-role-to-user view -n keycloak -z xsite-sa
+kubectl create -f xsite-sa-secret-token.yaml
+kubectl get secrets ispn-xsite-sa-token -o jsonpath="{.data.token}" | base64 -d &gt; Site-B-token.txt</code></pre>
 </div>
 </div>
 </li>
