@@ -86,7 +86,7 @@
 <h2 id="_configuring_sources_for_keycloak">Configuring sources for Keycloak</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak loads the configuration from five sources, which are listed here in order of application.</p>
+<p>Keycloak loads the configuration from four sources, which are listed here in order of application.</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -97,10 +97,7 @@
 <p>Environment variables</p>
 </li>
 <li>
-<p>Options defined in a user-created configuration file.</p>
-</li>
-<li>
-<p>Options defined in the <code>conf/keycloak.conf</code> file.</p>
+<p>Options defined in the <code>conf/keycloak.conf</code> file, or in a user-created configuration file.</p>
 </li>
 <li>
 <p>Sensitive options defined in a user-created Java KeyStore file.</p>
@@ -149,7 +146,7 @@
 <p>Based on the priority of application, the value that is used at startup is <code>cliValue</code>, because the command line is the highest priority.</p>
 </div>
 <div class="paragraph">
-<p>If <code>--db-url=cliValue</code> had not been used, the applied value would be <code>KC_DB_URL=envVarValue</code>. If the value were not applied by either the command line or an environment variable, <code>db-url=confFileValue</code> would be used. However, if this value had been set in a user defined configuration file, that value would take precedence over the <code>conf/keycloak.conf</code> file. If none of the previous values were applied, the value <code>kc.db-url=confFileValue</code> would be used due to the lowest priority among the available configuration sources.</p>
+<p>If <code>--db-url=cliValue</code> had not been used, the applied value would be <code>KC_DB_URL=envVarValue</code>. If the value were not applied by either the command line or an environment variable, <code>db-url=confFileValue</code> would be used. If none of the previous values were applied, the value <code>kc.db-url=confFileValue</code> would be used due to the lowest priority among the available configuration sources.</p>
 </div>
 </div>
 </div>
@@ -158,7 +155,7 @@
 <h2 id="_formats_for_configuration">Formats for configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The configuration uses a <em>unified-per-source</em> format, which simplifies translation of a key/value pair from one configuration source to another.</p>
+<p>The configuration uses a <em>unified-per-source</em> format, which simplifies translation of a key/value pair from one configuration source to another. Note that these formats apply to spi options as well.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -255,6 +252,9 @@ formats. For all configuration options, see <a href="https://www.keycloak.org/se
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] --config-file=/path/to/myconfig.conf start</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>Setting that option makes Keycloak read configuration from the specified file instead of <code>conf/keycloak.conf</code>.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_setting_sensitive_options_using_a_java_keystore_file">Setting sensitive options using a Java KeyStore file</h3>
@@ -322,10 +322,20 @@ However, for a specific behavior or capability that is missing in the Keycloak c
 </ol>
 </div>
 <div class="paragraph">
-<p>Similarly, you can also store Quarkus properies in a Java KeyStore.</p>
+<p>Similarly, you can also store Quarkus properties in a Java KeyStore.</p>
 </div>
 <div class="paragraph">
 <p>Note that some Quarkus properties are already mapped in the Keycloak configuration, such as <code>quarkus.http.port</code> and similar essential properties. If the property is used by Keycloak, defining that property key in <code>quarkus.properties</code> has no effect. The Keycloak configuration value takes precedence over the Quarkus property value.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_special_characters_in_values">Using special characters in values</h3>
+<div class="paragraph">
+<p>Keycloak depends upon Quarkus and MicroProfile for processing configuration values. Be aware that value expressions are supported. For example, <code>${some_key}</code> evaluates to the value of <code>some_key</code>.</p>
+</div>
+<div class="paragraph">
+<p>To disable expression evaluation, the <code>\</code> character functions as an escape character. In particular, it must be used to escape the usage of <code>$</code> characters when they appear to define an expression or are repeated. For example, if you want the configuration value <code>my$$password</code>, use <code>my\$\$password</code> instead.  Note that the <code>\</code> character requires additional escaping or quoting when using most unix shells, or when it appears in properties files.
+For example, bash single quotes preserve the single backslash <code>--db-password='my\$\$password'</code>. Also, with bash double quotes, you need an additional backslash <code>--db-password="my\\$\\$password"</code>. Similarly in a properties file, backslash characters must also be escaped: <code>kc.db-password=my\\$\\$password</code></p>
 </div>
 </div>
 </div>

@@ -186,11 +186,13 @@ spec:
 <p>Secret References are used by some dedicated options in the Keycloak CR, such as <code>tlsSecret</code>, or as a value in <code>additionalOptions</code>.</p>
 </div>
 <div class="paragraph">
-<p>When specifying a Secret Reference, make sure that a Secret containing the referenced keys is present in the same namespace as the CR referencing it.
-Along with the Keycloak Server Deployment, the Operator adds special labels to the referenced Secrets to watch for changes.</p>
+<p>Similarly ConfigMap References are used by options such as the <code>configMapFile</code>.</p>
 </div>
 <div class="paragraph">
-<p>When a referenced Secret is modified, the Operator performs a rolling restart of the Keycloak Deployment to pick up the changes.</p>
+<p>When specifying a Secret or ConfigMap Reference, make sure that a Secret or ConfigMap containing the referenced keys is present in the same namespace as the CR referencing it.</p>
+</div>
+<div class="paragraph">
+<p>The operator will poll approximately every minute for changes to referenced Secrets or ConfigMaps. When a meaningful change is detected, the Operator performs a rolling restart of the Keycloak Deployment to pick up the changes.</p>
 </div>
 </div>
 <div class="sect2">
@@ -260,6 +262,48 @@ spec:
     strict: false
     strictBackchannel: false</code></pre>
 </div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_resource_requirements">Resource requirements</h3>
+<div class="paragraph">
+<p>The Keycloak CR allows specifying the <code>resources</code> options for managing compute resources for the Keycloak container.
+It provides the ability to request and limit resources independently for the main Keycloak deployment via the Keycloak CR, and for the realm import Job via the Realm Import CR.</p>
+</div>
+<div class="paragraph">
+<p>When no values are specified, the default <code>requests</code> memory is set to <code>1700MiB</code>, and the <code>limits</code> memory is set to <code>2GiB</code>.
+These values were chosen based on a deeper analysis of Keycloak memory management.</p>
+</div>
+<div class="paragraph">
+<p>If no values are specified in the Realm Import CR, it falls back to the values specified in the Keycloak CR, or to the defaults as defined above.</p>
+</div>
+<div class="paragraph">
+<p>You can specify your custom values based on your requirements as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  ...
+  resources:
+    requests:
+      cpu: 1200m
+      memory: 896Mi
+    limits:
+      cpu: 6
+      memory: 3Gi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Moreover, the Keycloak container manages the heap size more effectively by providing relative values for the heap size.
+It is achieved by providing certain JVM options.</p>
+</div>
+<div class="paragraph">
+<p>For more details, check the
+<a href="https://www.keycloak.org/server/containers">Running Keycloak in a container</a>.</p>
 </div>
 </div>
 </div>

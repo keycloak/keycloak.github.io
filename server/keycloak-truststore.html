@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Configuring trusted certificates for outgoing requests - Keycloak</title>
+    <title>Configuring trusted certificates - Keycloak</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Keycloak is an open source identity and access management solution">
     <meta name="author" content="Keycloak Team">
@@ -63,13 +63,13 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
-                    <li class="breadcrumb-item active">Configuring trusted certificates for outgoing requests</li>
+                    <li class="breadcrumb-item active">Configuring trusted certificates</li>
                 </ol>
             </nav>
 
             <div class="mb-4">
-                <h1>Configuring trusted certificates for outgoing requests</h1>
-                    <span class="text-muted">How to configure the Keycloak Truststore to communicate with external services through TLS.</span>
+                <h1>Configuring trusted certificates</h1>
+                    <span class="text-muted">How to configure the Keycloak Truststore to communicate through TLS.</span>
             </div>
 
 
@@ -78,57 +78,51 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>When Keycloak communicates with external services through TLS, it has to validate the remote server’s certificate in order to ensure it is connecting to a trusted server. This is necessary in order to prevent man-in-the-middle attacks. The certificates of these remote server’s or the CA that signed these certificates must be put in a truststore. This truststore is managed by the Keycloak server.</p>
+<p>When Keycloak communicates with external services or has an incoming connection through TLS, it has to validate the remote certificate in order to ensure it is connecting to a trusted server. This is necessary in order to prevent man-in-the-middle attacks.</p>
 </div>
 <div class="paragraph">
-<p>The truststore is used when connecting securely to identity brokers, LDAP identity providers, when sending emails, and for backchannel communication with client applications. It is also useful
-when you want to change the policy on how host names are verified and trusted by the server.</p>
-</div>
-<div class="paragraph">
-<p>By default, a truststore provider is not configured, and any TLS/HTTPS connections fall back to standard Java Truststore configuration. If there is no trust established, then these outgoing requests will fail.</p>
+<p>The certificates of these clients or servers, or the CA that signed these certificates, must be put in a truststore. This truststore is then configured for use by Keycloak.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configuring_the_keycloak_truststore">Configuring the Keycloak Truststore</h2>
+<h2 id="_configuring_the_system_truststore">Configuring the System Truststore</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>You can add your truststore configuration by entering this command:</p>
+<p>The existing Java default truststore certs will always be trusted.  If you need additional certificates, which will be the case if you have self-signed or internal certificate authorities that are not recognized by the JRE, they can be included in the <code>conf/truststores</code> directory or subdirectories.  The certs may be in PEM files, or PKCS12 files with extension <code>.p12</code> or <code>.pfx</code>.  If in PKCS12, the certs must be unencrypted - meaning no password is expected.</p>
+</div>
+<div class="paragraph">
+<p>If you need an alternative path, use the <code>--truststore-paths</code> option to specify additional files or directories where PEM or PKCS12 files are located. Paths are relative to where you launched Keycloak, so absolute paths are recommended instead. If a directory is specified, it will be recursively scanned for truststore files.</p>
+</div>
+<div class="paragraph">
+<p>After all applicable certs are included, the truststore will be used as the system default truststore via the <code>javax.net.ssl</code> properties, and as the default for internal usage within Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>For example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-truststore-file-file=myTrustStore.jks --spi-truststore-file-password=password --spi-truststore-file-hostname-verification-policy=ANY</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --truststore-paths=/opt/truststore/myTrustStore.pfx,/opt/other-truststore/myOtherTrustStore.pem</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The following are possible configuration options for this setting:</p>
+<p>It is still possible to directly set your own <code>javax.net.ssl</code> truststore System properties, but it&#8217;s recommended to use the <code>--truststore-paths</code> instead.</p>
 </div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">file</dt>
-<dd>
-<p>The path to a Java keystore file.
-TLS requests need a way to verify the host of the server to which they are talking.
-This is what the truststore does.
-The keystore contains one or more trusted host certificates or certificate authorities.
-This truststore file should only contain public certificates of your secured hosts.
-This is <em>REQUIRED</em> if any of these properties are defined.</p>
-</dd>
-<dt class="hdlist1">password</dt>
-<dd>
-<p>Password of the keystore.
-This option is <em>REQUIRED</em> if any of these properties are defined.</p>
-</dd>
-<dt class="hdlist1">hostname-verification-policy</dt>
-<dd>
-<p>For HTTPS requests, this option verifies the hostname of the server&#8217;s certificate. Default: <code>WILDCARD</code></p>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hostname_verification_policy">Hostname Verification Policy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You may refine how hostnames are verified by TLS connections with the <code>tls-hostname-verifier</code> property.</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p><code>ANY</code> means that the hostname is not verified.</p>
+<p><code>WILDCARD</code> (the default) allows wildcards in subdomain names, such as *.foo.com.</p>
 </li>
 <li>
-<p><code>WILDCARD</code> allows wildcards in subdomain names, such as *.foo.com.</p>
+<p><code>ANY</code> means that the hostname is not verified.</p>
 </li>
 <li>
 <p>When using <code>STRICT</code>, the Common Name (CN) must match the hostname exactly.</p>
@@ -138,25 +132,59 @@ This option is <em>REQUIRED</em> if any of these properties are defined.</p>
 </li>
 </ul>
 </div>
-</dd>
-<dt class="hdlist1">type</dt>
-<dd>
-<p>The type of truststore, such as <code>jks</code>, <code>pkcs12</code> or <code>bcfks</code>. If not provided, the type would be detected based on the truststore
-file extension or platform default type.</p>
-</dd>
-</dl>
 </div>
-<div class="sect2">
-<h3 id="_example_of_a_truststore_configuration">Example of a truststore configuration</h3>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tls-hostname-verifier</code></span></p>
+</div>
 <div class="paragraph">
-<p>The following is an example configuration for a truststore that allows you to create trustful connections to all <code>mycompany.org</code> domains and its subdomains:</p>
+<p><span class="options-description">The TLS hostname verification policy for out-going HTTPS and SMTP requests.</span></p>
 </div>
-<div class="listingblock">
+<div class="openblock options-extended">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-truststore-file-file=path/to/truststore.jks --spi-truststore-file-password=change_me --spi-truststore-file-hostname-verification-policy=WILDCARD</code></pre>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tls-hostname-verifier</code><br>
+<strong>Env:</strong> <code>KC_TLS_HOSTNAME_VERIFIER</code></p>
 </div>
 </div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ANY</code>, <code>WILDCARD</code> (default), <code>STRICT</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>truststore-paths</code></span></p>
 </div>
+<div class="paragraph">
+<p><span class="options-description">List of pkcs12 (p12 or pfx file extensions), PEM files, or directories containing those files that will be used as a system truststore.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--truststore-paths</code><br>
+<strong>Env:</strong> <code>KC_TRUSTSTORE_PATHS</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>            </div>
         </div>

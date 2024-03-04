@@ -77,19 +77,6 @@
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-This guide is describing a feature which is currently in preview.
-Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/25269">joining this discussion</a> while we’re continuing to work on this.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>Use this as a starting point to size a product environment.
 Adjust the values for your environment as needed based on your load tests.</p>
@@ -144,10 +131,7 @@ Still, those caches need to be filled when an instance is restarted, so do not s
 <div class="ulist">
 <ul>
 <li>
-<p>The base memory usage for an inactive Pod is 1 GB of RAM.</p>
-</li>
-<li>
-<p>Leave 1 GB extra head-room for spikes of RAM.</p>
+<p>The base memory usage for an inactive Pod is 1000 MB of RAM.</p>
 </li>
 <li>
 <p>For each 100,000 active user sessions, add 500 MB per Pod in a three-node cluster (tested with up to 200,000 sessions).</p>
@@ -157,7 +141,11 @@ Memory requirements increase with the number of client sessions per user session
 </div>
 </li>
 <li>
-<p>For each 40 user logins per second, 1 vCPU per Pod in a three-node cluster (tested with up to 300 per second).</p>
+<p>In containers, Keycloak allocates 70% of the memory limit for heap based memory. It will also use approximately 300 MB of non-heap-based memory.
+To calculate the requested memory, use the calculation above. As memory limit, subtract the non-heap memory from the value above and divide the result by 0.7.</p>
+</li>
+<li>
+<p>For each 30 user logins per second, 1 vCPU per Pod in a three-node cluster (tested with up to 300 per second).</p>
 <div class="paragraph">
 <p>Keycloak spends most of the CPU time hashing the password provided by the user.</p>
 </div>
@@ -169,7 +157,7 @@ Memory requirements increase with the number of client sessions per user session
 </div>
 </li>
 <li>
-<p>For each 350 refresh token requests per second, 1 vCPU per Pod in a three node cluster (tested with up to 435 refresh token requests per second).</p>
+<p>For each 350 refresh token requests per second, 1 vCPU per Pod in a three-node cluster (tested with up to 435 refresh token requests per second).</p>
 </li>
 <li>
 <p>Leave 200% extra head-room for CPU usage to handle spikes in the load.
@@ -189,7 +177,7 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <p>50,000 active user sessions</p>
 </li>
 <li>
-<p>40 logins per seconds</p>
+<p>30 logins per seconds</p>
 </li>
 <li>
 <p>450 client credential grants per second</p>
@@ -207,7 +195,7 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <li>
 <p>CPU requested: 3 vCPU</p>
 <div class="paragraph">
-<p>(40 logins per second = 1 vCPU, 450 client credential grants per second = 1 vCPU, 350 refresh token = 1 vCPU)</p>
+<p>(30 logins per second = 1 vCPU, 450 client credential grants per second = 1 vCPU, 350 refresh token = 1 vCPU)</p>
 </div>
 </li>
 <li>
@@ -217,15 +205,15 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 </div>
 </li>
 <li>
-<p>Memory requested: 1.25 GB</p>
+<p>Memory requested: 1250 MB</p>
 <div class="paragraph">
-<p>(1 GB base memory plus 250 MB RAM for 50,000 active sessions)</p>
+<p>(1000 MB base memory plus 250 MB RAM for 50,000 active sessions)</p>
 </div>
 </li>
 <li>
-<p>Memory limit: 2.25 GB</p>
+<p>Memory limit: 1360 GB</p>
 <div class="paragraph">
-<p>(adding 1 GB to the memory requested)</p>
+<p>(1250 MB expected memory usage minus 300 non-heap-usage, divided by 0.7)</p>
 </div>
 </li>
 </ul>
@@ -242,7 +230,7 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <div class="ulist">
 <ul>
 <li>
-<p>OpenShift 4.13.x deployed on AWS via ROSA.</p>
+<p>OpenShift 4.14.x deployed on AWS via ROSA.</p>
 </li>
 <li>
 <p>Machinepool with <code>m5.4xlarge</code> instances.</p>
@@ -251,7 +239,7 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <p>Keycloak deployed with the Operator and 3 pods.</p>
 </li>
 <li>
-<p>Default user password hashing with PBKDF2 27,500 hash iterations (which is the default).</p>
+<p>Default user password hashing with PBKDF2(SHA512) 210,000 hash iterations (which is the default).</p>
 </li>
 <li>
 <p>Client credential grants don&#8217;t use refresh tokens (which is the default).</p>

@@ -77,19 +77,6 @@
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-This guide is describing a feature which is currently in preview.
-Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/25269">joining this discussion</a> while we’re continuing to work on this.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>This topic describes advanced Infinispan configurations for Keycloak on Kubernetes.</p>
 </div>
@@ -131,20 +118,23 @@ Please provide your feedback by <a href="https://github.com/keycloak/keycloak/di
                       raw-values="true"
                       shared="true"
                       segmented="false"&gt;
+            &lt;!-- This is a workaround for the following issue https://github.com/keycloak/keycloak/issues/27117 and should be removed when the issue is fixed --&gt;
+            &lt;write-behind modification-queue-size="1024"/&gt; <i class="conum" data-value="2"></i><b>(2)</b>
+            &lt;!-- End of the workaround --&gt;
             &lt;remote-server host="${env.KC_REMOTE_STORE_HOST}"
-                           port="${env.KC_REMOTE_STORE_PORT}"/&gt; <i class="conum" data-value="2"></i><b>(2)</b>
+                           port="${env.KC_REMOTE_STORE_PORT}"/&gt; <i class="conum" data-value="3"></i><b>(3)</b>
             &lt;connection-pool max-active="16"
                              exhausted-action="CREATE_NEW"/&gt;
             &lt;security&gt;
                 &lt;authentication server-name="infinispan"&gt;
                     &lt;digest username="${env.KC_REMOTE_STORE_USERNAME}"
                             password="${env.KC_REMOTE_STORE_PASSWORD}"
-                            realm="default"/&gt; <i class="conum" data-value="3"></i><b>(3)</b>
+                            realm="default"/&gt; <i class="conum" data-value="4"></i><b>(4)</b>
                 &lt;/authentication&gt;
                 &lt;encryption protocol="TLSv1.3"
                             sni-hostname="${env.KC_REMOTE_STORE_HOST}"&gt;
                     &lt;truststore filename="/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-                                type="pem"/&gt; <i class="conum" data-value="4"></i><b>(4)</b>
+                                type="pem"/&gt; <i class="conum" data-value="5"></i><b>(5)</b>
                 &lt;/encryption&gt;
             &lt;/security&gt;
         &lt;/remote-store&gt;
@@ -160,14 +150,18 @@ Please provide your feedback by <a href="https://github.com/keycloak/keycloak/di
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>For the address to the remote store, reference two environment variables for host name and port number.</td>
+<td>This is a workaround for issue <a href="https://github.com/keycloak/keycloak/issues/27117">keycloak#27117</a> and will be removed in the following versions.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>For authentication, reference two environment variables for username and password.</td>
+<td>For the address to the remote store, reference two environment variables for host name and port number.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>For authentication, reference two environment variables for username and password.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>To secure the remote store connection, use the Kubernetes mechanisms of the pre-configured truststore.</td>
 </tr>
 </table>
@@ -249,7 +243,7 @@ data:
 </div>
 </li>
 <li>
-<p>Extend the Keycloak Custom Resource with <code>additionalOptions</code> and extend the <code>podTemplate</code> as shown below.</p>
+<p>Extend the Keycloak Custom Resource with <code>additionalOptions</code> as shown below.</p>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -283,10 +277,11 @@ metadata:
   name: keycloak
   namespace: keycloak
 spec:
+  cache:
+    configMapFile:
+      name: kcb-infinispan-cache-config <i class="conum" data-value="1"></i><b>(1)</b>
+      key: kcb-infinispan-cache-remote-store-config.xml <i class="conum" data-value="1"></i><b>(1)</b>
   additionalOptions:
-    - name: cache-config-file <i class="conum" data-value="1"></i><b>(1)</b>
-      value: kcb-infinispan-cache-remote-store-config.xml
-    - name: log-console-output
     - name: remote-store-host <i class="conum" data-value="2"></i><b>(2)</b>
       value: "infinispan.keycloak.svc"
     - name: remote-store-port <i class="conum" data-value="2"></i><b>(2)</b>
@@ -299,34 +294,15 @@ spec:
       secret:
         name: remote-store-secret
         key: password
-  unsupported:
-    podTemplate:
-      spec:
-        containers:
-          - env:
-              - name: JAVA_OPTS_APPEND <i class="conum" data-value="5"></i><b>(5)</b>
-                value: &gt;
-                  -Djgroups.thread_dumps_threshold=1 -Djboss.site.name=keycloak
-
-            volumeMounts:
-              - name: kcb-infinispan-cache-config <i class="conum" data-value="4"></i><b>(4)</b>
-                mountPath: /opt/keycloak/conf/kcb-infinispan-cache-remote-store-config.xml
-                subPath: kcb-infinispan-cache-remote-store-config.xml
-                readOnly: true
-        volumes:
-          - name: kcb-infinispan-cache-config <i class="conum" data-value="6"></i><b>(6)</b>
-            configMap:
-              name: kcb-infinispan-cache-config
-              items:
-                - key: kcb-infinispan-cache-remote-store-config.xml
-                  path: kcb-infinispan-cache-remote-store-config.xml</code></pre>
+    - name: spi-connections-infinispan-quarkus-site-name <i class="conum" data-value="4"></i><b>(4)</b>
+      value: keycloak</code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Custom cache configuration XML file definition, which includes configuration for remote or embedded Infinispan store.</td>
+<td>The <code>name</code> and <code>key</code> of the ConfigMap with the Infinispan Cache configuration XML created in the previous step.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -338,18 +314,9 @@ spec:
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Mounting the cache configuration Volume in Kubernetes.
-However, matching the <code>jboss.site.name</code> with the external Infinispan deployment site name helps debugging possible future issues.
+<td>The <code>spi-connections-infinispan-quarkus-site-name</code> is an arbitrary Infinispan site name which Keycloak needs for its embedded Infinispan deployment when a remote store is used.
+This site-name is related only to the embedded Infinispan and does not need to match any value from the external Infinispan deployment.
 If you are using multiple sites for Keycloak in a cross-DC setup such as <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploy Infinispan for HA with the Infinispan Operator</a>, the site name must be different in each site.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td><code>jboss.site.name</code> is an arbitrary Infinispan site name which Keycloak needs for its embedded Infinispan deployment when a remote store is used.
-This site name is related only to the embedded Infinispan and does not need to match any value from the external Infinispan deployment.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Defining the cache configuration Volume using the already created ConfigMap in Kubernetes.</td>
 </tr>
 </table>
 </div>

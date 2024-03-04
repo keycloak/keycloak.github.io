@@ -133,7 +133,7 @@ In order to achieve this consistency, you can set either the <code>hostname</cod
 <p><code>https</code> scheme is used unless you set <code>hostname-strict-https=false</code></p>
 </li>
 <li>
-<p>if the <code>proxy</code> option is set, the proxy will use the default ports (i.e.: 80 and 443).  If the proxy uses a different port, it needs to be specified via the <code>hostname-port</code> configuration option</p>
+<p>if the <code>proxy-headers</code> option is set, the proxy will use the default ports (i.e.: 80 and 443).  If the proxy uses a different port, it needs to be specified via the <code>hostname-url</code> configuration option</p>
 </li>
 </ul>
 </div>
@@ -157,7 +157,7 @@ the <code>hostname</code> and <code>hostname-url</code> are mutually exclusive.<
 </td>
 <td class="content">
 <div class="paragraph">
-<p>By <code>hostname</code> and <code>proxy</code> configuration options you affect only the static resources URLs, redirect URIs, OIDC well-known endpoints, etc. In order to change, where/on which port the server actually listens on, you need to use the <code>http/tls</code> configuration options (e.g. <code>http-host</code>, <code>https-port</code>, etc.). For more details, see <a href="https://www.keycloak.org/server/enabletls">Configuring TLS</a> and <a href="https://www.keycloak.org/server/all-config">All configuration</a>.</p>
+<p>By <code>hostname</code> and <code>proxy-headers</code> configuration options you affect only the static resources URLs, redirect URIs, OIDC well-known endpoints, etc. In order to change, where/on which port the server actually listens on, you need to use the <code>http/tls</code> configuration options (e.g. <code>http-host</code>, <code>https-port</code>, etc.). For more details, see <a href="https://www.keycloak.org/server/enabletls">Configuring TLS</a> and <a href="https://www.keycloak.org/server/all-config">All configuration</a>.</p>
 </div>
 </td>
 </tr>
@@ -241,7 +241,7 @@ For more information about which paths to expose using a reverse proxy, see <a h
 <div class="listingblock">
 <div class="title">Configuration:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=mykeycloak --proxy=edge</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=mykeycloak --http-enabled=true --proxy-headers=forwarded|xforwarded</code></pre>
 </div>
 </div>
 </div>
@@ -289,16 +289,13 @@ regardless of the origin of the request.</p>
 <div class="sect2">
 <h3 id="_exposing_keycloak_behind_a_tls_reencrypt_proxy_using_different_ports">Exposing Keycloak behind a TLS reencrypt proxy using different ports</h3>
 <div class="paragraph">
-<p>In this example, the server is running behind a proxy and both the server and the proxy are using their own certificates, so the communication between Keycloak and the proxy is encrypted. Because we want the proxy to use its own certificate, the proxy mode <code>reencrypt</code> will be used. We need to keep in mind that the proxy configuration options (as well as hostname configuration options) are not changing the ports on which the server actually is listening on (it changes only the ports of static resources like JavaScript and CSS links, OIDC well-known endpoints, redirect URIs, etc.). Therefore, we need to use HTTP configuration options to change the Keycloak server to internally listen on a different port, e.g. 8543. The proxy will be listening on the port 8443 (the port visible while accessing the console via a browser). The example hostname <code>my-keycloak.org</code> will be used for the server and similarly the admin console will be accessible via the <code>admin.my-keycloak.org</code> subdomain.</p>
+<p>In this example, the server is running behind a proxy and both the server and the proxy are using their own certificates, so the communication between Keycloak and the proxy is encrypted. The reverse proxy uses the <code>Forwarded</code> header and does not set the <code>X-Forwarded-*</code> headers. We need to keep in mind that the proxy configuration options (as well as hostname configuration options) are not changing the ports on which the server actually is listening on (it changes only the ports of static resources like JavaScript and CSS links, OIDC well-known endpoints, redirect URIs, etc.). Therefore, we need to use HTTP configuration options to change the Keycloak server to internally listen on a different port, e.g. 8543. The proxy will be listening on the port 8443 (the port visible while accessing the console via a browser). The example hostname <code>my-keycloak.org</code> will be used for the server and similarly the admin console will be accessible via the <code>admin.my-keycloak.org</code> subdomain.</p>
 </div>
 <div class="listingblock">
 <div class="title">Keycloak configuration:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy=reencrypt --https-port=8543 --hostname-url=https://my-keycloak.org:8443 --hostname-admin-url=https://admin.my-keycloak.org:8443</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers=forwarded --https-port=8543 --hostname-url=https://my-keycloak.org:8443 --hostname-admin-url=https://admin.my-keycloak.org:8443</code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p>Note: there is currently no difference between the <code>passthrough</code> and <code>reencrypt</code> modes. For now, this is meant for future-proof configuration compatibility. The only difference is that when the <code>edge</code> proxy mode is used, HTTP is implicitly enabled (again as mentioned above, this does not affect the server behaviour).</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -307,7 +304,7 @@ regardless of the origin of the request.</p>
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-Usage any of the proxy modes makes Keycloak rely on Forwarded and X-Forwarded-* headers.
+Usage of the <code>proxy-headers</code> option rely on <code>Forwarded</code> and <code>X-Forwarded-*</code> headers, respectively, that have to be set and overwritten by the reverse proxy.
 Misconfiguration may leave Keycloak exposed to security issues. For more details, see <a href="https://www.keycloak.org/server/reverseproxy">Using a reverse proxy</a>.
 </td>
 </tr>
@@ -531,6 +528,10 @@ Misconfiguration may leave Keycloak exposed to security issues. For more details
 <strong>Env:</strong> <code>KC_PROXY</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p><strong>DEPRECATED.</strong>
+Use: <code>proxy-headers</code>.</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default), <code>edge</code>, <code>reencrypt</code>, <code>passthrough</code></p></td>
 </tr>

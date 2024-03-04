@@ -77,19 +77,6 @@
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-This guide is describing a feature which is currently in preview.
-Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/25269">joining this discussion</a> while we’re continuing to work on this.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>This guide describes advanced Keycloak configurations for Kubernetes which are load tested and will recover from single Pod failures.</p>
 </div>
@@ -126,6 +113,12 @@ Use it together with the other building blocks outlined in the <a href="https://
 <p>Install the Keycloak Operator as described in the <a href="https://www.keycloak.org/operator/installation">Keycloak Operator Installation</a> guide.</p>
 </li>
 <li>
+<p>Deploy Aurora AWS as described in the <a href="https://www.keycloak.org/high-availability/deploy-aurora-multi-az">Deploy AWS Aurora in multiple availability zones</a> guide.</p>
+</li>
+<li>
+<p>Build a custom Keycloak image which is <a href="https://www.keycloak.org/server/db#preparing-keycloak-for-amazon-aurora-postgresql">prepared for usage with the Amazon Aurora PostgreSQL database</a>.</p>
+</li>
+<li>
 <p>Deploy the Keycloak CR with the following values with the resource requests and limits calculated in the first step:</p>
 <div class="listingblock">
 <div class="content">
@@ -138,10 +131,17 @@ metadata:
   namespace: keycloak
 spec:
   hostname:
-    hostname: keycloak-keycloak.minikube.nip.io
+    hostname: &lt;KEYCLOAK_URL_HERE&gt;
+  resources:
+    requests:
+      cpu: "2"
+      memory: "1250M"
+    limits:
+      cpu: "6"
+      memory: "2250M"
   db:
     vendor: postgres
-    url: jdbc:postgresql://postgres:5432/keycloak
+    url: jdbc:aws-wrapper:postgresql://&lt;AWS_AURORA_URL_HERE&gt;:5432/keycloak
     poolMinSize: 30 <i class="conum" data-value="1"></i><b>(1)</b>
     poolInitialSize: 30
     poolMaxSize: 30
@@ -151,36 +151,27 @@ spec:
     passwordSecret:
       name: keycloak-db-secret
       key: password
+  image: &lt;KEYCLOAK_IMAGE_HERE&gt; <i class="conum" data-value="2"></i><b>(2)</b>
+  startOptimized: false <i class="conum" data-value="2"></i><b>(2)</b>
   features:
     enabled:
-      - multi-site <i class="conum" data-value="2"></i><b>(2)</b>
+      - multi-site <i class="conum" data-value="3"></i><b>(3)</b>
+  transaction:
+    xaEnabled: false <i class="conum" data-value="4"></i><b>(4)</b>
   additionalOptions:
+    - name: http-max-queued-requests
+      value: "1000"
     - name: log-console-output
       value: json
-    - name: metrics-enabled <i class="conum" data-value="3"></i><b>(3)</b>
+    - name: metrics-enabled <i class="conum" data-value="5"></i><b>(5)</b>
       value: 'true'
+    - name: http-pool-max-threads <i class="conum" data-value="6"></i><b>(6)</b>
+      value: "66"
+    - name: db-driver
+      value: software.amazon.jdbc.Driver
   http:
     tlsSecret: keycloak-tls-secret
-  instances: 3
-  unsupported:
-    podTemplate:
-      spec:
-
-        containers:
-          - env:
-              - name: 'QUARKUS_THREAD_POOL_MAX_THREADS' <i class="conum" data-value="4"></i><b>(4)</b>
-                value: "66"
-              - name: JAVA_OPTS_APPEND <i class="conum" data-value="5"></i><b>(5)</b>
-                value: &gt;
-                  -Xms512m -Xmx1524m -Djgroups.thread_dumps_threshold=1
-
-            resources:
-              requests:
-                cpu: "2"
-                memory: "1250M"
-              limits:
-                cpu: "6"
-                memory: "2250M"</code></pre>
+  instances: 3</code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -194,35 +185,28 @@ See the <a href="https://www.keycloak.org/high-availability/concepts-database-co
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Enable additional features for multi-site support like the loadbalancer probe <code>/lb-check</code>.</td>
+<td>Specify the URL to your custom Keycloak image. If your image is optimized, set the <code>startOptimized</code> flag to <code>true</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Enable additional features for multi-site support like the loadbalancer probe <code>/lb-check</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>XA transactions are not supported by the <a href="https://github.com/awslabs/aws-advanced-jdbc-wrapper/releases/">Amazon Web Services JDBC Driver</a>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>To be able to analyze the system under load, enable the metrics endpoint.
 The disadvantage of the setting is that the metrics will be available at the external Keycloak endpoint, so you must add a filter so that the endpoint is not available from the outside.
 Use a reverse proxy in front of Keycloak to filter out those URLs.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
 <td>The default setting for the internal JGroup thread pools is 200 threads maximum.
 The number of all Keycloak threads in the StatefulSet should not exceed the number of JGroup threads to avoid a JGroup thread pool exhaustion which could stall Keycloak request processing.
 You might consider limiting the number of Keycloak threads further because multiple concurrent threads will lead to throttling by Kubernetes once the requested CPU limit is reached.
 See the <a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide for details.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>The JVM options set additional parameters:
-<div class="ulist">
-<ul>
-<li>
-<p><code>jgroups.thread_dumps_threshold</code> ensures that a log message &#8220;thread pool is full&#8221; appears once the JGroup thread pool is full for the first time.
-See the <a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide for details.</p>
-</li>
-<li>
-<p>Adjust the memory settings for the heap.</p>
-</li>
-</ul>
-</div></td>
 </tr>
 </table>
 </div>
@@ -252,22 +236,17 @@ kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keyc
 <p>To enable load shedding, limit the number of queued requests.</p>
 </div>
 <div class="listingblock">
-<div class="title">Load shedding with Quarkus thread pool size</div>
+<div class="title">Load shedding with max queued http requests</div>
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">env:
-  - name: 'QUARKUS_THREAD_POOL_QUEUE_SIZE' <i class="conum" data-value="1"></i><b>(1)</b>
-    value: '1000'</code></pre>
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">spec:
+  additionalOptions:
+    - name: http-max-queued-requests
+      value: "1000"</code></pre>
 </div>
 </div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>This change limits the number of queued Keycloak requests.
-All exceeding requests are served with an HTTP 503.
-See the <a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide about load shedding for details.</td>
-</tr>
-</table>
+<div class="paragraph">
+<p>All exceeding requests are served with an HTTP 503.
+See the <a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide about load shedding for details.</p>
 </div>
 </div>
 </div>
@@ -284,13 +263,13 @@ When running load tests, or when having a reverse proxy in front of HAProxy, you
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">spec:
-    ingress:
-        enabled: true
-        annotations:
-          # When running load tests, disable sticky sessions on the OpenShift HAProxy router
-          # to avoid receiving all requests on a single {project_name} Pod.
-          haproxy.router.openshift.io/balance: roundrobin
-          haproxy.router.openshift.io/disable_cookies: 'true'</code></pre>
+  ingress:
+    enabled: true
+    annotations:
+      # When running load tests, disable sticky sessions on the OpenShift HAProxy router
+      # to avoid receiving all requests on a single Keycloak Pod.
+      haproxy.router.openshift.io/balance: roundrobin
+      haproxy.router.openshift.io/disable_cookies: 'true'</code></pre>
 </div>
 </div>
 </div>

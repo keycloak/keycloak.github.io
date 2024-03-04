@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Keycloak Realm Import - Keycloak</title>
+    <title>Concepts to automate Infinispan CLI commands - Keycloak</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Keycloak is an open source identity and access management solution">
     <meta name="author" content="Keycloak Team">
@@ -62,24 +62,81 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
-                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#operator">Operator</a></li>
-                    <li class="breadcrumb-item active">Keycloak Realm Import</li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Concepts to automate Infinispan CLI commands</li>
                 </ol>
             </nav>
 
             <div class="mb-4">
-                <h1>Keycloak Realm Import</h1>
-                    <span class="text-muted">How to perform an automated Keycloak Realm Import using the operator</span>
+                <h1>Concepts to automate Infinispan CLI commands</h1>
+                    <span class="text-muted">Infinispan CLI commands can be automated by creating a `Batch` CR instance.</span>
             </div>
 
 
 
             <div class="kc-asciidoc" id="guide-body">
-<div class="sect1">
-<h2 id="_importing_a_keycloak_realm">Importing a Keycloak Realm</h2>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Using the Keycloak Operator, you can perform a realm import for the Keycloak Deployment.</p>
+<p>When interacting with an external Infinispan in Kubernetes, the <code>Batch</code> CR allows you to automate this using standard <code>kubectl</code> commands.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_when_to_use_it">When to use it</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this when automating interactions on Kubernetes.
+This avoids providing usernames and passwords and checking shell script outputs and their status.</p>
+</div>
+<div class="paragraph">
+<p>For human interactions, the CLI shell might still be a better fit.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">Example</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following <code>Batch</code> CR takes an Infinispan site offline as described in the operational procedure <a href="https://www.keycloak.org/high-availability/operate-switch-over">Switch over to the secondary site</a>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+kind: Batch
+metadata:
+  name: take-offline
+  namespace: keycloak <i class="conum" data-value="1"></i><b>(1)</b>
+spec:
+  cluster: infinispan <i class="conum" data-value="2"></i><b>(2)</b>
+  config: | <i class="conum" data-value="3"></i><b>(3)</b>
+    site take-offline --all-caches --site=site-a
+    site status --all-caches --site=site-a</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>Batch</code> CR must be created in the same namespace as the Infinispan deployment.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The name of the Infinispan CR.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>A multiline string containing one or more Infinispan CLI commands.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Once the CR has been created, wait for the status to show the completion.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n keycloak wait --for=jsonpath='{.status.phase}'=Succeeded Batch/take-offline</code></pre>
+</div>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -88,113 +145,18 @@
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<div class="ulist">
-<ul>
-<li>
-<p>If a Realm with the same name already exists in Keycloak, it will not be overwritten.</p>
-</li>
-<li>
-<p>The Realm Import CR only supports creation of new realms and does not update or delete those. Changes to the realm performed directly on Keycloak are not synced back in the CR.</p>
-</li>
-</ul>
-</div>
+Modifying a <code>Batch</code> CR instance has no effect. Batch operations are &#8220;one-time&#8221; events that modify Infinispan resources. To update <code>.spec</code> fields for the CR, or when a batch operation fails, you must create a new instance of the <code>Batch</code> CR.
 </td>
 </tr>
 </table>
 </div>
-<div class="sect2">
-<h3 id="_creating_a_realm_import_custom_resource">Creating a Realm Import Custom Resource</h3>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_reading">Further reading</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>The following is an example of a Realm Import Custom Resource (CR):</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
-kind: KeycloakRealmImport
-metadata:
-  name: my-realm-kc
-spec:
-  keycloakCRName: &lt;name of the keycloak CR&gt;
-  realm:
-    ...</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This CR should be created in the same namespace as the Keycloak Deployment CR, defined in the field <code>keycloakCRName</code>.
-The <code>realm</code> field accepts a full <a href="https://www.keycloak.org/docs-api/24.0.0/rest-api/index.html#RealmRepresentation">RealmRepresentation</a>.</p>
-</div>
-<div class="paragraph">
-<p>The recommended way to obtain a <code>RealmRepresentation</code> is by leveraging the export functionality <a href="https://www.keycloak.org/server/importExport">Importing and Exporting Realms</a>.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Export the Realm to a single file.</p>
-</li>
-<li>
-<p>Convert the JSON file to YAML.</p>
-</li>
-<li>
-<p>Copy and paste the obtained YAML file as body for the <code>realm</code> key, making sure the indentation is correct.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_applying_the_realm_import_cr">Applying the Realm Import CR</h3>
-<div class="paragraph">
-<p>Use <code>kubectl</code> to create the CR in the correct cluster namespace:</p>
-</div>
-<div class="paragraph">
-<p>Create YAML file <code>example-realm-import.yaml</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
-kind: KeycloakRealmImport
-metadata:
-  name: my-realm-kc
-spec:
-  keycloakCRName: &lt;name of the keycloak CR&gt;
-  realm:
-    id: example-realm
-    realm: example-realm
-    displayName: ExampleRealm
-    enabled: true</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Apply the changes:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f example-realm-import.yaml</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To check the status of the running import, enter the following command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get keycloakrealmimports/my-realm-kc -o go-template='{{range .status.conditions}}CONDITION: {{.type}}{{"\n"}}  STATUS: {{.status}}{{"\n"}}  MESSAGE: {{.message}}{{"\n"}}{{end}}'</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>When the import has successfully completed, the output will look like the following example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">CONDITION: Done
-  STATUS: true
-  MESSAGE:
-CONDITION: Started
-  STATUS: false
-  MESSAGE:
-CONDITION: HasErrors
-  STATUS: false
-  MESSAGE:</code></pre>
-</div>
-</div>
+<p>For more information, see the <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#batch-cr">Infinispan Operator Batch CR documentation</a>.</p>
 </div>
 </div>
 </div>            </div>
@@ -205,7 +167,7 @@ CONDITION: HasErrors
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/operator/realm-import.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/concepts-infinispan-cli-batch.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

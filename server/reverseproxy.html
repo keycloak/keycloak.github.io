@@ -78,16 +78,84 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Distributed environments frequently require the use of a reverse proxy.
-For Keycloak, your choice of proxy modes depends on the TLS termination in your environment.</p>
+<p>Distributed environments frequently require the use of a reverse proxy. Keycloak offers several options to securely integrate with such environments.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configure_the_reverse_proxy_headers">Configure the reverse proxy headers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak will parse the reverse proxy headers based on the <code>proxy-headers</code> option which accepts several values:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>By default if the option is not specified, no reverse proxy headers are parsed.</p>
+</li>
+<li>
+<p><code>forwarded</code> enables parsing of the <code>Forwarded</code> header as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC7239</a>.</p>
+</li>
+<li>
+<p><code>xforwarded</code> enables parsing of non-standard <code>X-Forwarded-*</code> headers, such as <code>X-Forwarded-For</code>, <code>X-Forwarded-Proto</code>, <code>X-Forwarded-Host</code>, and <code>X-Forwarded-Port</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers forwarded</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+If either <code>forwarded</code> or <code>xforwarded</code> is selected, make sure your reverse proxy properly sets and overwrites the <code>Forwarded</code> or <code>X-Forwarded-*</code> headers respectively. To set these headers, consult the documentation for your reverse proxy. Misconfiguration will leave Keycloak exposed to security vulnerabilities.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Take extra precautions to ensure that the client address is properly set by your reverse proxy via the <code>Forwarded</code> or <code>X-Forwarded-For</code> headers.
+If this header is incorrectly configured, rogue clients can set this header and trick Keycloak into thinking the client is connected from a different IP address than the actual address. This precaution can be more critical if you do any deny or allow listing of IP addresses.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When using the <code>xforwarded</code> setting, the <code>X-Forwarded-Port</code> takes precedence over any port included in the <code>X-Forwarded-Host</code>.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_proxy_modes">Proxy modes</h2>
 <div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The support for setting proxy modes is deprecated and will be removed in a future Keycloak release. Consider configuring accepted reverse proxy headers instead as described in the chapter above. For migration instructions consult the <a href="https://www.keycloak.org/docs/latest/upgrading/index.html#deprecated-proxy-option">Upgrading Guide</a>.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
-<p>The following proxy modes are available:</p>
+<p>For Keycloak, your choice of proxy modes depends on the TLS termination in your environment. The following proxy modes are available:</p>
 </div>
 <div class="dlist">
 <dl>
@@ -109,27 +177,6 @@ The secure connections between the server and clients are based on the keys and 
 </dd>
 </dl>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_configure_the_proxy_mode_in_keycloak">Configure the proxy mode in Keycloak</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>To select the proxy mode, enter this command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy &lt;mode&gt;</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_configure_the_reverse_proxy">Configure the reverse proxy</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Some Keycloak features rely on the assumption that the remote address of the HTTP request connecting to Keycloak is the real IP address of the clients machine.</p>
-</div>
 <div class="paragraph">
 <p>When in <strong>edge</strong> or <strong>reencrypt</strong> proxy mode, Keycloak will parse the following headers and expects the reverse proxy to set them:</p>
 </div>
@@ -139,20 +186,20 @@ The secure connections between the server and clients are based on the keys and 
 <p><code>Forwarded</code> as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC7239</a></p>
 </li>
 <li>
-<p>Non-standard <code>X-Forwarded</code></p>
-</li>
-<li>
 <p>Non-standard <code>X-Forwarded-*</code>, such as <code>X-Forwarded-For</code>, <code>X-Forwarded-Proto</code>, <code>X-Forwarded-Host</code>, and <code>X-Forwarded-Port</code></p>
 </li>
 </ul>
 </div>
+<div class="sect2">
+<h3 id="_configure_the_proxy_mode_in_keycloak">Configure the proxy mode in Keycloak</h3>
 <div class="paragraph">
-<p>To set these headers, consult the documentation for your reverse proxy.</p>
+<p>To select the proxy mode, enter this command:</p>
 </div>
-<div class="paragraph">
-<p>Take extra precautions to ensure that the client address is properly set by your reverse proxy via the <code>Forwarded</code> or <code>X-Forwarded-For</code> headers.
-If this header is incorrectly configured, rogue clients can set this header and trick Keycloak into thinking the client is connected from a different IP address than the actual address.
-This precaution can be more critical if you do any deny or allow listing of IP addresses.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy &lt;mode&gt;</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -176,7 +223,7 @@ You can use <code>hostname-path</code> or <code>hostname-url</code> in these cas
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy &lt;mode&gt; --hostname-strict=false</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers=forwarded|xforwarded --hostname-strict=false</code></pre>
 </div>
 </div>
 </div>
@@ -441,7 +488,7 @@ to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>
 <p>The NGINX SSL/TLS module does not expose the client certificate chain. Keycloak&#8217;s NGINX certificate lookup provider rebuilds it by using the Keycloak truststore.</p>
 </div>
 <div class="paragraph">
-<p>If you are using this provider, see <a href="https://www.keycloak.org/server/keycloak-truststore">Configuring trusted certificates for outgoing requests</a> for how
+<p>If you are using this provider, see <a href="https://www.keycloak.org/server/keycloak-truststore">Configuring trusted certificates</a> for how
 to configure a Keycloak Truststore.</p>
 </div>
 </div>
@@ -531,8 +578,32 @@ to configure a Keycloak Truststore.</p>
 <strong>Env:</strong> <code>KC_PROXY</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p><strong>DEPRECATED.</strong>
+Use: <code>proxy-headers</code>.</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default), <code>edge</code>, <code>reencrypt</code>, <code>passthrough</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>proxy-headers</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The proxy headers that should be accepted by the server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Misconfiguration might leave the server exposed to security vulnerabilities. Takes precedence over the deprecated proxy option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--proxy-headers</code><br>
+<strong>Env:</strong> <code>KC_PROXY_HEADERS</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>forwarded</code>, <code>xforwarded</code></p></td>
 </tr>
 </tbody>
 </table>

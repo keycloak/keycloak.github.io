@@ -77,19 +77,6 @@
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-This guide is describing a feature which is currently in preview.
-Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/25269">joining this discussion</a> while we’re continuing to work on this.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>This topic describes how to deploy an Aurora regional deployment of a PostgreSQL instance across multiple availability zones to tolerate one or more availability zone failures in a given AWS region.</p>
 </div>
@@ -423,7 +410,7 @@ The cidr-block range specified for each of the availability zones must not overl
     --db-cluster-identifier keycloak-aurora \
     --database-name keycloak \
     --engine aurora-postgresql \
-    --engine-version 15.3 \
+    --engine-version ${properties["aurora-postgresql.version"]} \
     --master-username keycloak \
     --master-user-password secret99 \
     --vpc-security-group-ids sg-0d746cc8ad8d2e63b \
@@ -439,7 +426,7 @@ The cidr-block range specified for each of the availability zones must not overl
 </td>
 <td class="content">
 You should replace the <code>--master-username</code> and <code>--master-user-password</code> values.
-The values specified here must be used when configuring the Keycloak DB credentials.
+The values specified here must be used when configuring the Keycloak database credentials.
 </td>
 </tr>
 </table>
@@ -854,12 +841,12 @@ Upon exiting the pod shell, the pod is deleted.</p>
 PASSWORD=secret99 <i class="conum" data-value="2"></i><b>(2)</b>
 DATABASE=keycloak <i class="conum" data-value="3"></i><b>(3)</b>
 HOST=$(aws rds describe-db-clusters \
-  --db-cluster-identifier keycloak-aurora \ <i class="conum" data-value="4"></i><b>(4)</b>
+  --db-cluster-identifier keycloak-aurora \<i class="conum" data-value="4"></i><b>(4)</b>
   --query 'DBClusters[*].Endpoint' \
   --region eu-west-1 \
   --output text
 )
-kubectl run -i --tty --rm debug --image=postgres:13 --restart=Never -- psql postgresql://${USER}:${PASSWORD}@${HOST}/${DATABASE}</code></pre>
+kubectl run -i --tty --rm debug --image=postgres:15 --restart=Never -- psql postgresql://${USER}:${PASSWORD}@${HOST}/${DATABASE}</code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -894,7 +881,7 @@ To do this, create a <code>Keycloak</code> CR with the following adjustments:</p
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Update <code>spec.db.url</code> to be <code>jdbc:postgresql://$HOST:5432/keycloak</code> where <code>$HOST</code> is the
+<p>Update <code>spec.db.url</code> to be <code>jdbc:aws-wrapper:postgresql://$HOST:5432/keycloak</code> where <code>$HOST</code> is the
 <a href="#aurora-writer-url">Aurora writer endpoint URL</a>.</p>
 </li>
 <li>

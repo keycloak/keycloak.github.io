@@ -346,6 +346,13 @@ to change the number of owners accordingly to better fit into your availability 
 <p>The configuration file is relative to the <code>conf/</code> directory.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_cli_options_for_remote_server">CLI options for remote server</h3>
+<div class="paragraph">
+<p>For configuration of Keycloak server for high availability and multi-node clustered setup there was introduced following CLI options <code>cache-remote-host</code>, <code>cache-remote-port</code>, <code>cache-remote-username</code> and <code>cache-remote-password</code> simplifying configuration within the XML file.
+Once any of declared CLI parameters are present, it is expected there is no configuration related to remote store present in the XML file.</p>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -541,7 +548,23 @@ If you are defining a custom stack, make sure the <code>cache-stack</code> optio
 <h2 id="_securing_cache_communication">Securing cache communication</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The current Infinispan cache implementation should be secured by various security measures such as RBAC, ACLs, and Transport stack encryption. For more information about securing cache communication, see the <a href="https://infinispan.org/docs/dev/titles/security/security.html#">Infinispan security guide</a>.</p>
+<p>The current Infinispan cache implementation should be secured by various security measures such as RBAC, ACLs, and transport stack encryption.</p>
+</div>
+<div class="paragraph">
+<p>JGroups handles all the communication between Keycloak server, and it supports Java SSL sockets for TCP communication.
+Keycloak uses CLI options to configure the TLS communication without having to create a customized JGroups stack or modifying the cache XML file.</p>
+</div>
+<div class="paragraph">
+<p>To enable TLS, <code>cache-embedded-mtls-enabled</code> must be set to <code>true</code>.
+It requires a keystore with the certificate to use: <code>cache-embedded-mtls-key-store-file</code> sets the path to the keystore, and <code>cache-embedded-mtls-key-store-password</code> sets the password to decrypt it.
+The truststore contains the valid certificates to accept connection from, and it can be configured with <code>cache-embedded-mtls-trust-store-file</code> (path to the truststore), and <code>cache-embedded-mtls-trust-store-password</code> (password to decrypt it).
+To restrict unauthorized access, use a self-signed certificate for each Keycloak deployment.</p>
+</div>
+<div class="paragraph">
+<p>For JGroups stacks with <code>UDP</code> or <code>TCP_NIO2</code>, see the <a href="http://jgroups.org/manual5/index.html#ENCRYPT">JGroups Encryption documentation</a> on how to set up the protocol stack.</p>
+</div>
+<div class="paragraph">
+<p>For more information about securing cache communication, see the <a href="https://infinispan.org/docs/stable/titles/security/security.html#">Infinispan security guide</a>.</p>
 </div>
 </div>
 </div>
@@ -626,6 +649,177 @@ For more details about how to enable metrics, see <a href="https://www.keycloak.
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-config-file</code><br>
 <strong>Env:</strong> <code>KC_CACHE_CONFIG_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Encrypts the network communication between Keycloak servers.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-enabled</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-key-store-file</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The Keystore file path.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The Keystore must contain the certificate to use by the TLS protocol. By default, it lookup <code>cache-mtls-keystore.p12</code> under conf/ directory.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-key-store-file</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_KEY_STORE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-key-store-password</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password to access the Keystore.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-key-store-password</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_KEY_STORE_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-trust-store-file</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The Truststore file path.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It should contain the trusted certificates or the Certificate Authority that signed the certificates. By default, it lookup <code>cache-mtls-truststore.p12</code> under conf/ directory.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-trust-store-file</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_TRUST_STORE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-trust-store-password</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password to access the Truststore.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-trust-store-password</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_TRUST_STORE_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-host</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The hostname of the remote server for the remote store configuration.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>host</code> attribute of <code>remote-server</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-username</code> and <code>cache-remote-password</code> are required as well and the related configuration in XML file should not be present.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-host</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_HOST</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password for the authentication to the remote server for the remote store.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>password</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-host</code> and <code>cache-remote-username</code> are required as well and the related configuration in XML file should not be present.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-password</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The port of the remote server for the remote store configuration.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>port</code> attribute of <code>remote-server</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.).</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PORT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>11222</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-username</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The username for the authentication to the remote server for the remote store.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>username</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-host</code> and <code>cache-remote-password</code> are required as well and the related configuration in XML file should not be present.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-username</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_USERNAME</code></p>
 </div>
 </div>
 </div></div></td>

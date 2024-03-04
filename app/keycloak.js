@@ -22,165 +22,14 @@
 
 	var es6Promise_minExports = es6Promise_min.exports;
 
-	var base64Js = {};
-
-	base64Js.byteLength = byteLength;
-	base64Js.toByteArray = toByteArray;
-	base64Js.fromByteArray = fromByteArray;
-
-	var lookup = [];
-	var revLookup = [];
-	var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array;
-
-	var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-	for (var i = 0, len = code.length; i < len; ++i) {
-	  lookup[i] = code[i];
-	  revLookup[code.charCodeAt(i)] = i;
-	}
-
-	// Support decoding URL-safe base64 strings, as Node.js does.
-	// See: https://en.wikipedia.org/wiki/Base64#URL_applications
-	revLookup['-'.charCodeAt(0)] = 62;
-	revLookup['_'.charCodeAt(0)] = 63;
-
-	function getLens (b64) {
-	  var len = b64.length;
-
-	  if (len % 4 > 0) {
-	    throw new Error('Invalid string. Length must be a multiple of 4')
-	  }
-
-	  // Trim off extra bytes after placeholder bytes are found
-	  // See: https://github.com/beatgammit/base64-js/issues/42
-	  var validLen = b64.indexOf('=');
-	  if (validLen === -1) validLen = len;
-
-	  var placeHoldersLen = validLen === len
-	    ? 0
-	    : 4 - (validLen % 4);
-
-	  return [validLen, placeHoldersLen]
-	}
-
-	// base64 is 4/3 + up to two characters of the original data
-	function byteLength (b64) {
-	  var lens = getLens(b64);
-	  var validLen = lens[0];
-	  var placeHoldersLen = lens[1];
-	  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
-	}
-
-	function _byteLength (b64, validLen, placeHoldersLen) {
-	  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
-	}
-
-	function toByteArray (b64) {
-	  var tmp;
-	  var lens = getLens(b64);
-	  var validLen = lens[0];
-	  var placeHoldersLen = lens[1];
-
-	  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen));
-
-	  var curByte = 0;
-
-	  // if there are placeholders, only get up to the last complete 4 chars
-	  var len = placeHoldersLen > 0
-	    ? validLen - 4
-	    : validLen;
-
-	  var i;
-	  for (i = 0; i < len; i += 4) {
-	    tmp =
-	      (revLookup[b64.charCodeAt(i)] << 18) |
-	      (revLookup[b64.charCodeAt(i + 1)] << 12) |
-	      (revLookup[b64.charCodeAt(i + 2)] << 6) |
-	      revLookup[b64.charCodeAt(i + 3)];
-	    arr[curByte++] = (tmp >> 16) & 0xFF;
-	    arr[curByte++] = (tmp >> 8) & 0xFF;
-	    arr[curByte++] = tmp & 0xFF;
-	  }
-
-	  if (placeHoldersLen === 2) {
-	    tmp =
-	      (revLookup[b64.charCodeAt(i)] << 2) |
-	      (revLookup[b64.charCodeAt(i + 1)] >> 4);
-	    arr[curByte++] = tmp & 0xFF;
-	  }
-
-	  if (placeHoldersLen === 1) {
-	    tmp =
-	      (revLookup[b64.charCodeAt(i)] << 10) |
-	      (revLookup[b64.charCodeAt(i + 1)] << 4) |
-	      (revLookup[b64.charCodeAt(i + 2)] >> 2);
-	    arr[curByte++] = (tmp >> 8) & 0xFF;
-	    arr[curByte++] = tmp & 0xFF;
-	  }
-
-	  return arr
-	}
-
-	function tripletToBase64 (num) {
-	  return lookup[num >> 18 & 0x3F] +
-	    lookup[num >> 12 & 0x3F] +
-	    lookup[num >> 6 & 0x3F] +
-	    lookup[num & 0x3F]
-	}
-
-	function encodeChunk (uint8, start, end) {
-	  var tmp;
-	  var output = [];
-	  for (var i = start; i < end; i += 3) {
-	    tmp =
-	      ((uint8[i] << 16) & 0xFF0000) +
-	      ((uint8[i + 1] << 8) & 0xFF00) +
-	      (uint8[i + 2] & 0xFF);
-	    output.push(tripletToBase64(tmp));
-	  }
-	  return output.join('')
-	}
-
-	function fromByteArray (uint8) {
-	  var tmp;
-	  var len = uint8.length;
-	  var extraBytes = len % 3; // if we have 1 byte left, pad 2 bytes
-	  var parts = [];
-	  var maxChunkLength = 16383; // must be multiple of 3
-
-	  // go through the array every three bytes, we'll deal with trailing stuff later
-	  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-	    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)));
-	  }
-
-	  // pad the end with zeros, but make sure to not forget the extra bytes
-	  if (extraBytes === 1) {
-	    tmp = uint8[len - 1];
-	    parts.push(
-	      lookup[tmp >> 2] +
-	      lookup[(tmp << 4) & 0x3F] +
-	      '=='
-	    );
-	  } else if (extraBytes === 2) {
-	    tmp = (uint8[len - 2] << 8) + uint8[len - 1];
-	    parts.push(
-	      lookup[tmp >> 10] +
-	      lookup[(tmp >> 4) & 0x3F] +
-	      lookup[(tmp << 2) & 0x3F] +
-	      '='
-	    );
-	  }
-
-	  return parts.join('')
-	}
-
 	var sha256$1 = {exports: {}};
 
 	/**
 	 * [js-sha256]{@link https://github.com/emn178/js-sha256}
 	 *
-	 * @version 0.10.1
+	 * @version 0.11.0
 	 * @author Chen, Yi-Cyuan [emn178@gmail.com]
-	 * @copyright Chen, Yi-Cyuan 2014-2023
+	 * @copyright Chen, Yi-Cyuan 2014-2024
 	 * @license MIT
 	 */
 
@@ -368,12 +217,11 @@
 		      notString = true;
 		    }
 		    var code, index = 0, i, length = message.length, blocks = this.blocks;
-
 		    while (index < length) {
 		      if (this.hashed) {
 		        this.hashed = false;
 		        blocks[0] = this.block;
-		        blocks[16] = blocks[1] = blocks[2] = blocks[3] =
+		        this.block = blocks[16] = blocks[1] = blocks[2] = blocks[3] =
 		          blocks[4] = blocks[5] = blocks[6] = blocks[7] =
 		          blocks[8] = blocks[9] = blocks[10] = blocks[11] =
 		          blocks[12] = blocks[13] = blocks[14] = blocks[15] = 0;
@@ -381,26 +229,26 @@
 
 		      if (notString) {
 		        for (i = this.start; index < length && i < 64; ++index) {
-		          blocks[i >> 2] |= message[index] << SHIFT[i++ & 3];
+		          blocks[i >>> 2] |= message[index] << SHIFT[i++ & 3];
 		        }
 		      } else {
 		        for (i = this.start; index < length && i < 64; ++index) {
 		          code = message.charCodeAt(index);
 		          if (code < 0x80) {
-		            blocks[i >> 2] |= code << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= code << SHIFT[i++ & 3];
 		          } else if (code < 0x800) {
-		            blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT[i++ & 3];
-		            blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= (0xc0 | (code >>> 6)) << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
 		          } else if (code < 0xd800 || code >= 0xe000) {
-		            blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT[i++ & 3];
-		            blocks[i >> 2] |= (0x80 | ((code >> 6) & 0x3f)) << SHIFT[i++ & 3];
-		            blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= (0xe0 | (code >>> 12)) << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= (0x80 | ((code >>> 6) & 0x3f)) << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
 		          } else {
 		            code = 0x10000 + (((code & 0x3ff) << 10) | (message.charCodeAt(++index) & 0x3ff));
-		            blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT[i++ & 3];
-		            blocks[i >> 2] |= (0x80 | ((code >> 12) & 0x3f)) << SHIFT[i++ & 3];
-		            blocks[i >> 2] |= (0x80 | ((code >> 6) & 0x3f)) << SHIFT[i++ & 3];
-		            blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= (0xf0 | (code >>> 18)) << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= (0x80 | ((code >>> 12) & 0x3f)) << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= (0x80 | ((code >>> 6) & 0x3f)) << SHIFT[i++ & 3];
+		            blocks[i >>> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
 		          }
 		        }
 		      }
@@ -430,7 +278,7 @@
 		    this.finalized = true;
 		    var blocks = this.blocks, i = this.lastByteIndex;
 		    blocks[16] = this.block;
-		    blocks[i >> 2] |= EXTRA[i & 3];
+		    blocks[i >>> 2] |= EXTRA[i & 3];
 		    this.block = blocks[16];
 		    if (i >= 56) {
 		      if (!this.hashed) {
@@ -532,39 +380,39 @@
 		    var h0 = this.h0, h1 = this.h1, h2 = this.h2, h3 = this.h3, h4 = this.h4, h5 = this.h5,
 		      h6 = this.h6, h7 = this.h7;
 
-		    var hex = HEX_CHARS[(h0 >> 28) & 0x0F] + HEX_CHARS[(h0 >> 24) & 0x0F] +
-		      HEX_CHARS[(h0 >> 20) & 0x0F] + HEX_CHARS[(h0 >> 16) & 0x0F] +
-		      HEX_CHARS[(h0 >> 12) & 0x0F] + HEX_CHARS[(h0 >> 8) & 0x0F] +
-		      HEX_CHARS[(h0 >> 4) & 0x0F] + HEX_CHARS[h0 & 0x0F] +
-		      HEX_CHARS[(h1 >> 28) & 0x0F] + HEX_CHARS[(h1 >> 24) & 0x0F] +
-		      HEX_CHARS[(h1 >> 20) & 0x0F] + HEX_CHARS[(h1 >> 16) & 0x0F] +
-		      HEX_CHARS[(h1 >> 12) & 0x0F] + HEX_CHARS[(h1 >> 8) & 0x0F] +
-		      HEX_CHARS[(h1 >> 4) & 0x0F] + HEX_CHARS[h1 & 0x0F] +
-		      HEX_CHARS[(h2 >> 28) & 0x0F] + HEX_CHARS[(h2 >> 24) & 0x0F] +
-		      HEX_CHARS[(h2 >> 20) & 0x0F] + HEX_CHARS[(h2 >> 16) & 0x0F] +
-		      HEX_CHARS[(h2 >> 12) & 0x0F] + HEX_CHARS[(h2 >> 8) & 0x0F] +
-		      HEX_CHARS[(h2 >> 4) & 0x0F] + HEX_CHARS[h2 & 0x0F] +
-		      HEX_CHARS[(h3 >> 28) & 0x0F] + HEX_CHARS[(h3 >> 24) & 0x0F] +
-		      HEX_CHARS[(h3 >> 20) & 0x0F] + HEX_CHARS[(h3 >> 16) & 0x0F] +
-		      HEX_CHARS[(h3 >> 12) & 0x0F] + HEX_CHARS[(h3 >> 8) & 0x0F] +
-		      HEX_CHARS[(h3 >> 4) & 0x0F] + HEX_CHARS[h3 & 0x0F] +
-		      HEX_CHARS[(h4 >> 28) & 0x0F] + HEX_CHARS[(h4 >> 24) & 0x0F] +
-		      HEX_CHARS[(h4 >> 20) & 0x0F] + HEX_CHARS[(h4 >> 16) & 0x0F] +
-		      HEX_CHARS[(h4 >> 12) & 0x0F] + HEX_CHARS[(h4 >> 8) & 0x0F] +
-		      HEX_CHARS[(h4 >> 4) & 0x0F] + HEX_CHARS[h4 & 0x0F] +
-		      HEX_CHARS[(h5 >> 28) & 0x0F] + HEX_CHARS[(h5 >> 24) & 0x0F] +
-		      HEX_CHARS[(h5 >> 20) & 0x0F] + HEX_CHARS[(h5 >> 16) & 0x0F] +
-		      HEX_CHARS[(h5 >> 12) & 0x0F] + HEX_CHARS[(h5 >> 8) & 0x0F] +
-		      HEX_CHARS[(h5 >> 4) & 0x0F] + HEX_CHARS[h5 & 0x0F] +
-		      HEX_CHARS[(h6 >> 28) & 0x0F] + HEX_CHARS[(h6 >> 24) & 0x0F] +
-		      HEX_CHARS[(h6 >> 20) & 0x0F] + HEX_CHARS[(h6 >> 16) & 0x0F] +
-		      HEX_CHARS[(h6 >> 12) & 0x0F] + HEX_CHARS[(h6 >> 8) & 0x0F] +
-		      HEX_CHARS[(h6 >> 4) & 0x0F] + HEX_CHARS[h6 & 0x0F];
+		    var hex = HEX_CHARS[(h0 >>> 28) & 0x0F] + HEX_CHARS[(h0 >>> 24) & 0x0F] +
+		      HEX_CHARS[(h0 >>> 20) & 0x0F] + HEX_CHARS[(h0 >>> 16) & 0x0F] +
+		      HEX_CHARS[(h0 >>> 12) & 0x0F] + HEX_CHARS[(h0 >>> 8) & 0x0F] +
+		      HEX_CHARS[(h0 >>> 4) & 0x0F] + HEX_CHARS[h0 & 0x0F] +
+		      HEX_CHARS[(h1 >>> 28) & 0x0F] + HEX_CHARS[(h1 >>> 24) & 0x0F] +
+		      HEX_CHARS[(h1 >>> 20) & 0x0F] + HEX_CHARS[(h1 >>> 16) & 0x0F] +
+		      HEX_CHARS[(h1 >>> 12) & 0x0F] + HEX_CHARS[(h1 >>> 8) & 0x0F] +
+		      HEX_CHARS[(h1 >>> 4) & 0x0F] + HEX_CHARS[h1 & 0x0F] +
+		      HEX_CHARS[(h2 >>> 28) & 0x0F] + HEX_CHARS[(h2 >>> 24) & 0x0F] +
+		      HEX_CHARS[(h2 >>> 20) & 0x0F] + HEX_CHARS[(h2 >>> 16) & 0x0F] +
+		      HEX_CHARS[(h2 >>> 12) & 0x0F] + HEX_CHARS[(h2 >>> 8) & 0x0F] +
+		      HEX_CHARS[(h2 >>> 4) & 0x0F] + HEX_CHARS[h2 & 0x0F] +
+		      HEX_CHARS[(h3 >>> 28) & 0x0F] + HEX_CHARS[(h3 >>> 24) & 0x0F] +
+		      HEX_CHARS[(h3 >>> 20) & 0x0F] + HEX_CHARS[(h3 >>> 16) & 0x0F] +
+		      HEX_CHARS[(h3 >>> 12) & 0x0F] + HEX_CHARS[(h3 >>> 8) & 0x0F] +
+		      HEX_CHARS[(h3 >>> 4) & 0x0F] + HEX_CHARS[h3 & 0x0F] +
+		      HEX_CHARS[(h4 >>> 28) & 0x0F] + HEX_CHARS[(h4 >>> 24) & 0x0F] +
+		      HEX_CHARS[(h4 >>> 20) & 0x0F] + HEX_CHARS[(h4 >>> 16) & 0x0F] +
+		      HEX_CHARS[(h4 >>> 12) & 0x0F] + HEX_CHARS[(h4 >>> 8) & 0x0F] +
+		      HEX_CHARS[(h4 >>> 4) & 0x0F] + HEX_CHARS[h4 & 0x0F] +
+		      HEX_CHARS[(h5 >>> 28) & 0x0F] + HEX_CHARS[(h5 >>> 24) & 0x0F] +
+		      HEX_CHARS[(h5 >>> 20) & 0x0F] + HEX_CHARS[(h5 >>> 16) & 0x0F] +
+		      HEX_CHARS[(h5 >>> 12) & 0x0F] + HEX_CHARS[(h5 >>> 8) & 0x0F] +
+		      HEX_CHARS[(h5 >>> 4) & 0x0F] + HEX_CHARS[h5 & 0x0F] +
+		      HEX_CHARS[(h6 >>> 28) & 0x0F] + HEX_CHARS[(h6 >>> 24) & 0x0F] +
+		      HEX_CHARS[(h6 >>> 20) & 0x0F] + HEX_CHARS[(h6 >>> 16) & 0x0F] +
+		      HEX_CHARS[(h6 >>> 12) & 0x0F] + HEX_CHARS[(h6 >>> 8) & 0x0F] +
+		      HEX_CHARS[(h6 >>> 4) & 0x0F] + HEX_CHARS[h6 & 0x0F];
 		    if (!this.is224) {
-		      hex += HEX_CHARS[(h7 >> 28) & 0x0F] + HEX_CHARS[(h7 >> 24) & 0x0F] +
-		        HEX_CHARS[(h7 >> 20) & 0x0F] + HEX_CHARS[(h7 >> 16) & 0x0F] +
-		        HEX_CHARS[(h7 >> 12) & 0x0F] + HEX_CHARS[(h7 >> 8) & 0x0F] +
-		        HEX_CHARS[(h7 >> 4) & 0x0F] + HEX_CHARS[h7 & 0x0F];
+		      hex += HEX_CHARS[(h7 >>> 28) & 0x0F] + HEX_CHARS[(h7 >>> 24) & 0x0F] +
+		        HEX_CHARS[(h7 >>> 20) & 0x0F] + HEX_CHARS[(h7 >>> 16) & 0x0F] +
+		        HEX_CHARS[(h7 >>> 12) & 0x0F] + HEX_CHARS[(h7 >>> 8) & 0x0F] +
+		        HEX_CHARS[(h7 >>> 4) & 0x0F] + HEX_CHARS[h7 & 0x0F];
 		    }
 		    return hex;
 		  };
@@ -578,16 +426,16 @@
 		      h6 = this.h6, h7 = this.h7;
 
 		    var arr = [
-		      (h0 >> 24) & 0xFF, (h0 >> 16) & 0xFF, (h0 >> 8) & 0xFF, h0 & 0xFF,
-		      (h1 >> 24) & 0xFF, (h1 >> 16) & 0xFF, (h1 >> 8) & 0xFF, h1 & 0xFF,
-		      (h2 >> 24) & 0xFF, (h2 >> 16) & 0xFF, (h2 >> 8) & 0xFF, h2 & 0xFF,
-		      (h3 >> 24) & 0xFF, (h3 >> 16) & 0xFF, (h3 >> 8) & 0xFF, h3 & 0xFF,
-		      (h4 >> 24) & 0xFF, (h4 >> 16) & 0xFF, (h4 >> 8) & 0xFF, h4 & 0xFF,
-		      (h5 >> 24) & 0xFF, (h5 >> 16) & 0xFF, (h5 >> 8) & 0xFF, h5 & 0xFF,
-		      (h6 >> 24) & 0xFF, (h6 >> 16) & 0xFF, (h6 >> 8) & 0xFF, h6 & 0xFF
+		      (h0 >>> 24) & 0xFF, (h0 >>> 16) & 0xFF, (h0 >>> 8) & 0xFF, h0 & 0xFF,
+		      (h1 >>> 24) & 0xFF, (h1 >>> 16) & 0xFF, (h1 >>> 8) & 0xFF, h1 & 0xFF,
+		      (h2 >>> 24) & 0xFF, (h2 >>> 16) & 0xFF, (h2 >>> 8) & 0xFF, h2 & 0xFF,
+		      (h3 >>> 24) & 0xFF, (h3 >>> 16) & 0xFF, (h3 >>> 8) & 0xFF, h3 & 0xFF,
+		      (h4 >>> 24) & 0xFF, (h4 >>> 16) & 0xFF, (h4 >>> 8) & 0xFF, h4 & 0xFF,
+		      (h5 >>> 24) & 0xFF, (h5 >>> 16) & 0xFF, (h5 >>> 8) & 0xFF, h5 & 0xFF,
+		      (h6 >>> 24) & 0xFF, (h6 >>> 16) & 0xFF, (h6 >>> 8) & 0xFF, h6 & 0xFF
 		    ];
 		    if (!this.is224) {
-		      arr.push((h7 >> 24) & 0xFF, (h7 >> 16) & 0xFF, (h7 >> 8) & 0xFF, h7 & 0xFF);
+		      arr.push((h7 >>> 24) & 0xFF, (h7 >>> 16) & 0xFF, (h7 >>> 8) & 0xFF, h7 & 0xFF);
 		    }
 		    return arr;
 		  };
@@ -621,17 +469,17 @@
 		        if (code < 0x80) {
 		          bytes[index++] = code;
 		        } else if (code < 0x800) {
-		          bytes[index++] = (0xc0 | (code >> 6));
+		          bytes[index++] = (0xc0 | (code >>> 6));
 		          bytes[index++] = (0x80 | (code & 0x3f));
 		        } else if (code < 0xd800 || code >= 0xe000) {
-		          bytes[index++] = (0xe0 | (code >> 12));
-		          bytes[index++] = (0x80 | ((code >> 6) & 0x3f));
+		          bytes[index++] = (0xe0 | (code >>> 12));
+		          bytes[index++] = (0x80 | ((code >>> 6) & 0x3f));
 		          bytes[index++] = (0x80 | (code & 0x3f));
 		        } else {
 		          code = 0x10000 + (((code & 0x3ff) << 10) | (key.charCodeAt(++i) & 0x3ff));
-		          bytes[index++] = (0xf0 | (code >> 18));
-		          bytes[index++] = (0x80 | ((code >> 12) & 0x3f));
-		          bytes[index++] = (0x80 | ((code >> 6) & 0x3f));
+		          bytes[index++] = (0xf0 | (code >>> 18));
+		          bytes[index++] = (0x80 | ((code >>> 12) & 0x3f));
+		          bytes[index++] = (0x80 | ((code >>> 6) & 0x3f));
 		          bytes[index++] = (0x80 | (code & 0x3f));
 		        }
 		      }
@@ -877,15 +725,23 @@
 
 	            if (initOptions.pkceMethod) {
 	                if (initOptions.pkceMethod !== "S256") {
-	                    throw 'Invalid value for pkceMethod';
+	                    throw new TypeError(`Invalid value for 'pkceMethod', expected 'S256' but got '${initOptions.pkceMethod}'.`);
 	                }
 	                kc.pkceMethod = initOptions.pkceMethod;
+	            } else {
+	                kc.pkceMethod = "S256";
 	            }
 
 	            if (typeof initOptions.enableLogging === 'boolean') {
 	                kc.enableLogging = initOptions.enableLogging;
 	            } else {
 	                kc.enableLogging = false;
+	            }
+
+	            if (initOptions.logoutMethod === 'POST') {
+	                kc.logoutMethod = 'POST';
+	            } else {
+	                kc.logoutMethod = 'GET';
 	            }
 
 	            if (typeof initOptions.scope === 'string') {
@@ -1111,19 +967,18 @@
 	    }
 
 	    function generatePkceChallenge(pkceMethod, codeVerifier) {
-	        switch (pkceMethod) {
-	            // The use of the "plain" method is considered insecure and therefore not supported.
-	            case "S256":
-	                // hash codeVerifier, then encode as url-safe base64 without padding
-	                var hashBytes = new Uint8Array(sha256.arrayBuffer(codeVerifier));
-	                var encodedHash = base64Js.fromByteArray(hashBytes)
-	                    .replace(/\+/g, '-')
-	                    .replace(/\//g, '_')
-	                    .replace(/\=/g, '');
-	                return encodedHash;
-	            default:
-	                throw 'Invalid value for pkceMethod';
+	        if (pkceMethod !== "S256") {
+	            throw new TypeError(`Invalid value for 'pkceMethod', expected 'S256' but got '${pkceMethod}'.`);
 	        }
+
+	        // hash codeVerifier, then encode as url-safe base64 without padding
+	        const hashBytes = new Uint8Array(sha256.arrayBuffer(codeVerifier));
+	        const encodedHash = bytesToBase64(hashBytes)
+	            .replace(/\+/g, '-')
+	            .replace(/\//g, '_')
+	            .replace(/\=/g, '');
+
+	        return encodedHash;
 	    }
 
 	    function buildClaimsParameter(requestedAcr){
@@ -1229,6 +1084,12 @@
 	    };
 
 	    kc.createLogoutUrl = function(options) {
+
+	        const logoutMethod = options?.logoutMethod ?? kc.logoutMethod;
+	        if (logoutMethod === 'POST') {
+	            return kc.endpoints.logout();
+	        }
+
 	        var url = kc.endpoints.logout()
 	            + '?client_id=' + encodeURIComponent(kc.clientId)
 	            + '&post_logout_redirect_uri=' + encodeURIComponent(adapter.redirectUri(options, false));
@@ -1532,10 +1393,7 @@
 
 	            setToken(accessToken, refreshToken, idToken, timeLocal);
 
-	            if (useNonce && ((kc.tokenParsed && kc.tokenParsed.nonce != oauth.storedNonce) ||
-	                (kc.refreshTokenParsed && kc.refreshTokenParsed.nonce != oauth.storedNonce) ||
-	                (kc.idTokenParsed && kc.idTokenParsed.nonce != oauth.storedNonce))) {
-
+	            if (useNonce && (kc.idTokenParsed && kc.idTokenParsed.nonce != oauth.storedNonce)) {
 	                logInfo('[KEYCLOAK] Invalid nonce, clearing token');
 	                kc.clearToken();
 	                promise && promise.setError();
@@ -2059,9 +1917,38 @@
 	                    return createPromise().promise;
 	                },
 
-	                logout: function(options) {
-	                    window.location.replace(kc.createLogoutUrl(options));
-	                    return createPromise().promise;
+	                logout: async function(options) {
+
+	                    const logoutMethod = options?.logoutMethod ?? kc.logoutMethod;
+	                    if (logoutMethod === "GET") {
+	                        window.location.replace(kc.createLogoutUrl(options));
+	                        return;
+	                    }
+
+	                    const logoutUrl = kc.createLogoutUrl(options);
+	                    const response = await fetch(logoutUrl, {
+	                        method: "POST",
+	                        headers: {
+	                            "Content-Type": "application/x-www-form-urlencoded"
+	                        },
+	                        body: new URLSearchParams({
+	                            id_token_hint: kc.idToken,
+	                            client_id: kc.clientId,
+	                            post_logout_redirect_uri: adapter.redirectUri(options, false)
+	                        })
+	                    });
+
+	                    if (response.redirected) {
+	                        window.location.href = response.url;
+	                        return;
+	                    }
+
+	                    if (response.ok) {
+	                        window.location.reload();
+	                        return;
+	                    }
+
+	                    throw new Error("Logout failed, request returned an error code.");
 	                },
 
 	                register: function(options) {
@@ -2451,6 +2338,12 @@
 	            }
 	        };
 	    }
+	}
+
+	// See: https://developer.mozilla.org/en-US/docs/Glossary/Base64#the_unicode_problem
+	function bytesToBase64(bytes) {
+	    const binString = String.fromCodePoint(...bytes);
+	    return btoa(binString);
 	}
 
 	return Keycloak;

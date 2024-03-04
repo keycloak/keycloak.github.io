@@ -232,9 +232,9 @@ Some packages have a large tree of dependencies. By installing new RPMs you may 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_building_the_docker_image">Building the docker image</h3>
+<h3 id="_building_the_container_image">Building the container image</h3>
 <div class="paragraph">
-<p>To build the actual docker image, run the following command from the directory containing your Dockerfile:</p>
+<p>To build the actual container image, run the following command from the directory containing your Dockerfile:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -243,7 +243,7 @@ Some packages have a large tree of dependencies. By installing new RPMs you may 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_starting_the_optimized_keycloak_docker_image">Starting the optimized Keycloak docker image</h3>
+<h3 id="_starting_the_optimized_keycloak_container_image">Starting the optimized Keycloak container image</h3>
 <div class="paragraph">
 <p>To start the image, run:</p>
 </div>
@@ -388,6 +388,34 @@ This approach significantly increases startup time and creates an image that is 
 </div>
 </div>
 <div class="sect1">
+<h2 id="_specifying_different_memory_settings">Specifying different memory settings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak container, instead of specifying hardcoded values for the initial and maximum heap size, uses relative values to the total memory of a container.
+This behavior is achieved by JVM options <code>-XX:MaxRAMPercentage=70</code>, and <code>-XX:InitialRAMPercentage=50</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>-XX:MaxRAMPercentage</code> option represents the maximum heap size as 70% of the total container memory.
+The <code>-XX:InitialRAMPercentage</code> option represents the initial heap size as 50% of the total container memory.
+These values were chosen based on a deeper analysis of Keycloak memory management.</p>
+</div>
+<div class="paragraph">
+<p>The JVM options related to the heap might be overridden by setting the environment variable <code>JAVA_OPTS_KC_HEAP</code>.
+You can find the default values of the <code>JAVA_OPTS_KC_HEAP</code> in the source code of the <code>kc.sh</code>, or <code>kc.bat</code> script.
+For example, you can specify the environment variable as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">podman|docker run --name mykeycloak -p 8080:8080 \
+        -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=change_me \
+        -e JAVA_OPTS_KC_HEAP="-XX:MaxHeapFreeRatio=30 -XX:MaxRAMPercentage=65" \
+        quay.io/keycloak/keycloak:latest \
+        start-dev</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_relevant_options">Relevant options</h2>
 <div class="sectionbody">
 <table class="tableblock frame-all grid-all stretch options">
@@ -488,7 +516,7 @@ This approach significantly increases startup time and creates an image that is 
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>account-api</code>, <code>account2</code>, <code>account3</code>, <code>admin-api</code>, <code>admin-fine-grained-authz</code>, <code>admin2</code>, <code>authorization</code>, <code>ciba</code>, <code>client-policies</code>, <code>client-secret-rotation</code>, <code>declarative-user-profile</code>, <code>device-flow</code>, <code>docker</code>, <code>dpop</code>, <code>dynamic-scopes</code>, <code>fips</code>, <code>impersonation</code>, <code>js-adapter</code>, <code>kerberos</code>, <code>linkedin-oauth</code>, <code>map-storage</code>, <code>multi-site</code>, <code>par</code>, <code>preview</code>, <code>recovery-codes</code>, <code>scripts</code>, <code>step-up-authentication</code>, <code>token-exchange</code>, <code>transient-users</code>, <code>update-email</code>, <code>web-authn</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>account-api[:v1]</code>, <code>account2[:v1]</code>, <code>account3[:v1]</code>, <code>admin-api[:v1]</code>, <code>admin-fine-grained-authz[:v1]</code>, <code>admin2[:v1]</code>, <code>authorization[:v1]</code>, <code>ciba[:v1]</code>, <code>client-policies[:v1]</code>, <code>client-secret-rotation[:v1]</code>, <code>client-types[:v1]</code>, <code>declarative-ui[:v1]</code>, <code>device-flow[:v1]</code>, <code>docker[:v1]</code>, <code>dpop[:v1]</code>, <code>dynamic-scopes[:v1]</code>, <code>fips[:v1]</code>, <code>hostname[:v1]</code>, <code>impersonation[:v1]</code>, <code>js-adapter[:v1]</code>, <code>kerberos[:v1]</code>, <code>linkedin-oauth[:v1]</code>, <code>login2[:v1]</code>, <code>multi-site[:v1]</code>, <code>offline-session-preloading[:v1]</code>, <code>oid4vc-vci[:v1]</code>, <code>par[:v1]</code>, <code>preview</code>, <code>recovery-codes[:v1]</code>, <code>scripts[:v1]</code>, <code>step-up-authentication[:v1]</code>, <code>token-exchange[:v1]</code>, <code>transient-users[:v1]</code>, <code>update-email[:v1]</code>, <code>web-authn[:v1]</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">

@@ -77,19 +77,6 @@
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-This guide is describing a feature which is currently in preview.
-Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/25269">joining this discussion</a> while we’re continuing to work on this.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>This section is intended when you want to understand the considerations and best practices on how to configure thread pools connection pools for Keycloak.
 For a configuration where this is applied, visit <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a>.</p>
@@ -102,26 +89,25 @@ For a configuration where this is applied, visit <a href="https://www.keycloak.o
 <div class="sect2">
 <h3 id="_quarkus_executor_pool">Quarkus executor pool</h3>
 <div class="paragraph">
-<p>Keycloak requests, as well as all probes, are handled by the Quarkus executor pool.</p>
+<p>Keycloak requests, as well as blocking probes, are handled by an executor pool. Depending on the available CPU cores, it has a maximum size of 200 or more threads.
+Threads are created as needed, and will end when no longer needed, so the system will scale up and down automatically.
+Keycloak allows configuring the maximum thread pool size by the <a href="https://www.keycloak.org/server/all-config?q=http-pool-max-threads"><code>http-pool-max-threads</code></a> configuration option. See <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a> for an example.</p>
 </div>
 <div class="paragraph">
-<p>The Quarkus executor thread pool is configured in <a href="https://quarkus.io/guides/all-config#quarkus-core_quarkus.thread-pool.max-threads"><code>quarkus.thread-pool.max-threads</code></a> and has a maximum size of at least 200 threads.
-Depending on the available CPU cores, it can grow even larger.
-Threads are created as needed, and will end when no longer needed, so the system will scale up and down as needed.</p>
-</div>
-<div class="paragraph">
-<p>When running on Kubernetes, adjust the number of worker threads to avoid creating more load than what the CPU limit for the Pod to avoid throttling, which would lead to congestion.
+<p>When running on Kubernetes, adjust the number of worker threads to avoid creating more load than what the CPU limit allows for the Pod to avoid throttling, which would lead to congestion.
 When running on physical machines, adjust the number of worker threads to avoid creating more load than the node can handle to avoid congestion.
 Congestion would result in longer response times and an increased memory usage, and eventually an unstable system.</p>
 </div>
 <div class="paragraph">
 <p>Ideally, you should start with a low limit of threads and adjust it accordingly to the target throughput and response time.
-When the load and the number of threads increases, the bottleneck will usually be the database connections.
-Once a request cannot acquire a database connection, it will fail with a message in the log like <code>Unable to acquire JDBC Connection</code>.
+When the load and the number of threads increases, the database connections can also become a bottleneck.
+Once a request cannot acquire a database connection within 5 seconds, it will fail with a message in the log like <code>Unable to acquire JDBC Connection</code>.
 The caller will receive a response with a 5xx HTTP status code indicating a server side error.</p>
 </div>
 <div class="paragraph">
-<p>With the number of threads in the executor pool being an order of magnitude larger than the number of database connections and with requests failing when no database connection is available within the <a href="https://quarkus.io/guides/all-config#quarkus-agroal_quarkus.datasource.jdbc.acquisition-timeout"><code>quarkus.datasource.jdbc.acquisition-timeout</code></a> (5 seconds default), this is somewhat of a <a href="https://en.wikipedia.org/wiki/Demand_response#Load_shedding">load-shedding behavior</a> where it returns an error response instead of queueing requests for an indefinite amount of time.</p>
+<p>If you increase the number of database connections and the number of threads too much, the system will be congested under a high load with requests queueing up, which leads to a bad performance.
+The number of database connections is configured via the <a href="https://www.keycloak.org/server/all-config?q=db-pool"><code>Database</code> settings <code>db-pool-initial-size</code>, <code>db-pool-min-size</code> and <code>db-pool-max-size</code></a> respectively.
+Low numbers ensure fast response times for all clients, even if there is an occasionally failing request when there is a load spike.</p>
 </div>
 </div>
 <div class="sect2">
@@ -133,9 +119,11 @@ To see the error the first time it happens, the system property <code>jgroups.th
 <div class="openblock">
 <div class="content">
 <div class="paragraph">
-<p>The number of JGroup threads is <code>200</code> by default, and can be configured using the property Java system property <code>jgroups.thread_pool.max_threads</code>.
-As shown in experiments, assuming a Keycloak cluster with 4 Pods, each Pod shouldn&#8217;t have more than 50 worker threads so that it doesn&#8217;t run out of threads in the JGroup thread pool of 200.
-Use the Quarkus configuration options <code>quarkus.thread-pool.max-threads</code> to configure the maximum number of worker threads.</p>
+<p>The number of JGroup threads is <code>200</code> by default.
+While it can be configured using the property Java system property <code>jgroups.thread_pool.max_threads</code>, we advise keeping it at this value.
+As shown in experiments, the total number of Quarkus worker threads in the cluster must not exceed the number of threads in the JGroup thread pool of 200 in each node to avoid deadlocks in the JGroups communication.
+Given a Keycloak cluster with four Pods, each Pod should then have 50 Quarkus worker threads.
+Use the Keycloak configuration option <code>http-pool-max-threads</code> to configure the maximum number of Quarkus worker threads.</p>
 </div>
 </div>
 </div>
@@ -152,7 +140,7 @@ This will use additional memory in the Pod, can exhaust resources in the load ba
 To limit the number of queued requests in Keycloak, set an additional Quarkus configuration option.</p>
 </div>
 <div class="paragraph">
-<p>Configure <code>quarkus.thread-pool.queue-size</code> to specify a maximum queue length to allow for effective load shedding once this queue size is exceeded.
+<p>Configure <code>http-max-queued-requests</code> to specify a maximum queue length to allow for effective load shedding once this queue size is exceeded.
 Assuming a Keycloak Pod processes around 200 requests per second, a queue of 1000 would lead to maximum waiting times of around 5 seconds.</p>
 </div>
 <div class="paragraph">
@@ -163,9 +151,11 @@ Keycloak logs the error message in its log.</p>
 <div class="sect2">
 <h3 id="probes">Probes</h3>
 <div class="paragraph">
-<p>All health probes are handled in the Quarkus executor worker pool by default.
-Only the liveness probe is non-blocking.
-Future version of Keycloak and Quarkus plan to have other probes also being non-blocking.</p>
+<p>Keycloak&#8217;s liveness probe is non-blocking to avoid a restart of a Pod under a high load.</p>
+</div>
+<div class="paragraph">
+<p>The overall health probe and the readiness can probe in some cases block to check the connection to the database, so they might fail under a high load.
+Due to this, a Pod can become non-ready under a high load.</p>
 </div>
 </div>
 <div class="sect2">

@@ -127,6 +127,11 @@
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">15</p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Amazon Aurora PostgreSQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">15.3</p></td>
+</tr>
 </tbody>
 </table>
 <div class="paragraph">
@@ -357,6 +362,69 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 </div>
 </div>
 <div class="sect1">
+<h2 id="preparing-keycloak-for-amazon-aurora-postgresql">Preparing for Amazon Aurora PostgreSQL</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When using Amazon Aurora PostgreSQL, the <a href="https://github.com/awslabs/aws-advanced-jdbc-wrapper">Amazon Web Services JDBC Driver</a> offers additional features like transfer of database connections when a writer instance changes in a Multi-AZ setup.
+This driver is not part of the distribution and needs to be installed before it can be used.</p>
+</div>
+<div class="paragraph">
+<p>To install this driver, apply the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>When running the unzipped distribution: Download the JAR file from the <a href="https://github.com/awslabs/aws-advanced-jdbc-wrapper/releases/">Amazon Web Services JDBC Driver releases page</a> and place it in Keycloak&#8217;s <code>providers</code> folder.</p>
+</li>
+<li>
+<p>When running containers: Build a custom Keycloak image and add the JAR in the <code>providers</code> folder.</p>
+<div class="paragraph">
+<p>A minimal Dockerfile to build an image which can be used with the Keycloak Operator looks like the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">FROM quay.io/keycloak/keycloak:latest
+ADD --chmod=0666 https://github.com/awslabs/aws-advanced-jdbc-wrapper/releases/download/2.3.1/aws-advanced-jdbc-wrapper-2.3.1.jar /opt/keycloak/providers/aws-advanced-jdbc-wrapper.jar</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/server/containers">Running Keycloak in a container</a> guide for details on how to build optimized images, and the <a href="https://www.keycloak.org/operator/customizing-keycloak">Using custom Keycloak images</a> guide on how to run optimized and non-optimized images with the Keycloak Operator.</p>
+</div>
+</li>
+<li>
+<p>Configure Keycloak to run with the following parameters:</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>db-url</code></dt>
+<dd>
+<p>Insert <code>aws-wrapper</code> to the regular PostgreSQL JDBC URL resulting in a URL like <code>jdbc:aws-wrapper:postgresql://...</code>.</p>
+</dd>
+<dt class="hdlist1"><code>db-driver</code></dt>
+<dd>
+<p>Set to <code>software.amazon.jdbc.Driver</code> to use the AWS JDBC wrapper.</p>
+</dd>
+<dt class="hdlist1"><code>transaction-xa-enabled</code></dt>
+<dd>
+<p>Set to <code>false</code>, as the Amazon Web Services JDBC Driver does not support XA transactions.</p>
+</dd>
+</dl>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_preparing_for_mysql_server">Preparing for MySQL server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Beginning with MySQL 8.0.30, MySQL supports generated invisible primary keys for any InnoDB table that is created without an explicit primary key (more information <a href="https://dev.mysql.com/doc/refman/8.0/en/create-table-gipks.html">here</a>).
+If this feature is enabled, the database schema initialization and also migrations will fail with the error message <code>Multiple primary key defined (1068)</code>.
+You then need to disable it by setting the parameter <code>sql_generate_invisible_primary_key</code> to <code>OFF</code> in your MySQL server configuration before installing or upgrading Keycloak.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_changing_database_locking_timeout_in_a_cluster_configuration">Changing database locking timeout in a cluster configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -397,7 +465,7 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 <div class="listingblock">
 <div class="title">Setting the <code>migration-strategy</code> for the <code>quarkus</code> provider of the <code>connections-jpa</code> SPI</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-jpa-legacy-migration-strategy=manual</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-jpa-quarkus-migration-strategy=manual</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -406,7 +474,7 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 <div class="listingblock">
 <div class="title">Setting the <code>initialize-empty</code> for the <code>quarkus</code> provider of the <code>connections-jpa</code> SPI</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-jpa-legacy-initialize-empty=false</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-jpa-quarkus-initialize-empty=false</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -415,7 +483,7 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 <div class="listingblock">
 <div class="title">Setting the <code>migration-export</code> for the <code>quarkus</code> provider of the <code>connections-jpa</code> SPI</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-jpa-legacy-migration-export=&lt;path&gt;/&lt;file.sql&gt;</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-jpa-quarkus-migration-export=&lt;path&gt;/&lt;file.sql&gt;</code></pre>
 </div>
 </div>
 </div>
@@ -454,7 +522,7 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>db-driver</code></span></p>
+<p><span class="options-key"><code>db-driver</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
 </div>
 <div class="paragraph">
 <p><span class="options-description">The fully qualified class name of the JDBC driver.</span></p>
