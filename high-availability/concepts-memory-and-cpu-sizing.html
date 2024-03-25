@@ -145,9 +145,9 @@ Memory requirements increase with the number of client sessions per user session
 To calculate the requested memory, use the calculation above. As memory limit, subtract the non-heap memory from the value above and divide the result by 0.7.</p>
 </li>
 <li>
-<p>For each 30 user logins per second, 1 vCPU per Pod in a three-node cluster (tested with up to 300 per second).</p>
+<p>For each 8 password-based user logins per second, 1 vCPU per Pod in a three-node cluster (tested with up to 300 per second).</p>
 <div class="paragraph">
-<p>Keycloak spends most of the CPU time hashing the password provided by the user.</p>
+<p>Keycloak spends most of the CPU time hashing the password provided by the user, and it is proportional to the number of hash iterations.</p>
 </div>
 </li>
 <li>
@@ -177,7 +177,7 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <p>50,000 active user sessions</p>
 </li>
 <li>
-<p>30 logins per seconds</p>
+<p>24 logins per seconds</p>
 </li>
 <li>
 <p>450 client credential grants per second</p>
@@ -193,15 +193,15 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <div class="ulist">
 <ul>
 <li>
-<p>CPU requested: 3 vCPU</p>
+<p>CPU requested: 5 vCPU</p>
 <div class="paragraph">
-<p>(30 logins per second = 1 vCPU, 450 client credential grants per second = 1 vCPU, 350 refresh token = 1 vCPU)</p>
+<p>(24 logins per second = 3 vCPU, 450 client credential grants per second = 1 vCPU, 350 refresh token = 1 vCPU)</p>
 </div>
 </li>
 <li>
-<p>CPU limit: 9 vCPU</p>
+<p>CPU limit: 15 vCPU</p>
 <div class="paragraph">
-<p>(Allow for three times the CPU requested to handle peaks, startups and failover tasks, and also refresh token handling which we don&#8217;t have numbers on, yet)</p>
+<p>(Allow for three times the CPU requested to handle peaks, startups and failover tasks)</p>
 </div>
 </li>
 <li>
@@ -211,7 +211,7 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 </div>
 </li>
 <li>
-<p>Memory limit: 1360 GB</p>
+<p>Memory limit: 1360 MB</p>
 <div class="paragraph">
 <p>(1250 MB expected memory usage minus 300 non-heap-usage, divided by 0.7)</p>
 </div>
@@ -236,31 +236,28 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <p>Machinepool with <code>m5.4xlarge</code> instances.</p>
 </li>
 <li>
-<p>Keycloak deployed with the Operator and 3 pods.</p>
-</li>
-<li>
-<p>Default user password hashing with PBKDF2(SHA512) 210,000 hash iterations (which is the default).</p>
-</li>
-<li>
-<p>Client credential grants don&#8217;t use refresh tokens (which is the default).</p>
-</li>
-<li>
-<p>Database seeded with 100,000 users and 100,000 clients.</p>
-</li>
-<li>
-<p>Infinispan caches at default of 10,000 entries, so not all clients and users fit into the cache, and some requests will need to fetch the data from the database.</p>
-</li>
-<li>
-<p>All sessions in distributed caches as per default, with two owners per entries, allowing one failing Pod without losing data.</p>
+<p>Keycloak deployed with the Operator and 3 pods in a high-availability setup with two sites in active/passive mode.</p>
 </li>
 <li>
 <p>OpenShift&#8217;s reverse proxy running in passthrough mode were the TLS connection of the client is terminated at the Pod.</p>
 </li>
 <li>
-<p>PostgreSQL deployed inside the same OpenShift with ephemeral storage.</p>
-<div class="paragraph">
-<p>Using a database with persistent storage will have longer database latencies, which might lead to longer response times; still, the throughput should be similar.</p>
-</div>
+<p>Database Amazon Aurora PostgreSQL in a multi-AZ setup, with the writer instance in the availability zone of the primary site.</p>
+</li>
+<li>
+<p>Default user password hashing with PBKDF2(SHA512) 210,000 hash iterations which is the default <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2">as recommended by OWASP</a>.</p>
+</li>
+<li>
+<p>Client credential grants don&#8217;t use refresh tokens (which is the default).</p>
+</li>
+<li>
+<p>Database seeded with 20,000 users and 20,000 clients.</p>
+</li>
+<li>
+<p>Infinispan local caches at default of 10,000 entries, so not all clients and users fit into the cache, and some requests will need to fetch the data from the database.</p>
+</li>
+<li>
+<p>All sessions in distributed caches as per default, with two owners per entries, allowing one failing Pod without losing data.</p>
 </li>
 </ul>
 </div>
