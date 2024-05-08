@@ -84,6 +84,17 @@
 </div>
 </div>
 <div class="sect1">
+<h2 id="_architecture">Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This connects Keycloak to Infinispan using TCP connections secured by TLS 1.3.
+It uses the Keycloak&#8217;s truststore to verify Infinispan&#8217;s server certificate.
+As Keycloak is deployed using its Operator on OpenShift in the prerequisites listed below, the Operator already added the <code>service-ca.crt</code> to the truststore which is used to sign Infinispan&#8217;s server certificates.
+In other environments, add the necessary certificates to Keycloak&#8217;s truststore.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_prerequisites">Prerequisites</h2>
 <div class="sectionbody">
 <div class="ulist">
@@ -103,123 +114,6 @@
 <div class="sectionbody">
 <div class="olist arabic">
 <ol class="arabic">
-<li>
-<p>Prepare an Infinispan Cache configuration XML from the file <code>cache-ispn.xml</code> which is part of the Keycloak distribution:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>For each <code>distributed-cache</code> entry, add the tags <code>&lt;persistence /&gt;</code> as shown following.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-xml" data-lang="xml">&lt;distributed-cache name="sessions" owners="2" statistics="true"&gt;
-    &lt;expiration lifespan="-1"/&gt;
-    &lt;persistence passivation="false"&gt; <i class="conum" data-value="1"></i><b>(1)</b>
-        &lt;remote-store xmlns="urn:infinispan:config:store:remote:14.0"
-                      cache="sessions"
-                      raw-values="true"
-                      shared="true"
-                      segmented="false"&gt;
-            &lt;remote-server host="${env.KC_REMOTE_STORE_HOST}"
-                           port="${env.KC_REMOTE_STORE_PORT}"/&gt; <i class="conum" data-value="2"></i><b>(2)</b>
-            &lt;connection-pool max-active="16"
-                             exhausted-action="CREATE_NEW"/&gt;
-            &lt;security&gt;
-                &lt;authentication server-name="infinispan"&gt;
-                    &lt;digest username="${env.KC_REMOTE_STORE_USERNAME}"
-                            password="${env.KC_REMOTE_STORE_PASSWORD}"
-                            realm="default"/&gt; <i class="conum" data-value="3"></i><b>(3)</b>
-                &lt;/authentication&gt;
-                &lt;encryption protocol="TLSv1.3"
-                            sni-hostname="${env.KC_REMOTE_STORE_HOST}"&gt;
-                    &lt;truststore filename="/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-                                type="pem"/&gt; <i class="conum" data-value="4"></i><b>(4)</b>
-                &lt;/encryption&gt;
-            &lt;/security&gt;
-        &lt;/remote-store&gt;
-    &lt;/persistence&gt;
-&lt;/distributed-cache&gt;</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>New tag <code>&lt;persistence /&gt;</code> to connect it to the remote store.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>For the address to the remote store, reference two environment variables for host name and port number.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>For authentication, reference two environment variables for username and password.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>To secure the remote store connection, use the Kubernetes mechanisms of the pre-configured truststore.</td>
-</tr>
-</table>
-</div>
-</li>
-<li>
-<p>Prepare an Infinispan Cache configuration XML from the file <code>cache-ispn.xml</code>, which is part of the Keycloak distribution.
-For each <code>replicated-cache</code> entry, add the tag <code>&lt;persistence /&gt;</code> as shown below.
-For additional information on the infinispan configuration options, see the <a href="https://docs.jboss.org/infinispan/14.0/configdocs/infinispan-config-14.0.html">infinispan configuration schema reference</a>.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-xml" data-lang="xml">&lt;replicated-cache name="work" statistics="true"&gt;
-    &lt;expiration lifespan="-1"/&gt;
-    &lt;persistence passivation="false"&gt;
-        &lt;remote-store xmlns="urn:infinispan:config:store:remote:14.0"
-                      cache="work"
-                      raw-values="true"
-                      shared="true"
-                      segmented="false"&gt;
-            &lt;remote-server host="${env.KC_REMOTE_STORE_HOST}"
-                           port="${env.KC_REMOTE_STORE_PORT}"/&gt;
-            &lt;connection-pool max-active="16"
-                             exhausted-action="CREATE_NEW"/&gt;
-            &lt;security&gt;
-                &lt;authentication server-name="infinispan"&gt;
-                    &lt;digest username="${env.KC_REMOTE_STORE_USERNAME}"
-                            password="${env.KC_REMOTE_STORE_PASSWORD}"
-                            realm="default"/&gt;
-                &lt;/authentication&gt;
-                &lt;encryption protocol="TLSv1.3" sni-hostname="${env.KC_REMOTE_STORE_HOST}"&gt;
-                    &lt;truststore filename="/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-                                type="pem"/&gt;
-                &lt;/encryption&gt;
-            &lt;/security&gt;
-        &lt;/remote-store&gt;
-    &lt;/persistence&gt;
-&lt;/replicated-cache&gt;</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Place the Infinispan Cache configuration XML in a ConfigMap.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kcb-infinispan-cache-config
-  namespace: keycloak
-data:
-  kcb-infinispan-cache-remote-store-config.xml: |
-    &lt;?xml version="1.0" encoding="UTF-8"?&gt;
-    &lt;infinispan
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="urn:infinispan:config:14.0 https://www.infinispan.org/schemas/infinispan-config-14.0.xsd
-                urn:infinispan:config:store:remote:14.0 https://www.infinispan.org/schemas/infinispan-cachestore-remote-config-14.0.xsd"
-            xmlns="urn:infinispan:config:14.0"&gt;
-...</code></pre>
-</div>
-</div>
-</li>
 <li>
 <p>Create a Secret with the username and password to connect to the external Infinispan deployment:</p>
 <div class="listingblock">
@@ -245,17 +139,9 @@ data:
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<div class="ulist">
-<ul>
-<li>
-<p>The new <code>additionalOptions</code> entries starting with <code>remote-store</code> used here are not official Keycloak configurations.
-Instead, they provide their values to environment variables that are then referenced in the Infinispan XML configuration.</p>
-</li>
-<li>
+<div class="paragraph">
 <p>All the memory, resource and database configurations are skipped from the CR below as they have been described in <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a> guide already.
 Administrators should leave those configurations untouched.</p>
-</li>
-</ul>
 </div>
 </td>
 </tr>
@@ -271,24 +157,20 @@ metadata:
   name: keycloak
   namespace: keycloak
 spec:
-  cache:
-    configMapFile:
-      name: kcb-infinispan-cache-config <i class="conum" data-value="1"></i><b>(1)</b>
-      key: kcb-infinispan-cache-remote-store-config.xml <i class="conum" data-value="1"></i><b>(1)</b>
   additionalOptions:
-    - name: remote-store-host <i class="conum" data-value="2"></i><b>(2)</b>
+    - name: cache-remote-host <i class="conum" data-value="1"></i><b>(1)</b>
       value: "infinispan.keycloak.svc"
-    - name: remote-store-port <i class="conum" data-value="2"></i><b>(2)</b>
+    - name: cache-remote-port <i class="conum" data-value="2"></i><b>(2)</b>
       value: "11222"
-    - name: remote-store-username <i class="conum" data-value="3"></i><b>(3)</b>
+    - name: cache-remote-username <i class="conum" data-value="3"></i><b>(3)</b>
       secret:
         name: remote-store-secret
         key: username
-    - name: remote-store-password <i class="conum" data-value="3"></i><b>(3)</b>
+    - name: cache-remote-password <i class="conum" data-value="4"></i><b>(4)</b>
       secret:
         name: remote-store-secret
         key: password
-    - name: spi-connections-infinispan-quarkus-site-name <i class="conum" data-value="4"></i><b>(4)</b>
+    - name: spi-connections-infinispan-quarkus-site-name <i class="conum" data-value="5"></i><b>(5)</b>
       value: keycloak</code></pre>
 </div>
 </div>
@@ -296,20 +178,25 @@ spec:
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The <code>name</code> and <code>key</code> of the ConfigMap with the Infinispan Cache configuration XML created in the previous step.</td>
+<td>The hostname of the remote Infinispan cluster.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>The hostname and port of the remote cache Infinispan cluster.</td>
+<td>The port of the remote Infinispan cluster.
+This is optional and it default to <code>11222</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The credentials required, username and password, to access the remote cache Infinispan cluster.</td>
+<td>The Secret <code>name</code> and <code>key</code> with the Infinispan username credential.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>The <code>spi-connections-infinispan-quarkus-site-name</code> is an arbitrary Infinispan site name which Keycloak needs for its embedded Infinispan deployment when a remote store is used.
-This site-name is related only to the embedded Infinispan and does not need to match any value from the external Infinispan deployment.
+<td>The Secret <code>name</code> and <code>key</code> with the Infinispan password credential.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The <code>spi-connections-infinispan-quarkus-site-name</code> is an arbitrary Infinispan site name which Keycloak needs for its Infinispan caches deployment when a remote store is used.
+This site-name is related only to the Infinispan caches and does not need to match any value from the external Infinispan deployment.
 If you are using multiple sites for Keycloak in a cross-DC setup such as <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploy Infinispan for HA with the Infinispan Operator</a>, the site name must be different in each site.</td>
 </tr>
 </table>
@@ -317,6 +204,105 @@ If you are using multiple sites for Keycloak in a cross-DC setup such as <a href
 </li>
 </ol>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-host</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The hostname of the remote server for the remote store configuration.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>host</code> attribute of <code>remote-server</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-username</code> and <code>cache-remote-password</code> are required as well and the related configuration in XML file should not be present.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-host</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_HOST</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password for the authentication to the remote server for the remote store.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>password</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-host</code> and <code>cache-remote-username</code> are required as well and the related configuration in XML file should not be present.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-password</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The port of the remote server for the remote store configuration.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>port</code> attribute of <code>remote-server</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.).</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PORT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>11222</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-username</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The username for the authentication to the remote server for the remote store.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>username</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-host</code> and <code>cache-remote-password</code> are required as well and the related configuration in XML file should not be present.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-username</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_USERNAME</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>            </div>
         </div>
