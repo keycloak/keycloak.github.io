@@ -128,18 +128,86 @@
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">15</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Amazon Aurora PostgreSQL</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">15.3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16.1</p></td>
 </tr>
 </tbody>
 </table>
 <div class="paragraph">
 <p>By default, the server uses the <code>dev-file</code> database. This is the default database that the server will use to persist data and
 only exists for development use-cases. The <code>dev-file</code> database is not suitable for production use-cases, and must be replaced before deploying to production.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_installing_a_database_driver">Installing a database driver</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Database drivers are shipped as part of Keycloak except for the Oracle Databaseifeval::[false == true]
+ and Microsoft SQL Server driversendif::[]
+.</p>
+</div>
+<div class="paragraph">
+<p>Install the necessary missing driver manually if you want to connect to one of these databases or skip this section if you want to connect to a different database for which the database driver is already included.</p>
+</div>
+<div class="sect2">
+<h3 id="_installing_the_oracle_database_driver">Installing the Oracle Database driver</h3>
+<div class="paragraph">
+<p>To install the Oracle Database driver for Keycloak:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Download the <code>ojdbc11</code> and <code>orai18n</code> JAR files from one of the following sources:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p><strong>Zipped JDBC driver and Companion Jars</strong> version 23.3.0.23.09 from the <a href="https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html">Oracle driver download page</a>.</p>
+</li>
+<li>
+<p>Maven Central via <code><a href="https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/23.3.0.23.09/ojdbc11-23.3.0.23.09.jar">ojdbc11</a></code> and <code><a href="https://repo1.maven.org/maven2/com/oracle/database/nls/orai18n/23.3.0.23.09/orai18n-23.3.0.23.09.jar">orai18n</a></code>.</p>
+</li>
+<li>
+<p>Installation media recommended by the database vendor for the specific database in use.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>When running the unzipped distribution: Place the <code>ojdbc11</code> and <code>orai18n</code> JAR files in Keycloak&#8217;s <code>providers</code> folder</p>
+</li>
+<li>
+<p>When running containers: Build a custom Keycloak image and add the JARs in the <code>providers</code> folder. When building a custom image for the Operator, those images need to be optimized images with all build-time options of Keycloak set.</p>
+<div class="paragraph">
+<p>A minimal Dockerfile to build an image which can be used with the Keycloak Operator and includes Oracle Database JDBC drivers downloaded from Maven Central looks like the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">FROM quay.io/keycloak/keycloak:latest
+ADD --chown=keycloak:keycloak --chmod=644 https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/23.3.0.23.09/ojdbc11-23.3.0.23.09.jar /opt/keycloak/providers/ojdbc11.jar
+ADD --chown=keycloak:keycloak --chmod=644 https://repo1.maven.org/maven2/com/oracle/database/nls/orai18n/23.3.0.23.09/orai18n-23.3.0.23.09.jar /opt/keycloak/providers/orai18n.jar
+# Setting the build parameter for the database:
+ENV KC_DB=oracle
+# Add all other build parameters needed, for example enable health and metrics:
+ENV KC_HEALTH_ENABLED=true
+ENV KC_METRICS_ENABLED=true
+# To be able to use the image with the Keycloak Operator, it needs to be optimized, which requires Keycloak's build step:
+RUN /opt/keycloak/bin/kc.sh build</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/server/containers">Running Keycloak in a container</a> guide for details on how to build optimized images.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Then continue configuring the database as described in the next section.</p>
+</div>
 </div>
 </div>
 </div>
@@ -406,10 +474,6 @@ ADD --chmod=0666 https://github.com/awslabs/aws-advanced-jdbc-wrapper/releases/d
 <dd>
 <p>Set to <code>software.amazon.jdbc.Driver</code> to use the AWS JDBC wrapper.</p>
 </dd>
-<dt class="hdlist1"><code>transaction-xa-enabled</code></dt>
-<dd>
-<p>Set to <code>false</code>, as the Amazon Web Services JDBC Driver does not support XA transactions.</p>
-</dd>
 </dl>
 </div>
 </li>
@@ -444,18 +508,48 @@ You then need to disable it by setting the parameter <code>sql_generate_invisibl
 </div>
 </div>
 <div class="sect1">
-<h2 id="_using_database_vendors_without_xa_transaction_support">Using Database Vendors without XA transaction support</h2>
+<h2 id="_using_database_vendors_with_xa_transaction_support">Using Database Vendors with XA transaction support</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak uses XA transactions and the appropriate database drivers by default. Certain vendors, such as Azure SQL and MariaDB Galera, do not support or rely on the XA transaction mechanism. To use Keycloak without XA transaction support using the appropriate JDBC driver, enter the following command:</p>
+<p>Keycloak uses non-XA transactions and the appropriate database drivers by default.</p>
+</div>
+<div class="paragraph">
+<p>If you wish to use the XA transaction support offered by your driver, enter the following command:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --db=&lt;vendor&gt; --transaction-xa-enabled=false</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --db=&lt;vendor&gt; --transaction-xa-enabled=true</code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>Keycloak automatically chooses the appropriate JDBC driver for your vendor.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Certain vendors, such as Azure SQL and MariaDB Galera, do not support or rely on the XA transaction mechanism.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>XA recovery defaults to enabled and will use the file system location <code>KEYCLOAK_HOME/data/transaction-logs</code> to store transaction logs.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Enabling XA transactions in a containerized environment does not fully support XA recovery unless stable storage is available at that path.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -750,7 +844,7 @@ You then need to disable it by setting the parameter <code>sql_generate_invisibl
 <p><span class="options-key"><code>transaction-xa-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">If set to false, Keycloak uses a non-XA datasource in case the database does not support XA transactions.</span></p>
+<p><span class="options-description">If set to true, XA datasources will be used.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
@@ -760,7 +854,7 @@ You then need to disable it by setting the parameter <code>sql_generate_invisibl
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
 </tr>
 </tbody>
 </table>

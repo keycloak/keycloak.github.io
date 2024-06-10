@@ -96,6 +96,9 @@
 <p>file</p>
 </li>
 <li>
+<p>Syslog</p>
+</li>
+<li>
 <p>GELF</p>
 </li>
 </ul>
@@ -244,7 +247,7 @@
 </div>
 <div class="paragraph">
 <p>The available handlers are
-<code>console</code>, <code>file</code> and <code>gelf</code>.
+<code>console</code>, <code>file</code>, <code>syslog</code> and <code>gelf</code>.
 The more specific handler configuration mentioned below will only take effect when the handler is added to this comma-separated list.</p>
 </div>
 </div>
@@ -436,9 +439,9 @@ The more specific handler configuration mentioned below will only take effect wh
 </div>
 </div>
 <div class="listingblock">
-<div class="title">Example Log Message:</div>
+<div class="title">Example Log Message</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">2022-03-02 10:36:50,603 INFO  [io.quarkus] (main) Keycloak 18.0.0-SNAPSHOT on JVM (powered by Quarkus 2.7.2.Final) started in 3.615s. Listening on: http://0.0.0.0:8080</code></pre>
+<pre class="highlight"><code>2022-03-02 10:36:50,603 INFO  [io.quarkus] (main) Keycloak 18.0.0-SNAPSHOT on JVM (powered by Quarkus 2.7.2.Final) started in 3.615s. Listening on: http://0.0.0.0:8080</code></pre>
 </div>
 </div>
 </div>
@@ -516,6 +519,127 @@ The more specific handler configuration mentioned below will only take effect wh
 </div>
 </div>
 <div class="sect1">
+<h2 id="_centralized_logging_using_syslog">Centralized logging using Syslog</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides the ability to send logs to a remote Syslog server.
+It utilizes the protocol defined in <a href="https://datatracker.ietf.org/doc/html/rfc5424">RFC 5424</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="_enable_the_syslog_handler">Enable the Syslog handler</h3>
+<div class="paragraph">
+<p>To enable logging using Syslog, add it to the list of activated log handlers as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_endpoint">Configuring the Syslog endpoint</h3>
+<div class="paragraph">
+<p>To configure the endpoint(<em>host:port</em>) of your centralized logging system, enter the following command and substitute the values with your specific values:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog" --log-syslog-endpoint=myhost:12345</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the Syslog handler is enabled, the host is using <code>localhost</code> as host value.
+The Default port is <code>514</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_protocol">Configuring the Syslog protocol</h3>
+<div class="paragraph">
+<p>Syslog uses TCP as the default protocol for communication.
+To use UDP instead of TCP, add the <code>--log-syslog-protocol</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog" --log-syslog-protocol=udp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The available protocols are: <code>tpc</code>, <code>udp</code>, and <code>ssl-tcp</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_log_format">Configuring the Syslog log format</h3>
+<div class="paragraph">
+<p>To set the logging format for a logged line, perform these steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Build your desired format template using the preceding table.</p>
+</li>
+<li>
+<p>Enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-format="'&lt;format&gt;'"</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Note that you need to escape characters when invoking commands containing special shell characters such as <code>;</code> using the CLI. Therefore, consider setting it in the configuration file instead.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Abbreviate the fully qualified category name</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-format="'%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n'"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This example abbreviates the category name to three characters by setting <code>[%c{3.}]</code> in the template instead of the default <code>[%c]</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_structured_output">Configuring the Syslog structured output</h3>
+<div class="paragraph">
+<p>By default, the Syslog log handler sends plain unstructured data to the Syslog server.
+To use structured JSON log output instead, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-output=json</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example Log Message</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">2024-04-05T12:32:20.616+02:00 mabartos keycloak 2788276 io.quarkus - {"timestamp":"2024-04-05T12:32:20.616208533+02:00","sequence":9948,"loggerClassName":"org.jboss.logging.Logger","loggerName":"io.quarkus","level":"INFO","message":"Profile prod activated. ","threadName":"main","threadId":1,"mdc":{},"ndc":"","hostName":"host","processName":"QuarkusEntryPoint","processId":2788276}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When using JSON output, colors are disabled and the format settings set by <code>--log-syslog-format</code> will not apply.</p>
+</div>
+<div class="paragraph">
+<p>To use unstructured logging, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-output=default</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example Log Message</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">2024-04-05T12:31:38.473+02:00 mabartos keycloak 2787568 io.quarkus - 2024-04-05 12:31:38,473 INFO  [io.quarkus] (main) Profile prod activated.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, the timestamp is present twice, so you can amend it correspondingly via the <code>--log-syslog-format</code> property.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_centralized_logging_using_gelf">Centralized logging using GELF</h2>
 <div class="sectionbody">
 <div class="admonitionblock note">
@@ -526,6 +650,7 @@ The more specific handler configuration mentioned below will only take effect wh
 </td>
 <td class="content">
 The support for GELF log handler is deprecated and will be removed in a future Keycloak release.
+The recommended alternative is using the Syslog log handler described above.
 </td>
 </tr>
 </table>
@@ -564,10 +689,10 @@ The support for GELF log handler is deprecated and will be removed in a future K
 <div class="sect2">
 <h3 id="_configuring_the_gelf_handler">Configuring the GELF handler</h3>
 <div class="paragraph">
-<p>To configure the Host and Port of your centralized logging system, enter the following command and substitute the values with your specific values:
-.Host and port of the GELF server:</p>
+<p>To configure the Host and Port of your centralized logging system, enter the following command and substitute the values with your specific values:</p>
 </div>
 <div class="listingblock">
+<div class="title">Host and port of the GELF server:</div>
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,gelf" --log-gelf-host=myhost --log-gelf-port=12345</code></pre>
 </div>
@@ -1025,7 +1150,7 @@ log-gelf-level=warn
 <p>GELF log handler has been deprecated.
 <strong>Deprecated values: <code>gelf</code></strong></p>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>console</code>, <code>file</code>, <code>gelf</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>console</code>, <code>file</code>, <code>syslog</code>, <code>gelf</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1041,6 +1166,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_CONSOLE_COLOR</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
 </tr>
@@ -1061,6 +1189,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_CONSOLE_FORMAT</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></span> (default)</p></td>
 </tr>
@@ -1078,6 +1209,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_CONSOLE_OUTPUT</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>json</code></p></td>
 </tr>
@@ -1095,6 +1229,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_FILE</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>data/log/keycloak.log</code></span> (default)</p></td>
 </tr>
@@ -1112,6 +1249,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_FILE_FORMAT</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></span> (default)</p></td>
 </tr>
@@ -1129,6 +1269,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_FILE_OUTPUT</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>json</code></p></td>
 </tr>
@@ -1146,6 +1289,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_GELF_FACILITY</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when GELF is activated</p>
 </div>
 <div class="paragraph">
 <p><strong>DEPRECATED.</strong></p>
@@ -1171,6 +1317,9 @@ log-gelf-level=warn
 </div>
 </div>
 <div class="paragraph">
+<p>Available only when GELF is activated</p>
+</div>
+<div class="paragraph">
 <p><strong>DEPRECATED.</strong></p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>localhost</code></span> (default)</p></td>
@@ -1189,6 +1338,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_GELF_INCLUDE_LOCATION</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when GELF is activated</p>
 </div>
 <div class="paragraph">
 <p><strong>DEPRECATED.</strong></p>
@@ -1211,6 +1363,9 @@ log-gelf-level=warn
 </div>
 </div>
 <div class="paragraph">
+<p>Available only when GELF is activated</p>
+</div>
+<div class="paragraph">
 <p><strong>DEPRECATED.</strong></p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
@@ -1220,7 +1375,7 @@ log-gelf-level=warn
 <p><span class="options-key"><code>log-gelf-include-stack-trace</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">If set to true, occuring stack traces are included in the <code>StackTrace</code> field in the GELF output.</span></p>
+<p><span class="options-description">If set to true, occurring stack traces are included in the <code>StackTrace</code> field in the GELF output.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
@@ -1229,6 +1384,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_GELF_INCLUDE_STACK_TRACE</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when GELF is activated</p>
 </div>
 <div class="paragraph">
 <p><strong>DEPRECATED.</strong></p>
@@ -1254,6 +1412,9 @@ log-gelf-level=warn
 </div>
 </div>
 <div class="paragraph">
+<p>Available only when GELF is activated</p>
+</div>
+<div class="paragraph">
 <p><strong>DEPRECATED.</strong></p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>INFO</code></span> (default)</p></td>
@@ -1277,6 +1438,9 @@ log-gelf-level=warn
 </div>
 </div>
 <div class="paragraph">
+<p>Available only when GELF is activated</p>
+</div>
+<div class="paragraph">
 <p><strong>DEPRECATED.</strong></p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>8192</code></span> (default)</p></td>
@@ -1295,6 +1459,9 @@ log-gelf-level=warn
 <strong>Env:</strong> <code>KC_LOG_GELF_PORT</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when GELF is activated</p>
 </div>
 <div class="paragraph">
 <p><strong>DEPRECATED.</strong></p>
@@ -1320,6 +1487,9 @@ log-gelf-level=warn
 </div>
 </div>
 <div class="paragraph">
+<p>Available only when GELF is activated</p>
+</div>
+<div class="paragraph">
 <p><strong>DEPRECATED.</strong></p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>yyyy-MM-dd HH:mm:ss,SSS</code></span> (default)</p></td>
@@ -1343,6 +1513,86 @@ log-gelf-level=warn
 </div>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>[info]</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-endpoint</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The IP address and port of the syslog server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-endpoint</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_ENDPOINT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>localhost:514</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-format</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set a format specific to syslog entries.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-format</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_FORMAT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-output</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the syslog output to JSON or default (plain) unstructured logging.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-output</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_OUTPUT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>json</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-protocol</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the protocol used to connect to the syslog server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-protocol</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_PROTOCOL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code> (default), <code>udp</code>, <code>ssl-tcp</code></p></td>
 </tr>
 </tbody>
 </table>

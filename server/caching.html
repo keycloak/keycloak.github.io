@@ -283,11 +283,47 @@ is created too, so that the server can track the applications the user is authen
 </div>
 <div class="paragraph">
 <p>By relying on a distributable cache, user and client sessions are available to any node in the cluster so that users can be redirected
-to any node without loosing their state. However, production-ready deployments should always consider session affinity and favor redirecting users
+to any node without losing their state. However, production-ready deployments should always consider session affinity and favor redirecting users
 to the node where their sessions were initially created. By doing that, you are going to avoid unnecessary state transfer between nodes and improve
 CPU, memory, and network utilization.</p>
 </div>
 <div class="paragraph">
+<div class="title">Persistent user sessions</div>
+<p>The feature <code>persistent-user-session</code> stores online user and client sessions also in the database.
+This will allow a user to stay logged in even if all instances of Keycloak are restarted or upgraded.</p>
+</div>
+<div class="paragraph">
+<p>The feature is disabled by default. To use it, enable the feature:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>bin/kc.sh start --features=persistent-user-session ...</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With this feature enabled, the in-memory caches for online user sessions and online client sessions are limited to, by default, 10000 entries per node which will reduce the overall memory usage of Keycloak for larger installations.
+The internal caches will run with only a single owner for each cache entry.
+Items which are evicted from memory will be loaded on-demand from the database when needed.
+To set different sizes for the caches, edit Keycloak&#8217;s cache config file to set a <code>&lt;memory max-count="..."/&gt;</code> for those caches.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Enabling this feature via a rolling configuration upgrade can result in an undefined behavior of Keycloak related to sessions if both persisted and non-persisted sessions co-exist.
+To prevent that, remove all online user and client sessions before the first node is started with this feature enabled.
+This means all Keycloak nodes need to be stopped and, if used, Infinispan remote cache store and embedded Infinispan JDBC persistence need to be cleared.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">Offline user sessions</div>
 <p>As an OpenID Connect Provider, the server is also capable of authenticating users and issuing offline tokens. Similarly to regular user and client sessions,
 when an offline token is issued by the server upon successful authentication, the server also creates an offline user session and an offline client session. However, due to the nature
 of offline tokens, offline sessions are handled differently as they are long-lived and should survive a complete cluster shutdown. Because of that, they are also persisted to the database.</p>
@@ -307,6 +343,11 @@ of offline tokens, offline sessions are handled differently as they are long-liv
 </div>
 <div class="paragraph">
 <p>Upon a cluster restart, offline sessions are lazily loaded from the database and kept in a shared cache using the two caches above.</p>
+</div>
+<div class="paragraph">
+<p>With feature <code>persistent-user-session</code> enabled, the in-memory caches for offline user sessions and offline client sessions are limited to 10000 entries which will reduce the overall memory usage of Keycloak for larger installations.
+Items which are evicted from memory will be loaded on-demand from the database when needed.
+To set different sizes for the caches, edit Keycloak&#8217;s cache config file to set a <code>&lt;memory max-count="..."/&gt;</code> for those caches.</p>
 </div>
 <div class="paragraph">
 <div class="title">Password brute force detection</div>
@@ -355,6 +396,30 @@ to change the number of owners accordingly to better fit into your availability 
 <p>For configuration of Keycloak server for high availability and multi-node clustered setup there was introduced following CLI options <code>cache-remote-host</code>, <code>cache-remote-port</code>, <code>cache-remote-username</code> and <code>cache-remote-password</code> simplifying configuration within the XML file.
 Once any of declared CLI parameters are present, it is expected there is no configuration related to remote store present in the XML file.</p>
 </div>
+<div class="sect3">
+<h4 id="_connecting_to_an_insecure_infinispan_server">Connecting to an insecure Infinispan server</h4>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Disabling security is not recommended in production!
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In a development or test environment, it is easier to start an unsecured Infinispan server.
+For these use case, the CLI options <code>cache-remote-tls-enabled</code> disables the encryption (TLS) between Keycloak and Infinispan.
+Keycloak will fail to start if the Infinispan server is configured to accept only encrypted connections.</p>
+</div>
+<div class="paragraph">
+<p>The CLI options <code>cache-remote-username</code> and <code>cache-remote-password</code> are optional and, if not set, Keycloak will connect to the Infinispan server without presenting any credentials.
+If the Infinispan server has authentication enabled, Keycloak will fail to start.</p>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -364,28 +429,6 @@ Once any of declared CLI parameters are present, it is expected there is no conf
 <div class="paragraph">
 <p>Transport stacks ensure that distributed cache nodes in a cluster communicate in a reliable fashion.
 Keycloak supports a wide range of transport stacks:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>tcp</p>
-</li>
-<li>
-<p>udp</p>
-</li>
-<li>
-<p>kubernetes</p>
-</li>
-<li>
-<p>ec2</p>
-</li>
-<li>
-<p>azure</p>
-</li>
-<li>
-<p>google</p>
-</li>
-</ul>
 </div>
 <div class="paragraph">
 <p>To apply a specific cache stack, enter this command:</p>
@@ -575,30 +618,19 @@ To restrict unauthorized access, use a self-signed certificate for each Keycloak
 <h2 id="_exposing_metrics_from_caches">Exposing metrics from caches</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>By default, metrics from caches are not automatically exposed when the metrics are enabled.
-For more details about how to enable metrics, see <a href="https://www.keycloak.org/server/configuration-metrics">Enabling Keycloak Metrics</a>.</p>
+<p>Metrics from caches are automatically exposed when the metrics are enabled.</p>
 </div>
 <div class="paragraph">
-<p>To enable global metrics for all caches within the <code>cache-container</code>, you need to change your cache configuration file (e.g.: <code>conf/cache-ispn.xml</code>) to enable <code>statistics</code> at the <code>cache-container</code> level as follows:</p>
+<p>To enable histograms for the cache metrics, set <code>cache-metrics-histograms-enabled</code> to <code>true</code>.
+While these metrics provide more insights into the latency distribution, collecting them might have a performance impact, so you should be cautious to activate them in an already saturated system.</p>
 </div>
 <div class="listingblock">
-<div class="title">enabling metrics for all caches</div>
 <div class="content">
-<pre class="highlight"><code>&lt;cache-container name="keycloak" statistics="true"&gt;
-    ...
-&lt;/cache-container&gt;</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --metrics-enabled true --cache-metrics-histograms-enabled true</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Similarly, you can enable metrics individually for each cache by enabling <code>statistics</code> as follows:</p>
-</div>
-<div class="listingblock">
-<div class="title">enabling metrics for a specific cache</div>
-<div class="content">
-<pre>&lt;local-cache name="realms" statistics="true"&gt;
-    ...
-&lt;/local-cache&gt;</pre>
-</div>
+<p>For more details about how to enable metrics, see <a href="https://www.keycloak.org/server/configuration-metrics">Enabling Keycloak Metrics</a>.</p>
 </div>
 </div>
 </div>
@@ -619,7 +651,7 @@ For more details about how to enable metrics, see <a href="https://www.keycloak.
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>cache</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+<p><span class="options-key"><code>cache</code></span></p>
 </div>
 <div class="paragraph">
 <p><span class="options-description">Defines the cache mechanism for high-availability.</span></p>
@@ -639,7 +671,7 @@ For more details about how to enable metrics, see <a href="https://www.keycloak.
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>cache-config-file</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+<p><span class="options-key"><code>cache-config-file</code></span></p>
 </div>
 <div class="paragraph">
 <p><span class="options-description">Defines the file from which cache configuration should be loaded from.</span></p>
@@ -750,6 +782,26 @@ For more details about how to enable metrics, see <a href="https://www.keycloak.
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-metrics-histograms-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enable histograms for metrics for the embedded caches.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-metrics-histograms-enabled</code><br>
+<strong>Env:</strong> <code>KC_CACHE_METRICS_HISTOGRAMS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>cache-remote-host</code></span></p>
 </div>
 <div class="paragraph">
@@ -778,13 +830,16 @@ For more details about how to enable metrics, see <a href="https://www.keycloak.
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">It replaces the <code>password</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-host</code> and <code>cache-remote-username</code> are required as well and the related configuration in XML file should not be present.</span></p>
+<p><span class="options-description-extended">It replaces the <code>password</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-username</code> is required as well and the related configuration in XML file should not be present.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-remote-password</code><br>
 <strong>Env:</strong> <code>KC_CACHE_REMOTE_PASSWORD</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
@@ -805,8 +860,34 @@ For more details about how to enable metrics, see <a href="https://www.keycloak.
 <strong>Env:</strong> <code>KC_CACHE_REMOTE_PORT</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>11222</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-tls-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enable TLS support to communicate with a secured remote Infinispan server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Recommended to be enabled in production.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-tls-enabled</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_TLS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -818,19 +899,22 @@ For more details about how to enable metrics, see <a href="https://www.keycloak.
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">It replaces the <code>username</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-host</code> and <code>cache-remote-password</code> are required as well and the related configuration in XML file should not be present.</span></p>
+<p><span class="options-description-extended">It replaces the <code>username</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-password</code> is required as well and the related configuration in XML file should not be present.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-remote-username</code><br>
 <strong>Env:</strong> <code>KC_CACHE_REMOTE_USERNAME</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>cache-stack</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+<p><span class="options-key"><code>cache-stack</code></span></p>
 </div>
 <div class="paragraph">
 <p><span class="options-description">Define the default stack to use for cluster communication and node discovery.</span></p>
@@ -838,7 +922,7 @@ For more details about how to enable metrics, see <a href="https://www.keycloak.
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">This option only takes effect if <code>cache</code> is set to <code>ispn</code>. Default: udp.</span></p>
+<p><span class="options-description-extended">This option only takes effect if <code>cache</code> is set to <code>ispn</code>. Default: udp. Built-in values include: tcp, udp, kubernetes, ec2, azure, google</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-stack</code><br>
@@ -846,7 +930,7 @@ For more details about how to enable metrics, see <a href="https://www.keycloak.
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code>, <code>udp</code>, <code>kubernetes</code>, <code>ec2</code>, <code>azure</code>, <code>google</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 </tbody>
 </table>

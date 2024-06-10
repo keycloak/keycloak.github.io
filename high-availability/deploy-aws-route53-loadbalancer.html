@@ -104,7 +104,7 @@ You would still need to adapt it to your environment and your organization&#8217
 <div class="sectionbody">
 <div class="paragraph">
 <p>All Keycloak client requests are routed by a DNS name managed by Route53 records.
-Route53 is responsibile to ensure that all client requests are routed to the Primary cluster when it is available and healthy, or to the backup cluster in the event of the primary availability-zone or Keycloak deployment failing.</p>
+Route53 is responsible to ensure that all client requests are routed to the Primary cluster when it is available and healthy, or to the backup cluster in the event of the primary availability-zone or Keycloak deployment failing.</p>
 </div>
 <div class="paragraph">
 <p>If the primary site fails, the DNS changes will need to propagate to the clients.
@@ -115,7 +115,7 @@ When using mobile connections, some internet providers might not respect the TTL
 <div class="content">
 <img src="https://www.keycloak.org/resources/images/guides/high-availability/route53-multi-az-failover.svg" alt="route53 multi az failover">
 </div>
-<div class="title">Figure 1. AWS Global Accelerator Failover</div>
+<div class="title">Figure 1. AWS Route53 Failover</div>
 </div>
 <div class="paragraph">
 <p>Two Openshift Routes are exposed on both the Primary and Backup ROSA cluster.
@@ -209,7 +209,7 @@ ROSA clusters running OpenShift 4.13 and earlier use classic load balancers inst
 </div>
 </li>
 <li>
-<p>Create Route53 health checks</p>
+<p><a id="create-health-checks"></a>Create Route53 health checks</p>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
@@ -221,6 +221,7 @@ ROSA clusters running OpenShift 4.13 and earlier use classic load balancers inst
   --query "HealthCheck.Id" \
   --no-cli-pager \
   --output text \
+  --region us-east-1 \
   --health-check-config '
   {
     "Type": "HTTPS",
@@ -292,6 +293,7 @@ BACKUP_HEALTH_ID=799e2cbb-43ae-4848-9b72-0d9173f04912
 aws route53 change-resource-record-sets \
   --hosted-zone-id Z09084361B6LKQQRCVBEY \
   --query "ChangeInfo.Id" \
+  --region us-east-1 \
   --output text \
   --change-batch '
   {
@@ -371,7 +373,7 @@ aws route53 change-resource-record-sets \
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws route53 wait resource-record-sets-changed --id /change/C053410633T95FR9WN3YI</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws route53 wait resource-record-sets-changed --id /change/C053410633T95FR9WN3YI --region us-east-1</code></pre>
 </div>
 </div>
 </li>
@@ -466,6 +468,15 @@ EOF</code></pre>
 <div class="paragraph">
 <p>To test failover works as expected, log in to the Primary cluster and scale the Keycloak deployment to zero Pods.
 Scaling will cause the Primary&#8217;s health checks to fail and Route53 should start routing traffic to the Keycloak Pods on the Backup cluster.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_optional_failover_lambda">Optional: Failover Lambda</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To prevent a failed Primary cluster from becoming active without SRE input, follow the steps outlined in the
+guide <a href="https://www.keycloak.org/high-availability/deploy-aws-route53-failover-lambda">Deploy an AWS Route 53 Failover Lambda</a></p>
 </div>
 </div>
 </div>            </div>

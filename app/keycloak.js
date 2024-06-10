@@ -1000,7 +1000,8 @@
 	        var callbackState = {
 	            state: state,
 	            nonce: nonce,
-	            redirectUri: encodeURIComponent(redirectUri)
+	            redirectUri: encodeURIComponent(redirectUri),
+	            loginOptions: options
 	        };
 
 	        if (options && options.prompt) {
@@ -1344,9 +1345,13 @@
 
 	        if (error) {
 	            if (prompt != 'none') {
-	                var errorData = { error: error, error_description: oauth.error_description };
-	                kc.onAuthError && kc.onAuthError(errorData);
-	                promise && promise.setError(errorData);
+	                if (oauth.error_description && oauth.error_description === "authentication_expired") {
+	                    kc.login(oauth.loginOptions);
+	                } else {
+	                    var errorData = { error: error, error_description: oauth.error_description };
+	                    kc.onAuthError && kc.onAuthError(errorData);
+	                    promise && promise.setError(errorData);
+	                }
 	            } else {
 	                promise && promise.setSuccess();
 	            }
@@ -1654,6 +1659,7 @@
 	            oauth.storedNonce = oauthState.nonce;
 	            oauth.prompt = oauthState.prompt;
 	            oauth.pkceCodeVerifier = oauthState.pkceCodeVerifier;
+	            oauth.loginOptions = oauthState.loginOptions;
 	        }
 
 	        return oauth;
@@ -1761,7 +1767,7 @@
 	        var timeoutHandle = null;
 	        var timeoutPromise = new es6Promise_minExports.Promise(function (resolve, reject) {
 	            timeoutHandle = setTimeout(function () {
-	                reject({ "error": errorMessage || "Promise is not settled within timeout of " + timeout + "ms" });
+	                reject({ "error": errorMessage  });
 	            }, timeout);
 	        });
 

@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
-    <title>Configuring the hostname - Keycloak</title>
+    <title>Configuring the hostname (v2) - Keycloak</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Keycloak is an open source identity and access management solution">
     <meta name="author" content="Keycloak Team">
@@ -66,12 +66,12 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
-                    <li class="breadcrumb-item active">Configuring the hostname</li>
+                    <li class="breadcrumb-item active">Configuring the hostname (v2)</li>
                 </ol>
             </nav>
 
             <div class="mb-4">
-                <h1>Configuring the hostname</h1>
+                <h1>Configuring the hostname (v2)</h1>
                     <span class="text-muted">Learn how to configure the frontend and backchannel endpoints exposed by Keycloak.</span>
             </div>
 
@@ -79,11 +79,161 @@
 
             <div class="kc-asciidoc" id="guide-body">
 <div class="sect1">
-<h2 id="_server_endpoints">Server Endpoints</h2>
+<h2 id="_the_importance_of_setting_the_hostname_option">The importance of setting the hostname option</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak exposes different endpoints to talk with applications as well as to allow accessing the administration console. These endpoints
-can be categorized into three main groups:</p>
+<p>By default, Keycloak mandates the configuration of the <code>hostname</code> option and does not dynamically resolve URLs. This is a security measure.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak freely discloses its own URLs, for instance through the OIDC Discovery endpoint, or as part of the password reset link in an email. If the hostname was dynamically interpreted from a hostname header, it could provide a potential attacker with an opportunity to manipulate a URL in the email, redirect a user to the attacker&#8217;s fake domain, and steal sensitive data such as action tokens, passwords, etc.</p>
+</div>
+<div class="paragraph">
+<p>By explicitly setting the <code>hostname</code> option, we avoid a situation where tokens could be issued by a fraudulent issuer. The server can be started with an explicit hostname using the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname my.keycloak.org</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The examples start the Keycloak instance in production mode, which requires a public certificate and private key in order to secure communications. For more information, refer to the <a href="https://www.keycloak.org/server/configuration-production">Configuring Keycloak for production</a>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_defining_specific_parts_of_the_hostname_option">Defining specific parts of the hostname option</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As demonstrated in the previous example, the scheme and port are not explicitly required. In such cases, Keycloak automatically handles these aspects. For instance, the server would be accessible at <code><a href="https://my.keycloak.org:8443" class="bare">https://my.keycloak.org:8443</a></code> in the given example. However, a reverse proxy will typically expose Keycloak at the default ports, e.g. <code>443</code>. In that case it’s desirable to specify the full URL in the <code>hostname</code> option rather than keeping the parts of the URL dynamic. The server can then be started with:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname https://my.keycloak.org</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Similarly, your reverse proxy might expose Keycloak at a different context path. It is possible to configure {proxy_name} to reflect that via the <code>hostname</code> and <code>hostname-admin</code> options. See the following example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname https://my.keycloak.org:123/auth</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_utilizing_an_internal_url_for_communication_among_clients">Utilizing an internal URL for communication among clients</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak has the capability to offer a separate URL for backchannel requests, enabling internal communication while maintaining the use of a public URL for frontchannel requests. Moreover, the backchannel is dynamically resolved based on incoming headers. Consider the following example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname https://my.keycloak.org --hostname-backchannel-dynamic true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this manner, your applications, referred to as clients, can connect with Keycloak through your local network, while the server remains publicly accessible at <code><a href="https://my.keycloak.org" class="bare">https://my.keycloak.org</a></code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_edge_tls_termination">Using edge TLS termination</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As you can observe, the HTTPS protocol is the default choice, adhering to Keycloak&#8217;s commitment to security best practices. However, Keycloak also provides the flexibility for users to opt for HTTP if necessary. This can be achieved simply by specifying the HTTP listener, consult the <a href="https://www.keycloak.org/server/enabletls">Configuring TLS</a> for details. With an edge TLS-termination proxy you can start the server as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname https://my.keycloak.org --http-enabled true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The result of this configuration is that you can continue to access Keycloak at <code><a href="https://my.keycloak.org" class="bare">https://my.keycloak.org</a></code> via HTTPS, while the proxy interacts with the instance using HTTP and port <code>8080</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relying_on_a_trusted_proxy_for_the_dynamic_hostname_resolution">Relying on a trusted proxy for the dynamic hostname resolution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you fully trust your proxy, which correctly sets the Forwarded header, and you don&#8217;t want to hardcode the hostname, Keycloak can accommodate this. You simply need to initiate the server as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname-strict false --proxy-headers forwarded</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With this configuration, the server respects the value set by the Forwarded header. This also implies that all endpoints are dynamically resolved.</p>
+</div>
+<div class="paragraph">
+<p>The <code>proxy-headers</code> option can be also used to resolve the URL partially dynamically when <code>hostname</code> option is not specified as a full URL. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname my.keycloak.org --proxy-headers xforwarded</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, scheme, port and context path are resolved dynamically from X-Forwarded-* headers, while hostname is statically defined as <code>my.keycloak.org</code>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+If either <code>forwarded</code> or <code>xforwarded</code> is selected, make sure your reverse proxy properly sets and overwrites the <code>Forwarded</code> or <code>X-Forwarded-*</code> headers respectively. To set these headers, consult the documentation for your reverse proxy. Misconfiguration will leave Keycloak exposed to security vulnerabilities.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exposing_the_administration_console_on_a_separate_hostname">Exposing the Administration Console on a separate hostname</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you wish to expose the Admin Console on a different host, you can do so with the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname https://my.keycloak.org --hostname-admin https://admin.my.keycloak.org:8443</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This allows you to access Keycloak at <code><a href="https://my.keycloak.org" class="bare">https://my.keycloak.org</a></code> and the Admin Console at <code><a href="https://admin.my.keycloak.org:8443" class="bare">https://admin.my.keycloak.org:8443</a></code>, while the backend continues to use <code><a href="https://my.keycloak.org" class="bare">https://my.keycloak.org</a></code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Keep in mind that hostname and proxy options do not change the ports on which the server listens. Instead it changes only the ports of static resources like JavaScript and CSS links, OIDC well-known endpoints, redirect URIs, etc. that will be used in front of the proxy. You need to use HTTP configuration options to change the actual ports the server is listening on. Refer to the <a href="https://www.keycloak.org/server/all-config">All configuration</a> for details.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_background_server_endpoints">Background - server endpoints</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak exposes several endpoints, each with a different purpose. They are typically used for communication among applications or for managing the server. We recognize 3 main endpoint groups:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -94,225 +244,155 @@ can be categorized into three main groups:</p>
 <p>Backend</p>
 </li>
 <li>
-<p>Administration Console</p>
+<p>Administration</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The base URL for each group has an important impact on how tokens are issued and validated, on how links are created for actions that require the user
-to be redirected to Keycloak (for example, when resetting password through email links), and, most importantly, how applications will
-discover these endpoints when fetching the OpenID Connect Discovery Document from <code>realms/{realm-name}/.well-known/openid-configuration</code>.</p>
-</div>
-<div class="sect2">
-<h3 id="_frontend">Frontend</h3>
-<div class="paragraph">
-<p>The frontend endpoints are those accessible through a public domain and usually related to authentication/authorization flows that happen
-through the front-channel. For instance, when an SPA wants to authenticate their users it redirects them to the <code>authorization_endpoint</code> so that users
-can authenticate using their browsers through the front-channel.</p>
-</div>
-<div class="paragraph">
-<p>By default, when the hostname settings are not set, the base URL for these endpoints is based on the incoming request so that the HTTP scheme,
-host, port, and path, are the same from the request. The default behavior also has a direct impact on how the server is going to issue tokens given that the issuer is also based on
-the URL set to the frontend endpoints. If the hostname settings are not set, the token issuer will also be based on the incoming request and also lack consistency if the client is requesting tokens using different URLs.</p>
-</div>
-<div class="paragraph">
-<p>When deploying to production you usually want a consistent URL for the frontend endpoints and the token issuer regardless of how the request is constructed.
-In order to achieve this consistency, you can set either the <code>hostname</code> or the <code>hostname-url</code> options.</p>
-</div>
-<div class="paragraph">
-<p>Most of the time, it should be enough to set the <code>hostname</code> option in order to change only the <strong>host</strong> of the frontend URLs:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=&lt;host&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>When using the <code>hostname</code> option the server is going to resolve the HTTP scheme, port, and path, automatically so that:</p>
+<p>If you want to work with either of these endpoints, you need to set the base URL. The base URL consists of a several parts:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><code>https</code> scheme is used unless you set <code>hostname-strict-https=false</code></p>
+<p>a scheme (e.g. https protocol)</p>
 </li>
 <li>
-<p>if the <code>proxy-headers</code> option is set, the proxy will use the default ports (i.e.: 80 and 443).  If the proxy uses a different port, it needs to be specified via the <code>hostname-url</code> configuration option</p>
+<p>a hostname (e.g. example.keycloak.org)</p>
+</li>
+<li>
+<p>a port (e.g. 8443)</p>
+</li>
+<li>
+<p>a path (e.g. /auth)</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>However, if you want to set not only the host but also a scheme, port, and path, you can set the <code>hostname-url</code> option:</p>
+<p>The base URL for each group has an important impact on how tokens are issued and validated, on how links are created for actions that require the user to be redirected to Keycloak (for example, when resetting password through email links), and, most importantly, how applications will discover these endpoints when fetching the OpenID Connect Discovery Document from <code>realms/{realm-name}/.well-known/openid-configuration</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="_frontend">Frontend</h3>
+<div class="paragraph">
+<p>Users and applications use the frontend URL to access Keycloak through a front channel. The front channel is a publicly accessible communication channel. For example browser-based flows (accessing the login page, clicking on the link to reset a password or binding the tokens) can be considered as frontchannel requests.</p>
+</div>
+<div class="paragraph">
+<p>In order to make Keycloak accessible via the frontend URL, you need to set the <code>hostname</code> option:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname-url=&lt;scheme&gt;://&lt;host&gt;:&lt;port&gt;/&lt;path&gt;</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname my.keycloak.org</code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p>This option gives you more flexibility as you can set the different parts of the URL from a single option. Note that
-the <code>hostname</code> and <code>hostname-url</code> are mutually exclusive.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>By <code>hostname</code> and <code>proxy-headers</code> configuration options you affect only the static resources URLs, redirect URIs, OIDC well-known endpoints, etc. In order to change, where/on which port the server actually listens on, you need to use the <code>http/tls</code> configuration options (e.g. <code>http-host</code>, <code>https-port</code>, etc.). For more details, see <a href="https://www.keycloak.org/server/enabletls">Configuring TLS</a> and <a href="https://www.keycloak.org/server/all-config">All configuration</a>.</p>
-</div>
-</td>
-</tr>
-</table>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_backend">Backend</h3>
 <div class="paragraph">
-<p>The backend endpoints are those accessible through a public domain or through a private network. They are used for a direct communication
-between the server and clients without any intermediary but plain HTTP requests. For instance, after the user is authenticated an SPA
-wants to exchange the <code>code</code> sent by the server with a set of tokens by sending a token request to <code>token_endpoint</code>.</p>
+<p>The backend endpoints are those accessible through a public domain or through a private network. They&#8217;re related to direct backend communication between Keycloak and a client (an application secured by Keycloak). Such communication might be over a local network, avoiding a reverse proxy. Examples of the endpoints that belong to this group are the authorization endpoint, token and token introspection endpoint, userinfo endpoint, JWKS URI endpoint, etc.</p>
 </div>
 <div class="paragraph">
-<p>By default, the URLs for backend endpoints are also based on the incoming request. To override this behavior, set the <code>hostname-strict-backchannel</code> configuration option by entering this command:</p>
+<p>The default value of <code>hostname-backchannel-dynamic</code> option is <code>false</code>, which means that the backchannel URLs are same as the frontchannel URLs. Dynamic resolution of backchannel URLs from incoming request headers can be enabled by setting the following options:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=&lt;value&gt; --hostname-strict-backchannel=true</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname https://my.keycloak.org --hostname-backchannel-dynamic true</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>By setting the <code>hostname-strict-backchannel</code> option, the URLs for the backend endpoints are going to be exactly the same as the frontend endpoints.</p>
-</div>
-<div class="paragraph">
-<p>When all applications connected to Keycloak communicate through the public URL, set <code>hostname-strict-backchannel</code> to <code>true</code>.
-Otherwise, leave this parameter as <code>false</code> to allow client-server communication through a private network.</p>
+<p>Note that <code>hostname</code> option must be set to a URL. For more information, refer to the <a href="#_validations">Validations</a> section below.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_administration_console">Administration Console</h3>
+<h3 id="_administration">Administration</h3>
 <div class="paragraph">
-<p>The server exposes the administration console and static resources using a specific URL.</p>
-</div>
-<div class="paragraph">
-<p>By default, the URLs for the administration console are also based on the incoming request. However, you can set a specific host or base URL if you want
-to restrict access to the administration console using a specific URL. Similarly to how you set the frontend URLs, you can use the <code>hostname-admin</code> and <code>hostname-admin-url</code> options to achieve that.
-Note that if HTTPS is enabled (<code>http-enabled</code> configuration option is set to false, which is the default setting for the production mode), the Keycloak server automatically assumes you want to use HTTPS URLs. The admin console then tries to contact Keycloak over HTTPS and HTTPS URLs are also used for its configured redirect/web origin URLs. It is not recommended for production, but you can use HTTP URL as <code>hostname-admin-url</code> to override this behaviour.</p>
-</div>
-<div class="paragraph">
-<p>Most of the time, it should be enough to set the <code>hostname-admin</code> option in order to change only the <strong>host</strong> of the administration console URLs:</p>
+<p>Similarly to the base frontend URL, you can also set the base URL for resources and endpoints of the administration console. The server exposes the administration console and static resources using a specific URL. This URL is used for redirect URLs, loading resources (CSS, JS), etc. It can be done by setting the <code>hostname-admin</code> option:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname-admin=&lt;host&gt;</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname https://my.keycloak.org --hostname-admin https://admin.my.keycloak.org:8443</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>However, if you want to set not only the host but also a scheme, port, and path, you can set the <code>hostname-admin-url</code> option:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname-admin-url=&lt;scheme&gt;://&lt;host&gt;:&lt;port&gt;/&lt;path&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Note that the <code>hostname-admin</code> and <code>hostname-admin-url</code> are mutually exclusive.</p>
-</div>
-<div class="paragraph">
-<p>To reduce attack surface, the administration endpoints for Keycloak and the Admin Console should not be publicly accessible.
-Therefore, you can secure them by using a reverse proxy.
-For more information about which paths to expose using a reverse proxy, see <a href="https://www.keycloak.org/server/reverseproxy">Using a reverse proxy</a>.</p>
+<p>Again, the <code>hostname</code> option must be set to a URL. For more information, refer to the <a href="#_validations">Validations</a> section below.</p>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_example_scenarios">Example Scenarios</h2>
+<h2 id="_sources_for_resolving_the_url">Sources for resolving the URL</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The following are more example scenarios and the corresponding commands for setting up a hostname.</p>
+<p>As indicated in the previous sections, URLs can be resolved in several ways: they can be dynamically generated, hardcoded, or a combination of both:</p>
 </div>
-<div class="paragraph">
-<p>Note that the <code>start</code> command requires setting up TLS. The corresponding options are not shown for example purposes. For more details, see <a href="https://www.keycloak.org/server/enabletls">Configuring TLS</a>.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Dynamic from an incoming request:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Host header, scheme, server port, context path</p>
+</li>
+<li>
+<p>Proxy-set headers: <code>Forwarded</code> and <code>X-Forwarded-*</code></p>
+</li>
+</ul>
 </div>
-<div class="sect2">
-<h3 id="_exposing_the_server_behind_a_tls_termination_proxy">Exposing the server behind a TLS termination proxy</h3>
-<div class="paragraph">
-<p>In this example, the server is running behind a TLS termination proxy and publicly available from <code><a href="https://mykeycloak" class="bare">https://mykeycloak</a></code>.</p>
+</li>
+<li>
+<p>Hardcoded:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Server-wide config (e.g <code>hostname</code>, <code>hostname-admin</code>, etc.)</p>
+</li>
+<li>
+<p>Realm configuration for frontend URL</p>
+</li>
+</ul>
 </div>
-<div class="listingblock">
-<div class="title">Configuration:</div>
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=mykeycloak --http-enabled=true --proxy-headers=forwarded|xforwarded</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_exposing_the_server_without_a_proxy">Exposing the server without a proxy</h3>
-<div class="paragraph">
-<p>In this example, the server is running without a proxy and exposed using a URL using HTTPS.</p>
-</div>
-<div class="listingblock">
-<div class="title">Keycloak configuration:</div>
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname-url=https://mykeycloak</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>It is highly recommended using a TLS termination proxy in front of the server for security and availability reasons. For more details,
-see <a href="https://www.keycloak.org/server/reverseproxy">Using a reverse proxy</a>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_forcing_backend_endpoints_to_use_the_same_url_the_server_is_exposed">Forcing backend endpoints to use the same URL the server is exposed</h3>
-<div class="paragraph">
-<p>In this example, backend endpoints are exposed using the same URL used by the server so that clients always fetch the same URL
-regardless of the origin of the request.</p>
-</div>
-<div class="listingblock">
-<div class="title">Keycloak configuration:</div>
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname=mykeycloak --hostname-strict-backchannel=true</code></pre>
+</li>
+</ul>
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_exposing_the_server_using_a_port_other_than_the_default_ports">Exposing the server using a port other than the default ports</h3>
-<div class="paragraph">
-<p>In this example, the server is accessible using a port other than the default ports.</p>
+<div class="sect1">
+<h2 id="_validations">Validations</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><code>hostname</code> URL and <code>hostname-admin</code> URL are verified that full URL is used, incl. scheme and hostname. Port is validated only if present, otherwise default port for given protocol is assumed (80 or 443).</p>
+</li>
+<li>
+<p>In production profile (<code>kc.sh|bat start</code>), either <code>--hostname</code> or <code>--hostname-strict false</code> must be explicitly configured.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>This does not apply for dev profile (<code>kc.sh|bat start-dev</code>) where <code>--hostname-strict false</code> is the default value.</p>
+</li>
+</ul>
 </div>
-<div class="listingblock">
-<div class="title">Keycloak configuration:</div>
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname-url=https://mykeycloak:8989</code></pre>
+</li>
+<li>
+<p>If <code>--hostname</code> is not configured:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>hostname-backchannel-dynamic</code> must be set to false.</p>
+</li>
+<li>
+<p><code>hostname-strict</code> must be set to false.</p>
+</li>
+</ul>
 </div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_exposing_keycloak_behind_a_tls_reencrypt_proxy_using_different_ports">Exposing Keycloak behind a TLS reencrypt proxy using different ports</h3>
-<div class="paragraph">
-<p>In this example, the server is running behind a proxy and both the server and the proxy are using their own certificates, so the communication between Keycloak and the proxy is encrypted. The reverse proxy uses the <code>Forwarded</code> header and does not set the <code>X-Forwarded-*</code> headers. We need to keep in mind that the proxy configuration options (as well as hostname configuration options) are not changing the ports on which the server actually is listening on (it changes only the ports of static resources like JavaScript and CSS links, OIDC well-known endpoints, redirect URIs, etc.). Therefore, we need to use HTTP configuration options to change the Keycloak server to internally listen on a different port, e.g. 8543. The proxy will be listening on the port 8443 (the port visible while accessing the console via a browser). The example hostname <code>my-keycloak.org</code> will be used for the server and similarly the admin console will be accessible via the <code>admin.my-keycloak.org</code> subdomain.</p>
-</div>
-<div class="listingblock">
-<div class="title">Keycloak configuration:</div>
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers=forwarded --https-port=8543 --hostname-url=https://my-keycloak.org:8443 --hostname-admin-url=https://admin.my-keycloak.org:8443</code></pre>
-</div>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-Usage of the <code>proxy-headers</code> option rely on <code>Forwarded</code> and <code>X-Forwarded-*</code> headers, respectively, that have to be set and overwritten by the reverse proxy.
-Misconfiguration may leave Keycloak exposed to security issues. For more details, see <a href="https://www.keycloak.org/server/reverseproxy">Using a reverse proxy</a>.
-</td>
-</tr>
-</table>
-</div>
+</li>
+<li>
+<p>If <code>hostname-admin</code> is configured, <code>hostname</code> must be set to a URL (not just hostname). Otherwise Keycloak would not know what is the correct frontend URL (incl. port etc.) when accessing the Admin Console.</p>
+</li>
+<li>
+<p>If <code>hostname-backchannel-dynamic</code> is set to true, <code>hostname</code> must be set to a URL (not just hostname). Otherwise Keycloak would not know what is the correct frontend URL (incl. port etc.) when being access via the dynamically resolved bachchannel.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -329,10 +409,7 @@ Misconfiguration may leave Keycloak exposed to security issues. For more details
 </div>
 </div>
 <div class="paragraph">
-<p>Then after Keycloak started properly, open your browser and go to:</p>
-</div>
-<div class="paragraph">
-<p><code><a href="http://mykeycloak:8080/realms/&lt;your-realm&gt;/hostname-debug" class="bare">http://mykeycloak:8080/realms/&lt;your-realm&gt;/hostname-debug</a></code></p>
+<p>After Keycloak starts properly, open your browser and go to: <code><a href="http://mykeycloak:8080/realms/&lt;your-realm&gt;/hostname-debug" class="bare">http://mykeycloak:8080/realms/&lt;your-realm&gt;/hostname-debug</a></code></p>
 </div>
 </div>
 </div>
@@ -357,15 +434,21 @@ Misconfiguration may leave Keycloak exposed to security issues. For more details
 <p><span class="options-key"><code>hostname</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">Hostname for the Keycloak server.</span></p>
+<p><span class="options-description">Address at which is the server exposed.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Can be a full URL, or just a hostname. When only hostname is provided, scheme, port and context path are resolved from the request.</span></p>
+</div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--hostname</code><br>
 <strong>Env:</strong> <code>KC_HOSTNAME</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when hostname:v2 feature is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
@@ -374,44 +457,53 @@ Misconfiguration may leave Keycloak exposed to security issues. For more details
 <p><span class="options-key"><code>hostname-admin</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">The hostname for accessing the administration console.</span></p>
+<p><span class="options-description">Address for accessing the administration console.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">Use this option if you are exposing the administration console using a hostname other than the value set to the <code>hostname</code> option.</span></p>
+<p><span class="options-description-extended">Use this option if you are exposing the administration console using a reverse proxy on a different address than specified in the <code>hostname</code> option.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--hostname-admin</code><br>
 <strong>Env:</strong> <code>KC_HOSTNAME_ADMIN</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when hostname:v2 feature is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>hostname-admin-url</code></span></p>
+<p><span class="options-key"><code>hostname-backchannel-dynamic</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">Set the base URL for accessing the administration console, including scheme, host, port and path</span></p>
+<p><span class="options-description">Enables dynamic resolving of backchannel URLs, including hostname, scheme, port and context path.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><strong>CLI:</strong> <code>--hostname-admin-url</code><br>
-<strong>Env:</strong> <code>KC_HOSTNAME_ADMIN_URL</code></p>
+<p><span class="options-description-extended">Set to true if your application accesses Keycloak via a private network. If set to true, <code>hostname</code> option needs to be specified as a full URL.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--hostname-backchannel-dynamic</code><br>
+<strong>Env:</strong> <code>KC_HOSTNAME_BACKCHANNEL_DYNAMIC</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when hostname:v2 feature is enabled</p>
 </div></div></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>hostname-debug</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">Toggle the hostname debug page that is accessible at /realms/master/hostname-debug</span></p>
+<p><span class="options-description">Toggles the hostname debug page that is accessible at /realms/master/hostname-debug.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
@@ -420,45 +512,11 @@ Misconfiguration may leave Keycloak exposed to security issues. For more details
 <strong>Env:</strong> <code>KC_HOSTNAME_DEBUG</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when hostname:v2 feature is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>hostname-path</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">This should be set if proxy uses a different context-path for Keycloak.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--hostname-path</code><br>
-<strong>Env:</strong> <code>KC_HOSTNAME_PATH</code></p>
-</div>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>hostname-port</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">The port used by the proxy when exposing the hostname.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><span class="options-description-extended">Set this option if the proxy uses a port other than the default HTTP and HTTPS ports.</span></p>
-</div>
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--hostname-port</code><br>
-<strong>Env:</strong> <code>KC_HOSTNAME_PORT</code></p>
-</div>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>-1</code></span> (default)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -470,52 +528,18 @@ Misconfiguration may leave Keycloak exposed to security issues. For more details
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">Should always be set to true in production, unless proxy verifies the Host header.</span></p>
+<p><span class="options-description-extended">Should always be set to true in production, unless your reverse proxy overwrites the Host header. If enabled, the <code>hostname</code> option needs to be specified.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--hostname-strict</code><br>
 <strong>Env:</strong> <code>KC_HOSTNAME_STRICT</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when hostname:v2 feature is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>hostname-strict-backchannel</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">By default backchannel URLs are dynamically resolved from request headers to allow internal and external applications.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><span class="options-description-extended">If all applications use the public URL this option should be enabled.</span></p>
-</div>
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--hostname-strict-backchannel</code><br>
-<strong>Env:</strong> <code>KC_HOSTNAME_STRICT_BACKCHANNEL</code></p>
-</div>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>hostname-url</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">Set the base URL for frontend URLs, including scheme, host, port and path.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--hostname-url</code><br>
-<strong>Env:</strong> <code>KC_HOSTNAME_URL</code></p>
-</div>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
