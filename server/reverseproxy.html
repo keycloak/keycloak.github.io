@@ -143,7 +143,7 @@ When using the <code>xforwarded</code> setting, the <code>X-Forwarded-Port</code
 </div>
 </div>
 <div class="sect1">
-<h2 id="_proxy_modes">Proxy modes</h2>
+<h2 id="_proxy_modes_deprecated">Proxy modes (deprecated)</h2>
 <div class="sectionbody">
 <div class="admonitionblock note">
 <table>
@@ -211,23 +211,13 @@ The secure connections between the server and clients are based on the keys and 
 <div class="sectionbody">
 <div class="paragraph">
 <p>Keycloak assumes it is exposed through the reverse proxy under the same context path as Keycloak is configured for. By default Keycloak is exposed through the root (<code>/</code>), which means it expects to be exposed through the reverse proxy on <code>/</code> as well.
-You can use <code>hostname-path</code> or <code>hostname-url</code> in these cases, for example using <code>--hostname-path=/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>.</p>
+You can use a full URL for the <code>hostname</code> option in these cases, for example using <code>--hostname=https://my.keycloak.org/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>.</p>
+</div>
+<div class="paragraph">
+<p>For more details on exposing Keycloak on different hostname or context-path incl. Administration REST API and Console, see <a href="https://www.keycloak.org/server/hostname">Configuring the hostname (v2)</a>.</p>
 </div>
 <div class="paragraph">
 <p>Alternatively you can also change the context path of Keycloak itself to match the context path for the reverse proxy using the <code>http-relative-path</code> option, which will change the context-path of Keycloak itself to match the context path used by the reverse proxy.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_trust_the_proxy_to_set_hostname">Trust the proxy to set hostname</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>By default, Keycloak needs to know under which hostname it will be called. If your reverse proxy is configured to check for the correct hostname, you can set Keycloak to accept any hostname.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers=forwarded|xforwarded --hostname-strict=false</code></pre>
-</div>
 </div>
 </div>
 </div>
@@ -289,20 +279,11 @@ to <code>false</code> in order to avoid attaching the node to cookies and just r
 <p>By default, the <code>spi-sticky-session-encoder-infinispan-should-attach-route</code> option value is <code>true</code> so that the node name is attached to
 cookies to indicate to the reverse proxy the node that subsequent requests should be sent to.</p>
 </div>
-<div class="sect2">
-<h3 id="_exposing_the_administration_console">Exposing the administration console</h3>
-<div class="paragraph">
-<p>By default, the administration console URLs are created solely based on the requests to resolve the proper scheme, host name, and port. For instance,
-if you are using the <code>edge</code> proxy mode and your proxy is misconfigured, backend requests from your TLS termination proxy are going to use plain HTTP and potentially cause the administration
-console from being accessible because URLs are going to be created using the <code>http</code> scheme and the proxy does not support plain HTTP.</p>
-</div>
-<div class="paragraph">
-<p>In order to proper expose the administration console, you should make sure that your proxy is setting the <code>X-Forwarded-*</code> headers herein mentioned in order
-to create URLs using the scheme, host name, and port, being exposed by your proxy.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_exposed_path_recommendations">Exposed path recommendations</h3>
+<div class="sect1">
+<h2 id="_exposed_path_recommendations">Exposed path recommendations</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>When using a reverse proxy, Keycloak only requires certain paths need to be exposed.
 The following table shows the recommended paths to expose.</p>
@@ -340,12 +321,6 @@ The following table shows the recommended paths to expose.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Yes (see note below)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Access to keycloak.js needed for "internal" clients, e.g. the account console</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/welcome/</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No need exists to expose the welcome page after initial installation.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/realms/</p></td>
@@ -396,8 +371,10 @@ As it&#8217;s true that the <code>js</code> path is needed for internal clients 
 If not, prefix the path with your desired one.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_enabling_client_certificate_lookup">Enabling client certificate lookup</h3>
+</div>
+<div class="sect1">
+<h2 id="_enabling_client_certificate_lookup">Enabling client certificate lookup</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>When the proxy is configured as a TLS termination proxy the client certificate information can be forwarded to the server through specific HTTP request headers and then used to authenticate
 clients. You are able to configure how the server is going to retrieve client certificate information depending on the proxy you are using.</p>
@@ -485,15 +462,14 @@ to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>
 </tr>
 </tbody>
 </table>
-<div class="sect3">
-<h4 id="_configuring_the_nginx_provider">Configuring the NGINX provider</h4>
+<div class="sect2">
+<h3 id="_configuring_the_nginx_provider">Configuring the NGINX provider</h3>
 <div class="paragraph">
 <p>The NGINX SSL/TLS module does not expose the client certificate chain. Keycloak&#8217;s NGINX certificate lookup provider rebuilds it by using the Keycloak truststore.</p>
 </div>
 <div class="paragraph">
 <p>If you are using this provider, see <a href="https://www.keycloak.org/server/keycloak-truststore">Configuring trusted certificates</a> for how
 to configure a Keycloak Truststore.</p>
-</div>
 </div>
 </div>
 </div>
