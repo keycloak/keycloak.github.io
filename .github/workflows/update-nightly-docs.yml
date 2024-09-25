@@ -1,0 +1,47 @@
+name: Update nightly docs
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions: 
+  contents: write  
+
+jobs:
+  update-docs:
+    if: github.repository == 'keycloak/keycloak.github.io'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update api-docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release -R keycloak/keycloak download nightly -p keycloak-api-docs-999.0.0-SNAPSHOT.zip
+          unzip keycloak-api-docs-999.0.0-SNAPSHOT.zip
+          rm keycloak-api-docs-999.0.0-SNAPSHOT.zip
+          rm -rf docs-api/nightly
+          mv keycloak-api-docs-999.0.0-SNAPSHOT docs-api/nightly
+
+      - name: Update docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release -R keycloak/keycloak download nightly -p keycloak-documentation-999.0.0-SNAPSHOT.zip
+          unzip keycloak-documentation-999.0.0-SNAPSHOT.zip
+          rm keycloak-documentation-999.0.0-SNAPSHOT.zip
+          rm -rf docs/nightly
+          mv keycloak-documentation-999.0.0-SNAPSHOT docs/nightly
+
+      - name: Commit to repository
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add docs/nightly
+          git add docs-api/nightly
+
+          git commit -m "Update nightly docs"
+          git push origin main:main
