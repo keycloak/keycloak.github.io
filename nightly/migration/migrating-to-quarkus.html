@@ -1,0 +1,277 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Migrating to Quarkus distribution - Keycloak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Keycloak is an open source identity and access management solution">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/migration/migrating-to-quarkus">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#migration">Migration</a></li>
+                    <li class="breadcrumb-item active">Migrating to Quarkus distribution</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Migrating to Quarkus distribution</h1>
+                    <span class="text-muted">Migrate to the new Quarkus distribution from the legacy WildFly distribution</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>In Keycloak 17 the default distribution is now powered by Quarkus, while the legacy WildFly powered distribution will still be around until June 2022 we highly recommend starting the migration as soon as possible.</p>
+</div>
+<div class="paragraph">
+<p>The new distribution introduces a number of breaking changes, including:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Configuring Keycloak has significantly changed</p>
+</li>
+<li>
+<p>Quarkus is not an application server, but rather a framework to build applications</p>
+</li>
+<li>
+<p><code>/auth</code> removed from the default context path</p>
+</li>
+<li>
+<p>Custom providers are packaged and deployed differently</p>
+</li>
+<li>
+<p>A new operator and CRDs for Kubernetes and OpenShift</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Before undertaking the migration we highly recommend reading through the new <a href="https://www.keycloak.org/guides#server">Server Guides</a> to understand how to install and configure the new distribution.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_migrating_configuration">Migrating configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The WildFly distribution of Keycloak used complicated XML files for configuration, resulting in the need for a CLI tool (<code>jboss-cli</code>) to manipulate these files. These files also brought complication to upgrading, where an error-prone script was used to upgrade the config from a previous version.</p>
+</div>
+<div class="paragraph">
+<p>The new Quarkus powered distribution leverages a simple configuration file instead, with corresponding CLI arguments and environment variables as options, making it significantly easier to configure Keycloak. However, this results in the inability to automatically migrate the configuration from the previous distribution.</p>
+</div>
+<div class="paragraph">
+<p>To migrate to the new Quarkus powered distribution the first step is to understand what configuration changes you are applying to the legacy distribution, and apply those that are necessary to the new distribution by following the new <a href="https://www.keycloak.org/guides#server">Server Guides</a>.</p>
+</div>
+<div class="paragraph">
+<p>One thing to note is the new distribution is a lot more opinionated when it comes to configuration. It aims to provide better defaults, with the need to configure less yourself. However, we may not always have the balance right, and there may be use-cases not covered.</p>
+</div>
+<div class="paragraph">
+<p>If you are unable to configure something that you need to tweak in the new distribution, please open a discussion in <a href="https://github.com/keycloak/keycloak/discussions/categories/keycloak-x-quarkus-distribution">GitHub Discussions</a>.</p>
+</div>
+<div class="paragraph">
+<p>Until a new release is available it is possible to configure the new distribution by directly applying Quarkus level configuration through the <code>conf/quarkus.properties</code> file. We recommend you use this sparingly as you will be applying configuration untested and unsupported by the Keycloak team.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_quarkus_is_not_an_application_server">Quarkus is not an application server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Unlike WildFly, Quarkus is not an application server. While an application server can dynamically deploy applications, and alter what is loaded into memory at runtime, this is not possible on Quarkus.</p>
+</div>
+<div class="paragraph">
+<p>Quarkus on the other hand brings immutability to containers, faster startup, and more predictability.</p>
+</div>
+<div class="paragraph">
+<p>While with the WildFly distribution you could hot-deploy custom providers, change the database vendor as a runtime configuration this is no longer supported.</p>
+</div>
+<div class="paragraph">
+<p>Instead, the Quarkus distribution provides a separate build step that optimises the runtime. One important thing to note here is that the build step does not actually build the Keycloak sources, but rather just optimises the runtime through an augmentation process, which is fairly fast and able to fully optimise what is loaded into the runtime.</p>
+</div>
+<div class="paragraph">
+<p>We recommend that you do this build step as a part of installing Keycloak, through CI, or by creating a custom container image that extends the base Keycloak image.</p>
+</div>
+<div class="paragraph">
+<p>However, there is also an auto build mode that makes Keycloak behave more or less the same as the WildFly distribution in this regard. This comes with a startup time penalty, but is still able to optimise the runtime better than the WildFly distribution could.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setup_of_initial_users">Setup of initial users</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak Wildfly distribution contained scripts named <code>add-user-keycloak.sh</code> to add initial users to Keycloak.
+These are no longer included in the Quarkus distribution.</p>
+</div>
+<div class="paragraph">
+<p>To add the initial admin user, set the environment variables <code>KC_BOOTSTRAP_ADMIN_USERNAME</code> and <code>KC_BOOTSTRAP_ADMIN_PASSWORD</code> for the username and password of the user.
+Keycloak uses them at the first startup to create an initial user with administration rights.
+Once the first user with administrative rights exists, use the command line tool <code>kcadm.sh</code> (Linux) or <code>kcadm.bat</code> (Windows) to create additional users.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_default_context_path_changed">Default context path changed</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the new Quarkus distribution removes <code>/auth</code> from the context-path. To re-introduce the <code>/auth</code> use the <a href="https://www.keycloak.org/server/all-config?q=http-relative-path&amp;f=build"><code>http-relative-path</code></a> build option. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start-dev --http-relative-path /auth</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the relative path is specified, it is still possible to be redirected from the root to the relative path.
+Specifically, when the user access <code>localhost:8080/</code>, the page is redirected to the <code>localhost:8080/auth</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_migrating_custom_providers">Migrating custom providers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Similarly to the WildFly distribution custom providers are deployed to Keycloak by copying them to a deployment directory. In the new distribution you should copy your providers to the <code>providers</code> directory instead of <code>standalone/deployments</code>, which no longer exists. Additional dependencies are also copied to the <code>providers</code> directory.</p>
+</div>
+<div class="paragraph">
+<p>With the new distribution there is no longer a separate classpath for custom providers, so you may need to be more careful with what additional dependencies you include. In addition, the <code>EAR</code> packaging format, and <code>jboss-deployment-structure.xml</code> files, is no longer supported.</p>
+</div>
+<div class="paragraph">
+<p>While the WildFly distribution automatically discovered custom providers, even supported the ability to hot-deploy custom providers while Keycloak is running, this is no longer supported, and when you make a change to the providers or dependencies in the <code>providers</code> directory you have to do a build afterwards, or restart the server with the auto build feature.</p>
+</div>
+<div class="paragraph">
+<p>Depending on what APIs your providers use you may also need to make some changes to the providers. If you only leveraged classes from Keycloak SPIs you shouldn&#8217;t need to, but if you used other APIs from WildFly you may need to make some changes. In addition, JavaEE APIs like session/stateless beans are no longer supported.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_migrating_using_the_operator">Migrating using the Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To use the Quarkus distribution on Kubernetes and OpenShift you need to use the new Operator, the <a href="https://github.com/keycloak/keycloak-operator">old Operator</a> does not support the new distribution.</p>
+</div>
+<div class="paragraph">
+<p>There is no "direct" migration path, to install Keycloak using the new Operator you need to create a new Custom Resource (CR) to end up with a new Keycloak Deployment based on the Quarkus distribution.</p>
+</div>
+<div class="paragraph">
+<p>The old and new operator can co-exist even in the same namespace since they are using a different API Group and Version in the CRDs.</p>
+</div>
+<div class="paragraph">
+<p>For the old operator, the apiVersion is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: keycloak.org/v1alpha1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For the new operator, the apiVersion is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When using <code>kubectl</code> commands, and the 2 CRDs are installed in the cluster, make sure to use fully qualified names including the API Group, e.g.:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ kubectl get keycloaks.k8s.keycloak.org</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The new operator doesn&#8217;t support Client, User and Realm CRDs directly. Instead, it provides one CRD to perform a <a href="https://www.keycloak.org/operator/realm-import.html">Realm import</a>.
+Using this new CR you can import Users, Clients and more through the wrapping Realm.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_priority_of_x_forwarded_headers">Priority of X-Forwarded-* Headers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In Quarkus the X-Forwarded-Port header takes precedence over any port included in the X-Forwarded-Host. This differs from the WildFly distribution where a port included in X-Forwarded-Host had priority over X-Forwarded-Port.</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/migration/migrating-to-quarkus.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2024. &copy; 2024 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

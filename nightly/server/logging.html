@@ -1,0 +1,1333 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Configuring logging - Keycloak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Keycloak is an open source identity and access management solution">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/server/logging">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Configuring logging</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Configuring logging</h1>
+                    <span class="text-muted">Learn how to configure Logging</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak uses the JBoss Logging framework.
+The following is a high-level overview for the available log handlers with the common parent log handler <code>root</code>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>console</p>
+</li>
+<li>
+<p>file</p>
+</li>
+<li>
+<p>syslog</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_logging_configuration">Logging configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Logging is done on a per-category basis in Keycloak.
+You can configure logging for the root log level or for more specific categories such as <code>org.hibernate</code> or <code>org.keycloak</code>.
+It is also possible to tailor log levels for each particular log handler.</p>
+</div>
+<div class="paragraph">
+<p>This guide describes how to configure logging.</p>
+</div>
+<div class="sect2">
+<h3 id="_log_levels">Log levels</h3>
+<div class="paragraph">
+<p>The following table defines the available log levels.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Level</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FATAL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Critical failures with complete inability to serve any kind of request.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ERROR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A significant error or problem leading to the inability to process requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">WARN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A non-critical error or problem that might not require immediate correction.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INFO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Keycloak lifecycle events or important information. Low frequency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DEBUG</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">More detailed information for debugging purposes, such as database logs. Higher frequency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TRACE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Most detailed debugging information. Very high frequency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ALL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Special level for all log messages.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OFF</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Special level to turn logging off entirely (not recommended).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_root_log_level">Configuring the root log level</h3>
+<div class="paragraph">
+<p>When no log level configuration exists for a more specific category logger, the enclosing category is used instead. When there is no enclosing category, the root logger level is used.</p>
+</div>
+<div class="paragraph">
+<p>To set the root log level, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-level=&lt;root-level&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use these guidelines for this command:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>For <code><em>&lt;root-level&gt;</em></code>, supply a level defined in the preceding table.</p>
+</li>
+<li>
+<p>The log level is case-insensitive. For example, you could either use <code>DEBUG</code> or <code>debug</code>.</p>
+</li>
+<li>
+<p>If you were to accidentally set the log level twice, the last occurrence in the list becomes the log level. For example, if you included the syntax <code>--log-level="info,&#8230;&#8203;,DEBUG,&#8230;&#8203;"</code>, the root logger would be <code>DEBUG</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_category_specific_log_levels">Configuring category-specific log levels</h3>
+<div class="paragraph">
+<p>You can set different log levels for specific areas in Keycloak. Use this command to provide a comma-separated list of categories for which you want a different log level:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-level="&lt;root-level&gt;,&lt;org.category1&gt;:&lt;org.category1-level&gt;"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A configuration that applies to a category also applies to its sub-categories unless you include a more specific matching sub-category.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-level="INFO,org.hibernate:debug,org.hibernate.hql.internal.ast:info"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This example sets the following log levels:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Root log level for all loggers is set to INFO.</p>
+</li>
+<li>
+<p>The hibernate log level in general is set to debug.</p>
+</li>
+<li>
+<p>To keep SQL abstract syntax trees from creating verbose log output, the specific subcategory <code>org.hibernate.hql.internal.ast</code> is set to info. As a result, the SQL abstract syntax trees are omitted instead of appearing at the <code>debug</code> level.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enabling_log_handlers">Enabling log handlers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To enable log handlers, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="&lt;handler1&gt;,&lt;handler2&gt;"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The available handlers are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>console</p>
+</li>
+<li>
+<p>file</p>
+</li>
+<li>
+<p>syslog</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The more specific handler configuration mentioned below will only take effect when the handler is added to this comma-separated list.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_specify_log_level_for_each_handler">Specify log level for each handler</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>log-level</code> property specifies the global root log level and levels for selected categories.
+However, a more fine-grained approach for log levels is necessary to comply with the modern application requirements.</p>
+</div>
+<div class="paragraph">
+<p>To set log levels for particular handlers, properties in format <code>log-&lt;handler&gt;-level</code> (where <code>&lt;handler&gt;</code> is available log handler) were introduced.</p>
+</div>
+<div class="paragraph">
+<p>It means properties for log level settings look like this:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>log-console-level</code> - Console log handler</p>
+</li>
+<li>
+<p><code>log-file-level</code> - File log handler</p>
+</li>
+<li>
+<p><code>log-syslog-level</code> - Syslog log handler</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>log-&lt;handler&gt;-level</code> properties are available only when the particular log handlers are enabled.
+More information in log handlers settings below.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Only log levels specified in <a href="#_log_levels">Log levels</a> section are accepted, and <strong>must be in lowercase</strong>.
+There is no support for specifying particular categories for log handlers yet.</p>
+</div>
+<div class="sect2">
+<h3 id="_general_principle">General principle</h3>
+<div class="paragraph">
+<p>It is necessary to understand that setting the log levels for each particular handler <strong>does not override the root level</strong> specified in the <code>log-level</code> property.
+Log handlers respect the root log level, which represents the maximal verbosity for the whole logging system.
+It means individual log handlers can be configured to be less verbose than the root logger, but not more.</p>
+</div>
+<div class="paragraph">
+<p>Specifically, when an arbitrary log level is defined for the handler, it does not mean the log records with the log level will be present in the output.
+In that case, the root <code>log-level</code> must also be assessed.
+Log handler levels provide the <strong>restriction for the root log level</strong>, and the default log level for log handlers is <code>all</code> - without any restriction.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_examples">Examples</h3>
+<div class="listingblock">
+<div class="title">Example: <code>debug</code> for file handler, but <code>info</code> for console handler:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log=console,file --log-level=debug --log-console-level=info</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The root log level is set to <code>debug</code>, so every log handler inherits the value - so does the file log handler.
+To hide <code>debug</code> records in the console, we need to set the minimal (least severe) level to <code>info</code> for the console handler.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: <code>warn</code> for all handlers, but <code>debug</code> for file handler:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log=console,file,syslog --log-level=debug --log-console-level=warn --log-syslog-level=warn</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The root level must be set to the most verbose required level (<code>debug</code> in this case), and other log handlers must be amended accordingly.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: <code>info</code> for all handlers, but <code>debug</code>+<code>org.keycloak.events:trace</code> for Syslog handler:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log=console,file,syslog --log-level=debug,org.keycloak.events:trace, --log-syslog-level=trace --log-console-level=info --log-file-level=info</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In order to see the <code>org.keycloak.events:trace</code>, the <code>trace</code> level must be set for the Syslog handler.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_console_log_handler">Console log handler</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The console log handler is enabled by default, providing unstructured log messages for the console.</p>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_console_log_format">Configuring the console log format</h3>
+<div class="paragraph">
+<p>Keycloak uses a pattern-based logging formatter that generates human-readable text logs by default.</p>
+</div>
+<div class="paragraph">
+<p>The logging format template for these lines can be applied at the root level. The default format template is:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The format string supports the symbols in the following table:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Symbol</th>
+<th class="tableblock halign-left valign-top">Summary</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders a simple % character.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%c</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Category</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the log category name.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%d{xxx}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Date</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders a date with the given date format string.String syntax defined by <code>java.text.SimpleDateFormat</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%e</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exception</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders a thrown exception.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%h</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hostname</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the simple host name.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%H</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Qualified host name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the fully qualified hostname, which may be the same as the simple host name, depending on the OS configuration.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%i</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Process ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the current process PID.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%m</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Full Message</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the log message and an exception, if thrown.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%n</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Newline</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the platform-specific line separator string.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%N</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Process name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the name of the current process.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%p</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Level</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the log level of the message.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%r</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Relative time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Render the time in milliseconds since the start of the application log.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simple message</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders only the log message without exception trace.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%t</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Thread name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Renders the thread name.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%t{id}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Thread ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Render the thread ID.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%z{&lt;zone name&gt;}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Timezone</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set the time zone of log output to &lt;zone name&gt;.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%L</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Line number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Render the line number of the log message.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_setting_the_logging_format">Setting the logging format</h3>
+<div class="paragraph">
+<p>To set the logging format for a logged line, perform these steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Build your desired format template using the preceding table.</p>
+</li>
+<li>
+<p>Enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-format="'&lt;format&gt;'"</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Note that you need to escape characters when invoking commands containing special shell characters such as <code>;</code> using the CLI. Therefore, consider setting it in the configuration file instead.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Abbreviate the fully qualified category name</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-format="'%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n'"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This example abbreviates the category name to three characters by setting <code>[%c{3.}]</code> in the template instead of the default <code>[%c]</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_json_or_plain_console_logging">Configuring JSON or plain console logging</h3>
+<div class="paragraph">
+<p>By default, the console log handler logs plain unstructured data to the console. To use structured JSON log output instead, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-output=json</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example Log Message</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{"timestamp":"2022-02-25T10:31:32.452+01:00","sequence":8442,"loggerClassName":"org.jboss.logging.Logger","loggerName":"io.quarkus","level":"INFO","message":"Keycloak 18.0.0-SNAPSHOT on JVM (powered by Quarkus 2.7.2.Final) started in 3.253s. Listening on: http://0.0.0.0:8080","threadName":"main","threadId":1,"mdc":{},"ndc":"","hostName":"host-name","processName":"QuarkusEntryPoint","processId":36946}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When using JSON output, colors are disabled and the format settings set by <code>--log-console-format</code> will not apply.</p>
+</div>
+<div class="paragraph">
+<p>To use unstructured logging, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-output=default</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example Log Message</div>
+<div class="content">
+<pre class="highlight"><code>2022-03-02 10:36:50,603 INFO  [io.quarkus] (main) Keycloak 18.0.0-SNAPSHOT on JVM (powered by Quarkus 2.7.2.Final) started in 3.615s. Listening on: http://0.0.0.0:8080</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_colors">Colors</h3>
+<div class="paragraph">
+<p>Colored console log output for unstructured logs is disabled by default. Colors may improve readability, but they can cause problems when shipping logs to external log aggregation systems. To enable or disable color-coded console log output, enter following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-color=&lt;false|true&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_console_log_level">Configuring the console log level</h3>
+<div class="paragraph">
+<p>Log level for console log handler can be specified by <code>--log-console-level</code> property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-level=warn</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, see the section <a href="#_specify_log_level_for_each_handler">Specify log level for each handler</a> above.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_file_logging">File logging</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As an alternative to logging to the console, you can use unstructured logging to a file.</p>
+</div>
+<div class="sect2">
+<h3 id="_enable_file_logging">Enable file logging</h3>
+<div class="paragraph">
+<p>Logging to a file is disabled by default. To enable it, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,file"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A log file named <code>keycloak.log</code> is created inside the <code>data/log</code> directory of your Keycloak installation.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_location_and_name_of_the_log_file">Configuring the location and name of the log file</h3>
+<div class="paragraph">
+<p>To change where the log file is created and the file name, perform these steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a writable directory to store the log file.</p>
+<div class="paragraph">
+<p>If the directory is not writable, Keycloak will start correctly, but it will issue an error and no log file will be created.</p>
+</div>
+</li>
+<li>
+<p>Enter this command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,file" --log-file=&lt;path-to&gt;/&lt;your-file.log&gt;</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_file_handler_format">Configuring the file handler format</h3>
+<div class="paragraph">
+<p>To configure a different logging format for the file log handler, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-file-format="&lt;pattern&gt;"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See <a href="#_configuring_the_console_log_format">Configuring the console log format</a> for more information and a table of the available pattern configuration.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_file_log_level">Configuring the file log level</h3>
+<div class="paragraph">
+<p>Log level for file log handler can be specified by <code>--log-file-level</code> property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-file-level=warn</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, see the section <a href="#_specify_log_level_for_each_handler">Specify log level for each handler</a> above.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_centralized_logging_using_syslog">Centralized logging using Syslog</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides the ability to send logs to a remote Syslog server.
+It utilizes the protocol defined in <a href="https://datatracker.ietf.org/doc/html/rfc5424">RFC 5424</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="_enable_the_syslog_handler">Enable the Syslog handler</h3>
+<div class="paragraph">
+<p>To enable logging using Syslog, add it to the list of activated log handlers as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_application_name">Configuring the Syslog Application Name</h3>
+<div class="paragraph">
+<p>To set a different application name, add the <code>--log-syslog-app-name</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog" --log-syslog-app-name=kc-p-itadmins</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If not set, the application name defaults to <code>keycloak</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_endpoint">Configuring the Syslog endpoint</h3>
+<div class="paragraph">
+<p>To configure the endpoint(<em>host:port</em>) of your centralized logging system, enter the following command and substitute the values with your specific values:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog" --log-syslog-endpoint=myhost:12345</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the Syslog handler is enabled, the host is using <code>localhost</code> as host value.
+The Default port is <code>514</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_log_level">Configuring the Syslog log level</h3>
+<div class="paragraph">
+<p>Log level for Syslog log handler can be specified by <code>--log-syslog-level</code> property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-level=warn</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, see the section <a href="#_specify_log_level_for_each_handler">Specify log level for each handler</a> above.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_protocol">Configuring the Syslog protocol</h3>
+<div class="paragraph">
+<p>Syslog uses TCP as the default protocol for communication.
+To use UDP instead of TCP, add the <code>--log-syslog-protocol</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog" --log-syslog-protocol=udp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The available protocols are: <code>tpc</code>, <code>udp</code>, and <code>ssl-tcp</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_log_format">Configuring the Syslog log format</h3>
+<div class="paragraph">
+<p>To set the logging format for a logged line, perform these steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Build your desired format template using the preceding table.</p>
+</li>
+<li>
+<p>Enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-format="'&lt;format&gt;'"</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Note that you need to escape characters when invoking commands containing special shell characters such as <code>;</code> using the CLI. Therefore, consider setting it in the configuration file instead.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Abbreviate the fully qualified category name</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-format="'%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n'"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This example abbreviates the category name to three characters by setting <code>[%c{3.}]</code> in the template instead of the default <code>[%c]</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_type">Configuring the Syslog type</h3>
+<div class="paragraph">
+<p>Syslog uses different message formats based on particular RFC specifications.
+To change the Syslog type with a different message format, use the <code>--log-syslog-type</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-type=rfc3164</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Possible values for the <code>--log-syslog-type</code> option are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>rfc5424  (default)</p>
+</li>
+<li>
+<p>rfc3164</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The preferred Syslog type is <a href="https://datatracker.ietf.org/doc/html/rfc5424">RFC 5424</a>, which obsoletes <a href="https://datatracker.ietf.org/doc/html/rfc3164">RFC 3164</a>, known as BSD Syslog protocol.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_maximum_message_length">Configuring the Syslog maximum message length</h3>
+<div class="paragraph">
+<p>To set the maximum length of the message allowed to be sent (in bytes), use the <code>--log-syslog-max-length</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-max-length=1536</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The length can be specified in memory size format with the appropriate suffix, like <code>1k</code> or <code>1K</code>.
+The length includes the header and the message.</p>
+</div>
+<div class="paragraph">
+<p>If the length is not explicitly set, the default values are set based on the <code>--log-syslog-type</code> option as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>2048B</code> - for RFC 5424</p>
+</li>
+<li>
+<p><code>1024B</code> - for RFC 3164</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_syslog_structured_output">Configuring the Syslog structured output</h3>
+<div class="paragraph">
+<p>By default, the Syslog log handler sends plain unstructured data to the Syslog server.
+To use structured JSON log output instead, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-output=json</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example Log Message</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">2024-04-05T12:32:20.616+02:00 mabartos keycloak 2788276 io.quarkus - {"timestamp":"2024-04-05T12:32:20.616208533+02:00","sequence":9948,"loggerClassName":"org.jboss.logging.Logger","loggerName":"io.quarkus","level":"INFO","message":"Profile prod activated. ","threadName":"main","threadId":1,"mdc":{},"ndc":"","hostName":"host","processName":"QuarkusEntryPoint","processId":2788276}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When using JSON output, colors are disabled and the format settings set by <code>--log-syslog-format</code> will not apply.</p>
+</div>
+<div class="paragraph">
+<p>To use unstructured logging, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-output=default</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example Log Message</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">2024-04-05T12:31:38.473+02:00 mabartos keycloak 2787568 io.quarkus - 2024-04-05 12:31:38,473 INFO  [io.quarkus] (main) Profile prod activated.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, the timestamp is present twice, so you can amend it correspondingly via the <code>--log-syslog-format</code> property.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enable one or more log handlers in a comma-separated list.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log</code><br>
+<strong>Env:</strong> <code>KC_LOG</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>console</code>, <code>file</code>, <code>syslog</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-color</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enable or disable colors when logging to console.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-color</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_COLOR</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-format</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The format of unstructured console log entries.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the format has spaces in it, escape the value using "&lt;format&gt;".</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-format</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_FORMAT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-include-trace</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include tracing information in the console log.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-console-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-include-trace</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_INCLUDE_TRACE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler and Tracing is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-level</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the log level for the console handler.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It specifies the most verbose log level for logs shown in the output. It respects levels specified in the <code>log-level</code> option, which represents the maximal verbosity for the whole logging system. For more information, check the Logging guide.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-level</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_LEVEL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>off</code>, <code>fatal</code>, <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code>, <code>all</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-output</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the log output to JSON or default (plain) unstructured logging.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-output</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_OUTPUT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>json</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the log file path and filename.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>data/log/keycloak.log</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-format</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set a format specific to file log entries.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-format</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_FORMAT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-include-trace</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include tracing information in the file log.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-file-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-include-trace</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_INCLUDE_TRACE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler and Tracing is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-level</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the log level for the file handler.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It specifies the most verbose log level for logs shown in the output. It respects levels specified in the <code>log-level</code> option, which represents the maximal verbosity for the whole logging system. For more information, check the Logging guide.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-level</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_LEVEL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>off</code>, <code>fatal</code>, <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code>, <code>all</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-output</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the log output to JSON or default (plain) unstructured logging.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-output</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_OUTPUT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>json</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-level</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The log level of the root category or a comma-separated list of individual categories and their levels.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">For the root category, you don&#8217;t need to specify a category.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-level</code><br>
+<strong>Env:</strong> <code>KC_LOG_LEVEL</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>[info]</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-app-name</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the app name used when formatting the message in RFC5424 format.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-app-name</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_APP_NAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>keycloak</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-endpoint</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the IP address and port of the Syslog server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-endpoint</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_ENDPOINT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>localhost:514</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-format</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set a format specific to Syslog entries.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-format</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_FORMAT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-include-trace</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include tracing information in the Syslog.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-syslog-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-include-trace</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_INCLUDE_TRACE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog handler and Tracing is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-level</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the log level for the Syslog handler.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It specifies the most verbose log level for logs shown in the output. It respects levels specified in the <code>log-level</code> option, which represents the maximal verbosity for the whole logging system. For more information, check the Logging guide.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-level</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_LEVEL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>off</code>, <code>fatal</code>, <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code>, <code>all</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-max-length</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the maximum length, in bytes, of the message allowed to be sent.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The length includes the header and the message. If not set, the default value is 2048 when <code>log-syslog-type</code> is rfc5424 (default) and 1024 when <code>log-syslog-type</code> is rfc3164.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-max-length</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_MAX_LENGTH</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-output</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the Syslog output to JSON or default (plain) unstructured logging.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-output</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_OUTPUT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>json</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-protocol</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the protocol used to connect to the Syslog server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-protocol</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_PROTOCOL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code> (default), <code>udp</code>, <code>ssl-tcp</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-type</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the Syslog type used to format the sent message.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-type</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_TYPE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rfc5424</code> (default), <code>rfc3164</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/server/logging.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2024. &copy; 2024 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

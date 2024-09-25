@@ -1,0 +1,371 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Using a vault - Keycloak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Keycloak is an open source identity and access management solution">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/server/vault">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Using a vault</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Using a vault</h1>
+                    <span class="text-muted">Learn how to use and configure a vault in Keycloak</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides two out-of-the-box implementations of the Vault SPI: a plain-text file-based vault and Java KeyStore-based vault.</p>
+</div>
+<div class="paragraph">
+<p>The file-based vault implementation is especially useful for Kubernetes/OpenShift secrets. You can mount Kubernetes secrets into the Keycloak Container, and the data fields will be available in the mounted folder with a flat-file structure.</p>
+</div>
+<div class="paragraph">
+<p>The Java KeyStore-based vault implementation is useful for storing secrets in bare metal installations. You can use the KeyStore vault, which is encrypted using a password.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_available_integrations">Available integrations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Secrets stored in the vaults can be used at the following places of the Administration Console:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Obtain the SMTP Mail server Password</p>
+</li>
+<li>
+<p>Obtain the LDAP Bind Credential when using LDAP-based User Federation</p>
+</li>
+<li>
+<p>Obtain the OIDC identity providers Client Secret when integrating external identity providers</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enabling_a_vault">Enabling a vault</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For enabling the file-based vault you need to build Keycloak first using the following build option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --vault=file</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Analogically, for the Java KeyStore-based you need to specify the following build option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --vault=keystore</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_file_based_vault">Configuring the file-based vault</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_setting_the_base_directory_to_lookup_secrets">Setting the base directory to lookup secrets</h3>
+<div class="paragraph">
+<p>Kubernetes/OpenShift secrets are basically mounted files. To configure a directory where these files should be mounted, enter this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --vault-dir=/my/path</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_realm_specific_secret_files">Realm-specific secret files</h3>
+<div class="paragraph">
+<p>Kubernetes/OpenShift Secrets are used on a per-realm basis in Keycloak, which requires a naming convention for the file in place:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">${vault.&lt;realmname&gt;_&lt;secretname&gt;}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_underscores_in_the_name">Using underscores in the Name</h3>
+<div class="paragraph">
+<p>To process the secret correctly, you double all underscores in the &lt;realmname&gt; or the &lt;secretname&gt;, separated by a single underscore.</p>
+</div>
+<div class="ulist">
+<div class="title">Example</div>
+<ul>
+<li>
+<p>Realm Name: <code>sso_realm</code></p>
+</li>
+<li>
+<p>Desired Name: <code>ldap_credential</code></p>
+</li>
+<li>
+<p>Resulting file Name:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>sso__realm_ldap__credential</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the doubled underscores between <em>sso</em> and <em>realm</em> and also between <em>ldap</em> and <em>credential</em>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_java_keystore_based_vault">Configuring the Java KeyStore-based vault</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In order to use the Java KeyStore-based vault, you need to create a KeyStore file first. You can use the following command for doing so:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">keytool -importpass -alias &lt;realm-name&gt;_&lt;alias&gt; -keystore keystore.p12 -storepass keystorepassword</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and then enter a value you want to store in the vault. Note that the format of the <code>-alias</code> parameter depends on the key resolver used. The default key resolver is <code>REALM_UNDERSCORE_KEY</code>.</p>
+</div>
+<div class="paragraph">
+<p>This by default results to storing the value in a form of generic PBEKey (password based encryption) within SecretKeyEntry.</p>
+</div>
+<div class="paragraph">
+<p>You can then start Keycloak using the following runtime options:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start  --vault-file=/path/to/keystore.p12 --vault-pass=&lt;value&gt; --vault-type=&lt;value&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that the <code>--vault-type</code> parameter is optional and defaults to <code>PKCS12</code>.</p>
+</div>
+<div class="paragraph">
+<p>Secrets stored in the vault can then be accessed in a realm via the following placeholder (assuming using the <code>REALM_UNDERSCORE_KEY</code> key resolver): <code>${vault.realm-name_alias}</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_use_an_ldap_bind_credential_secret_in_the_admin_console">Example: Use an LDAP bind credential secret in the Admin Console</h2>
+<div class="sectionbody">
+<div class="ulist">
+<div class="title">Example setup</div>
+<ul>
+<li>
+<p>A realm named <code>secrettest</code></p>
+</li>
+<li>
+<p>A desired Name <code>ldapBc</code> for the bind Credential</p>
+</li>
+<li>
+<p>Resulting file name: <code>secrettest_ldapBc</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">Usage in Admin Console</div>
+<p>You can then use this secret from the Admin Console by using <code>${vault.ldapBc}</code> as the value for the <code>Bind Credential</code> when configuring your LDAP User federation.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>vault</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables a vault provider.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--vault</code><br>
+<strong>Env:</strong> <code>KC_VAULT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>file</code>, <code>keystore</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>vault-dir</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If set, secrets can be obtained by reading the content of files within the given directory.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--vault-dir</code><br>
+<strong>Env:</strong> <code>KC_VAULT_DIR</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>vault-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Path to the keystore file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--vault-file</code><br>
+<strong>Env:</strong> <code>KC_VAULT_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>vault-pass</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Password for the vault keystore.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--vault-pass</code><br>
+<strong>Env:</strong> <code>KC_VAULT_PASS</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>vault-type</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Specifies the type of the keystore file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--vault-type</code><br>
+<strong>Env:</strong> <code>KC_VAULT_TYPE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>PKCS12</code></span> (default)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/server/vault.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2024. &copy; 2024 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>
