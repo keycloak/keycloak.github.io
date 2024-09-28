@@ -64,7 +64,7 @@
 
             <div class="mb-4">
                 <h1>Configuring TLS</h1>
-                    <span class="text-muted">Learn how to configure Keycloak's https certificates for ingoing and outgoing requests as well as mTLS.</span>
+                    <span class="text-muted">Learn how to configure Keycloak's https certificates for ingoing and outgoing requests.</span>
             </div>
 
 
@@ -77,17 +77,15 @@
 For production environments, you should never expose Keycloak endpoints through HTTP, as sensitive data is at the core of what Keycloak exchanges with other applications.
 In this guide, you will learn how to configure Keycloak to use HTTPS/TLS.</p>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_configuring_tls_in_keycloak">Configuring TLS in Keycloak</h2>
-<div class="sectionbody">
 <div class="paragraph">
 <p>Keycloak can be configured to load the required certificate infrastructure using files in PEM format or from a Java Keystore.
 When both alternatives are configured, the PEM files takes precedence over the Java Keystores.</p>
 </div>
-<div class="sect2">
-<h3 id="_providing_certificates_in_pem_format">Providing certificates in PEM format</h3>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_providing_certificates_in_pem_format">Providing certificates in PEM format</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>When you use a pair of matching certificate and private key files in PEM format, you configure Keycloak to use them by running the following command:</p>
 </div>
@@ -100,8 +98,10 @@ When both alternatives are configured, the PEM files takes precedence over the J
 <p>Keycloak creates a keystore out of these files in memory and uses this keystore afterwards.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_providing_a_java_keystore">Providing a Java Keystore</h3>
+</div>
+<div class="sect1">
+<h2 id="_providing_a_java_keystore">Providing a Java Keystore</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>When no keystore file is explicitly configured, but <code>http-enabled</code> is set to false, Keycloak looks for a <code>conf/server.keystore</code> file.</p>
 </div>
@@ -113,8 +113,8 @@ When both alternatives are configured, the PEM files takes precedence over the J
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-key-store-file=/path/to/existing-keystore-file</code></pre>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_setting_the_keystore_password">Setting the Keystore password</h4>
+<div class="sect2">
+<h3 id="_setting_the_keystore_password">Setting the Keystore password</h3>
 <div class="paragraph">
 <p>You can set a secure password for your keystore using the <code>https-key-store-password</code> option:</p>
 </div>
@@ -125,6 +125,12 @@ When both alternatives are configured, the PEM files takes precedence over the J
 </div>
 <div class="paragraph">
 <p>If no password is set, the default password <code>password</code> is used.</p>
+</div>
+<div class="sect3">
+<h4 id="_securing_credentials">Securing credentials</h4>
+<div class="paragraph">
+<p>Avoid setting a password in plaintext by using the CLI or adding it to <code>conf/keycloak.conf</code> file.
+Instead use good practices such as using a vault / mounted secret. For more detail, see <a href="https://www.keycloak.org/nightly/server/vault">Using a vault</a> and <a href="https://www.keycloak.org/nightly/server/configuration-production">Configuring Keycloak for production</a>.</p>
 </div>
 </div>
 </div>
@@ -158,103 +164,6 @@ However, as a temporary work-around, you can enable deprecated protocols by runn
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-port=&lt;port&gt;</code></pre>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_using_a_truststore">Using a truststore</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>In order to properly validate client certificates and enable certain authentication methods like two-way TLS or mTLS, you can set
-a trust store with all the certificates (and certificate chain) the server should be trusting. There are number of capabilities that rely
-on this trust store to properly authenticate clients using certificates such as:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Mutual-TLS Client Authentication</p>
-</li>
-<li>
-<p>End-User X.509 Browser Authentication</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>You can configure the location of this truststore by running the following command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-trust-store-file=/path/to/file</code></pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This trust store is targeted for authenticating clients where Keycloak is acting as a server. For configuring a trust store
-where Keycloak is acting as a client to external services through TLS, see <a href="https://www.keycloak.org/nightly/server/keycloak-truststore">Configuring trusted certificates</a>.
-</td>
-</tr>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_setting_the_truststore_password">Setting the truststore password</h3>
-<div class="paragraph">
-<p>You can set a secure password for your truststore using the <code>https-trust-store-password</code> option:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-trust-store-password=&lt;value&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If no password is set, the default password <code>password</code> is used.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_securing_credentials">Securing credentials</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Avoid setting a password in plaintext by using the CLI or adding it to <code>conf/keycloak.conf</code> file.
-Instead use good practices such as using a vault / mounted secret. For more detail, see <a href="https://www.keycloak.org/nightly/server/vault">Using a vault</a> and <a href="https://www.keycloak.org/nightly/server/configuration-production">Configuring Keycloak for production</a>.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_enabling_mutual_tls">Enabling mutual TLS</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Authentication using mTLS is disabled by default. To enable mTLS certificate handling when Keycloak is the server and needs to validate certificates from requests made to Keycloak endpoints, put the appropriate certificates in Keycloak truststore and use the following command to enable mTLS:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --https-client-auth=&lt;none|request|required&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Using the value <code>required</code> sets up Keycloak to always ask for certificates and fail if no certificate is provided in a request. By setting the value to <code>request</code>, Keycloak will also accept requests without a certificate and only validate the correctness of a certificate if it exists.</p>
-</div>
-<div class="paragraph">
-<p>Be aware that this is the basic certificate configuration for mTLS use cases where Keycloak acts as server. When Keycloak acts as client instead, e.g. when Keycloak tries to get a token from a token endpoint of a brokered identity provider that is secured by mTLS, you need to set up the HttpClient to provide the right certificates in the keystore for the outgoing request. To configure mTLS in these scenarios, see <a href="https://www.keycloak.org/nightly/server/outgoinghttp">Configuring outgoing HTTP requests</a>.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Management interface properties are inherited from the main HTTP server, including mTLS settings.
-It means when mTLS is set, it is also enabled for the management interface.
-To override the behavior, use the <code>https-management-client-auth</code> property.
-</td>
-</tr>
-</table>
 </div>
 </div>
 </div>
@@ -375,23 +284,6 @@ The value may be a java.time.Duration value, an integer number of seconds, or an
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>https-client-auth</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">Configures the server to require/request client authentication.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--https-client-auth</code><br>
-<strong>Env:</strong> <code>KC_HTTPS_CLIENT_AUTH</code></p>
-</div>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default), <code>request</code>, <code>required</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>https-key-store-file</code></span></p>
 </div>
 <div class="paragraph">
@@ -480,72 +372,6 @@ The value may be a java.time.Duration value, an integer number of seconds, or an
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>https-trust-store-file</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">The trust store which holds the certificate information of the certificates to trust.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--https-trust-store-file</code><br>
-<strong>Env:</strong> <code>KC_HTTPS_TRUST_STORE_FILE</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>DEPRECATED.</strong>
-Use the System Truststore instead, see the docs for details.</p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>https-trust-store-password</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">The password of the trust store file.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--https-trust-store-password</code><br>
-<strong>Env:</strong> <code>KC_HTTPS_TRUST_STORE_PASSWORD</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>DEPRECATED.</strong>
-Use the System Truststore instead, see the docs for details.</p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>https-trust-store-type</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">The type of the trust store file.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><span class="options-description-extended">If not given, the type is automatically detected based on the file extension. If <code>fips-mode</code> is set to <code>strict</code> and no value is set, it defaults to <code>BCFKS</code>.</span></p>
-</div>
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--https-trust-store-type</code><br>
-<strong>Env:</strong> <code>KC_HTTPS_TRUST_STORE_TYPE</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>DEPRECATED.</strong>
-Use the System Truststore instead, see the docs for details.</p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>https-management-certificate-file</code></span></p>
 </div>
 <div class="paragraph">
@@ -583,26 +409,6 @@ Use the System Truststore instead, see the docs for details.</p>
 </div>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>https-management-client-auth</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">Configures the management interface to require/request client authentication.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><span class="options-description-extended">If not given, the value is inherited from HTTP options. Relevant only when something is exposed on the management interface - see the guide for details.</span></p>
-</div>
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--https-management-client-auth</code><br>
-<strong>Env:</strong> <code>KC_HTTPS_MANAGEMENT_CLIENT_AUTH</code></p>
-</div>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default), <code>request</code>, <code>required</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
