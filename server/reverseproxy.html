@@ -96,6 +96,18 @@
 </li>
 </ul>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you are using a reverse proxy for anything other than https passthrough and do not set the <code>proxy-headers</code> option, then by default you will see 403 Forbidden responses to requests via the proxy that perform origin checking.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>For example:</p>
 </div>
@@ -132,11 +144,6 @@ When using the <code>xforwarded</code> setting, the <code>X-Forwarded-Port</code
 </tr>
 </table>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_proxy_modes_deprecated">Proxy modes (deprecated)</h2>
-<div class="sectionbody">
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -144,57 +151,10 @@ When using the <code>xforwarded</code> setting, the <code>X-Forwarded-Port</code
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-The support for setting proxy modes is deprecated and will be removed in a future Keycloak release. Consider configuring accepted reverse proxy headers instead as described in the chapter above. For migration instructions consult the <a href="https://www.keycloak.org/docs/latest/upgrading/index.html#deprecated-proxy-option">Upgrading Guide</a>.
+If the TLS connection is terminated at the reverse proxy (edge termination), enabling HTTP through the ‘http-enabled’ setting is required.
 </td>
 </tr>
 </table>
-</div>
-<div class="paragraph">
-<p>For Keycloak, your choice of proxy modes depends on the TLS termination in your environment. The following proxy modes are available:</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">edge</dt>
-<dd>
-<p>Enables communication through HTTP between the proxy and Keycloak.
-This mode is suitable for deployments with a highly secure internal network where the reverse proxy keeps a secure connection (HTTP over TLS) with clients while communicating with Keycloak using HTTP.</p>
-</dd>
-<dt class="hdlist1">reencrypt</dt>
-<dd>
-<p>Requires communication through HTTPS between the proxy and Keycloak.
-This mode is suitable for deployments where internal communication between the reverse proxy and Keycloak should also be protected.
-Different keys and certificates are used on the reverse proxy as well as on Keycloak.</p>
-</dd>
-<dt class="hdlist1">passthrough</dt>
-<dd>
-<p>The proxy forwards the HTTPS connection to Keycloak without terminating TLS.
-The secure connections between the server and clients are based on the keys and certificates used by the Keycloak server.</p>
-</dd>
-</dl>
-</div>
-<div class="paragraph">
-<p>When in <strong>edge</strong> or <strong>reencrypt</strong> proxy mode, Keycloak will parse the following headers and expects the reverse proxy to set them:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>Forwarded</code> as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC7239</a></p>
-</li>
-<li>
-<p>Non-standard <code>X-Forwarded-*</code>, such as <code>X-Forwarded-For</code>, <code>X-Forwarded-Proto</code>, <code>X-Forwarded-Host</code>, and <code>X-Forwarded-Port</code></p>
-</li>
-</ul>
-</div>
-<div class="sect2">
-<h3 id="_configure_the_proxy_mode_in_keycloak">Configure the proxy mode in Keycloak</h3>
-<div class="paragraph">
-<p>To select the proxy mode, enter this command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy &lt;mode&gt;</code></pre>
-</div>
-</div>
 </div>
 </div>
 </div>
@@ -222,7 +182,7 @@ For performance purposes, it may be useful if load balancer forwards all request
 </div>
 <div class="paragraph">
 <p>The reason is, that Keycloak is using Infinispan distributed cache under the covers for save data related to current authentication session and user session.
-The Infinispan distributed caches are configured with two owners by default. That means that particular session is primarily stored on two cluster nodes and the other nodes need to lookup the session remotely if they want to access it.</p>
+The Infinispan distributed caches are configured with limited number of owners. That means that session related data are stored only in some cluster nodes and the other nodes need to lookup the data remotely if they want to access it.</p>
 </div>
 <div class="paragraph">
 <p>For example if authentication session with ID 123 is saved in the Infinispan cache on node1, and then node2 needs to lookup this session, it needs to send the request to node1 over the network to return the particular session entity.</p>
@@ -309,12 +269,6 @@ The following table shows the recommended paths to expose.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Exposed admin paths lead to an unnecessary attack vector.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/js/</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (see note below)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Access to keycloak.js needed for "internal" clients, e.g. the account console</p></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/realms/</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/realms/</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
@@ -346,21 +300,44 @@ The following table shows the recommended paths to expose.</p>
 </tr>
 </tbody>
 </table>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-As it&#8217;s true that the <code>js</code> path is needed for internal clients like the account console, it&#8217;s good practice to use <code>keycloak.js</code> from a JavaScript package manager like npm or yarn for your external clients.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>We assume you run Keycloak on the root path <code>/</code> on your reverse proxy/gateway&#8217;s public API.
 If not, prefix the path with your desired one.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trusted_proxies">Trusted Proxies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To ensure that proxy headers are used only from proxies you trust, set the <code>proxy-trusted-addresses</code> option to a comma separated list of IP addresses (IPv4 or IPv6) or Classless Inter-Domain Routing (CIDR) notations.</p>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers forwarded --proxy-trusted-addresses=192.168.0.32,127.0.0.0/8</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_proxy_protocol">PROXY Protocol</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>proxy-protocol-enabled</code> option controls whether the server should use the HA PROXY protocol when serving requests from behind a proxy. When set to true, the remote address returned will be the one from the actual connecting client.</p>
+</div>
+<div class="paragraph">
+<p>This is useful when running behind a compatible https passthrough proxy because the request headers cannot be manipulated.</p>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-protocol-enabled true</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -483,52 +460,6 @@ to configure a Keycloak Truststore.</p>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>hostname-path</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">This should be set if proxy uses a different context-path for Keycloak.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--hostname-path</code><br>
-<strong>Env:</strong> <code>KC_HOSTNAME_PATH</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Available only when hostname:v1 feature is enabled</p>
-</div>
-<div class="paragraph">
-<p><strong>DEPRECATED.</strong></p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>hostname-url</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">Set the base URL for frontend URLs, including scheme, host, port and path.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--hostname-url</code><br>
-<strong>Env:</strong> <code>KC_HOSTNAME_URL</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Available only when hostname:v1 feature is enabled</p>
-</div>
-<div class="paragraph">
-<p><strong>DEPRECATED.</strong></p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>http-relative-path</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
 </div>
 <div class="paragraph">
@@ -549,27 +480,6 @@ to configure a Keycloak Truststore.</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>proxy</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">The proxy address forwarding mode if the server is behind a reverse proxy.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--proxy</code><br>
-<strong>Env:</strong> <code>KC_PROXY</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>DEPRECATED.</strong>
-Use: <code>proxy-headers</code>.</p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default), <code>edge</code>, <code>reencrypt</code>, <code>passthrough</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>proxy-headers</code></span></p>
 </div>
 <div class="paragraph">
@@ -587,6 +497,46 @@ Use: <code>proxy-headers</code>.</p>
 </div>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>forwarded</code>, <code>xforwarded</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>proxy-protocol-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Whether the server should use the HA PROXY protocol when serving requests from behind a proxy.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">When set to true, the remote address returned will be the one from the actual connecting client.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--proxy-protocol-enabled</code><br>
+<strong>Env:</strong> <code>KC_PROXY_PROTOCOL_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>proxy-trusted-addresses</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">A comma separated list of trusted proxy addresses.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If set, then proxy headers from other addresses will be ignored. By default all addresses are trusted. A trusted proxy address is specified as an IP address (IPv4 or IPv6) or Classless Inter-Domain Routing (CIDR) notation. Available only when proxy-headers is set.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--proxy-trusted-addresses</code><br>
+<strong>Env:</strong> <code>KC_PROXY_TRUSTED_ADDRESSES</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 </tbody>
 </table>

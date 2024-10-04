@@ -76,8 +76,8 @@
 <p>This guide describes advanced Keycloak configurations for Kubernetes which are load tested and will recover from single Pod failures.</p>
 </div>
 <div class="paragraph">
-<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/high-availability/concepts-active-passive-sync">Concepts for active-passive deployments</a> guide.
-Use it together with the other building blocks outlined in the <a href="https://www.keycloak.org/high-availability/bblocks-active-passive-sync">Building blocks active-passive deployments</a> guide.</p>
+<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.
+Use it together with the other building blocks outlined in the <a href="https://www.keycloak.org/high-availability/bblocks-multi-site">Building blocks multi-site deployments</a> guide.</p>
 </div>
 </div>
 </div>
@@ -91,6 +91,12 @@ Use it together with the other building blocks outlined in the <a href="https://
 </li>
 <li>
 <p>Understanding of a <a href="https://www.keycloak.org/operator/basic-deployment">Basic Keycloak deployment</a> of Keycloak with the Keycloak Operator.</p>
+</li>
+<li>
+<p>Aurora AWS database deployed using the <a href="https://www.keycloak.org/high-availability/deploy-aurora-multi-az">Deploy AWS Aurora in multiple availability zones</a> guide.</p>
+</li>
+<li>
+<p>Infinispan server deployed using the <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploy Infinispan for HA with the Infinispan Operator</a> guide.</p>
 </li>
 </ul>
 </div>
@@ -108,7 +114,10 @@ Use it together with the other building blocks outlined in the <a href="https://
 <p>Install the Keycloak Operator as described in the <a href="https://www.keycloak.org/operator/installation">Keycloak Operator Installation</a> guide.</p>
 </li>
 <li>
-<p>Deploy Aurora AWS as described in the <a href="https://www.keycloak.org/high-availability/deploy-aurora-multi-az">Deploy AWS Aurora in multiple availability zones</a> guide.</p>
+<p>Notice the configuration file below contains options relevant for connecting to the Aurora database from <a href="https://www.keycloak.org/high-availability/deploy-aurora-multi-az#connecting-aurora-to-keycloak">Deploy AWS Aurora in multiple availability zones</a></p>
+</li>
+<li>
+<p>Notice the configuration file below options relevant for connecting to the Infinispan server from <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc#connecting-infinispan-to-keycloak">Deploy Infinispan for HA with the Infinispan Operator</a></p>
 </li>
 <li>
 <p>Build a custom Keycloak image which is <a href="https://www.keycloak.org/server/db#preparing-keycloak-for-amazon-aurora-postgresql">prepared for usage with the Amazon Aurora PostgreSQL database</a>.</p>
@@ -154,6 +163,7 @@ spec:
   transaction:
     xaEnabled: false <i class="conum" data-value="4"></i><b>(4)</b>
   additionalOptions:
+
     - name: http-max-queued-requests
       value: "1000"
     - name: log-console-output
@@ -162,6 +172,20 @@ spec:
       value: 'true'
     - name: http-pool-max-threads <i class="conum" data-value="6"></i><b>(6)</b>
       value: "66"
+    - name: cache-remote-host
+      value: "infinispan.keycloak.svc"
+    - name: cache-remote-port
+      value: "11222"
+    - name: cache-remote-username
+      secret:
+        name: remote-store-secret
+        key: username
+    - name: cache-remote-password
+      secret:
+        name: remote-store-secret
+        key: password
+    - name: spi-connections-infinispan-quarkus-site-name
+      value: keycloak
     - name: db-driver
       value: software.amazon.jdbc.Driver
   http:
@@ -198,9 +222,7 @@ Use a reverse proxy in front of Keycloak to filter out those URLs.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>The default setting for the internal JGroup thread pools is 200 threads maximum.
-The number of all Keycloak threads in the StatefulSet should not exceed the number of JGroup threads to avoid a JGroup thread pool exhaustion which could stall Keycloak request processing.
-You might consider limiting the number of Keycloak threads further because multiple concurrent threads will lead to throttling by Kubernetes once the requested CPU limit is reached.
+<td>You might consider limiting the number of Keycloak threads further because multiple concurrent threads will lead to throttling by Kubernetes once the requested CPU limit is reached.
 See the <a href="https://www.keycloak.org/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide for details.</td>
 </tr>
 </table>

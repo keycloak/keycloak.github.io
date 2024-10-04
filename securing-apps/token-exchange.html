@@ -1,0 +1,928 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Using token exchange - Keycloak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Keycloak is an open source identity and access management solution">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/securing-apps/token-exchange">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#securing-apps">Securing applications</a></li>
+                    <li class="breadcrumb-item active">Using token exchange</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Using token exchange</h1>
+                    <span class="text-muted">Configuring and using Token exchange with Keycloak</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Token Exchange is
+<strong>Preview</strong>
+and is not fully supported. This feature is disabled by default.</p>
+</div>
+<div class="paragraph">
+<p>To enable start the server with <code>--features=preview</code>
+or <code>--features=token-exchange</code></p>
+</div>
+<div class="paragraph">
+<p>Token Exchange is <strong>Technology Preview</strong> and is not fully supported.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To use more than the <a href="#_internal-token-to-internal-token-exchange">Internal Token to Internal Token Exchange</a> flow, also enable the <code>admin-fine-grained-authz</code> feature.
+For details, see the <a href="https://www.keycloak.org/server/features">Enabling and disabling features</a> guide.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_token_exchange_works">How token exchange works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In Keycloak, token exchange is the process of using a set of credentials or token to obtain an entirely different token.
+A client may want to invoke on a less trusted application so it may want to downgrade the current token it has.
+A client may want to exchange a Keycloak token for a token stored for a linked social provider account.
+You may want to trust external tokens minted by other Keycloak realms or foreign IDPs. A client may have a need
+to impersonate a user.  Here&#8217;s a short summary of the current capabilities of Keycloak around token exchange.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A client can exchange an existing Keycloak token created for a specific client for a new token targeted to a different client</p>
+</li>
+<li>
+<p>A client can exchange an existing Keycloak token for an external token, i.e. a linked Facebook account</p>
+</li>
+<li>
+<p>A client can exchange an external token for a Keycloak token.</p>
+</li>
+<li>
+<p>A client can impersonate a user</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Token exchange in Keycloak is a very loose implementation of the <a href="https://datatracker.ietf.org/doc/html/rfc8693">OAuth Token Exchange</a> specification at the IETF.
+We have extended it a little, ignored some of it, and loosely interpreted other parts of the specification.  It is
+a simple grant type invocation on a realm&#8217;s OpenID Connect token endpoint.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>/realms/{realm}/protocol/openid-connect/token</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It accepts form parameters (<code>application/x-www-form-urlencoded</code>) as input and the output depends on the type of token you requested an exchange for.
+Token exchange is a client endpoint so requests must provide authentication information for the calling client.
+Public clients specify their client identifier as a form parameter.  Confidential clients can also use form parameters
+to pass their client id and secret, Basic Auth, or however your admin has configured the client authentication flow in your
+realm.</p>
+</div>
+<div class="sect2">
+<h3 id="_form_parameters">Form parameters</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">client_id</dt>
+<dd>
+<p><em>REQUIRED MAYBE.</em>  This parameter is required for clients using form parameters for authentication.  If you are using
+Basic Auth, a client JWT token, or client cert authentication, then do not specify this parameter.</p>
+</dd>
+<dt class="hdlist1">client_secret</dt>
+<dd>
+<p><em>REQUIRED MAYBE</em>.  This parameter is required for clients using form parameters for authentication and using a client secret as a credential.
+Do not specify this parameter if client invocations in your realm are authenticated by a different means.</p>
+</dd>
+<dt class="hdlist1">grant_type</dt>
+<dd>
+<p><em>REQUIRED.</em>  The value of the parameter must be <code>urn:ietf:params:oauth:grant-type:token-exchange</code>.</p>
+</dd>
+<dt class="hdlist1">subject_token</dt>
+<dd>
+<p><em>OPTIONAL.</em>  A security token that represents the identity of the party on behalf of whom the request is being made.  It is required if you are exchanging an existing token for a new one.</p>
+</dd>
+<dt class="hdlist1">subject_issuer</dt>
+<dd>
+<p><em>OPTIONAL.</em> Identifies the issuer of the <code>subject_token</code>.  It can be left blank if the token comes from the current realm or if the issuer
+can be determined from the <code>subject_token_type</code>.  Otherwise it is required to be specified. Valid values are the alias of an <code>Identity Provider</code> configured for your realm.  Or an issuer claim identifier
+configured by a specific <code>Identity Provider</code>.</p>
+</dd>
+<dt class="hdlist1">subject_token_type</dt>
+<dd>
+<p><em>OPTIONAL.</em>  This parameter is the type of the token passed with the <code>subject_token</code> parameter.  This defaults
+to <code>urn:ietf:params:oauth:token-type:access_token</code> if the <code>subject_token</code> comes from the realm and is an access token.
+If it is an external token, this parameter may or may not have to be specified depending on the requirements of the
+<code>subject_issuer</code>.</p>
+</dd>
+<dt class="hdlist1">requested_token_type</dt>
+<dd>
+<p><em>OPTIONAL.</em> This parameter represents the type of token the client wants to exchange for.  Currently only oauth
+and OpenID Connect token types are supported.  The default value for this depends on whether it
+is <code>urn:ietf:params:oauth:token-type:refresh_token</code> in which case you will be returned both an access token and refresh
+token within the response.  Other appropriate values are <code>urn:ietf:params:oauth:token-type:access_token</code> and <code>urn:ietf:params:oauth:token-type:id_token</code></p>
+</dd>
+<dt class="hdlist1">audience</dt>
+<dd>
+<p><em>OPTIONAL.</em>  This parameter specifies the target client you want the new token minted for.</p>
+</dd>
+<dt class="hdlist1">requested_issuer</dt>
+<dd>
+<p><em>OPTIONAL.</em>  This parameter specifies that the client wants a token minted by an external provider.  It must
+be the alias of an <code>Identity Provider</code> configured within the realm.</p>
+</dd>
+<dt class="hdlist1">requested_subject</dt>
+<dd>
+<p><em>OPTIONAL.</em> This specifies a username or user id if your client wants to impersonate a different user.</p>
+</dd>
+<dt class="hdlist1">scope</dt>
+<dd>
+<p><em>OPTIONAL.</em> This parameter represents the target set of OAuth and OpenID Connect scopes the client
+is requesting. Returned scope is the Cartesian product of scope parameter and access token scope.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+We currently only support OpenID Connect and OAuth exchanges.  Support for SAML based clients and identity providers may be added in the future depending on user demand.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_responses_from_a_token_exchange_request">Responses from a token exchange request</h3>
+<div class="paragraph">
+<p>A successful response from an exchange invocation will return the HTTP 200 response code with a content type that
+depends on the <code>requested-token-type</code> and <code>requested_issuer</code> the client asks for.  OAuth requested token types will return
+a JSON document as described in the <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-token-exchange-16">OAuth Token Exchange</a> specification.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+   "access_token" : ".....",
+   "refresh_token" : ".....",
+   "expires_in" : "...."
+ }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Clients requesting a refresh token will get back both an access and refresh token in the response.  Clients requesting only
+access token type will only get an access token in the response.  Expiration information may or may not be included for
+clients requesting an external issuer through the <code>requested_issuer</code> parameter.</p>
+</div>
+<div class="paragraph">
+<p>Error responses generally fall under the 400 HTTP response code category, but other error status codes may be returned
+depending on the severity of the error.  Error responses may include content depending on the <code>requested_issuer</code>.
+OAuth based exchanges may return a JSON document as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+   "error" : "...."
+   "error_description" : "...."
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Additional error claims may be returned depending on the exchange type.  For example, OAuth Identity Providers may include
+an additional <code>account-link-url</code> claim if the user does not have a link to an identity provider.  This link can be used
+for a client initiated link request.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Token exchange setup requires knowledge of fine grain admin permissions (See the <a href="https://www.keycloak.org/docs/latest/server_admin/">Server Administration Guide</a> for more information).  You will need to grant clients
+      permission to exchange.  This is discussed more later in this chapter.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The rest of this chapter discusses the setup requirements and provides examples for different exchange scenarios.
+For simplicity&#8217;s sake, let&#8217;s call a token minted by the current realm as an <em>internal</em> token and a token minted by
+an external realm or identity provider as an <em>external</em> token.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_internal-token-to-internal-token-exchange">Internal token to internal token exchange</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With an internal token to token exchange you have an existing token minted to a specific client and you want to exchange
+this token for a new one minted for a different target client.  Why would you want to do this?  This generally happens
+when a client has a token minted for itself, and needs to make additional requests to other applications that require different
+claims and permissions within the access token.  Other reasons this type of exchange might be required is if you
+need to perform a "permission downgrade" where your app needs to invoke on a less trusted app and you don&#8217;t want
+to propagate your current access token.</p>
+</div>
+<div class="sect2">
+<h3 id="_client_to_client_permission">Granting permission for the exchange</h3>
+<div class="paragraph">
+<p>Clients that want to exchange tokens for a different client need to be authorized in the Admin Console.
+You need to define a <code>token-exchange</code> fine grain permission in the target client you want permission to exchange to.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-target-client-permission-unset.png" alt="Target Client Permission">
+</div>
+<div class="title">Figure 1. Target Client Permission</div>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Toggle <strong>Permissions Enabled</strong> to <strong>On</strong>.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-target-client-permission-set.png" alt="Target Client Exchange Permission Set">
+</div>
+<div class="title">Figure 2. Target Client Permission</div>
+</div>
+<div class="paragraph">
+<p>That page displays a <strong>token-exchange</strong> link.</p>
+</div>
+</li>
+<li>
+<p>Click that link to start defining the permission.</p>
+<div class="paragraph">
+<p>This setup page displays.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-target-client-permission-setup.png" alt="Target Client Exchange Permission Setup">
+</div>
+<div class="title">Figure 3. Target Client Exchange Permission Setup</div>
+</div>
+</li>
+<li>
+<p>Click <strong>Client details</strong> in the breadcrumbs at the top of the screen.</p>
+</li>
+<li>
+<p>Define a policy for this permission.</p>
+</li>
+<li>
+<p>Click <strong>Authorization</strong> in the breadcrumbs at the top of the screen.</p>
+</li>
+<li>
+<p>Define a policy for this permission.</p>
+</li>
+<li>
+<p>Click the <strong>Policies</strong> tab.</p>
+</li>
+<li>
+<p>Create a <strong>Client</strong> Policy by clicking <strong>Create policy</strong> button.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-target-client-policy.png" alt="Client Policy Creation">
+</div>
+<div class="title">Figure 4. Client Policy Creation</div>
+</div>
+</li>
+<li>
+<p>Enter in the starting client that is the authenticated client that is requesting a token exchange.</p>
+</li>
+<li>
+<p>After you create this policy, go back to the target client&#8217;s <strong>token-exchange</strong> permission and add the client policy you just defined.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-target-client-exchange-apply-policy.png" alt="Apply Client Policy">
+</div>
+<div class="title">Figure 5. Apply Client Policy</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Your client now has permission to invoke.  If you do not do this correctly, you will get a 403 Forbidden response if you
+try to make an exchange.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_internal_internal_making_request">Making the request</h3>
+<div class="paragraph">
+<p>When your client is exchanging an existing token for a token targeting another client, you use the <code>audience</code> parameter.
+This parameter must be the client identifier for the target client that you configured in the Admin Console.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -X POST \
+    -d "client_id=starting-client" \
+    -d "client_secret=the client secret" \
+    --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+    -d "subject_token=...." \
+    --data-urlencode "requested_token_type=urn:ietf:params:oauth:token-type:refresh_token" \
+    -d "audience=target-client" \
+    http://localhost:8080/realms/myrealm/protocol/openid-connect/token</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>subject_token</code> parameter must be an access token for the target realm.  If your <code>requested_token_type</code> parameter
+is a refresh token type, then the response will contain both an access token, refresh token, and expiration.  Here&#8217;s
+an example JSON response you get back from this call.</p>
+</div>
+<div class="paragraph">
+<p>When the <code>audience</code> parameter is not set, the value of the parameter defaults to the client making the token exchange request.</p>
+</div>
+<div class="paragraph">
+<p>Unlike with confidential clients, public clients are not allowed to perform token exchanges using tokens from other clients.
+If you are passing a <code>subject_token</code>, the (confidential) client that was issued the token should either match the client making the request or, if issued to a different client,
+the client making the request should be among the audiences set to the token.</p>
+</div>
+<div class="paragraph">
+<p>If you are explicitly setting a target <code>audience</code> (with a client different from the client making the request), you should also make sure that the <code>token-exchange</code> scope permission is configured for the client set to the <code>audience</code> parameter to allow
+the client making the request to successfully complete the exchange.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+   "access_token" : "....",
+   "refresh_token" : "....",
+   "expires_in" : 3600
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_internal_token_to_external_token_exchange">Internal token to external token exchange</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can exchange a realm token for an external token minted by an external identity provider.  This external identity provider
+must be configured within the <code>Identity Provider</code> section of the Admin Console.  Currently only OAuth/OpenID Connect based external
+identity providers are supported, this includes all social providers.  Keycloak does not perform a backchannel exchange to the external provider.  So if the account
+is not linked, you will not be able to get the external token.  To be able to obtain an external token one of
+these conditions must be met:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The user must have logged in with the external identity provider at least once</p>
+</li>
+<li>
+<p>The user must have linked with the external identity provider through the User Account Service</p>
+</li>
+<li>
+<p>The user account was linked through the external identity provider using <a href="https://www.keycloak.org/docs/latest/server_development/">Client Initiated Account Linking</a> API.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Finally, the external identity provider must have been configured to store tokens, or, one of the above actions must
+have been performed with the same user session as the internal token you are exchanging.</p>
+</div>
+<div class="paragraph">
+<p>If the account is not linked, the exchange response will contain a link you can use to establish it.  This is
+discussed more in the <a href="#_internal_external_making_request">Making the Request</a> section.</p>
+</div>
+<div class="sect2">
+<h3 id="_grant_permission_external_exchange">Granting permission for the exchange</h3>
+<div class="paragraph">
+<p>Internal to external token exchange requests will be denied with a 403, Forbidden response until you grant permission for the calling client to exchange tokens with the external identity provider.  To grant permission to the client, you go to the identity provider&#8217;s configuration page to the <strong>Permissions</strong> tab.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-idp-permission-unset.png" alt="Identity Provider Exchange Permission">
+</div>
+<div class="title">Figure 6. Identity Provider Permission</div>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Toggle <strong>Permissions Enabled</strong> to <strong>On</strong>.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-idp-permission-set.png" alt="Identity Provider Exchange Permission Set">
+</div>
+<div class="title">Figure 7. Identity Provider Permission</div>
+</div>
+<div class="paragraph">
+<p>The page displays <strong>token-exchange</strong> link.</p>
+</div>
+</li>
+<li>
+<p>Click the link to start defining the permission.</p>
+<div class="paragraph">
+<p>This setup page appears.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-idp-permission-setup.png" alt="Identity Provider Exchange Permission Setup">
+</div>
+<div class="title">Figure 8. Identity Provider Exchange Permission Setup</div>
+</div>
+</li>
+<li>
+<p>Click <strong>Client details</strong> in the breadcrumbs at the top of the screen.</p>
+</li>
+<li>
+<p>Click <strong>Policies</strong> tab to create a client policy.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-idp-client-policy.png" alt="Client Policy Creation">
+</div>
+<div class="title">Figure 9. Client Policy Creation</div>
+</div>
+</li>
+<li>
+<p>Enter the starting client that is the authenticated client that is requesting a token exchange.</p>
+</li>
+<li>
+<p>Return to the identity provider&#8217;s <strong>token-exchange</strong> permission and add the client policy you just defined.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-idp-apply-policy.png" alt="Apply Client Policy">
+</div>
+<div class="title">Figure 10. Apply Client Policy</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Your client now has permission to invoke.  If you do not do this correctly, you will get a 403 Forbidden response if you try to make an exchange.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_internal_external_making_request">Making the request</h3>
+<div class="paragraph">
+<p>When your client is exchanging an existing internal token to an external one, you provide the <code>requested_issuer</code> parameter.  The parameter must be the alias of a configured identity provider.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -X POST \
+    -d "client_id=starting-client" \
+    -d "client_secret=the client secret" \
+    --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+    -d "subject_token=...." \
+    --data-urlencode "requested_token_type=urn:ietf:params:oauth:token-type:access_token" \
+    -d "requested_issuer=google" \
+    http://localhost:8080/realms/myrealm/protocol/openid-connect/token</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>subject_token</code> parameter must be an access token for the target realm.  The <code>requested_token_type</code> parameter
+must be <code>urn:ietf:params:oauth:token-type:access_token</code> or left blank.  No other requested token type is supported
+at this time.  Here&#8217;s
+an example successful JSON response you get back from this call.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+   "access_token" : "....",
+   "expires_in" : 3600
+   "account-link-url" : "https://...."
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the external identity provider is not linked for whatever reason, you will get an HTTP 400 response code with
+this JSON document:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+   "error" : "....",
+   "error_description" : "..."
+   "account-link-url" : "https://...."
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>error</code> claim will be either <code>token_expired</code> or <code>not_linked</code>.  The <code>account-link-url</code> claim is provided
+so that the client can perform <a href="https://www.keycloak.org/docs/latest/server_development/">Client Initiated Account Linking</a>.  Most, if not all,
+providers require linking through browser OAuth protocol.  With the <code>account-link-url</code> just add a <code>redirect_uri</code>
+query parameter to it and you can forward browsers to perform the link.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_external_token_to_internal_token_exchange">External token to internal token exchange</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can trust and exchange external tokens minted by external identity providers for internal tokens.  This can be
+used to bridge between realms or just to trust tokens from your social provider.  It works similarly to an identity provider
+browser login in that a new user is imported into your realm if it doesn&#8217;t exist.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The current limitation on external token exchanges is that if the external token maps to an existing user an
+       exchange will not be allowed unless the existing user already has an account link to the external identity
+       provider.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>When the exchange is complete, a user session will be created within the realm, and you will receive an access
+and or refresh token depending on the <code>requested_token_type</code> parameter value.  You should note that this new
+user session will remain active until it times out or until you call the logout endpoint of the realm passing this
+new access token.</p>
+</div>
+<div class="paragraph">
+<p>These types of changes required a configured identity provider in the Admin Console.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+SAML identity providers are not supported at this time.  Twitter tokens cannot be exchanged either.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_granting_permission_for_the_exchange">Granting permission for the exchange</h3>
+<div class="paragraph">
+<p>Before external token exchanges can be done, you grant permission for the calling client to make the exchange.  This
+permission is granted in the same manner as <a href="#_grant_permission_external_exchange">internal to external permission is granted</a>.</p>
+</div>
+<div class="paragraph">
+<p>If you also provide an <code>audience</code> parameter whose value points to a different client other than the calling one, you
+must also grant the calling client permission to exchange to the target client specific in the <code>audience</code> parameter.  How
+to do this is <a href="#_client_to_client_permission">discussed earlier</a> in this section.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_making_the_request">Making the request</h3>
+<div class="paragraph">
+<p>The <code>subject_token_type</code> must either be <code>urn:ietf:params:oauth:token-type:access_token</code> or <code>urn:ietf:params:oauth:token-type:jwt</code>.
+If the type is <code>urn:ietf:params:oauth:token-type:access_token</code> you specify the <code>subject_issuer</code> parameter and it must be the
+alias of the configured identity provider.  If the type is <code>urn:ietf:params:oauth:token-type:jwt</code>, the provider will be matched via
+the <code>iss</code> (issuer) claim within the JWT which must be the alias of the provider, or a registered issuer within the providers configuration.</p>
+</div>
+<div class="paragraph">
+<p>For validation, if the token is an access token, the provider&#8217;s user info service will be invoked to validate the token.  A successful call
+will mean that the access token is valid.  If the subject token is a JWT and if the provider has signature validation enabled, that will be attempted,
+otherwise, it will default to also invoking on the user info service to validate the token.</p>
+</div>
+<div class="paragraph">
+<p>By default, the internal token minted will use the calling client to determine what&#8217;s in the token using the protocol
+mappers defined for the calling client.  Alternatively, you can specify a different target client using the <code>audience</code>
+parameter.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -X POST \
+    -d "client_id=starting-client" \
+    -d "client_secret=the client secret" \
+    --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+    -d "subject_token=...." \
+    -d "subject_issuer=myOidcProvider" \
+    --data-urlencode "subject_token_type=urn:ietf:params:oauth:token-type:access_token" \
+    -d "audience=target-client" \
+    http://localhost:8080/realms/myrealm/protocol/openid-connect/token</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If your <code>requested_token_type</code> parameter
+is a refresh token type, then the response will contain both an access token, refresh token, and expiration.  Here&#8217;s
+an example JSON response you get back from this call.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+   "access_token" : "....",
+   "refresh_token" : "....",
+   "expires_in" : 3600
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_impersonation">Impersonation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For internal and external token exchanges, the client can request on behalf of a user to impersonate a different user.
+For example, you may have an admin application that needs to impersonate a user so that a support engineer can debug
+a problem.</p>
+</div>
+<div class="sect2">
+<h3 id="_granting_permission_for_the_exchange_2">Granting permission for the exchange</h3>
+<div class="paragraph">
+<p>The user that the subject token represents must have permission to impersonate other users.  See the
+<a href="https://www.keycloak.org/docs/latest/server_admin/">Server Administration Guide</a> on how to enable this permission.  It can be done through a role or through
+fine grain admin permissions.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_making_the_request_2">Making the request</h3>
+<div class="paragraph">
+<p>Make the request as described in other chapters except additionally specify the <code>requested_subject</code> parameter.  The
+value of this parameter must be a username or user id.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -X POST \
+    -d "client_id=starting-client" \
+    -d "client_secret=the client secret" \
+    --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+    -d "subject_token=...." \
+    --data-urlencode "requested_token_type=urn:ietf:params:oauth:token-type:access_token" \
+    -d "audience=target-client" \
+    -d "requested_subject=wburke" \
+    http://localhost:8080/realms/myrealm/protocol/openid-connect/token</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_direct_naked_impersonation">Direct Naked Impersonation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can make an internal token exchange request without providing a <code>subject_token</code>.  This is called a direct
+naked impersonation because it places a lot of trust in a client as that client can impersonate any user in the realm.
+You might need this to bridge for applications where it is impossible to obtain a subject token to exchange.  For example,
+you may be integrating a legacy application that performs login directly with LDAP.  In that case, the legacy app
+is able to authenticate users itself, but not able to obtain a token.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+It is very risky to enable direct naked impersonation for a client.  If the client&#8217;s credentials are ever
+         stolen, that client can impersonate any user in the system.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_granting_permission_for_the_exchange_3">Granting permission for the exchange</h3>
+<div class="paragraph">
+<p>If the <code>audience</code> parameter is provided, then the calling client must have permission to exchange to the client.  How
+to set this up is discussed earlier in this chapter.</p>
+</div>
+<div class="paragraph">
+<p>Additionally, the calling client must be granted permission to impersonate users.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Click <strong>Users</strong> in the menu.</p>
+</li>
+<li>
+<p>Click the <strong>Permissions</strong> tab.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-users-permission-unset.png" alt="User Permissions">
+</div>
+<div class="title">Figure 11. User Permissions</div>
+</div>
+</li>
+<li>
+<p>Toggle <strong>Permissions Enabled</strong> to <strong>On</strong>.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-users-permission-set.png" alt="Users Impersonation Permission Set">
+</div>
+<div class="title">Figure 12. Identity Provider Permission</div>
+</div>
+<div class="paragraph">
+<p>The page displays an <strong>impersonate</strong> link.</p>
+</div>
+</li>
+<li>
+<p>Click that link to start defining the permission.</p>
+<div class="paragraph">
+<p>This setup page displays.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-users-permission-setup.png" alt="Users Impersonation Permission Setup">
+</div>
+<div class="title">Figure 13. Users Impersonation Permission Setup</div>
+</div>
+</li>
+<li>
+<p>Click <strong>Client details</strong> in the breadcrumbs at the top of the screen.</p>
+</li>
+<li>
+<p>Define a policy for this permission.</p>
+</li>
+<li>
+<p>Go to the <strong>Policies</strong> tab and create a client policy.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-users-client-policy.png" alt="Client Policy Creation">
+</div>
+<div class="title">Figure 14. Client Policy Creation</div>
+</div>
+</li>
+<li>
+<p>Enter the starting client that is the authenticated client that is requesting a token exchange.</p>
+</li>
+<li>
+<p>Return to the users' <strong>impersonation</strong> permission and add the client policy you just
+defined.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/exchange-users-apply-policy.png" alt="Apply Client Policy">
+</div>
+<div class="title">Figure 15. Apply Client Policy</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Your client now has permission to impersonate users.  If you do not do this correctly, you will get a 403 Forbidden response if you
+try to make this type of exchange.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Public clients are not allowed to do direct naked impersonations.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_making_the_request_3">Making the request</h3>
+<div class="paragraph">
+<p>To make the request, simply specify the <code>requested_subject</code> parameter.  This must be the username or user id of
+a valid user.  You can also specify an <code>audience</code> parameter if you wish.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -X POST \
+    -d "client_id=starting-client" \
+    -d "client_secret=the client secret" \
+    --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+    -d "requested_subject=wburke" \
+    http://localhost:8080/realms/myrealm/protocol/openid-connect/token</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_expand_permission_model_with_service_accounts">Expand permission model with service accounts</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When granting clients permission to exchange, you don&#8217;t necessarily  manually enable those permissions for each and every client.
+If the client has a service account associated with it, you can use a role to group permissions together and assign exchange permissions
+by assigning a role to the client&#8217;s service account.  For example, you might define a <code>naked-exchange</code> role and any service account that has that
+role can do a naked exchange.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exchange_vulnerabilities">Exchange vulnerabilities</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When you start allowing token exchanges, there are various things you have to both be aware of and careful of.</p>
+</div>
+<div class="paragraph">
+<p>The first is public clients.  Public clients do not have or require a client credential in order to perform an exchange.  Anybody that has a valid
+token will be able to <em>impersonate</em> the public client and perform the exchanges that public client is allowed to perform.  If there
+are any untrustworthy clients that are managed by your realm, public clients may open up vulnerabilities in your permission models.
+This is why direct naked exchanges do not allow public clients and will abort with an error if the calling client is public.</p>
+</div>
+<div class="paragraph">
+<p>It is possible to exchange social tokens provided by Facebook, Google, etc. for a realm token.  Be careful and vigilante on what
+the exchange token is allowed to do as it&#8217;s not hard to create fake accounts on these social websites.  Use default roles, groups, and identity provider mappers to control what attributes and roles
+are assigned to the external social user.</p>
+</div>
+<div class="paragraph">
+<p>Direct naked exchanges are quite dangerous.  You are putting a lot of trust in the calling client that it will never leak out
+its client credentials.  If those credentials are leaked, then the thief can impersonate anybody in your system.  This is in direct
+contrast to confidential clients that have existing tokens.  You have two factors of authentication, the access token and the client
+credentials, and you&#8217;re only dealing with one user.  So use direct naked exchanges sparingly.</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/securing-apps/token-exchange.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2024. &copy; 2024 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

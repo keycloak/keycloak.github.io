@@ -1,0 +1,264 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Health checks for multi-site deployments - Keycloak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Keycloak is an open source identity and access management solution">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/health-checks-multi-site">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Health checks for multi-site deployments</li>
+                </ol>
+            </nav>
+
+            <div class="mb-4">
+                <h1>Health checks for multi-site deployments</h1>
+                    <span class="text-muted">Validating the health of a multi-site deployment</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>When running the <a href="https://www.keycloak.org/high-availability/introduction">Multi-site deployments</a> in a Kubernetes environment,
+you should automate checks to see if everything is up and running as expected.</p>
+</div>
+<div class="paragraph">
+<p>This page provides an overview of URLs,
+Kubernetes resources, and Healthcheck endpoints available to verify a multi-site setup of Keycloak.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_overview">Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A proactive monitoring strategy aims to detect and alert about issues before they impact users. This strategy is the key for a highly resilient and highly available Keycloak application.</p>
+</div>
+<div class="paragraph">
+<p>Health checks across various architectural components (such as application health, load balancing, caching, and overall system status) are critical for:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Ensuring high availability</dt>
+<dd>
+<p>Verifying that all sites and the load balancer are operational is a key to ensure that a system can handle requests even if one site goes down.</p>
+</dd>
+<dt class="hdlist1">Maintaining performance</dt>
+<dd>
+<p>Checking the health and distribution of the Infinispan cache ensures that Keycloak can maintain optimal performance by efficiently handling sessions and other temporary data.</p>
+</dd>
+<dt class="hdlist1">Operational resilience</dt>
+<dd>
+<p>By continuously monitoring the health of both Keycloak and its dependencies within the Kubernetes environment, the system can quickly identify and possibly auto-remediate issues, reducing downtime.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites">Prerequisites</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="https://kubernetes.io/docs/tasks/tools/#kubectl">Kubectl CLI is installed and configured</a>.</p>
+</li>
+<li>
+<p>Install <a href="https://jqlang.github.io/jq/download/">jq</a> if it is not already installed on your operating system.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_specific_health_checks">Specific health checks</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_keycloak_load_balancer_and_sites">Keycloak load balancer and sites</h3>
+<div class="paragraph">
+<p>Verifies the health of the Keycloak application through its load balancer and both primary and backup sites. This ensures that Keycloak is accessible and that the load balancing mechanism is functioning correctly across different geographical or network locations.</p>
+</div>
+<div class="paragraph">
+<p>This command returns the health status of the Keycloak application&#8217;s connection to its configured database, thus confirming the reliability of database connections.
+This command is available only on the management port and not from the external URL.
+In a Kubernetes setup, the sub-status <code>health/ready</code> is checked periodically to make the Pod as ready.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -s https://keycloak:managementport/health</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command verifies the <code>lb-check</code> endpoint of the load balancer and ensures the Keycloak application cluster is up and running.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -s https://keycloak-load-balancer-url/lb-check</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These commands will return the running status of the Site A and Site B of the Keycloak in a multi-site setup.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -s https://keycloak_site_a_url/lb-check
+curl -s https://keycloak_site_b_url/lb-check</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_infinispan_cache_health">Infinispan Cache health</h3>
+<div class="paragraph">
+<p>Check the health of the default cache manager and individual caches in an external Infinispan cluster.
+This check is vital for Keycloak performance and reliability,
+as Infinispan is often used for distributed caching and session clustering in Keycloak deployments.</p>
+</div>
+<div class="paragraph">
+<p>This command returns the overall health of the Infinispan cache manager, which is useful as the Admin user does not need to provide user credentials to get the health status.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -s https://infinispan_rest_url/rest/v2/cache-managers/default/health/status</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In contrast to the preceding health checks, the following health checks require the Admin user to provide the Infinispan user credentials as part of the request to peek into the overall health of the external Infinispan cluster caches.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -u &lt;infinispan_user&gt;:&lt;infinispan_pwd&gt; -s https://infinispan_rest_url/rest/v2/cache-managers/default/health \
+ | jq 'if .cluster_health.health_status == "HEALTHY" and (all(.cache_health[].status; . == "HEALTHY")) then "HEALTHY" else "UNHEALTHY" end'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>jq</code> filter is a convenience to compute the overall health based on the individual cache health.
+You can also choose to run the above command without the <code>jq</code> filter to see the full details.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_infinispan_cluster_distribution">Infinispan Cluster distribution</h3>
+<div class="paragraph">
+<p>Assesses the distribution health of the Infinispan cluster, ensuring that the cluster&#8217;s nodes are correctly distributing data. This step is essential for the scalability and fault tolerance of the caching layer.</p>
+</div>
+<div class="paragraph">
+<p>You can modify the <code>expectedCount 3</code> argument to match the total nodes in the cluster and validate if they are healthy or not.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl &lt;infinispan_user&gt;:&lt;infinispan_pwd&gt; -s https://infinispan_rest_url/rest/v2/cluster\?action\=distribution \
+ | jq --argjson expectedCount 3 'if map(select(.node_addresses | length &gt; 0)) | length == $expectedCount then "HEALTHY" else "UNHEALTHY" end'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_overall_infinispan_system_health">Overall, Infinispan system health</h3>
+<div class="paragraph">
+<p>Uses the <code>kubectl</code> CLI tool to query the health status of Infinispan clusters and the Keycloak service in the specified namespace. This comprehensive check ensures that all components of the Keycloak deployment are operational and correctly configured within the Kubernetes environment.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get infinispan -n &lt;NAMESPACE&gt; -o json  \
+| jq '.items[].status.conditions' \
+| jq 'map({(.type): .status})' \
+| jq 'reduce .[] as $item ([]; . + [keys[] | select($item[.] != "True")]) | if length == 0 then "HEALTHY" else "UNHEALTHY: " + (join(", ")) end'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_keycloak_readiness_in_kubernetes">Keycloak readiness in Kubernetes</h3>
+<div class="paragraph">
+<p>Specifically, checks for the readiness and rolling update conditions of Keycloak deployments in Kubernetes,
+ensuring that the Keycloak instances are fully operational and not undergoing updates that could impact availability.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl wait --for=condition=Ready --timeout=10s keycloaks.k8s.keycloak.org/keycloak -n &lt;NAMESPACE&gt;
+kubectl wait --for=condition=RollingUpdate=False --timeout=10s keycloaks.k8s.keycloak.org/keycloak -n &lt;NAMESPACE&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/health-checks-multi-site.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2024. &copy; 2024 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

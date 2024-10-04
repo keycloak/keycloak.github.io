@@ -313,6 +313,53 @@ It is achieved by providing certain JVM options.</p>
 </div>
 </div>
 <div class="sect2">
+<h3 id="_scheduling">Scheduling</h3>
+<div class="paragraph">
+<p>You may control several aspects of the server Pod scheduling via the Keycloak CR. The scheduling stanza exposes optional standard Kubernetes affinity, tolerations, topology spread constraints, and the priority class name to fine tune the scheduling and placement of your server Pods.</p>
+</div>
+<div class="paragraph">
+<p>An example utilizing all scheduling fields:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  scheduling:
+    priorityClassName: custom-high
+    affinity:
+      podAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app: keycloak
+                app.kubernetes.io/managed-by: keycloak-operator
+                app.kubernetes.io/component: server
+                topologyKey: topology.kubernetes.io/zone
+              weight: 10
+    tolerations:
+    - key: "some-taint"
+      operator: "Exists"
+      effect: "NoSchedule"
+    topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: DoNotSchedule
+      ...
+  ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Please see <a href="https://kubernetes.io/docs/concepts/scheduling-eviction">the kubernetes docs</a> for more on scheduling concepts.</p>
+</div>
+<div class="paragraph">
+<p>If you do not specify a custom affinity, your Pods will have an affinity for the same zone and an anti-affinity for the same node to improve availability. Scheduling to the same zone if possible helps prevent stretch clusters where cross zone cache cluster traffic may have too high of a latency.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_management_interface">Management Interface</h3>
 <div class="paragraph">
 <p>To change the port of the management interface, use the first-class citizen field <code>httpManagement.port</code> in the Keycloak CR.
@@ -390,6 +437,18 @@ stringData:
 <div class="paragraph">
 <p>When running on a Kubernetes or OpenShift environment well-known locations of trusted certificates are included automatically.
 This includes <code>/var/run/secrets/kubernetes.io/serviceaccount/ca.crt</code> and the <code>/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt</code> when present.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_admin_bootstrapping">Admin Bootstrapping</h3>
+<div class="paragraph">
+<p>When you create a new instance the Keycloak CR spec.bootstrapAdmin stanza may be used to configure the bootstrap user and/or service account. If you do not specify anything for the spec.bootstrapAdmin, the operator will create a Secret named "metadata.name"-initial-admin with a username temp-admin and a generated password. If you specify a Secret name for bootstrap admin user, then the Secret will need to contain <code>username</code> and <code>password</code> key value pairs. If you specify a Secret name for bootstrap admin service account, then the Secret will need to contain <code>client-id</code> and <code>client-secret</code> key value pairs.</p>
+</div>
+<div class="paragraph">
+<p>If a master realm has already been created for you cluster, then the spec.boostrapAdmin is effectively ignored. If you need to create a recovery admin account, then you&#8217;ll need to run the CLI command against a Pod directly.</p>
+</div>
+<div class="paragraph">
+<p>For more information on how to bootstrap a temporary admin user or service account and recover lost admin access, refer to the <a href="https://www.keycloak.org/server/bootstrap-admin-recovery">Admin bootstrap and recovery</a> guide.</p>
 </div>
 </div>
 </div>

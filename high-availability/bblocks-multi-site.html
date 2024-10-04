@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Fail over to the secondary site - Keycloak</title>
+<title>Building blocks multi-site deployments - Keycloak</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Keycloak is an open source identity and access management solution">
 <meta name="author" content="Keycloak Team">
@@ -11,7 +11,7 @@
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/high-availability/operate-failover">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/bblocks-multi-site">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
 <script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
 <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
@@ -58,13 +58,13 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
-                    <li class="breadcrumb-item active">Fail over to the secondary site</li>
+                    <li class="breadcrumb-item active">Building blocks multi-site deployments</li>
                 </ol>
             </nav>
 
             <div class="mb-4">
-                <h1>Fail over to the secondary site</h1>
-                    <span class="text-muted">This describes the automatic and operational procedures necessary</span>
+                <h1>Building blocks multi-site deployments</h1>
+                    <span class="text-muted">Overview of building blocks, alternatives and not considered options</span>
             </div>
 
 
@@ -73,50 +73,113 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide describes the steps to fail over from primary site to secondary site in a setup as outlined in <a href="https://www.keycloak.org/high-availability/concepts-active-passive-sync">Concepts for active-passive deployments</a> together with the blueprints outlined in <a href="https://www.keycloak.org/high-availability/bblocks-active-passive-sync">Building blocks active-passive deployments</a>.</p>
+<p>The following building blocks are needed to set up a multi-site deployment with synchronous replication.</p>
+</div>
+<div class="paragraph">
+<p>The building blocks link to a blueprint with an example configuration.
+They are listed in the order in which they need to be installed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+We provide these blueprints to show a minimal functionally complete example with a good baseline performance for regular installations.
+You would still need to adapt it to your environment and your organization&#8217;s standards and security best practices.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_when_to_use_procedure">When to use procedure</h2>
+<h2 id="_prerequisites">Prerequisites</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>A failover from the primary site to the secondary site will happen automatically based on the checks configured in the loadbalancer.</p>
-</div>
-<div class="paragraph">
-<p>When the primary site loses its state in Infinispan or a network partition occurs that prevents the synchronization, manual procedures are necessary to recover the primary site before it can handle traffic again, see the <a href="https://www.keycloak.org/high-availability/operate-switch-back">Switch back to the primary site</a> guide.</p>
-</div>
-<div class="paragraph">
-<p>To prevent fallback to the primary site before those manual steps have been performed, follow the procedure outlined in this guide.</p>
-</div>
-<div class="paragraph">
-<p>For a graceful switch to the secondary site, follow the instructions in the <a href="https://www.keycloak.org/high-availability/operate-switch-over">Switch over to the secondary site</a> guide.</p>
-</div>
-<div class="paragraph">
-<p>See the <a href="https://www.keycloak.org/high-availability/introduction">Multi-site deployments</a> guide for different operational procedures.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Understanding the concepts laid out in the <a href="https://www.keycloak.org/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_procedure">Procedure</h2>
+<h2 id="_two_sites_with_low_latency_connection">Two sites with low-latency connection</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Follow these steps to prevent an automatic failover back to the Primary site or to manually force a failover.</p>
+<p>Ensures that synchronous replication is available for both the database and the external Infinispan.</p>
 </div>
-<div class="sect2">
-<h3 id="_route53">Route53</h3>
 <div class="paragraph">
-<p>To force Route53 to mark the primary site as permanently not available and prevent an automatic fallback, edit the health check in AWS to point to a non-existent route (<code>/lb-check-failed-over</code>).</p>
+<p><strong>Suggested setup:</strong> Two AWS Availability Zones within the same AWS Region.</p>
 </div>
+<div class="paragraph">
+<p><strong>Not considered:</strong> Two regions on the same or different continents, as it would increase the latency and the likelihood of network failures.
+Synchronous replication of databases as a services with Aurora Regional Deployments on AWS is only available within the same region.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_optional_failover_lambda">Optional: Failover Lambda</h2>
+<h2 id="_environment_for_keycloak_and_infinispan">Environment for Keycloak and Infinispan</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To prevent a failed Primary cluster from becoming active without SRE input, follow the steps outlined in the
-guide <a href="https://www.keycloak.org/high-availability/deploy-aws-route53-failover-lambda">Deploy an AWS Route 53 Failover Lambda</a></p>
+<p>Ensures that the instances are deployed and restarted as needed.</p>
+</div>
+<div class="paragraph">
+<p><strong>Suggested setup:</strong> Red Hat OpenShift Service on AWS (ROSA) deployed in each availability zone.</p>
+</div>
+<div class="paragraph">
+<p><strong>Not considered:</strong> A stretched ROSA cluster which spans multiple availability zones, as this could be a single point of failure if misconfigured.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_database">Database</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A synchronously replicated database across two sites.</p>
+</div>
+<div class="paragraph">
+<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/deploy-aurora-multi-az">Deploy AWS Aurora in multiple availability zones</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_infinispan">Infinispan</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A deployment of Infinispan that leverages the Infinispan&#8217;s Cross-DC functionality.</p>
+</div>
+<div class="paragraph">
+<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploy Infinispan for HA with the Infinispan Operator</a> using the Infinispan Operator, and connect the two sites using Infinispan&#8217;s Gossip Router.</p>
+</div>
+<div class="paragraph">
+<p><strong>Not considered:</strong> Direct interconnections between the Kubernetes clusters on the network layer.
+It might be considered in the future.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_keycloak">Keycloak</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A clustered deployment of Keycloak in each site, connected to an external Infinispan.</p>
+</div>
+<div class="paragraph">
+<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a> that includes connecting to the Aurora database and the Infinispan server.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_load_balancer">Load balancer</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A load balancer which checks the <code>/lb-check</code> URL of the Keycloak deployment in each site, plus an automation to detect Infinispan connectivity problems between the two sites.</p>
+</div>
+<div class="paragraph">
+<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/deploy-aws-accelerator-loadbalancer">Deploy an AWS Global Accelerator loadbalancer</a> together with  <a href="https://www.keycloak.org/high-availability/deploy-aws-accelerator-fencing-lambda">Deploy an AWS Lambda to disable a non-responding site</a>.</p>
 </div>
 </div>
 </div>            </div>
@@ -127,7 +190,7 @@ guide <a href="https://www.keycloak.org/high-availability/deploy-aws-route53-fai
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/operate-failover.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/bblocks-multi-site.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

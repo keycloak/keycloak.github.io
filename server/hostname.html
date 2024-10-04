@@ -113,7 +113,7 @@ The examples start the Keycloak instance in production mode, which requires a pu
 </div>
 </div>
 <div class="paragraph">
-<p>Similarly, your reverse proxy might expose Keycloak at a different context path. It is possible to configure {proxy_name} to reflect that via the <code>hostname</code> and <code>hostname-admin</code> options. See the following example:</p>
+<p>Similarly, your reverse proxy might expose Keycloak at a different context path. It is possible to configure Keycloak to reflect that via the <code>hostname</code> and <code>hostname-admin</code> options. See the following example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -155,29 +155,10 @@ The examples start the Keycloak instance in production mode, which requires a pu
 </div>
 </div>
 <div class="sect1">
-<h2 id="_relying_on_a_trusted_proxy_for_the_dynamic_hostname_resolution">Relying on a trusted proxy for the dynamic hostname resolution</h2>
+<h2 id="_using_a_reverse_proxy">Using a reverse proxy</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>If you fully trust your proxy, which correctly sets the Forwarded header, and you don&#8217;t want to hardcode the hostname, Keycloak can accommodate this. You simply need to initiate the server as follows:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname-strict false --proxy-headers forwarded</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>With this configuration, the server respects the value set by the Forwarded header. This also implies that all endpoints are dynamically resolved.</p>
-</div>
-<div class="paragraph">
-<p>The <code>proxy-headers</code> option can be also used to resolve the URL partially dynamically when <code>hostname</code> option is not specified as a full URL. For example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname my.keycloak.org --proxy-headers xforwarded</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>In this case, scheme, port and context path are resolved dynamically from X-Forwarded-* headers, while hostname is statically defined as <code>my.keycloak.org</code>.</p>
+<p>When a proxy is forwarding http or reencrypted TLS requests, the <code>proxy-headers</code> option should be set. Depending on the hostname settings, some or all of the URL, may be dynamically determined.</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -190,6 +171,48 @@ If either <code>forwarded</code> or <code>xforwarded</code> is selected, make su
 </td>
 </tr>
 </table>
+</div>
+<div class="sect2">
+<h3 id="_fully_dynamic_urls">Fully dynamic URLs.</h3>
+<div class="paragraph">
+<p>For example if your reverse proxy correctly sets the Forwarded header, and you don&#8217;t want to hardcode the hostname, Keycloak can accommodate this. You simply need to initiate the server as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname-strict false --proxy-headers forwarded</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With this configuration, the server respects the value set by the Forwarded header. This also implies that all endpoints are dynamically resolved.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_partially_dynamic_urls">Partially dynamic URLs</h3>
+<div class="paragraph">
+<p>The <code>proxy-headers</code> option can be also used to resolve the URL partially dynamically when the <code>hostname</code> option is not specified as a full URL. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname my.keycloak.org --proxy-headers xforwarded</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, scheme, port and context path are resolved dynamically from X-Forwarded-* headers, while hostname is statically defined as <code>my.keycloak.org</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_fixed_urls">Fixed URLs</h3>
+<div class="paragraph">
+<p>The <code>proxy-headers</code> is still relevant even when the <code>hostname</code> is set to a full URL as the headers are used to determine the origin of the request. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --hostname https://my.keycloak.org --proxy-headers xforwarded</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, while nothing is dynamically resolved from the X-Forwarded-* headers, the X-Forwarded-* headers are used to determine the correct origin of the request.</p>
+</div>
 </div>
 </div>
 </div>
@@ -398,6 +421,9 @@ Using the <code>hostname-admin</code> option does not prevent accessing the Admi
 </li>
 </ul>
 </div>
+<div class="paragraph">
+<p>Additionally if hostname is configured, then hostname-strict is ignored.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -544,27 +570,6 @@ Using the <code>hostname-admin</code> option does not prevent accessing the Admi
 <p>Available only when hostname:v2 feature is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>proxy</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">The proxy address forwarding mode if the server is behind a reverse proxy.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--proxy</code><br>
-<strong>Env:</strong> <code>KC_PROXY</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>DEPRECATED.</strong>
-Use: <code>proxy-headers</code>.</p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code> (default), <code>edge</code>, <code>reencrypt</code>, <code>passthrough</code></p></td>
 </tr>
 </tbody>
 </table>

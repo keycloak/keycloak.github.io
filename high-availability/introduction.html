@@ -80,6 +80,145 @@ Those setups are intended for a transparent network on a single site.</p>
 <p>The Keycloak high-availability guide goes one step further to describe setups across multiple sites.
 While this setup adds additional complexity, that extra amount of high availability may be needed for some environments.</p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_when_to_use_a_multi_site_setup">When to use a multi-site setup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The multi-site deployment capabilities of Keycloak are targeted at use cases that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Are constrained to a single
+AWS Region or an equivalent low-latency setup.</p>
+</li>
+<li>
+<p>Permit planned outages for maintenance.</p>
+</li>
+<li>
+<p>Fit within a defined user and request count.</p>
+</li>
+<li>
+<p>Can accept the impact of periodic outages.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tested_configuration">Tested Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We regularly test Keycloak with the following configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Two Openshift single-AZ clusters, in the same AWS Region</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Provisioned with <a href="https://www.redhat.com/en/technologies/cloud-computing/openshift/aws">Red Hat OpenShift Service on AWS</a> (ROSA),
+using ROSA HCP.</p>
+</li>
+<li>
+<p>Each Openshift cluster has all its workers in a single Availability Zone.</p>
+</li>
+<li>
+<p>OpenShift version
+4.16.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Amazon Aurora PostgreSQL database</p>
+<div class="ulist">
+<ul>
+<li>
+<p>High availability with a primary DB instance in one Availability Zone, and a synchronously replicated reader in the second Availability Zone</p>
+</li>
+<li>
+<p>Version 16.1</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>AWS Global Accelerator, sending traffic to both ROSA clusters</p>
+</li>
+<li>
+<p>AWS Lambda
+triggered by ROSA&#8217;s Prometheus and Alert Manager
+to automate failover</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>While equivalent setups should work, you will need to verify the performance and failure behavior of your environment.
+We provide functional tests, failure tests and load tests in the <a href="https://github.com/keycloak/keycloak-benchmark">Keycloak Benchmark Project</a>.</p>
+</div>
+<div class="paragraph">
+<p>Read more on each item in the <a href="https://www.keycloak.org/high-availability/bblocks-multi-site">Building blocks multi-site deployments</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tested_load">Tested load</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We regularly test Keycloak with the following load:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>100,000 users</p>
+</li>
+<li>
+<p>300 requests per second</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>While we did not see a hard limit in our tests with these values, we ask you to test for higher volumes with horizontally and vertically scaled Keycloak name instances and databases.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/high-availability/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> guide for more information.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_limitations">Limitations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Even with the additional redundancy of the two sites, downtimes can still occur:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>During upgrades of Keycloak or Infinispan both sites needs to be taken offline for the duration of the upgrade.</p>
+</li>
+<li>
+<p>During certain failure scenarios, there may be downtime of up to 5 minutes.</p>
+</li>
+<li>
+<p>After certain failure scenarios, manual intervention may be required to restore redundancy by bringing the failed site back online.</p>
+</li>
+<li>
+<p>During certain switchover scenarios, there may be downtime of up to 5 minutes.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more details on limitations see the <a href="https://www.keycloak.org/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps">Next steps</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>The different guides introduce the necessary concepts and building blocks.
 For each building block, a blueprint shows how to set a fully functional example.
@@ -93,10 +232,10 @@ Additional performance tuning and security hardening are still recommended when 
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/concepts-active-passive-sync">Concepts for active-passive deployments</a></p>
+<p><a href="https://www.keycloak.org/high-availability/concepts-multi-site">Concepts for multi-site deployments</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/bblocks-active-passive-sync">Building blocks active-passive deployments</a></p>
+<p><a href="https://www.keycloak.org/high-availability/bblocks-multi-site">Building blocks multi-site deployments</a></p>
 </li>
 <li>
 <p><a href="https://www.keycloak.org/high-availability/concepts-database-connections">Concepts for database connection pools</a></p>
@@ -123,19 +262,16 @@ Additional performance tuning and security hardening are still recommended when 
 <p><a href="https://www.keycloak.org/high-availability/deploy-aurora-multi-az">Deploy AWS Aurora in multiple availability zones</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a></p>
-</li>
-<li>
 <p><a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploy Infinispan for HA with the Infinispan Operator</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/connect-keycloak-to-external-infinispan">Connect Keycloak with an external Infinispan</a></p>
+<p><a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/deploy-aws-route53-loadbalancer">Deploy an AWS Route 53 loadbalancer</a></p>
+<p><a href="https://www.keycloak.org/high-availability/deploy-aws-accelerator-loadbalancer">Deploy an AWS Global Accelerator loadbalancer</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/deploy-aws-route53-failover-lambda">Deploy an AWS Route 53 Failover Lambda</a></p>
+<p><a href="https://www.keycloak.org/high-availability/deploy-aws-accelerator-fencing-lambda">Deploy an AWS Lambda to disable a non-responding site</a></p>
 </li>
 </ul>
 </div>
@@ -147,16 +283,16 @@ Additional performance tuning and security hardening are still recommended when 
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/operate-failover">Fail over to the secondary site</a></p>
+<p><a href="https://www.keycloak.org/high-availability/operate-synchronize">Synchronize Sites</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/operate-switch-over">Switch over to the secondary site</a></p>
+<p><a href="https://www.keycloak.org/high-availability/operate-site-offline">Take site offline</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/operate-network-partition-recovery">Recover from an out-of-sync passive site</a></p>
+<p><a href="https://www.keycloak.org/high-availability/operate-site-online">Bring site online</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/operate-switch-back">Switch back to the primary site</a></p>
+<p><a href="https://www.keycloak.org/high-availability/health-checks-multi-site">Health checks for multi-site deployments</a></p>
 </li>
 </ul>
 </div>

@@ -92,6 +92,10 @@ Increasing this to a larger number leads to an exponentially increasing executio
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p>All Keycloak nodes need to be stopped prior to using <code>kc.[sh|bat] import | export</code> commands. This ensures that the resulting operations will have no consistency issues with concurrent requests.
+It also ensures that running an import or export command from the same machine as a server instance will not result in port or other conflicts.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -109,6 +113,18 @@ As default, Keycloak will re-build automatically for the <code>export</code> and
 <div class="paragraph">
 <p>If you have built an optimized version of Keycloak with the <code>build</code> command as outlined in <a href="https://www.keycloak.org/server/configuration">Configuring Keycloak</a>, use the command line option <code>--optimized</code> to have Keycloak skip the build check for a faster startup time.
 When doing this, remove the build time options from the command line and keep only the runtime options.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+if you do not use <code>--optimized</code> keep in mind that an <code>import</code> or <code>export</code> command will implicitly create or update an optimized image for you - if you are running the command from the same machine as a server instance, this may impact the next start of your server.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -247,6 +263,27 @@ you can set the <code>--override</code> option as follows:</p>
 </div>
 </div>
 <div class="sect1">
+<h2 id="_using_environment_variables_within_the_realm_configuration_files">Using Environment Variables within the Realm Configuration Files</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You are able to use placeholders to resolve values from environment variables for any realm configuration.</p>
+</div>
+<div class="listingblock">
+<div class="title">Realm configuration using placeholders</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">{
+    "realm": "${MY_REALM_NAME}",
+    "enabled": true,
+    ...
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the example above, the value set to the <code>MY_REALM_NAME</code> environment variable is going to be used to set the <code>realm</code> property.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_importing_a_realm_during_startup">Importing a Realm during Startup</h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -274,32 +311,13 @@ For the Keycloak containers, the import directory is <code>/opt/keycloak/data/im
 </div>
 <div class="paragraph">
 <p>If a realm already exists in the server, the import operation is skipped. The main reason behind this behavior is to avoid re-creating
-realms and potentially loose state between server restarts.</p>
+realms and potentially lose state between server restarts.</p>
 </div>
 <div class="paragraph">
 <p>To re-create realms you should explicitly run the <code>import</code> command prior to starting the server.</p>
 </div>
 <div class="paragraph">
 <p>Importing the <code>master</code> realm is not supported because as it is a very sensitive operation.</p>
-</div>
-<div class="sect2">
-<h3 id="_using_environment_variables_within_the_realm_configuration_files">Using Environment Variables within the Realm Configuration Files</h3>
-<div class="paragraph">
-<p>When importing a realm at startup, you are able to use placeholders to resolve values from environment variables for any realm configuration.</p>
-</div>
-<div class="listingblock">
-<div class="title">Realm configuration using placeholders</div>
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">{
-    "realm": "${MY_REALM_NAME}",
-    "enabled": true,
-    ...
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>In the example above, the value set to the <code>MY_REALM_NAME</code> environment variable is going to be used to set the <code>realm</code> property.</p>
-</div>
 </div>
 </div>
 </div>

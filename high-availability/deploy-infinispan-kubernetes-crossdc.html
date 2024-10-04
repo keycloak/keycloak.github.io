@@ -80,7 +80,7 @@ For simplicity, this topic uses the minimum configuration possible that allows K
 <p>This guide assumes two OpenShift clusters named <code>Site-A</code> and <code>Site-B</code>.</p>
 </div>
 <div class="paragraph">
-<p>This is a building block following the concepts described in the <a href="https://www.keycloak.org/high-availability/concepts-active-passive-sync">Concepts for active-passive deployments</a> guide.
+<p>This is a building block following the concepts described in the <a href="https://www.keycloak.org/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.
 See the <a href="https://www.keycloak.org/high-availability/introduction">Multi-site deployments</a> guide for an overview.</p>
 </div>
 <div class="admonitionblock important">
@@ -91,7 +91,7 @@ See the <a href="https://www.keycloak.org/high-availability/introduction">Multi-
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Only Infinispan server versions 15.0.0 or greater are supported for external Infinispan deployments.</p>
+<p>Only Infinispan version 15.0.8.Final or more recent patch releases are supported for external Infinispan deployments.</p>
 </div>
 </td>
 </tr>
@@ -386,6 +386,8 @@ metadata:
     infinispan.org/monitoring: 'true' <i class="conum" data-value="2"></i><b>(2)</b>
 spec:
   replicas: 3
+  jmx:
+    enabled: true
   security:
     endpointSecretName: connect-secret <i class="conum" data-value="3"></i><b>(3)</b>
   service:
@@ -479,30 +481,11 @@ spec:
 </div>
 </div>
 <div class="paragraph">
-<p>When using persistent sessions, limit the cache size limit for <code>sessions</code>, <code>offlineSessions</code>, <code>clientSessions</code>, and <code>offlineClientSessions</code> by extending the configuration as follows:</p>
-</div>
-</li>
-</ol>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">distributedCache:
-  owners: "1"
-  memory:
-    maxCount: 10000
-  # ...</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>+
-For <code>Site-B</code>, the <code>Infinispan</code> CR looks similar to the above.
+<p>For <code>Site-B</code>, the <code>Infinispan</code> CR looks similar to the above.
 Note the differences in point 4, 11 and 13.</p>
 </div>
-<div class="paragraph">
-<p>+
-.The <code>Infinispan</code> CR for <code>Site-B</code></p>
-</div>
 <div class="listingblock">
+<div class="title">The <code>Infinispan</code> CR for <code>Site-B</code></div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v1
 kind: Infinispan
@@ -513,6 +496,8 @@ metadata:
     infinispan.org/monitoring: 'true' <i class="conum" data-value="2"></i><b>(2)</b>
 spec:
   replicas: 3
+  jmx:
+    enabled: true
   security:
     endpointSecretName: connect-secret <i class="conum" data-value="3"></i><b>(3)</b>
   service:
@@ -543,12 +528,11 @@ spec:
           secretName: xsite-token-secret <i class="conum" data-value="14"></i><b>(14)</b></code></pre>
 </div>
 </div>
-<div class="olist arabic">
-<ol class="arabic">
+</li>
 <li>
 <p>Creating the caches for Keycloak.</p>
 <div class="paragraph">
-<p>Keycloak requires the following caches to be present: <code>sessions</code>, <code>actionTokens</code>, <code>authenticationSessions</code>, <code>offlineSessions</code>, <code>clientSessions</code>, <code>offlineClientSessions</code>, <code>loginFailures</code>, and <code>work</code>.</p>
+<p>Keycloak requires the following caches to be present: <code>actionTokens</code>, <code>authenticationSessions</code>, <code>loginFailures</code>, and <code>work</code>.</p>
 </div>
 <div class="paragraph">
 <p>The Infinispan <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#creating-caches">Cache CR</a> allows deploying the caches in the Infinispan cluster.
@@ -558,84 +542,155 @@ The following example shows the <code>Cache</code> CR for <code>Site-A</code>.</
 </div>
 <div class="openblock">
 <div class="content">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In <code>Site-A</code> create a <code>Cache</code> CR for each of the caches mentioned above with the following content.
+This is an example for the <code>authenticationSessions</code> cache:</p>
+</li>
+</ol>
+</div>
 <div class="listingblock">
-<div class="title">sessions in <code>Site-A</code></div>
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+<pre>apiVersion: infinispan.org/v2alpha1
 kind: Cache
 metadata:
-  name: sessions
+  name: authenticationsessions
   namespace: keycloak
 spec:
   clusterName: infinispan
-  name: sessions
+  name: authenticationSessions
   template: |-
     distributedCache:
       mode: "SYNC"
       owners: "2"
       statistics: "true"
-      remoteTimeout: 14000
+      remoteTimeout: "5000"
+      encoding:
+        media-type: "application/x-protostream"
+      locking:
+        acquireTimeout: "4000"
+      transaction:
+        mode: "NON_XA" <i class="conum" data-value="1"></i><b>(1)</b>
+        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
       stateTransfer:
-        chunkSize: 16
+        chunkSize: "16"
       backups:
-        mergePolicy: ALWAYS_REMOVE <i class="conum" data-value="1"></i><b>(1)</b>
-        site-b: <i class="conum" data-value="2"></i><b>(2)</b>
+        site-b: <i class="conum" data-value="3"></i><b>(3)</b>
           backup:
-            strategy: "SYNC" <i class="conum" data-value="3"></i><b>(3)</b>
-            timeout: 13000
+            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
+            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
+            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
             stateTransfer:
-              chunkSize: 16</code></pre>
+              chunkSize: "16"</pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The cross-site merge policy, invoked when there is a write-write conflict.
-Set this for the caches <code>sessions</code>, <code>authenticationSessions</code>, <code>offlineSessions</code>, <code>clientSessions</code> and <code>offlineClientSessions</code>, and do not set it for all other caches.</td>
+<td>The transaction mode.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>The remote site name.</td>
+<td>The locking mode used by the transaction.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The cross-site communication, in this case, <code>SYNC</code>.</td>
+<td>The remote site name.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The cross-site communication strategy, in this case, <code>SYNC</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The cross-site replication timeout.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The cross-site replication failure policy.</td>
 </tr>
 </table>
 </div>
 </div>
 </div>
 <div class="paragraph">
-<p>For <code>Site-B</code>, the <code>Cache</code> CR is similar except in point 2.</p>
+<p>The example above is the recommended configuration to achieve the best data consistency.</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Background information</strong></p>
+</div>
+<div class="paragraph">
+<p>Deadlocks may occur in an active-active setup as entries are modified concurrently in both sites.</p>
+</div>
+<div class="paragraph">
+<p>The <code>transaction.mode: NON_XA</code> ensures that the transaction is rolled back keeping the data consistent if this occurs.
+The setting <code>backup.failurePolicy: FAIL</code> is required in this case.
+It will throw an error that allows the transaction to be safely rolled back.
+When this occurs, Keycloak will attempt a retry.</p>
+</div>
+<div class="paragraph">
+<p>The <code>transaction.locking: PESSIMISTIC</code> is the only supported locking mode; <code>OPTIMISTIC</code> is not recommended due to its network costs.
+The same settings also prevent that one site it updated while the other site is unreachable.</p>
+</div>
+<div class="paragraph">
+<p>The <code>backup.strategy: SYNC</code> ensures the data is visible and stored in the other site when the Keycloak request is completed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>locking.acquireTimeout</code> can be reduced to fail fast in a deadlock scenario.
+The <code>backup.timeout</code> must always be higher than the <code>locking.acquireTimeout</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>For <code>Site-B</code>, the <code>Cache</code> CR is similar, except for the <code>backups.&lt;name&gt;</code> outlined in point 3 of the above diagram.</p>
 </div>
 <div class="listingblock">
-<div class="title">session in <code>Site-B</code></div>
+<div class="title">authenticationSessions <code>Cache</code> CR in <code>Site-B</code></div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
 kind: Cache
 metadata:
-  name: sessions
+  name: authenticationsessions
   namespace: keycloak
 spec:
   clusterName: infinispan
-  name: sessions
+  name: authenticationSessions
   template: |-
     distributedCache:
       mode: "SYNC"
       owners: "2"
       statistics: "true"
-      remoteTimeout: 14000
+      remoteTimeout: "5000"
+      encoding:
+        media-type: "application/x-protostream"
+      locking:
+        acquireTimeout: "4000"
+      transaction:
+        mode: "NON_XA" <i class="conum" data-value="1"></i><b>(1)</b>
+        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
       stateTransfer:
-        chunkSize: 16
+        chunkSize: "16"
       backups:
-        mergePolicy: ALWAYS_REMOVE <i class="conum" data-value="1"></i><b>(1)</b>
-        site-a: <i class="conum" data-value="2"></i><b>(2)</b>
+        site-a: <i class="conum" data-value="3"></i><b>(3)</b>
           backup:
-            strategy: "SYNC" <i class="conum" data-value="3"></i><b>(3)</b>
-            timeout: 13000
+            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
+            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
+            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
             stateTransfer:
-              chunkSize: 16</code></pre>
+              chunkSize: "16"</code></pre>
 </div>
 </div>
 </li>
@@ -664,11 +719,251 @@ spec:
 </div>
 </div>
 <div class="sect1">
+<h2 id="connecting-infinispan-to-keycloak">Connecting Infinispan with Keycloak</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now that an Infinispan server is running, here are the relevant Keycloak CR changes necessary to connect it to Keycloak. These changes will be required in the <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a> guide.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a Secret with the username and password to connect to the external Infinispan deployment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: remote-store-secret
+  namespace: keycloak
+type: Opaque
+data:
+  username: ZGV2ZWxvcGVy # base64 encoding for 'developer'
+  password: c2VjdXJlX3Bhc3N3b3Jk # base64 encoding for 'secure_password'</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Extend the Keycloak Custom Resource with <code>additionalOptions</code> as shown below.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>All the memory, resource and database configurations are skipped from the CR below as they have been described in <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a> guide already.
+Administrators should leave those configurations untouched.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  labels:
+    app: keycloak
+  name: keycloak
+  namespace: keycloak
+spec:
+  additionalOptions:
+    - name: cache-remote-host <i class="conum" data-value="1"></i><b>(1)</b>
+      value: "infinispan.keycloak.svc"
+    - name: cache-remote-port <i class="conum" data-value="2"></i><b>(2)</b>
+      value: "11222"
+    - name: cache-remote-username <i class="conum" data-value="3"></i><b>(3)</b>
+      secret:
+        name: remote-store-secret
+        key: username
+    - name: cache-remote-password <i class="conum" data-value="4"></i><b>(4)</b>
+      secret:
+        name: remote-store-secret
+        key: password
+    - name: spi-connections-infinispan-quarkus-site-name <i class="conum" data-value="5"></i><b>(5)</b>
+      value: keycloak</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The hostname of the remote Infinispan cluster.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The port of the remote Infinispan cluster.
+This is optional and it default to <code>11222</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The Secret <code>name</code> and <code>key</code> with the Infinispan username credential.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The Secret <code>name</code> and <code>key</code> with the Infinispan password credential.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The <code>spi-connections-infinispan-quarkus-site-name</code> is an arbitrary Infinispan site name which Keycloak needs for its Infinispan caches deployment when a remote store is used.
+This site-name is related only to the Infinispan caches and does not need to match any value from the external Infinispan deployment.
+If you are using multiple sites for Keycloak in a cross-DC setup such as <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploy Infinispan for HA with the Infinispan Operator</a>, the site name must be different in each site.</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+<div class="sect2">
+<h3 id="_architecture_2">Architecture</h3>
+<div class="paragraph">
+<p>This connects Keycloak to Infinispan using TCP connections secured by TLS 1.3.
+It uses the Keycloak&#8217;s truststore to verify Infinispan&#8217;s server certificate.
+As Keycloak is deployed using its Operator on OpenShift in the prerequisites listed below, the Operator already added the <code>service-ca.crt</code> to the truststore which is used to sign Infinispan&#8217;s server certificates.
+In other environments, add the necessary certificates to Keycloak&#8217;s truststore.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_next_steps">Next steps</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>After Infinispan is deployed and running, use the procedure in the <a href="https://www.keycloak.org/high-availability/connect-keycloak-to-external-infinispan">Connect Keycloak with an external Infinispan</a> guide to connect your Keycloak cluster with the Infinispan cluster.</p>
+<p>After the Aurora AWS database and Infinispan are deployed and running, use the procedure in the <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploy Keycloak for HA with the Keycloak Operator</a> guide to deploy Keycloak and connect it to all previously created building blocks.</p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options">Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-host</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The hostname of the remote server for the remote store configuration.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>host</code> attribute of <code>remote-server</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-username</code> and <code>cache-remote-password</code> are required as well and the related configuration in XML file should not be present.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-host</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_HOST</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password for the authentication to the remote server for the remote store.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>password</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-username</code> is required as well and the related configuration in XML file should not be present.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-password</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PASSWORD</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The port of the remote server for the remote store configuration.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>port</code> attribute of <code>remote-server</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.).</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PORT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>11222</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-tls-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enable TLS support to communicate with a secured remote Infinispan server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Recommended to be enabled in production.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-tls-enabled</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_TLS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-username</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The username for the authentication to the remote server for the remote store.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It replaces the <code>username</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-password</code> is required as well and the related configuration in XML file should not be present.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-username</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_USERNAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>            </div>
         </div>

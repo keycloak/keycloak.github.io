@@ -115,9 +115,6 @@ Still, those caches need to be filled when an instance is restarted, so do not s
 <li>
 <p>The used CPU scales linearly with the number of requests up to the tested limit below.</p>
 </li>
-<li>
-<p>The used memory scales linearly with the number of active sessions up to the tested limit below.</p>
-</li>
 </ul>
 </div>
 <div class="paragraph">
@@ -126,59 +123,71 @@ Still, those caches need to be filled when an instance is restarted, so do not s
 <div class="ulist">
 <ul>
 <li>
-<p>The base memory usage for an inactive Pod is 1000 MB of RAM.</p>
-</li>
-<li>
-<p>For each 100,000 active user sessions, add 500 MB per Pod in a three-node cluster (tested with up to 200,000 sessions).</p>
-<div class="paragraph">
-<p>This assumes that each user connects to only one client.
-Memory requirements increase with the number of client sessions per user session (not tested yet).</p>
-</div>
+<p>The base memory usage for a Pod including caches of Realm data and 10,000 cached sessions is 1250 MB of RAM.</p>
 </li>
 <li>
 <p>In containers, Keycloak allocates 70% of the memory limit for heap based memory. It will also use approximately 300 MB of non-heap-based memory.
 To calculate the requested memory, use the calculation above. As memory limit, subtract the non-heap memory from the value above and divide the result by 0.7.</p>
 </li>
 <li>
-<p>For each 45 password-based user logins per second, 1 vCPU per Pod in a three-node cluster (tested with up to 300 per second).</p>
+<p>For each 15 password-based user logins per second, allocate 1 vCPU to the cluster (tested with up to 300 per second).</p>
 <div class="paragraph">
 <p>Keycloak spends most of the CPU time hashing the password provided by the user, and it is proportional to the number of hash iterations.</p>
 </div>
 </li>
 <li>
-<p>For each 500 client credential grants per second, 1 vCPU per Pod in a three node cluster (tested with up to 2000 per second).</p>
+<p>For each 200 client credential grants per second, 1 vCPU to the cluster (tested with up to 2000 per second).</p>
 <div class="paragraph">
 <p>Most CPU time goes into creating new TLS connections, as each client runs only a single request.</p>
 </div>
 </li>
 <li>
-<p>For each 350 refresh token requests per second, 1 vCPU per Pod in a three-node cluster (tested with up to 435 refresh token requests per second).</p>
+<p>For each 120 refresh token requests per second, 1 vCPU to the cluster (tested with up to 435 refresh token requests per second).</p>
 </li>
 <li>
-<p>Leave 200% extra head-room for CPU usage to handle spikes in the load.
-This ensures a fast startup of the node, and sufficient capacity to handle failover tasks like, for example, re-balancing Infinispan caches, when one node fails.
+<p>Leave 150% extra head-room for CPU usage to handle spikes in the load.
+This ensures a fast startup of the node, and sufficient capacity to handle failover tasks.
 Performance of Keycloak dropped significantly when its Pods were throttled in our tests.</p>
 </li>
 </ul>
 </div>
+<div class="paragraph">
+<p>Keycloak, which by default stores user sessions in the database, requires the following resources for optimal performance on an Aurora PostgreSQL multi-AZ database:</p>
+</div>
+<div class="paragraph">
+<p>For every 100 login/logout/refresh requests per second:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Budget for 1400 Write IOPS.</p>
+</li>
+<li>
+<p>Allocate between 0.35 and 0.7 vCPU.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The vCPU requirement is given as a range, as with an increased CPU saturation on the database host the CPU usage per request decreased while the response times increase. A lower CPU quota on the database can lead to slower response times during peak loads. Choose a larger CPU quota if fast response times during peak loads are critical. See below for an example.</p>
+</div>
 <div class="sect2">
-<h3 id="_calculation_example">Calculation example</h3>
+<h3 id="_calculation_example_single_site">Calculation example (single site)</h3>
 <div class="paragraph">
 <p>Target size:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>50,000 active user sessions</p>
+<p>45 logins and logouts per seconds</p>
 </li>
 <li>
-<p>45 logins per seconds</p>
+<p>600 client credential grants per second</p>
 </li>
 <li>
-<p>500 client credential grants per second</p>
+<p>360 refresh token requests per second (1:8 ratio for logins)</p>
 </li>
 <li>
-<p>350 refresh token requests per second</p>
+<p>3 Pods</p>
 </li>
 </ul>
 </div>
@@ -188,57 +197,79 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <div class="ulist">
 <ul>
 <li>
-<p>CPU requested: 3 vCPU</p>
+<p>CPU requested per Pod: 3 vCPU</p>
 <div class="paragraph">
-<p>(45 logins per second = 1 vCPU, 500 client credential grants per second = 1 vCPU, 350 refresh token = 1 vCPU)</p>
+<p>(45 logins per second = 3 vCPU, 600 client credential grants per second = 3 vCPU, 345 refresh token = 3 vCPU. This sums up to 9 vCPU total. With 3 Pods running in the cluster, each Pod then requests 3 vCPU)</p>
 </div>
 </li>
 <li>
-<p>CPU limit: 9 vCPU</p>
+<p>CPU limit per Pod: 7.5 vCPU</p>
 <div class="paragraph">
-<p>(Allow for three times the CPU requested to handle peaks, startups and failover tasks)</p>
+<p>(Allow for an additional 150% CPU requested to handle peaks, startups and failover tasks)</p>
 </div>
 </li>
 <li>
-<p>Memory requested: 1250 MB</p>
+<p>Memory requested per Pod: 1250 MB</p>
 <div class="paragraph">
-<p>(1000 MB base memory plus 250 MB RAM for 50,000 active sessions)</p>
+<p>(1250 MB base memory)</p>
 </div>
 </li>
 <li>
-<p>Memory limit: 1360 MB</p>
+<p>Memory limit per Pod: 1360 MB</p>
 <div class="paragraph">
 <p>(1250 MB expected memory usage minus 300 non-heap-usage, divided by 0.7)</p>
 </div>
 </li>
+<li>
+<p>Aurora Database instance: either <code>db.t4g.large</code> or <code>db.t4g.xlarge</code> depending on the required response times during peak loads.</p>
+<div class="paragraph">
+<p>(45 logins per second, 5 logouts per second, 360 refresh tokens per seconds.
+This sums up to 410 requests per second.
+This expected DB usage is 1.4 to 2.8 vCPU, with a DB idle load of 0.3 vCPU.
+This indicates either a 2 vCPU <code>db.t4g.large</code> instance or a 4 vCPU <code>db.t4g.xlarge</code> instance.
+A 2 vCPU <code>db.t4g.large</code> would be more cost-effective if the response times are allowed be higher during peak usage.
+In our tests, the median response time for a login and a token refresh increased by up to 120 ms once the CPU saturation reached 90% on a 2 vCPU <code>db.t4g.large</code> instance given this scenario.
+For faster response times during peak usage, consider a 4 vCPU <code>db.t4g.xlarge</code> instance for this scenario.)</p>
+</div>
+</li>
 </ul>
 </div>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_persistent_user_sessions">Persistent user sessions</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_sizing_a_multi_site_setup">Sizing a multi-site setup</h3>
 <div class="paragraph">
-<p>When using persistent sessions, Keycloak will use less memory as it will keep only a subset of sessions in memory.
-At the same time it will use more CPU resources to communicate with the database, and it will use a lot more CPU and write IO on the database to keep the session information up to date.</p>
-</div>
-<div class="paragraph">
-<p>A performance test showed the following per 100 requests/second that update the database (login, logout, refresh token), tested up to 300 requests per second:</p>
+<p>To create the sizing an active-active Keycloak setup with two AZs in one AWS region, following these steps:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>0.25 vCPU on each Pod in a 3-node Keycloak cluster.</p>
+<p>Create the same number of Pods with the same memory sizing as above on the second site.</p>
 </li>
 <li>
-<p>0.25 CPU and 800 WriteIOPS on a Aurora PostgreSQL multi-AZ database base on a <code>db.t4g.large</code> instance type.</p>
+<p>The database sizing remains unchanged. Both sites will connect to the same database writer instance.</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The average latency of the requests increased by 20-40 ms when running on an Aurora PostgreSQL multi-AZ database with a single reader instance on another AZ.
-The latency is expected to be lower when running in a single AZ or non-replicated database.</p>
+<p>In regard to the sizing of CPU requests and limits, there are different approaches depending on the expected failover behavior:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Fast failover and more expensive</dt>
+<dd>
+<p>Keep the CPU requests and limits as above for the second site. This way any remaining site can take over the traffic from the primary site immediately without the need to scale.</p>
+</dd>
+<dt class="hdlist1">Slower failover and more cost-effective</dt>
+<dd>
+<p>Reduce the CPU requests and limits as above by 50% for the second site. When one of the sites fails, scale the remaining site from 3 Pod to 6 Pods either manually, automated, or using a Horizontal Pod Autoscaler. This requires enough spare capacity on the cluster or cluster auto-scaling capabilities.</p>
+</dd>
+<dt class="hdlist1">Alternative setup for some environments</dt>
+<dd>
+<p>Reduce the CPU requests by 50% for the second site, but keep the CPU limits as above. This way, the remaining site can take the traffic, but only at the downside that the Nodes will experience CPU pressure and therefore slower response times during peak traffic.
+The benefit of this setup is that the number of Pods does not need to scale during failovers which is simpler to set up.</p>
+</dd>
+</dl>
+</div>
 </div>
 </div>
 </div>
@@ -251,34 +282,41 @@ The latency is expected to be lower when running in a single AZ or non-replicate
 <div class="ulist">
 <ul>
 <li>
-<p>OpenShift 4.14.x deployed on AWS via ROSA.</p>
+<p>OpenShift 4.16.x deployed on AWS via ROSA.</p>
 </li>
 <li>
 <p>Machinepool with <code>m5.4xlarge</code> instances.</p>
 </li>
 <li>
-<p>Keycloak deployed with the Operator and 3 pods in a high-availability setup with two sites in active/passive mode.</p>
+<p>Keycloak deployed with the Operator and 3 pods in a high-availability setup with two sites in active/active mode.</p>
 </li>
 <li>
 <p>OpenShift&#8217;s reverse proxy running in passthrough mode were the TLS connection of the client is terminated at the Pod.</p>
 </li>
 <li>
-<p>Database Amazon Aurora PostgreSQL in a multi-AZ setup, with the writer instance in the availability zone of the primary site.</p>
+<p>Database Amazon Aurora PostgreSQL in a multi-AZ setup.</p>
 </li>
 <li>
-<p>Default user password hashing with Argon2 and 5 hash iterations and minimum memory size 7 MiB <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#argon2id">as recommended by OWASP</a>.</p>
+<p>Default user password hashing with Argon2 and 5 hash iterations and minimum memory size 7 MiB <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#argon2id">as recommended by OWASP</a> (which is the default).</p>
 </li>
 <li>
-<p>Client credential grants don&#8217;t use refresh tokens (which is the default).</p>
+<p>Client credential grants do not use refresh tokens (which is the default).</p>
 </li>
 <li>
-<p>Database seeded with 100,000 users and 100,000 clients.</p>
+<p>Database seeded with 20,000 users and 20,000 clients.</p>
 </li>
 <li>
 <p>Infinispan local caches at default of 10,000 entries, so not all clients and users fit into the cache, and some requests will need to fetch the data from the database.</p>
 </li>
 <li>
-<p>All sessions in distributed caches as per default, with two owners per entries, allowing one failing Pod without losing data.</p>
+<p>All authentication sessions in distributed caches as per default, with two owners per entries, allowing one failing Pod without losing data.</p>
+</li>
+<li>
+<p>All user and client sessions are stored in the database and are not cached in-memory as this was tested a multi-site setup.
+Expect a slightly higher performance for single-site setups as a fixed number of user and client sessions will be cached.</p>
+</li>
+<li>
+<p>OpenJDK 21</p>
 </li>
 </ul>
 </div>
