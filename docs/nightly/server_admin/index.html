@@ -860,7 +860,12 @@ span.image img {
 <li><a href="#con-aia-available-actions_server_administration_guide">Available actions</a></li>
 </ul>
 </li>
-<li><a href="#proc-searching-user_server_administration_guide">Searching for a user</a></li>
+<li><a href="#proc-searching-user_server_administration_guide">Searching for a user</a>
+<ul class="sectlevel3">
+<li><a href="#default-search">Default search</a></li>
+<li><a href="#attribute-search">Attribute search</a></li>
+</ul>
+</li>
 <li><a href="#proc-deleting-user_server_administration_guide">Deleting a user</a></li>
 <li><a href="#proc-allow-user-to-delete-account_server_administration_guide">Enabling account deletion by users</a>
 <ul class="sectlevel3">
@@ -5379,6 +5384,8 @@ But note that this can be further restricted based on what actions are enabled f
 </li>
 </ul>
 </div>
+<div class="sect3">
+<h4 id="default-search"><a class="anchor" href="#default-search"></a>Default search</h4>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
@@ -5400,6 +5407,35 @@ But note that this can be further restricted based on what actions are enabled f
 </li>
 <li>
 <p><code>somevalue*</code> or <code>somevalue</code> &#8594; performs prefix search, akin to a <code>LIKE 'somevalue%'</code> DB query.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="attribute-search"><a class="anchor" href="#attribute-search"></a>Attribute search</h4>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Click <strong>Users</strong> in the main menu. This <strong>Users</strong> page is displayed.</p>
+</li>
+<li>
+<p>Click <strong>Default search</strong> button and switch it to <strong>Attribute search</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Select attributes</strong> button and specify the attributes to search by.</p>
+</li>
+<li>
+<p>Check <strong>Exact search</strong> checkbox to perform exact match or keep it unchecked to use an infix search for attribute values.</p>
+</li>
+<li>
+<p>Click <strong>Search</strong> button to perform the search. It returns all users that match the criteria.</p>
+</li>
+</ol>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -5407,24 +5443,21 @@ But note that this can be further restricted based on what actions are enabled f
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Searches performed in the <strong>Users</strong> page encompasses searching both Keycloak&#8217;s database and configured user federated backends, such as LDAP. Users found in federated backends will be imported into Keycloak&#8217;s database if they don&#8217;t already exist there.
+<div class="paragraph">
+<p>Searches performed in the <strong>Users</strong> page encompass both Keycloak&#8217;s database and configured user federation backends, such as LDAP. Users found in federated backends will be imported into Keycloak&#8217;s database if they don&#8217;t already exist there.</p>
+</div>
 </td>
 </tr>
 </table>
 </div>
 <div class="ulist">
-<div class="title">Additional resources</div>
+<div class="title">Additional Resources</div>
 <ul>
 <li>
 <p>For more information on user federation, see <a href="#_user-storage-federation">User Federation</a>.</p>
 </li>
 </ul>
 </div>
-</li>
-</ol>
-</div>
-</li>
-</ol>
 </div>
 </div>
 <div class="sect2">
@@ -11565,7 +11598,11 @@ Host: localhost:8080</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="javascript">const keycloak = <span class="keyword">new</span> Keycloak(<span class="string"><span class="delimiter">'</span><span class="content">keycloak.json</span><span class="delimiter">'</span></span>);
+<pre class="CodeRay highlight"><code data-lang="javascript">const keycloak = <span class="keyword">new</span> Keycloak({
+        <span class="key">url</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">http://keycloak-server</span><span class="delimiter">&quot;</span></span>,
+        <span class="key">realm</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">my-realm</span><span class="delimiter">&quot;</span></span>,
+        <span class="key">clientId</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">my-app</span><span class="delimiter">&quot;</span></span>
+);
 
 await keycloak.createLoginUrl({
         <span class="key">idpHint</span>: <span class="string"><span class="delimiter">'</span><span class="content">facebook</span><span class="delimiter">'</span></span>
@@ -13874,6 +13911,9 @@ some of the core capabilities needed to manage organizations such as:</p>
 <li>
 <p>Toggle <strong>Organizations</strong> to <strong>On</strong>.</p>
 </li>
+<li>
+<p>Click <strong>Save</strong></p>
+</li>
 </ol>
 </div>
 <div class="paragraph">
@@ -13919,6 +13959,10 @@ some of the core capabilities needed to manage organizations such as:</p>
 <dt class="hdlist1">Alias</dt>
 <dd>
 <p>An alias for this organization, used to reference the organization internally. The alias is unique within a realm and must be URL-friendly, so characters not usually allowed in URLs will not be allowed in the alias. If not set, Keycloak will attempt to use the name as the alias. If the name is not URL-friendly, you will get an error and will be asked to specify an alias. Once defined, the alias cannot be changed afterwards.</p>
+</dd>
+<dt class="hdlist1">Redirect URL</dt>
+<dd>
+<p>After completing registration or accepting an invitation to the organization sent via email, the user is automatically redirected to the specified redirect url. If left empty, the user will be redirected to the account console by default.</p>
 </dd>
 <dt class="hdlist1">Domains</dt>
 <dd>
@@ -14166,8 +14210,7 @@ intention to join the organization.</p>
 <div class="paragraph">
 <p>On the other hand, if no user is associated with the given email address, the steps
 will involve creating a new account through the realm&#8217;s self-registration flow. In this case, the user is forced
-to provide the same email address used to send the invitation.
-Make sure to enable the <strong>User registration</strong> setting in the <strong>Login</strong> tab at the <strong>Realm settings</strong> to use this type of invitation.</p>
+to provide the same email address used to send the invitation.</p>
 </div>
 </div>
 <div class="sect3">
@@ -14585,6 +14628,7 @@ about the organizations where the user is a member.</p>
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="json"><span class="key"><span class="delimiter">&quot;</span><span class="content">organization</span><span class="delimiter">&quot;</span></span>: {
   <span class="key"><span class="delimiter">&quot;</span><span class="content">testcorp</span><span class="delimiter">&quot;</span></span>: {
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">id</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">42c3e46f-2477-44d7-a85b-d3b43f6b31fa</span><span class="delimiter">&quot;</span></span>,
     <span class="key"><span class="delimiter">&quot;</span><span class="content">attr1</span><span class="delimiter">&quot;</span></span>: [
       <span class="string"><span class="delimiter">&quot;</span><span class="content">value1</span><span class="delimiter">&quot;</span></span>
     ]
@@ -14599,8 +14643,17 @@ to authorize access to protected resources based on the organization where the u
 <div class="paragraph">
 <p>The <code>organization</code> scope is a built-in optional client scope at the realm.  Therefore, this scope is added to any client created in the realm by default. It also defines the <code>Organization Membership</code> mapper that controls how the organization membership information is mapped to the tokens.</p>
 </div>
-<div class="paragraph">
-<p>By default, the organization attributes are not included in the organization claim. To include the attributes in the claim, edit the mapper and enable <strong>Add organization attributes</strong>.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+By default, the organization id and attributes are not included in the organization claim. To include them, edit the mapper and enable the <strong>Add organization id</strong> and <strong>Add organization attributes</strong> options, respectively.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <div class="title">Including attributes in the organization claim</div>
@@ -21713,7 +21766,7 @@ $ kcadm.sh get users -r demorealm -q q=username:testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-09-30 01:21:27 UTC
+Last updated 2024-10-07 01:16:56 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>

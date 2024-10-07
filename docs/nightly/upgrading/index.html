@@ -776,9 +776,12 @@ span.image img {
 <li><a href="#keycloak-test-helper-is-removed">keycloak-test-helper is removed</a></li>
 <li><a href="#jee-admin-client-is-removed">JEE admin-client is removed</a></li>
 <li><a href="#new-generalized-event-types-for-credentials">New generalized event types for credentials</a></li>
+<li><a href="#import-realm-option-can-import-the-master-realm"><code>--import-realm</code> option can import the master realm</a></li>
 <li><a href="#bouncycastle-fips-updated">BouncyCastle FIPS updated</a></li>
 <li><a href="#setorcreatechild-method-removed-from-javascript-admin-client"><code>setOrCreateChild()</code> method removed from JavaScript Admin Client</a></li>
-<li><a href="#keycloak-js-methods-for-login-are-now-async">Keycloak JS methods for login are now <code>async</code></a></li>
+<li><a href="#keycloak-js">Keycloak JS</a></li>
+<li><a href="#stricter-startup-behavior-for-build-time-options">Stricter startup behavior for build-time options</a></li>
+<li><a href="#features-renamed">Features renamed</a></li>
 </ul>
 </li>
 <li><a href="#migrating-to-25-0-3">Migrating to 25.0.3</a>
@@ -1589,8 +1592,10 @@ This is enforced by default, and can be disabled using the SPI option <code>spi-
 <div class="ulist">
 <ul>
 <li>
-<p>Keycloak deployments on each site are now able to handle user requests simultaneously, therefore active/active
-setups are now supported, while previous configurations which leveraged active/passive loadbalancer will continue to work.</p>
+<p>Keycloak deployments are now able to handle user requests simultaneously in both sites. Previous load balancer configurations handling requests only in one site at a time will continue to work.</p>
+</li>
+<li>
+<p>Active monitoring of the connectivity between the sites is now required to the replication between the sites in case of a failure. The blueprints describe a setup with Alertmanager and AWS Lambda.</p>
 </li>
 <li>
 <p>The loadbalancer blueprint has been updated to use the AWS Global Accelerator as this avoids prolonged fail-over times
@@ -1622,8 +1627,8 @@ Due to that, you need to set up monitoring to disconnect the two sites in case o
 The Keycloak High Availability Guide contains a blueprint on how to set this up.</p>
 </li>
 <li>
-<p>While previous LoadBalancer configurations will continue to work with Keycloak, consider upgrading
-an existing Route53 configurations to avoid prolonged failover times due to client side DNS caching.</p>
+<p>While previous load balancer configurations will continue to work with Keycloak, consider upgrading
+an existing Route53 configuration to avoid prolonged failover times due to client side DNS caching.</p>
 </li>
 <li>
 <p>If you have updated your cache configuration XML file with remote-store configurations, those will no longer work.
@@ -1897,6 +1902,12 @@ The new event types are supported by the Email Event Listener.</p>
 </div>
 </div>
 <div class="sect3">
+<h4 id="import-realm-option-can-import-the-master-realm"><a class="anchor" href="#import-realm-option-can-import-the-master-realm"></a><code>--import-realm</code> option can import the master realm</h4>
+<div class="paragraph">
+<p>When running a <code>start</code> or <code>start-dev</code> command with the <code>--import-realm</code> option before the master realm exists, it will be imported if it exists in the import material. The previous behavior was that the master realm was created first, then its import skipped.</p>
+</div>
+</div>
+<div class="sect3">
 <h4 id="bouncycastle-fips-updated"><a class="anchor" href="#bouncycastle-fips-updated"></a>BouncyCastle FIPS updated</h4>
 <div class="paragraph">
 <p>Our FIPS 140-2 integration is now tested and supported with version 2 of BouncyCastle FIPS libraries. This version is certified with Java 21. If you use FIPS 140-2 integration, it is recommended to
@@ -1914,9 +1925,140 @@ This might be the RHEL 9 based system, which itself is compliant with the FIPS 1
 </div>
 </div>
 <div class="sect3">
-<h4 id="keycloak-js-methods-for-login-are-now-async"><a class="anchor" href="#keycloak-js-methods-for-login-are-now-async"></a>Keycloak JS methods for login are now <code>async</code></h4>
+<h4 id="keycloak-js"><a class="anchor" href="#keycloak-js"></a>Keycloak JS</h4>
 <div class="paragraph">
-<p>Keycloak JS now utilizes the Web Crypto API to calculate the SHA-256 digests needed to support PKCE. Due to the asynchronous nature of this API the following public methods now return a <code>Promise</code>:</p>
+<p>This release includes several changes to Keycloak JS library that should be taken into account. The main motivation for these changes is to de-couple the library from the Keycloak server, so that it can be refactored independently, simplifing the code and making it easier to maintain in the future. The changes are as follows:</p>
+</div>
+<div class="sect4">
+<h5 id="the-library-is-no-longer-served-statically-from-the-server"><a class="anchor" href="#the-library-is-no-longer-served-statically-from-the-server"></a>The library is no longer served statically from the server</h5>
+<div class="paragraph">
+<p>The Keycloak JS library is no longer served statically from the Keycloak server. This means that the following URLs are no longer available:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>/js/keycloak-authz.js</code></p>
+</li>
+<li>
+<p><code>/js/keycloak-authz.min.js</code></p>
+</li>
+<li>
+<p><code>/js/keycloak.js</code></p>
+</li>
+<li>
+<p><code>/js/keycloak.min.js</code></p>
+</li>
+<li>
+<p><code>/js/{version}/keycloak-authz.js</code></p>
+</li>
+<li>
+<p><code>/js/{version}/keycloak-authz.min.js</code></p>
+</li>
+<li>
+<p><code>/js/{version}/keycloak.js</code></p>
+</li>
+<li>
+<p><code>/js/{version}/keycloak.min.js</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Additionally, the <code>keycloakJsUrl</code> property that linked to the library on these URLs has been removed from the the admin console theme. If your custom theme was using this property to include the library, you should update your theme to include the library using a different method.</p>
+</div>
+<div class="paragraph">
+<p>If you are not already you should include the library in your project using a package manager like <a href="https://nodejs.org/en/learn/getting-started/an-introduction-to-the-npm-package-manager">NPM</a>. The library is available on the NPM registry as <a href="https://www.npmjs.com/package/keycloak-js"><code>keycloak-js</code></a>. You can install it using the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">npm install keycloak-js</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, the distribution of the server includes a copy of the library in the <code>keycloak-js-26.0.0.tgz</code> archive. You can copy the library from there into your project. If you are using the library directly in the browser without a build, you&#8217;ll need to host the library yourself. A package manager is still the recommended way to include the library in your project, as it will make it easier to update the library in the future.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="support-for-the-umd-distribution-has-been-removed"><a class="anchor" href="#support-for-the-umd-distribution-has-been-removed"></a>Support for the UMD distribution has been removed</h5>
+<div class="paragraph">
+<p>The UMD distribution <a href="https://github.com/umdjs/umd?tab=readme-ov-file#umd-universal-module-definition">Universal Module Definition</a> of the Keycloak JS library has been removed. This means that the library is no longer exposed as a global variable, and instead must be imported as <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules">a module</a>. This change is in line with modern JavaScript development practices, and allows for a more consitent experience between browsers and build tooling, and generally results in more predictable code with less side-effects.</p>
+</div>
+<div class="paragraph">
+<p>If you are using a bundler like Vite or Webpack nothing changes, you&#8217;ll have the same experience as before. If you are using the library directly in the browser, you&#8217;ll need to update your code to import the library as a module:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="html"><span class="comment">&lt;!-- Before --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attribute-name">src</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">/path/to/keycloak.js</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span><span class="tag">&lt;/script&gt;</span>
+<span class="tag">&lt;script&gt;</span>
+<span class="inline">    const keycloak = <span class="keyword">new</span> Keycloak();</span>
+<span class="tag">&lt;/script&gt;</span>
+
+<span class="comment">&lt;!-- After --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attribute-name">type</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">module</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<span class="inline">    <span class="reserved">import</span> Keycloak from <span class="string"><span class="delimiter">'</span><span class="content">/path/to/keycloak.js</span><span class="delimiter">'</span></span>;
+    const keycloak = <span class="keyword">new</span> Keycloak();</span>
+<span class="tag">&lt;/script&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also opt to use an <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap">import map</a> make the import of the library less verbose:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="html"><span class="tag">&lt;script</span> <span class="attribute-name">type</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">importmap</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<span class="inline">    {
+        <span class="key"><span class="delimiter">&quot;</span><span class="content">imports</span><span class="delimiter">&quot;</span></span>: {
+            <span class="key"><span class="delimiter">&quot;</span><span class="content">keycloak-js</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">/path/to/keycloak.js</span><span class="delimiter">&quot;</span></span>
+        }
+    }</span>
+<span class="tag">&lt;/script&gt;</span>
+<span class="tag">&lt;script</span> <span class="attribute-name">type</span>=<span class="string"><span class="delimiter">&quot;</span><span class="content">module</span><span class="delimiter">&quot;</span></span><span class="tag">&gt;</span>
+<span class="inline">    <span class="comment">// The library can now be imported without specifying the full path, providing a similar experience as with a bundler.</span>
+    <span class="reserved">import</span> Keycloak from <span class="string"><span class="delimiter">'</span><span class="content">keycloak-js</span><span class="delimiter">'</span></span>;
+    const keycloak = <span class="keyword">new</span> Keycloak();</span>
+<span class="tag">&lt;/script&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are using TypeScript you may need to update your <code>tsconfig.json</code> to be able to resolve the library:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="json">{
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">compilerOptions</span><span class="delimiter">&quot;</span></span>: {
+        <span class="key"><span class="delimiter">&quot;</span><span class="content">moduleResolution</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">Bundler</span><span class="delimiter">&quot;</span></span>
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="the-configuration-for-the-keycloak-instance-is-now-required"><a class="anchor" href="#the-configuration-for-the-keycloak-instance-is-now-required"></a>The configuration for the <code>Keycloak</code> instance is now required</h5>
+<div class="paragraph">
+<p>Previously it was possible to construct a <code>Keycloak</code> instance without passing any configuration. The configuration would then automatically be loaded from the server from a <code>keycloak.json</code> file based on the path of the included <code>keycloak.js</code> script. Since the library is no longer statically served from the server this feature has been removed. You now need to pass the configuration explicitly when constructing a <code>Keycloak</code> instance:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="javascript"><span class="comment">// Before</span>
+const keycloak = <span class="keyword">new</span> Keycloak();
+
+<span class="comment">// After</span>
+const keycloak = <span class="keyword">new</span> Keycloak({
+    <span class="key">url</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">http://keycloak-server</span><span class="delimiter">&quot;</span></span>,
+    <span class="key">realm</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">my-realm</span><span class="delimiter">&quot;</span></span>,
+    <span class="key">clientId</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">my-app</span><span class="delimiter">&quot;</span></span>
+});
+
+<span class="comment">// Alternatively, you can pass a URL to a `keycloak.json` file.</span>
+<span class="comment">// Note this is not reccomended as it creates additional network requests, and is prone to change in the future.</span>
+const keycloak = <span class="keyword">new</span> Keycloak(<span class="string"><span class="delimiter">'</span><span class="content">http://keycloak-server/path/to/keycloak.json</span><span class="delimiter">'</span></span>);</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="methods-for-login-are-now-async"><a class="anchor" href="#methods-for-login-are-now-async"></a>Methods for login are now <code>async</code></h5>
+<div class="paragraph">
+<p>Keycloak JS now utilizes the Web Crypto API for various cryptographic functions. Due to the asynchronous nature of this API the following public methods will now always return a <code>Promise</code>:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -1932,7 +2074,46 @@ This might be the RHEL 9 based system, which itself is compliant with the FIPS 1
 </ul>
 </div>
 <div class="paragraph">
+<p>Make sure to update your code to <code>await</code> these methods:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="javascript"><span class="comment">// Before</span>
+keycloak.login();
+const loginUrl = keycloak.createLoginUrl();
+const registerUrl = keycloak.createRegisterUrl();
+
+<span class="comment">// After</span>
+await keycloak.login();
+const loginUrl = await keycloak.createLoginUrl();
+const registerUrl = await keycloak.createRegisterUrl();</code></pre>
+</div>
+</div>
+<div class="paragraph">
 <p>Make sure to update your code to <code>await</code> these methods.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="a-secure-context-is-now-required"><a class="anchor" href="#a-secure-context-is-now-required"></a>A secure context is now required</h5>
+<div class="paragraph">
+<p>Keycloak JS now requires a <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts">secure context</a> to run. The reason for this is that the library now uses the Web Crypto API for various cryptographic functions. This API is only available in secure contexts, which are contexts that are served over HTTPS, <code>localhost</code> or a <code>.localhost</code> domain. If you are using the library in a non-secure context you&#8217;ll need to update your development environment to use a secure context.</p>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="stricter-startup-behavior-for-build-time-options"><a class="anchor" href="#stricter-startup-behavior-for-build-time-options"></a>Stricter startup behavior for build-time options</h4>
+<div class="paragraph">
+<p>When the provided build-time options differ at startup from the values persisted in the server image during the last optimized Keycloak build, Keycloak will now fail to start. Previously, a warning message was displayed in such cases.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="features-renamed"><a class="anchor" href="#features-renamed"></a>Features renamed</h4>
+<div class="paragraph">
+<p>With feature versions the features <code>account3</code>, <code>admin2</code>, and <code>login2</code> have been renamed. When disabling a feature there
+is no need to use the version, for example the admin console is now disabled with <code>--features-disabled=admin</code>.</p>
+</div>
+<div class="paragraph">
+<p>To use a specific version of <code>login</code> use <code>--features=login:v1</code>.</p>
 </div>
 </div>
 </div>
@@ -2445,7 +2626,7 @@ You may consider updating your applications to being able to handle this error.<
 <p>The option <code>transaction-xa-enabled</code> will default to false, rather than true. If you want XA transaction support you will now need to explicitly set this option to true.</p>
 </li>
 <li>
-<p>XA Transaction recovery support is enabled by default if <code>transaction-xa-enabled</code> is true. Transaction logs will be stored at KEYCLOAK_HOME/data/transaction-logs.</p>
+<p>XA Transaction recovery support is enabled by default. Transaction logs will be stored at KEYCLOAK_HOME/data/transaction-logs.</p>
 </li>
 </ul>
 </div>
@@ -4776,7 +4957,7 @@ references for more information:</p>
 <p><a href="https://github.com/keycloak/keycloak-quickstarts">Keycloak Quickstart GitHub Repository</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/docs/latest/securing_apps/">Keycloak Securing Applications Documentation</a></p>
+<p><a href="https://www.keycloak.org/guides#securing-apps">Keycloak Securing Applications Documentation</a></p>
 </li>
 </ul>
 </div>
@@ -4801,7 +4982,7 @@ references for more information:</p>
 <p><a href="https://github.com/keycloak/keycloak-quickstarts">Keycloak Quickstart GitHub Repository</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/docs/latest/securing_apps/">Keycloak Securing Applications Documentation</a></p>
+<p><a href="https://www.keycloak.org/guides#securing-apps">Keycloak Securing Applications Documentation</a></p>
 </li>
 </ul>
 </div>
@@ -5794,7 +5975,7 @@ For more information, see the <a href="https://www.keycloak.org/server/health">H
 <p>As stated in the release notes, Keycloak now supports gelf logging for centralized logging systems out of the box.</p>
 </div>
 <div class="paragraph">
-<p>When you added the gelf related quarkus jars yourself in a prior version, make sure to switch to the supported configuration options in the <a href="https://www.keycloak.org/server/logging#_centralized_logging_using_gelf">logging guide</a> and remove your jars from the <code>providers</code> folder.</p>
+<p>When you added the gelf related quarkus jars yourself in a prior version, make sure to switch to the supported configuration options in the <a href="https://www.keycloak.org/server/logging">logging guide</a> and remove your jars from the <code>providers</code> folder.</p>
 </div>
 </div>
 <div class="sect3">
@@ -8675,7 +8856,7 @@ to preserve compatibility with older client adapters. For more details, see the 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-09-30 01:21:32 UTC
+Last updated 2024-10-07 01:17:00 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
