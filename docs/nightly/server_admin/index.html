@@ -2774,7 +2774,7 @@ then immediately remove the compromised key pair.</p>
 <p>Keycloak imports users from LDAP into the local Keycloak user database. This copy of the user database synchronizes on-demand or through a periodic background task. An exception exists for synchronizing passwords. Keycloak never imports passwords. Password validation always occurs on the LDAP server.</p>
 </div>
 <div class="paragraph">
-<p>The advantage of synchronization is that all Keycloak features work efficiently because any required extra per-user data is stored locally. The disadvantage is that each time Keycloak queries a specific user for the first time, Keycloak performs a corresponding database insert.</p>
+<p>The advantage of synchronization is that all Keycloak features work efficiently because any required extra per-user data is stored locally. The disadvantage is that each time Keycloak queries a specific user for the first time, Keycloak performs a corresponding database insert. Also, when imported users are returned as part of a search operation, a corresponding LDAP search is performed for each one to check if the user still exists in LDAP and do some basic validation.</p>
 </div>
 <div class="paragraph">
 <p>You can synchronize the import with your LDAP server. Import synchronization is unnecessary when LDAP mappers always read particular attributes from the LDAP rather than the database.</p>
@@ -2797,6 +2797,23 @@ then immediately remove the compromised key pair.</p>
 </div>
 <div class="paragraph">
 <p>When you attempt to change the non-LDAP mapped user data, the user update is not possible. For example, you cannot disable the LDAP mapped user unless the user&#8217;s <code>enabled</code> flag maps to an LDAP attribute.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>When working with imported users, Keycloak performs a LDAP search when the user is queried to validate the user and decorate it so that the configured mappers work properly. This means that extra care must be taken when performing unfiltered user searches that may fetch a big number of users as a LDAP search will be issued for every imported user that is found, possibly affecting the performance in a negative way.</p>
+</div>
+<div class="paragraph">
+<p>Operations that fetch a single user (for example during login) are usually cached and should not be impacted by this extra LDAP search that is performed when the user is fetched for the first time.</p>
 </div>
 </td>
 </tr>
@@ -21766,7 +21783,7 @@ $ kcadm.sh get users -r demorealm -q q=username:testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-10-07 01:16:56 UTC
+Last updated 2024-10-12 01:12:55 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
