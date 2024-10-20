@@ -138,7 +138,7 @@ If you are using Java, you can access the Keycloak Authorization Services using 
 <li>
 <p><strong>credentials</strong> (required)</p>
 <div class="paragraph">
-<p>Specifies the credentials of the application. This is an object notation where the key is the credential type and the value is the value of the credential type.</p>
+<p>Specifies the credentials of the application. This is an object notation where the key is the credential type and the value is the value of the credential type. The details are in the <a href="#_client_authentication_adapter">dedicated section</a>.</p>
 </div>
 </li>
 </ul>
@@ -269,6 +269,112 @@ System.out.println("Permissions granted by the server: ");
 for (Permission granted : requestingPartyToken.getPermissions()) {
     System.out.println(granted);
 }</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_client_authentication_adapter">Client authentication</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When an authorization client needs to send a backchannel request, it needs to authenticate against the Keycloak server. By default, there are three ways to authenticate the client: client ID and client secret, client authentication with signed JWT, or client authentication with signed JWT using client secret.</p>
+</div>
+<div class="sect2">
+<h3 id="_client_id_and_client_secret">Client ID and Client Secret</h3>
+<div class="paragraph">
+<p>This is the traditional method described in the OAuth2 specification. The client has a secret, which needs to be known to both the client and the Keycloak server.
+You can generate the secret for a particular client in the Keycloak Admin Console, and then paste this secret into the <code>keycloak.json</code> file on the application side:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">"credentials": {
+    "secret": "19666a4f-32dd-4049-b082-684c74115f28"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_client_authentication_with_signed_jwt">Client authentication with Signed JWT</h3>
+<div class="paragraph">
+<p>This is based on the <a href="https://datatracker.ietf.org/doc/html/rfc7523">RFC7523</a> specification. It works this way:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The client must have the private key and certificate. For authorization client, this is available through the traditional <code>keystore</code> file, which is either available on the client application&#8217;s classpath or somewhere on the file system.</p>
+</li>
+<li>
+<p>During authentication, the client generates a JWT token and signs it with its private key and sends it to Keycloak in
+the particular request in the <code>client_assertion</code> parameter.</p>
+</li>
+<li>
+<p>Keycloak must have the public key or certificate of the client so that it can verify the signature on JWT. In Keycloak, you configure client credentials for your client. First, you choose <code>Signed JWT</code> as the method of authenticating your client in the tab <code>Credentials</code> in the Admin Console.
+Then you can choose one of these methods in the <code>Keys</code> tab:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure the JWKS URL where Keycloak can download the client&#8217;s public keys. This option is the most flexible, since the client can rotate its keys anytime and Keycloak always downloads new keys as needed without changing the configuration. In other words,  Keycloak downloads new keys when it sees the token signed by an unknown <code>kid</code> (Key ID).  However, you will need to care of exposing the public key somewhere in JWKS format to be available to the server.</p>
+</li>
+<li>
+<p>Upload the client&#8217;s public key or certificate, either in PEM format, in JWK format, or from the keystore. With this option, the public key is hardcoded and must be changed when the client generates a new key pair.
+You can even generate your own keystore from the Keycloak Admin Console if you do not have your own keystore available. This option is the easiest when using authorization client.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To set up for this method, you need to code something such as the following in your <code>keycloak.json</code> file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">"credentials": {
+  "jwt": {
+    "client-keystore-file": "classpath:keystore-client.jks",
+    "client-keystore-type": "JKS",
+    "client-keystore-password": "storepass",
+    "client-key-password": "keypass",
+    "client-key-alias": "clientkey",
+    "token-expiration": 10
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With this configuration, the keystore file <code>keystore-client.jks</code> must be available on classpath of the application, which uses authorization client. If you do not use the prefix <code>classpath:</code>
+you can point to any file on the file system where the client application is running.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_client_authentication_with_signed_jwt_using_client_secret">Client authentication with Signed JWT using client secret</h3>
+<div class="paragraph">
+<p>This is the same as Client Authentication with Signed JWT except for using the client secret instead of the private key and certificate.</p>
+</div>
+<div class="paragraph">
+<p>The client has a secret, which needs to be known to both the application using authorization client and the Keycloak server. You choose <code>Signed JWT with Client Secret</code> as the method of authenticating your client in the <code>Credentials</code> tab in the Admin Console, and then paste this secret into the <code>keycloak.json</code> file on the application side:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">"credentials": {
+  "secret-jwt": {
+    "secret": "19666a4f-32dd-4049-b082-684c74115f28",
+    "algorithm": "HS512"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The "algorithm" field specifies the algorithm for the Signed JWT using Client Secret. It needs to be one of the following values : HS256, HS384, and HS512. For details, see <a href="https://datatracker.ietf.org/doc/html/rfc7518#section-3.2">JSON Web Algorithms (JWA)</a>.</p>
+</div>
+<div class="paragraph">
+<p>This "algorithm" field is optional; HS256 is applied automatically if the "algorithm" field does not exist on the <code>keycloak.json</code> file.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_add_your_own_client_authentication_method">Add your own client authentication method</h3>
+<div class="paragraph">
+<p>You can add your own client authentication method as well. You will need to implement both client-side and server-side providers. For more details see the <code>Authentication SPI</code> section in <a href="https://www.keycloak.org/docs/latest/server_development/">Server Developer Guide</a>.</p>
 </div>
 </div>
 </div>
