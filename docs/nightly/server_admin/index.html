@@ -14979,7 +14979,11 @@ For more information, see <a href="https://www.keycloak.org/guides#securing-apps
 </dd>
 <dt class="hdlist1"><strong>Front-channel logout URL</strong></dt>
 <dd>
-<p>URL that will be used by Keycloak to send logout requests to clients through the front-channel.</p>
+<p>URL that will be used by Keycloak to send logout requests to clients through the front-channel. If not provided, it defaults to the Home URL. This option is applicable just if <code>Front channel logout</code> option is ON.</p>
+</dd>
+<dt class="hdlist1"><strong>Front-channel logout session required</strong></dt>
+<dd>
+<p>Specifies whether a sid (session ID) and iss (issuer) parameters are included in the Logout request when the Front-channel Logout URL is used.</p>
 </dd>
 </dl>
 </div>
@@ -14987,7 +14991,7 @@ For more information, see <a href="https://www.keycloak.org/guides#securing-apps
 <dl>
 <dt class="hdlist1"><strong>Backchannel logout URL</strong></dt>
 <dd>
-<p>URL that will cause the client to log itself out when a logout request is sent to this realm (via end_session_endpoint). If omitted, no logout requests are sent to the client.</p>
+<p>URL that will cause the client to log itself out when a logout request is sent to this realm (via end_session_endpoint). The logout is done by sending logout token as specified in the OIDC Backchannel logout specification. If omitted, the logout request might be sent to the specified <code>Admin URL</code> (if configured) in the format specific to Keycloak adapters. If even <code>Admin URL</code> is not configured, no logout request will be sent to the client. This option is applicable just if <code>Front channel logout</code> option is OFF.</p>
 </dd>
 <dt class="hdlist1"><strong>Backchannel logout session required</strong></dt>
 <dd>
@@ -15381,8 +15385,10 @@ a <code>claims</code> parameter that has an <code>acr</code> claim attached. See
 <td class="content">
 Note that default ACR values are used as the default level, however it cannot be reliably used to enforce login with the particular level.
 For example, assume that you configure the <code>Default ACR Values</code> to level 2. Then by default, users will be required to authenticate with level 2.
-However when the user explicitly attaches the parameter into login request such as <code>acr_values=1</code>, then the level 1 will be used. As a result, if the client
+However, when the user explicitly attaches the parameter into login request such as <code>acr_values=1</code>, then the level 1 will be used. As a result, if the client
 really requires level 2, the client is encouraged to check the presence of the <code>acr</code> claim inside ID Token and double-check that it contains the requested level 2.
+To actually enforce the usage of a certain ACR on the Keycloak side, use the <code>Minimum ACR Value</code> setting.
+This allows administrators to enforce ACRs even on applications that are not able to validate the requested <code>acr</code> claim inside the token.
 </td>
 </tr>
 </table>
@@ -18288,10 +18294,10 @@ wait time will never reach the value you have set to <code>Max wait</code>.</p><
 <p>Increment <code>count</code></p>
 </li>
 <li>
-<p>Calculate <code>wait</code> using <em>Wait Increment</em> * (<code>count</code> / <em>Max Login Failures</em>). The division is an integer division rounded down to a whole number</p>
+<p>Calculate <code>wait</code> according the brute force strategy defined (see below Strategies to set Wait Time).</p>
 </li>
 <li>
-<p>If <code>wait</code> equals 0 and the time between this failure and the last failure is less than <em>Quick Login Check Milliseconds</em>, set <code>wait</code> to <em>Minimum Quick Login Wait</em>.</p>
+<p>If <code>wait</code> equals is less than 0 and the time between this failure and the last failure is less than <em>Quick Login Check Milliseconds</em>, set <code>wait</code> to <em>Minimum Quick Login Wait</em>.</p>
 <div class="olist lowerroman">
 <ol class="lowerroman" type="i">
 <li>
@@ -18314,7 +18320,13 @@ wait time will never reach the value you have set to <code>Max wait</code>.</p><
 </div>
 </div>
 <div class="paragraph">
-<p>For instance, if you have set <code>Max Login Failures</code> to <code>5</code> and a <code>Wait Increment</code> of <code>30</code> seconds, the effective time an account will be disabled after several failed authentication attempts will be:</p>
+<p><strong>Strategies to set Wait Time</strong></p>
+</div>
+<div class="paragraph">
+<p>Keycloak provides two strategies to calculate wait time: By multiples or Linear. By multiples is the first strategy introduced by Keycloak, so that is the default one.</p>
+</div>
+<div class="paragraph">
+<p>By multiples strategy, wait time is incremented when the number (or count) of failures are multiples of <code>Max Login Failure</code>. For instance, if you set <code>Max Login Failures</code> to <code>5</code> and a <code>Wait Increment</code> to <code>30</code> seconds, the effective time that an account is disabled after several failed authentication attempts will be:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -18393,9 +18405,95 @@ wait time will never reach the value you have set to <code>Max wait</code>.</p><
 </tbody>
 </table>
 <div class="paragraph">
-<p>Note that the <code>Effective Wait Time</code> at the 5th failed attempt will disable the account for <code>30</code> seconds. Only after reaching
-the next multiple of <code>Max Login Failures</code>, in this case <code>10</code>, will the time increase from <code>30</code> to <code>60</code>. The time the account will be disabled
-is only increased when reaching multiples of <code>Max Login Failures</code>.</p>
+<p>At the fifth failed attempt of the <code>Effective Wait Time</code>, the account is disabled for <code>30</code> seconds. After reaching the next multiple of <code>Max Login Failures</code>, in this case <code>10</code>, the time increases from <code>30</code> to <code>60</code> seconds.</p>
+</div>
+<div class="paragraph">
+<p>The By multiple strategy uses the following formula to calculate wait time: <em>Wait Increment</em> * (<code>count</code> / <em>Max Login Failures</em>). The division is an integer division rounded down to a whole number.</p>
+</div>
+<div class="paragraph">
+<p>For linear strategy, wait time is incremented when the number (or count) of failures equals or is greater than <code>Max Login Failure</code>. For instance, if you have set <code>Max Login Failures</code> to <code>5</code> and a <code>Wait Increment</code> to`30` seconds, the effective time that an account is disabled after several failed authentication attempts will be:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Number of Failures</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Wait Increment</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Max Login Failures</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Effective Wait Time</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>5</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>30</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>30</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>6</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>30</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>60</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>7</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>30</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>90</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>8</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>30</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>120</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>9</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>30</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>150</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>10</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>30</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>180</strong></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>At the fifth failed attempt for the <code>Effective Wait Time</code>, the account is disabled for <code>30</code> seconds. Each new failed attempt increases wait time.</p>
+</div>
+<div class="paragraph">
+<p>The linear strategy uses the following formula to calculate wait time: <em>Wait Increment</em> * (1 + <code>count</code> - <em>Max Login Failures</em>).</p>
 </div>
 <div class="paragraph">
 <p><strong>Permanent Lockout Parameters</strong></p>
@@ -21783,7 +21881,7 @@ $ kcadm.sh get users -r demorealm -q q=username:testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-10-21 01:17:19 UTC
+Last updated 2024-10-28 01:17:42 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
