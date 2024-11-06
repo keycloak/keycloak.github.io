@@ -1194,9 +1194,13 @@ span.image img {
 <li><a href="#admin-endpoints-and-admin-console">Admin endpoints and Admin Console</a></li>
 <li><a href="#password-guess-brute-force-attacks">Brute force attacks</a>
 <ul class="sectlevel3">
-<li><a href="#password-policies">Password policies</a></li>
+<li><a href="#lockout-permanently">Lockout permanently</a></li>
+<li><a href="#lockout-temporarily">Lockout temporarily</a></li>
+<li><a href="#lockout-permanently-after-temporary-lockout">Lockout permanently after temporary lockout</a></li>
+<li><a href="#downside-of-keycloak-brute-force-detection">Downside of Keycloak brute force detection</a></li>
 </ul>
 </li>
+<li><a href="#password-policies">Password policies</a></li>
 <li><a href="#read_only_user_attributes">Read-only user attributes</a></li>
 <li><a href="#validate_user_attributes">Validate user attributes</a></li>
 <li><a href="#clickjacking">Clickjacking</a></li>
@@ -18135,7 +18139,7 @@ Do not expose administrative endpoints externally if external access is not nece
 </div>
 </div>
 <div class="paragraph">
-<p>A brute force attack attempts to guess a user&#8217;s password by trying to log in multiple times. Keycloak has brute force detection capabilities and can temporarily disable a user account if the number of login failures exceeds a specified threshold.</p>
+<p>A brute force attack attempts to guess a user&#8217;s password by trying to log in multiple times. Keycloak has brute force detection capabilities and can permanently or temporarily disable a user account if the number of login failures exceeds a specified threshold.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -18145,14 +18149,27 @@ Do not expose administrative endpoints externally if external access is not nece
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Keycloak disables brute force detection by default. Enable this feature to protect against brute force attacks.</p>
+<p>When a user is locked and attempts to log in, Keycloak displays the default <code>Invalid username or password</code> error message. This message is the same error message as the message displayed for an invalid username or invalid password to ensure the attacker is unaware the account is disabled.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Brute force detection is disabled by default. Enable this feature to protect against brute force attacks.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<div class="title">Procedure</div>
 <p>To enable this protection:</p>
 </div>
 <div class="olist arabic">
@@ -18165,6 +18182,9 @@ Do not expose administrative endpoints externally if external access is not nece
 </li>
 <li>
 <p>Click the <strong>Brute Force Detection</strong> tab.</p>
+</li>
+<li>
+<p>Choose the <strong>Brute Force Mode</strong> which best fit to your requirements.</p>
 <div class="paragraph">
 <div class="title">Brute force detection</div>
 <p><span class="image"><img src="./images/brute-force.png" alt="brute force"></span></p>
@@ -18172,26 +18192,17 @@ Do not expose administrative endpoints externally if external access is not nece
 </li>
 </ol>
 </div>
+<div class="sect3">
+<h4 id="lockout-permanently"><a class="anchor" href="#lockout-permanently"></a>Lockout permanently</h4>
 <div class="paragraph">
-<p>Keycloak can deploy permanent lockout and temporary lockout actions when it detects an attack. Permanent lockout disables a user account until an administrator re-enables it. Temporary lockout disables a user account for a specific period of time.
-The time period that the account is disabled increases as the attack continues and subsequent failures reach multiples of <code>Max Login Failures</code>.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>When a user is temporarily locked and attempts to log in, Keycloak displays the default <code>Invalid username or password</code> error message. This message is the same error message as the message displayed for an invalid username or invalid password to ensure the attacker is unaware the account is disabled.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>Keycloak disables a user account (blocking log in attemps) until an administrator re-enables it.</p>
 </div>
 <div class="paragraph">
-<p><strong>Common Parameters</strong></p>
+<div class="title">Lockout permanently</div>
+<p><span class="image"><img src="./images/brute-force-permanently.png" alt="brute force permanently"></span></p>
+</div>
+<div class="paragraph">
+<p><strong>Permanent Lockout Parameters</strong></p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -18210,20 +18221,95 @@ The time period that the account is disabled increases as the attack continues a
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Max Login Failures</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The maximum number of login failures.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">30 failures.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30 failures</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Quick Login Check Milliseconds</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The minimum time between login attempts.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1000 milliseconds.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1000 milliseconds</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Minimum Quick Login Wait</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The minimum time the user is disabled when login attempts are quicker than <em>Quick Login Check Milliseconds</em>.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1 minute.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 minute</p></td>
 </tr>
 </tbody>
 </table>
+<div class="paragraph">
+<p><strong>Permanent Lockout Flow</strong></p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>On successful login</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Reset <code>count</code></p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>On failed login</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Increment <code>count</code></p>
+</li>
+<li>
+<p>If <code>count</code> is greater than or equals to <code>Max login failures</code></p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>locks the user</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Else if the time between this failure and the last failure is less than <em>Quick Login Check Milliseconds</em></p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>Locks the user for the time specified at <em>Minimum Quick Login Wait</em></p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Enabling an user account resets the <code>count</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="lockout-temporarily"><a class="anchor" href="#lockout-temporarily"></a>Lockout temporarily</h4>
+<div class="paragraph">
+<p>Keycloak disables a user account for a specific period of time. The time period that the account is disabled increases as the attack continues.</p>
+</div>
+<div class="paragraph">
+<div class="title">Lockout temporarily</div>
+<p><span class="image"><img src="./images/brute-force-temporarily.png" alt="brute force temporarily"></span></p>
+</div>
 <div class="paragraph">
 <p><strong>Temporary Lockout Parameters</strong></p>
 </div>
@@ -18242,20 +18328,40 @@ The time period that the account is disabled increases as the attack continues a
 </thead>
 <tbody>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Max Login Failures</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The maximum number of login failures.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30 failures</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Strategy to increase wait time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Strategy to increase the time a user will be temporarily disabled when the user&#8217;s login attempts exceed <em>Max Login Failures</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Multiple</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Wait Increment</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The time added to the time a user is temporarily disabled when the user&#8217;s login attempts exceed <em>Max Login Failures</em>.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1 minute.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 minute</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Max Wait</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The maximum time a user is temporarily disabled.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">15 minutes.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">15 minutes</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Failure Reset Time</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The time when the failure count resets. The timer runs from the last failed login. Make sure this number is always greater than <code>Max wait</code>; otherwise the effective
 wait time will never reach the value you have set to <code>Max wait</code>.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">12 hours.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">12 hours</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Login Check Milliseconds</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The minimum time between login attempts.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1000 milliseconds</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum Quick Login Wait</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The minimum time the user is disabled when login attempts are quicker than <em>Quick Login Check Milliseconds</em>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 minute</p></td>
 </tr>
 </tbody>
 </table>
@@ -18297,15 +18403,22 @@ wait time will never reach the value you have set to <code>Max wait</code>.</p><
 <p>Calculate <code>wait</code> according the brute force strategy defined (see below Strategies to set Wait Time).</p>
 </li>
 <li>
-<p>If <code>wait</code> equals is less than 0 and the time between this failure and the last failure is less than <em>Quick Login Check Milliseconds</em>, set <code>wait</code> to <em>Minimum Quick Login Wait</em>.</p>
+<p>If <code>wait</code> is less than or equals to 0 and the time between this failure and the last failure is less than <em>Quick Login Check Milliseconds</em></p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>set <code>wait</code> to <em>Minimum Quick Login Wait</em></p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>if <code>wait</code> is greater than 0</p>
 <div class="olist lowerroman">
 <ol class="lowerroman" type="i">
 <li>
 <p>Temporarily disable the user for the smallest of <code>wait</code> and <em>Max Wait</em> seconds</p>
 </li>
-<li>
-<p>Increment the temporary lockout counter</p>
-</li>
 </ol>
 </div>
 </li>
@@ -18314,10 +18427,21 @@ wait time will never reach the value you have set to <code>Max wait</code>.</p><
 </li>
 </ol>
 </div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
 <div class="paragraph">
 <p><code>count</code> does not increment when a temporarily disabled account commits a login failure.</p>
 </div>
-</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p><strong>Strategies to set Wait Time</strong></p>
@@ -18405,13 +18529,13 @@ wait time will never reach the value you have set to <code>Max wait</code>.</p><
 </tbody>
 </table>
 <div class="paragraph">
-<p>At the fifth failed attempt of the <code>Effective Wait Time</code>, the account is disabled for <code>30</code> seconds. After reaching the next multiple of <code>Max Login Failures</code>, in this case <code>10</code>, the time increases from <code>30</code> to <code>60</code> seconds.</p>
+<p>At the fifth failed attempt, the account is disabled for <code>30</code> seconds. After reaching the next multiple of <code>Max Login Failures</code>, in this case <code>10</code>, the time increases from <code>30</code> to <code>60</code> seconds.</p>
 </div>
 <div class="paragraph">
-<p>The By multiple strategy uses the following formula to calculate wait time: <em>Wait Increment</em> * (<code>count</code> / <em>Max Login Failures</em>). The division is an integer division rounded down to a whole number.</p>
+<p>The By multiple strategy uses the following formula to calculate wait time: <em>Wait Increment in Seconds</em> * (<code>count</code> / <em>Max Login Failures</em>). The division is an integer division rounded down to a whole number.</p>
 </div>
 <div class="paragraph">
-<p>For linear strategy, wait time is incremented when the number (or count) of failures equals or is greater than <code>Max Login Failure</code>. For instance, if you have set <code>Max Login Failures</code> to <code>5</code> and a <code>Wait Increment</code> to`30` seconds, the effective time that an account is disabled after several failed authentication attempts will be:</p>
+<p>For linear strategy, wait time is incremented when the <code>count</code> (or number) of failures is greater than or equals to <code>Max Login Failure</code>. For instance, if you have set <code>Max Login Failures</code> to <code>5</code> and a <code>Wait Increment</code> to`30` seconds, the effective time that an account is disabled after several failed authentication attempts will be:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -18490,13 +18614,23 @@ wait time will never reach the value you have set to <code>Max wait</code>.</p><
 </tbody>
 </table>
 <div class="paragraph">
-<p>At the fifth failed attempt for the <code>Effective Wait Time</code>, the account is disabled for <code>30</code> seconds. Each new failed attempt increases wait time.</p>
+<p>At the fifth failed attempt, the account is disabled for <code>30</code> seconds. Each new failure increases wait time according value specified at <code>wait increment</code>.</p>
 </div>
 <div class="paragraph">
-<p>The linear strategy uses the following formula to calculate wait time: <em>Wait Increment</em> * (1 + <code>count</code> - <em>Max Login Failures</em>).</p>
+<p>The linear strategy uses the following formula to calculate wait time: <em>Wait Increment in Seconds</em> * (1 + <code>count</code> - <em>Max Login Failures</em>).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="lockout-permanently-after-temporary-lockout"><a class="anchor" href="#lockout-permanently-after-temporary-lockout"></a>Lockout permanently after temporary lockout</h4>
+<div class="paragraph">
+<p>Mixed mode. Locks user temporarily for specified number of times and then locks user permanently.</p>
 </div>
 <div class="paragraph">
-<p><strong>Permanent Lockout Parameters</strong></p>
+<div class="title">Lockout permanently after temporary lockout</div>
+<p><span class="image"><img src="./images/brute-force-mixed.png" alt="brute force mixed"></span></p>
+</div>
+<div class="paragraph">
+<p><strong>Permanent lockout after temporary lockouts Parameters</strong></p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -18513,50 +18647,186 @@ wait time will never reach the value you have set to <code>Max wait</code>.</p><
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Max temporary Lockouts</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Max Login Failures</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The maximum number of login failures.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30 failures</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum temporary Lockouts</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The maximum number of temporary lockouts permitted before permanent lockout occurs.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Strategy to increase wait time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Strategy to increase the time a user will be temporarily disabled when the user&#8217;s login attempts exceed <em>Max Login Failures</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Multiple</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Wait Increment</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The time added to the time a user is temporarily disabled when the user&#8217;s login attempts exceed <em>Max Login Failures</em>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 minute</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Max Wait</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The maximum time a user is temporarily disabled.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">15 minutes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Failure Reset Time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The time when the failure count resets. The timer runs from the last failed login. Make sure this number is always greater than <code>Max wait</code>; otherwise the effective
+wait time will never reach the value you have set to <code>Max wait</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">12 hours</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick Login Check Milliseconds</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The minimum time between login attempts.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1000 milliseconds</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum Quick Login Wait</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The minimum time the user is disabled when login attempts are quicker than <em>Quick Login Check Milliseconds</em>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 minute</p></td>
 </tr>
 </tbody>
 </table>
 <div class="paragraph">
-<p><strong>Permanent Lockout Flow</strong></p>
+<p><strong>Permanent lockout after temporary lockouts Algorithm</strong></p>
 </div>
 <div class="exampleblock">
 <div class="content">
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Follow temporary lockout flow</p>
-</li>
-<li>
-<p>If temporary lockout counter exceeds Max temporary lockouts</p>
+<p>On successful login</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>Permanently disable user</p>
+<p>Reset <code>count</code></p>
+</li>
+<li>
+<p>Reset <code>temporary lockout</code> counter</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>On failed login</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>If the time between this failure and the last failure is greater than <em>Failure Reset Time</em></p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>Reset <code>count</code></p>
+</li>
+<li>
+<p>Reset <code>temporary lockout</code> counter</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Increment <code>count</code></p>
+</li>
+<li>
+<p>Calculate <code>wait</code> according the brute force strategy defined (see below Strategies to set Wait Time).</p>
+</li>
+<li>
+<p>If <code>wait</code> is less than or equals to 0 and the time between this failure and the last failure is less than <em>Quick Login Check Milliseconds</em></p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>set <code>wait</code> to <em>Minimum Quick Login Wait</em></p>
+</li>
+<li>
+<p>set <code>quick login failure</code> to <code>true`</code></p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>if <code>wait</code> and <code>Maximum temporary Lockouts</code> is greater than 0</p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>set <code>wait</code> to the smallest of <code>wait</code> and <em>Max Wait</em> seconds</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>if <code>quick login failure</code> is <code>false</code></p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>Increment <code>temporary lockout</code> counter</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>If <code>temporary lockout</code> counter exceeds <code>Maximum temporary lockouts</code></p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>Permanently locks the user</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Else</p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>Temporarily blocks the user according <code>wait</code> value</p>
 </li>
 </ol>
 </div>
 </li>
 </ol>
 </div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
 <div class="paragraph">
-<p>When Keycloak disables a user, the user cannot log in until an administrator enables the user. Enabling an account resets the <code>count</code>.</p>
+<p><code>count</code> does not increment when a temporarily disabled account commits a login failure.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
-</div>
+<div class="sect3">
+<h4 id="downside-of-keycloak-brute-force-detection"><a class="anchor" href="#downside-of-keycloak-brute-force-detection"></a>Downside of Keycloak brute force detection</h4>
 <div class="paragraph">
 <p>The downside of Keycloak brute force detection is that the server becomes vulnerable to denial of service attacks. When implementing a denial of service attack, an attacker can attempt to log in by guessing passwords for any accounts it knows and eventually causing Keycloak to disable the accounts.</p>
 </div>
 <div class="paragraph">
 <p>Consider using intrusion prevention software (IPS). Keycloak logs every login failure and client IP address failure. You can point the IPS to the Keycloak server&#8217;s log file, and the IPS can modify firewalls to block connections from these IP addresses.</p>
 </div>
-<div class="sect3">
-<h4 id="password-policies"><a class="anchor" href="#password-policies"></a>Password policies</h4>
+</div>
+</div>
+<div class="sect2">
+<h3 id="password-policies"><a class="anchor" href="#password-policies"></a>Password policies</h3>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak/tree/main/docs/documentation/server_admin/topics/threat/password.adoc" target="_blank" rel="noopener">Edit this section</a>
+<a href="https://github.com/keycloak/keycloak/issues/new?template=bug.yml&amp;title=Docs:%20server_admin/topics/threat/password.adoc&amp;description=%0A%0AFile:%20server_admin/topics/threat/password.adoc&amp;version=DEV&amp;behaviorExpected=%3C!--%20describe%20what%20you%20want%20to%20see%20in%20the%20docs%20--%3E&amp;behaviorActual=%3C!--%20describe%20what%20is%20currently%20wrong%20or%20missing%20in%20the%20docs%20--%3E&amp;reproducer=%3C!--%20list%20steps%20in%20the%20application%20that%20show%20behavior%20that%20should%20be%20documented%20--%3E" target="_blank" rel="noopener">Report an issue</a>
+</div>
+</div>
 <div class="paragraph">
 <p>Ensure you have a complex password policy to force users to choose complex passwords. See the <a href="#_password-policies">Password Policies</a> chapter for more information. Prevent password guessing by setting up the Keycloak server to use one-time-passwords.</p>
-</div>
 </div>
 </div>
 <div class="sect2">
@@ -21881,7 +22151,7 @@ $ kcadm.sh get users -r demorealm -q q=username:testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-11-04 01:22:09 UTC
+Last updated 2024-11-05 11:01:11 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
