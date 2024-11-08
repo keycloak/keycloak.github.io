@@ -105,6 +105,9 @@ Use it together with the other building blocks outlined in the <a href="https://
 <li>
 <p>Infinispan server deployed using the <a href="https://www.keycloak.org/nightly/high-availability/deploy-infinispan-kubernetes-crossdc">Deploy Infinispan for HA with the Infinispan Operator</a> guide.</p>
 </li>
+<li>
+<p>Running Keycloak with OpenJDK 21, which is the default for the containers distributed for Keycloak, as this enabled virtual threads for the JGroups communication.</p>
+</li>
 </ul>
 </div>
 </div>
@@ -171,14 +174,10 @@ spec:
     xaEnabled: false <i class="conum" data-value="4"></i><b>(4)</b>
   additionalOptions:
 
-    - name: http-max-queued-requests
-      value: "1000"
     - name: log-console-output
       value: json
     - name: metrics-enabled <i class="conum" data-value="5"></i><b>(5)</b>
       value: 'true'
-    - name: http-pool-max-threads <i class="conum" data-value="6"></i><b>(6)</b>
-      value: "66"
     - name: cache-remote-host
       value: "infinispan.keycloak.svc"
     - name: cache-remote-port
@@ -227,11 +226,6 @@ See the <a href="https://www.keycloak.org/nightly/high-availability/concepts-dat
 The disadvantage of the setting is that the metrics will be available at the external Keycloak endpoint, so you must add a filter so that the endpoint is not available from the outside.
 Use a reverse proxy in front of Keycloak to filter out those URLs.</td>
 </tr>
-<tr>
-<td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>You might consider limiting the number of Keycloak threads further because multiple concurrent threads will lead to throttling by Kubernetes once the requested CPU limit is reached.
-See the <a href="https://www.keycloak.org/nightly/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide for details.</td>
-</tr>
 </table>
 </div>
 </li>
@@ -269,8 +263,13 @@ kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keyc
 </div>
 </div>
 <div class="paragraph">
-<p>All exceeding requests are served with an HTTP 503.
-See the <a href="https://www.keycloak.org/nightly/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide about load shedding for details.</p>
+<p>All exceeding requests are served with an HTTP 503.</p>
+</div>
+<div class="paragraph">
+<p>You might consider limiting the value for <code>http-pool-max-threads</code> further because multiple concurrent threads will lead to throttling by Kubernetes once the requested CPU limit is reached.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/nightly/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide about load shedding for details.</p>
 </div>
 </div>
 </div>

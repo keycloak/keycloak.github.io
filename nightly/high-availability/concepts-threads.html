@@ -89,6 +89,14 @@ For a configuration where this is applied, visit <a href="https://www.keycloak.o
 <h2 id="_concepts">Concepts</h2>
 <div class="sectionbody">
 <div class="sect2">
+<h3 id="_jgroups_communications">JGroups communications</h3>
+<div class="paragraph">
+<p>JGroups communications, which is used in single-site setups for the communication between Keycloak nodes, benefits from the use of virtual threads which are available in OpenJDK 21.
+This reduces the memory usage and removes the need to configure thread pool sizes.
+Therefore, the use of OpenJDK 21 is recommended.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_quarkus_executor_pool">Quarkus executor pool</h3>
 <div class="paragraph">
 <p>Keycloak requests, as well as blocking probes, are handled by an executor pool. Depending on the available CPU cores, it has a maximum size of 50 or more threads.
@@ -110,67 +118,6 @@ The caller will receive a response with a 5xx HTTP status code indicating a serv
 <p>If you increase the number of database connections and the number of threads too much, the system will be congested under a high load with requests queueing up, which leads to a bad performance.
 The number of database connections is configured via the <a href="https://www.keycloak.org/nightly/server/all-config?q=db-pool"><code>Database</code> settings <code>db-pool-initial-size</code>, <code>db-pool-min-size</code> and <code>db-pool-max-size</code></a> respectively.
 Low numbers ensure fast response times for all clients, even if there is an occasionally failing request when there is a load spike.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_jgroups_connection_pool">JGroups connection pool</h3>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="ulist">
-<ul>
-<li>
-<p>This currently applies to single-site setups only.
-In a multi-site setup with an external Infinispan this is not a restriction.</p>
-</li>
-<li>
-<p>This currently applies if virtual threads are disabled.
-Since Keycloak 26.1, virtual threads are enabled in both embedded Infinispan and JGroups if running on OpenJDK 21 or higher.</p>
-</li>
-</ul>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>The combined number of executor threads in all Keycloak nodes in the cluster should not exceed too much the number of threads available in JGroups thread pool to avoid the warning <code>thread pool is full (max=&lt;value&gt;, active=&lt;value&gt;)</code>.</p>
-</div>
-<div class="paragraph">
-<p>The warning includes a thread dump when the Java system property <code>-Djgroups.thread_dumps_enabled=true</code> is set.
-It may incur in a penalty in performance collecting those thread dumps.</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="paragraph">
-<p>The number of JGroup threads is <code>200</code> by default.
-While it can be configured using the property Java system property <code>jgroups.thread_pool.max_threads</code>, we advise keeping it at this value.
-As shown in experiments, the total number of Quarkus worker threads in the cluster should not exceed the number of threads in the JGroup thread pool of <code>200</code> in each node to avoid requests being dropped in the JGroups communication.
-Given a Keycloak cluster with four nodes, each node should then have around 50 Quarkus worker threads.
-Use the Keycloak configuration option <code>http-pool-max-threads</code> to configure the maximum number of Quarkus worker threads.</p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Use metrics to monitor the total JGroup threads in the pool and for the threads active in the pool.
-When using TCP as the JGroups transport protocol, the metrics <code>vendor_jgroups_tcp_get_thread_pool_size</code> and <code>vendor_jgroups_tcp_get_thread_pool_size_active</code> are available for monitoring. When using UDP, the metrics <code>vendor_jgroups_udp_get_thread_pool_size</code> and <code>vendor_jgroups_udp_get_thread_pool_size_active</code> are available.
-This is useful to monitor that limiting the Quarkus thread pool size keeps the number of active JGroup threads below the maximum JGroup thread pool size.</p>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-The metrics are not available when virtual threads are enabled in JGroups.
-</td>
-</tr>
-</table>
 </div>
 </div>
 <div class="sect2">
