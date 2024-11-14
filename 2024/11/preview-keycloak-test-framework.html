@@ -1,0 +1,236 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Introducing the Keycloak Test Framework - Keycloak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Keycloak is an open source identity and access management solution">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2024/11/preview-keycloak-test-framework">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <h1>Introducing the Keycloak Test Framework</h1>
+    <p class="blog-date text-muted">November 14 2024 by Lukas Hanusovsky</p>
+
+
+<div class="sect1">
+<h2 id="_how_it_all_started">How It All Started</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The idea to replace the current <a href="https://github.com/keycloak/keycloak/tree/main/testsuite">test suite</a> has been on the table for multiple years. Initially, it was meant to be only a refactoring of the current approach on how to write tests, but after a few internal discussions and refactor updates it turned out a new test suite, based on a <a href="https://github.com/keycloak/keycloak/tree/main/test-framework">new framework</a> would be a better solution.</p>
+</div>
+<div class="paragraph">
+<p>It would be good to mention a few drawbacks, that stand out when working with the current <a href="https://github.com/keycloak/keycloak/tree/main/testsuite">test suite</a>. First of all, is the complexity of various configurations and additions made on top of the <a href="https://arquillian.org/"><em>Arquillian framework</em></a>. These changes make the test suite powerful, but the cons is that without proper documentation for beginners is almost unreadable. The second thing has the same importance, the <em>Arquillian framework</em> is not fully supported anymore. Other things to mention are a complicated execution system, where you want to specify what exactly should be tested, then abstract classes with shared configurations and missing the option to add a custom extension.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_brighter_future">Brighter Future?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak team began an effort to design a new test framework in May 2024. It started with a prototype to verify if our ideas were feasible. The prototype is a <em>JUnit5 Extension</em> based on the <a href="https://junit.org/junit5/"><em>JUnit5</em> testing framework</a>, specifically to implement <a href="https://junit.org/junit5/docs/current/user-guide/#extensions-lifecycle-callbacks"><em>JUnit5</em> callback classes</a> which extend the default test lifecycle functionality and provide custom inject annotations, like <em>@KeycloakIntegrationTest</em>, <em>@InjectWebDriver</em> or <em>@InjectRealm</em>.</p>
+</div>
+<div class="paragraph">
+<p>After a successful test round, we&#8217;ve continued with a proof of concept extending features list to support multiple server modes, different databases and <em>WebDrivers</em>, clients and users setup, <em>SmallRye</em> configuration support, <em>OAuthClient</em> based on <a href="https://connect2id.com/products/nimbus-oauth-openid-connect-sdk"><em>Nimbus SDK</em></a> (this feature is a preview only) etc. The full list of currently implemented features is:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/keycloak/keycloak/blob/main/test-framework/bom/pom.xml">Maven BOM</a></p>
+</li>
+<li>
+<p><a href="https://github.com/keycloak/keycloak/tree/main/test-framework/core">Core module</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p>Server lifecycle</p>
+</li>
+<li>
+<p>Database lifecycle</p>
+</li>
+<li>
+<p>Admin client injection</p>
+</li>
+<li>
+<p>Realm, User, Client lifecycle and injection</p>
+</li>
+<li>
+<p>Event and Admin event listener and injection</p>
+</li>
+<li>
+<p>OAuth client injection</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="https://github.com/keycloak/keycloak/tree/main/test-framework/ui">UI module</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p>WebDriver lifecycle and injection</p>
+</li>
+<li>
+<p>Page injection</p>
+</li>
+<li>
+<p>Support for the Chrome, Firefox and HtmlUnit4 browsers</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Database modules</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/keycloak/keycloak/tree/main/test-framework/db-postgres">Postgres</a></p>
+</li>
+<li>
+<p><a href="https://github.com/keycloak/keycloak/tree/main/test-framework/db-mariadb">MariaDB</a></p>
+</li>
+<li>
+<p><a href="https://github.com/keycloak/keycloak/tree/main/test-framework/db-mysql">MySQL</a></p>
+</li>
+<li>
+<p><a href="https://github.com/keycloak/keycloak/tree/main/test-framework/db-mssql">MSSQL</a></p>
+</li>
+<li>
+<p><a href="https://github.com/keycloak/keycloak/tree/main/test-framework/db-oracle">Oracle</a></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>It is already present in the main branch and <em>Keycloak</em> nightly builds.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_are_you_curious_about_where_to_start">Are you curious about where to start?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We suggest reading the <a href="https://github.com/keycloak/keycloak/blob/main/test-framework/README.md">user guide</a>, which will provide a basic overview of how the framework works and should be used. If this is not enough, you can also check <a href="https://github.com/keycloak/keycloak/tree/main/test-framework/examples/tests/src/test/java/org/keycloak/test/examples">test examples</a>.</p>
+</div>
+<div class="paragraph">
+<p>For extension developers we recommend to look into an example on how to start <em>Keycloak</em> with their custom provider: <a href="https://github.com/keycloak/keycloak/tree/main/test-framework/examples/providers">provider example</a>, <a href="https://github.com/keycloak/keycloak/blob/main/test-framework/examples/tests/pom.xml#L75-L80">pom.xml test dependency</a> and <a href="https://github.com/keycloak/keycloak/blob/main/test-framework/examples/tests/src/test/java/org/keycloak/test/examples/MyCustomProviderTest.java">test example</a>.</p>
+</div>
+<div class="paragraph">
+<p>If you find a bug, want to discuss something, or propose a new enhancement, please follow this GitHub feedback <a href="https://github.com/keycloak/keycloak/discussions/34951">discussion link</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps">Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We already have enough capabilities in the new test framework to start migrating some tests from the old testsuite; and in fact already have our very first test migrated. We plan to migrate one package at a time from the old testsuite starting with the <code>admin</code> tests, then moving on to the <code>forms</code> and <code>oauth</code> packages. As we are doing this we will expand on the capabilities of the test framework.</p>
+</div>
+<div class="paragraph">
+<p>Some features we know will be coming soon included:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An easier way to deploy custom providers, not requiring a Maven build of the provider first</p>
+</li>
+<li>
+<p>Improved logging, making it easy to configure logging from tests as well as Keycloak</p>
+</li>
+<li>
+<p>Easy testing of OAuth and OpenID Connect, including a mock application</p>
+</li>
+<li>
+<p>Extension to allow running code on the tested server when it&#8217;s not possible to easily test through only remote interfaces</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>We also have some more long term plans to deliver:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Provider tests that can be used to easily test a provider by invoking the provider directly</p>
+</li>
+<li>
+<p>Parallel execution of tests, to take full advantage of multiple cores to reduce test execution time</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_acknowledgement">Acknowledgement</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>I would like to thank all the people who put the proof of concept together and made it real: Miquel, Simon, Filip, Moises, Jon, and Pedro. A special thank-you goes to Stian, who led the technical design and proposed very nifty things that raised the project to another level.</p>
+</div>
+<div class="paragraph">
+<p>Thank you for your feedback.</p>
+</div>
+<div class="paragraph">
+<p>Enjoy!</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2024. &copy; 2024 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>
