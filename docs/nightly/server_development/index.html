@@ -5248,6 +5248,23 @@ for it when you enabled through the admin console.</p>
 <div class="paragraph">
 <p>When the runtime does a lookup by id, the id is parsed to obtain the component id. The component id is used to locate the <code>UserStorageProvider</code> that was originally used to load the user. That provider is then passed the id. The provider again parses the id to obtain the external id and it will use to locate the user in external user storage.</p>
 </div>
+<div class="paragraph">
+<p>This format has the drawback that it can generate long IDs for the external storage users. This is specially important when combined with the <a href="https://www.keycloak.org/docs/DEV/server_admin/#webauthn_server_administration_guide">WebAuthn authentication</a>, which limits the user handle ID to 64 bytes. For that reason, if the storage users are going to use WebAuthn authentication, it is important to limit the full storage ID to 64 characters. The method <code>validateConfiguration</code> can be used to assign a short ID for the provider component on creation, giving some space to the user IDs within the 64 byte limitation.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="java">    <span class="annotation">@Override</span>
+    <span class="type">void</span> validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model)
+            <span class="directive">throws</span> ComponentValidationException
+    {
+        <span class="comment">// ...</span>
+        <span class="keyword">if</span> (model.getId() == <span class="predefined-constant">null</span>) {
+            <span class="comment">// On creation use short UUID of 22 chars, 40 chars left for the user ID</span>
+            model.setId(KeycloakModelUtils.generateShortId());
+        }
+    }</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -6801,7 +6818,7 @@ plain byte and character arrays and buffers is preferable.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-11-14 01:14:13 UTC
+Last updated 2024-11-20 01:23:32 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
