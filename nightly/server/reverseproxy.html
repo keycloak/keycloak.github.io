@@ -376,6 +376,51 @@ If not, prefix the path with your desired one.</p>
 <p>When the proxy is configured as a TLS termination proxy the client certificate information can be forwarded to the server through specific HTTP request headers and then used to authenticate
 clients. You are able to configure how the server is going to retrieve client certificate information depending on the proxy you are using.</p>
 </div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Client certificate lookup via a proxy header for X.509 authentication is considered security-sensitive. If misconfigured, a forged client certificate header can be used for authentication.
+<strong>Extra precautions need to be taken to ensure that the client certificate information can be trusted when passed via a proxy header.</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Double check your use case needs reencrypt or edge TLS termination which implies using a proxy header for client certificate lookup. TLS passthrough is recommended as a more secure option
+when X.509 authentication is desired as it does not require passing the certificate via a proxy header. Client certificate lookup from a proxy header is applicable only to reencrypt
+and edge TLS termination.</p>
+</li>
+<li>
+<p>If passthrough is not an option, implement the following security measures:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure your network so that Keycloak is isolated and can accept connections only from the proxy.</p>
+</li>
+<li>
+<p>Make sure that the proxy overwrites the header that is configured in <code>spi-x509cert-lookup-&lt;provider&gt;-ssl-client-cert</code> option.</p>
+</li>
+<li>
+<p>Keep in mind that any of the <code>spi-x509cert-*</code> options don&#8217;t reflect the <code>proxy-trusted-addresses</code> option.</p>
+</li>
+<li>
+<p>Pay extra attention to the <code>spi-x509cert-lookup-&lt;provider&gt;-trust-proxy-verification</code> setting. Make sure you enable it only if you can trust your proxy to verify the client certificate.
+Setting <code>spi-x509cert-lookup-&lt;provider&gt;-trust-proxy-verification=true</code> without the proxy verifying the client certificate chain will expose Keycloak to security vulnerability
+when a forged client certificate can be used for authentication.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>The server supports some of the most commons TLS termination proxies such as:</p>
 </div>
