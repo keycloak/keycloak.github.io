@@ -158,18 +158,21 @@ jaegertracing/all-in-one</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_exposed_ports">Exposed ports</h3>
-<div class="ulist">
-<ul>
-<li>
-<p><code>:16686</code> - Jaeger UI</p>
-</li>
-<li>
-<p><code>:4317</code> - OpenTelemetry Protocol gRPC receiver (default)</p>
-</li>
-<li>
-<p><code>:4318</code> - OpenTelemetry Protocol HTTP receiver</p>
-</li>
-</ul>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>16686</code></dt>
+<dd>
+<p>Jaeger UI</p>
+</dd>
+<dt class="hdlist1"><code>4317</code></dt>
+<dd>
+<p>OpenTelemetry Protocol gRPC receiver (default)</p>
+</dd>
+<dt class="hdlist1"><code>4318</code></dt>
+<dd>
+<p>OpenTelemetry Protocol HTTP receiver</p>
+</dd>
+</dl>
 </div>
 <div class="paragraph">
 <p>You can visit the Jaeger UI on <code>http://localhost:16686/</code> to see the tracing information.
@@ -184,10 +187,89 @@ The Jaeger UI might look like this with an arbitrary Keycloak trace:</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_traces_in_logs">Traces in logs</h2>
+<h2 id="_information_in_traces">Information in traces</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_spans">Spans</h3>
+<div class="paragraph">
+<p>Keycloak creates spans for the following activities:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Incoming HTTP requests</p>
+</li>
+<li>
+<p>Outgoing Database including acquiring a database connections</p>
+</li>
+<li>
+<p>Outgoing LDAP requests including connecting to the LDAP server</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tags">Tags</h3>
+<div class="paragraph">
+<p>Keycloak adds tags to traces depending on the type of the request. All tags are prefixed with <code>kc.</code>.</p>
+</div>
+<div class="paragraph">
+<p>Example tags are:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>kc.clientId</code></dt>
+<dd>
+<p>Client ID</p>
+</dd>
+<dt class="hdlist1"><code>kc.realmName</code></dt>
+<dd>
+<p>Realm name</p>
+</dd>
+<dt class="hdlist1"><code>kc.sessionId</code></dt>
+<dd>
+<p>User session ID</p>
+</dd>
+<dt class="hdlist1"><code>kc.token.id</code></dt>
+<dd>
+<p><code>id</code> as mentioned in the token</p>
+</dd>
+<dt class="hdlist1"><code>kc.token.issuer</code></dt>
+<dd>
+<p><code>issuer</code> as mentioned in the token</p>
+</dd>
+<dt class="hdlist1"><code>kc.token.sid</code></dt>
+<dd>
+<p><code>sid</code> as mentioned in the token</p>
+</dd>
+<dt class="hdlist1"><code>kc.authenticationSessionId</code></dt>
+<dd>
+<p>Authentication session ID</p>
+</dd>
+<dt class="hdlist1"><code>kc.authenticationTabId</code></dt>
+<dd>
+<p>Authentication Tab ID</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_logs">Logs</h3>
+<div class="paragraph">
+<p>If a trace is being sampled, it will contain any user events created during the request.
+This includes, for example, <code>LOGIN</code>, <code>LOGOUT</code> or <code>REFRESH_TOKEN</code> events with all details and IDs found in user events.</p>
+</div>
+<div class="paragraph">
+<p>LDAP communication errors are shown as log entries in recorded traces as well with a stack trace and details of the failed operation.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trace_ids_in_logs">Trace IDs in logs</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>When tracing is enabled, the trace information is included in the log messages of all enabled log handlers (see more in <a href="https://www.keycloak.org/nightly/server/logging">Configuring logging</a>).
+<p>When tracing is enabled, the trace IDs are included in the log messages of all enabled log handlers (see more in <a href="https://www.keycloak.org/nightly/server/logging">Configuring logging</a>).
 It can be useful for associating log events to request execution, which might provide better traceability and debugging.
 All log lines originating from the same request will have the same <code>traceId</code> in the log.</p>
 </div>
@@ -203,9 +285,9 @@ All log lines originating from the same request will have the same <code>traceId
 </div>
 </div>
 <div class="sect2">
-<h3 id="_hide_trace_info_in_logs">Hide trace info in logs</h3>
+<h3 id="_hide_trace_ids_in_logs">Hide trace IDs in logs</h3>
 <div class="paragraph">
-<p>You can hide tracing information in specific log handlers by specifying their associated Keycloak option <code>log-&lt;handler-name&gt;-include-trace</code>, where <code>&lt;handler-name&gt;</code> is the name of the log handler.
+<p>You can hide trace IDs in specific log handlers by specifying their associated Keycloak option <code>log-&lt;handler-name&gt;-include-trace</code>, where <code>&lt;handler-name&gt;</code> is the name of the log handler.
 For instance, to disable trace info in the <code>console</code> log, you can turn it off as follows:</p>
 </div>
 <div class="listingblock">
