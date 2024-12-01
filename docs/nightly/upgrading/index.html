@@ -749,12 +749,13 @@ span.image img {
 <li><a href="#default-transport-stack-changed-to-jdbc-ping-for-distributed-caches">Default transport stack changed to <code>jdbc-ping</code> for distributed caches</a></li>
 <li><a href="#deprecated-transport-stacks-for-distributed-caches">Deprecated transport stacks for distributed caches</a></li>
 <li><a href="#defining-dependencies-between-provider-factories">Defining dependencies between provider factories</a></li>
-<li><a href="#updated-format-of-keycloak_session-cookie">Updated format of KEYCLOAK_SESSION cookie</a></li>
+<li><a href="#updated-format-of-keycloak_session-cookie-and-auth_session_id-cookie">Updated format of KEYCLOAK_SESSION cookie and AUTH_SESSION_ID cookie</a></li>
 <li><a href="#removal-of-robots-txt-file">Removal of robots.txt file</a></li>
 <li><a href="#offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange">Offline access removes the associated online session if the <code>offline_scope</code> is requested in the initial exchange</a></li>
 <li><a href="#new-client-scope-service_account-for-client_credentials-grant-mappers">New client scope <code>service_account</code> for <code>client_credentials</code> grant mappers</a></li>
 <li><a href="#admin-events-might-include-now-additional-details-about-the-context-when-the-event-is-fired">Admin events might include now additional details about the context when the event is fired</a></li>
 <li><a href="#imported-key-providers-check-and-passivate-keys-with-a-expired-cetificate">Imported key providers check and passivate keys with a expired cetificate</a></li>
+<li><a href="#sign-out-all-active-sessions-in-admin-console-now-effectively-removes-all-sessions">Sign out all active sessions in admin console now effectively removes all sessions</a></li>
 </ul>
 </li>
 <li><a href="#migrating-to-26-0-0">Migrating to 26.0.0</a>
@@ -1519,11 +1520,15 @@ See the Javadoc for a detailed description.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="updated-format-of-keycloak_session-cookie"><a class="anchor" href="#updated-format-of-keycloak_session-cookie"></a>Updated format of KEYCLOAK_SESSION cookie</h4>
+<h4 id="updated-format-of-keycloak_session-cookie-and-auth_session_id-cookie"><a class="anchor" href="#updated-format-of-keycloak_session-cookie-and-auth_session_id-cookie"></a>Updated format of KEYCLOAK_SESSION cookie and AUTH_SESSION_ID cookie</h4>
 <div class="paragraph">
-<p>The format of <code>KEYCLOAK_SESSION</code> cookie was slightly updated to not contain any private data in plain text. Until now, the format of the cookie was <code>realmName/userId/userSessionId</code>. Now the cookie
-contains user session ID, which is hashed by SHA-256 and URL encoded. This can affect you just in case when implementing your own providers and relying on the format of internal Keycloak
-cookies.</p>
+<p>The format of <code>KEYCLOAK_SESSION</code> cookie was slightly updated to not contain any private data in plain text. Until now, the format of the cookie was <code>realmName/userId/userSessionId</code>. Now the cookie contains user session ID, which is hashed by SHA-256 and URL encoded.</p>
+</div>
+<div class="paragraph">
+<p>The format of <code>AUTH_SESSION_ID</code> cookie was updated to include a signature of the auth session id to ensure its integrity through signature verification. The new format is <code>base64(auth_session_id.auth_session_id_signature)</code>. With this update, the old format will no longer be accepted, meaning that old auth sessions will no longer be valid. This change has no impact on user sessions.</p>
+</div>
+<div class="paragraph">
+<p>These changes can affect you just in case when implementing your own providers and relying on the format of internal Keycloak cookies.</p>
 </div>
 </div>
 <div class="sect3">
@@ -1564,6 +1569,15 @@ expect the database schema being updated to add a new column <code>DETAILS_JSON<
 </div>
 <div class="paragraph">
 <p>The default <code>generated</code> key providers generate a certificate valid for 10 years (the types that have or can have an associated certificate). Because of the long validity and the recommendation to rotate keys frequently, the generated providers do not perform this check.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="sign-out-all-active-sessions-in-admin-console-now-effectively-removes-all-sessions"><a class="anchor" href="#sign-out-all-active-sessions-in-admin-console-now-effectively-removes-all-sessions"></a>Sign out all active sessions in admin console now effectively removes all sessions</h4>
+<div class="paragraph">
+<p>In previous versions, clicking on <code>Sign out all active sessions</code> in the admin console resulted in the removal of regular sessions only. Offline sessions would still be displayed despite being effectively invalidated.</p>
+</div>
+<div class="paragraph">
+<p>This has been changed and now all sessions, regular and offline, are removed when signing out of all active sessions.</p>
 </div>
 </div>
 </div>
@@ -8994,7 +9008,7 @@ to preserve compatibility with older client adapters. For more details, see the 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-11-27 01:29:55 UTC
+Last updated 2024-12-01 01:33:51 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
