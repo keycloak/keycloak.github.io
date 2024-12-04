@@ -1,0 +1,1202 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>External Infinispan metrics - Keycloak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Keycloak is an open source identity and access management solution">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-external-infinispan-multi-site">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#observability">Observability</a></li>
+                    <li class="breadcrumb-item active">External Infinispan metrics</li>
+                </ol>
+            </nav>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/guides">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <h1>External Infinispan metrics</h1>
+                    <span class="text-muted">Learn about metrics monitoring external Infinispan performance</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is part of the <a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting">Metrics for troubleshooting Keycloak deployment</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites">Prerequisites</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_enabled_infinispan_server_metrics">Enabled Infinispan server metrics</h3>
+<div class="paragraph">
+<p>Infinispan exposes metrics in the endpoint <code>/metrics</code>.
+By default, they are enabled.
+We recommend enabling the attribute <code>name-as-tags</code> as it makes the metrics name independent on the cache name.</p>
+</div>
+<div class="paragraph">
+<p>To configure metrics in the Infinispan server, just enabled as shown in the XML below.</p>
+</div>
+<div class="listingblock">
+<div class="title">infinispan.xml</div>
+<div class="content">
+<pre class="highlight"><code class="language-xml" data-lang="xml">&lt;infinispan&gt;
+    &lt;cache-container statistics="true"&gt;
+        &lt;metrics gauges="true" histograms="false" name-as-tags="true" /&gt;
+    &lt;/cache-container&gt;
+&lt;/infinispan&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Using the Infinispan Operator in Kubernetes, metrics can be enabled by using a <code>ConfigMap</code> with a custom configuration.
+It is shown below an example.</p>
+</div>
+<div class="listingblock">
+<div class="title">ConfigMap</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config
+data:
+  infinispan-config.yaml: &gt;
+    infinispan:
+      cacheContainer:
+        metrics:
+          gauges: true
+          namesAsTags: true
+          histograms: false</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">infinispan.yaml CR</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v1
+kind: Infinispan
+metadata:
+  name: infinispan
+  annotations:
+    infinispan.org/monitoring: 'true' <i class="conum" data-value="1"></i><b>(1)</b>
+spec:
+  configMapName: "cluster-config" <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Enables monitoring for the deployment</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Sets the <code>ConfigMap</code> name with the custom configuration.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Additional information can be found in the <a href="https://infinispan.org/docs/stable/titles/server/server.html#configuring-metrics_statistics-jmx">Infinispan documentation</a> and <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#monitoring-services">Infinispan operator</a> documentation.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_clustering_and_network">Clustering and Network</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section describes metrics that are useful for monitoring the communication between Infinispan nodes to identify possible network issues.</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Global tags</strong></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>cluster=&lt;name&gt;</code></dt>
+<dd>
+<p>The cluster name.
+If metrics from multiple clusters are being collected, this tag helps identify where they belong to.</p>
+</dd>
+<dt class="hdlist1"><code>node=&lt;node&gt;</code></dt>
+<dd>
+<p>The name of the node reporting the metric.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_response_time">Response Time</h3>
+<div class="paragraph">
+<p>The following metrics expose the response time for the remote requests.
+The response time is measured between two nodes and includes the processing time.
+All requests are measured by these metrics, and the response time should remain stable through the cluster lifecycle.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+In a healthy cluster, the response time will remain stable.
+An increase in response time may indicate a degraded cluster or a node under heavy load.
+</td>
+</tr>
+</table>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Tags</strong></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>node=&lt;node&gt;</code></dt>
+<dd>
+<p>It identifies the sender node.</p>
+</dd>
+<dt class="hdlist1"><code>target_node=&lt;node&gt;</code></dt>
+<dd>
+<p>It identifies the receiver node.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_stats_sync_requests_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of synchronous requests to a receiver node.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_stats_sync_requests_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of synchronous request to a receiver node</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When histogram is enabled, the percentile buckets are available.
+Those are useful to create heat maps but, collecting and exposing the percentile buckets may have a negative impact on the deployment performance.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_bandwidth">Bandwidth</h3>
+<div class="paragraph">
+<p>All the bytes received and sent by the Infinispan are collected by these metrics.
+Also, all the internal messages, as heartbeats, are counted too.
+They allow computing the bandwidth currently used by each node.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The metric name depends on the JGroups transport protocol in use.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tcp_get_num_bytes_received</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TCP</code></p></td>
+<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">The total number of bytes received by a node.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_udp_get_num_bytes_received</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UDP</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_num_bytes_received</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TUNNEL</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tcp_get_num_bytes_sent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TCP</code></p></td>
+<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">The total number of bytes sent by a node.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_num_bytes_sent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UDP</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_num_bytes_sent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TUNNEL</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_thread_pool">Thread Pool</h3>
+<div class="paragraph">
+<p>Monitoring the thread pool size is a good indicator that a node is under a heavy load.
+All requests received are added to the thread pool for processing and, when it is full, the request is discarded.
+A retransmission mechanism ensures a reliable communication with an increase of resource usage.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+In a healthy cluster, the thread pool should never be closer to its maximum size (by default, <code>200</code> threads).
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Thread pool metrics are not available with virtual threads. Virtual threads are enabled by default when running with OpenJDK 21.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The metric name depends on the JGroups transport protocol in use. The default transport protocol is TCP.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tcp_get_thread_pool_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TCP</code></p></td>
+<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">Current number of threads in the thread pool.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_udp_get_thread_pool_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UDP</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_thread_pool_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TUNNEL</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tcp_get_largest_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TCP</code></p></td>
+<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">The largest number of threads that have ever simultaneously been in the pool.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_udp_get_largest_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UDP</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_largest_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TUNNEL</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_flow_control">Flow Control</h3>
+<div class="paragraph">
+<p>Flow control takes care of adjusting the rate of a message sender to the rate of the slowest receiver over time.
+This is implemented through a credit-based system, where each sender decrements its credits when sending.
+The sender blocks when the credits fall below 0, and only resumes sending messages when it receives a replenishment message from the receivers.</p>
+</div>
+<div class="paragraph">
+<p>The metrics below show the number of blocked messages and the average blocking time.
+When a value is different from zero, it may signal that a receiver is overloaded and may degrade the cluster performance.</p>
+</div>
+<div class="paragraph">
+<p>Each node has two independent flow control protocols, <code>UFC</code> for unicast messages and <code>MFC</code> for multicast messages.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+A healthy cluster shows a value of zero for all metrics.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_ufc_get_number_of_blockings</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of times flow control blocks the sender for unicast messages.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_ufc_get_average_time_blocked</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Average time blocked (in ms) in flow control when trying to send an unicast message.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_mfc_get_number_of_blockings</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of times flow control blocks the sender for multicast messages.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_mfc_get_average_time_blocked</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Average time blocked (in ms) in flow control when trying to send a multicast message.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_retransmissions">Retransmissions</h3>
+<div class="paragraph">
+<p>JGroups provides reliable delivery of messages.
+When a message is dropped on the network, or the receiver cannot handle the message, a retransmission is required.
+Retransmissions increase resource usage, and it is usually a signal of an overload system.</p>
+</div>
+<div class="paragraph">
+<p>Random Early Drop (RED) monitors the sender queues.
+When the queues are almost full, the message is dropped, and a retransmission must happen.
+It prevents threads from being blocked by a full sender queue.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+A healthy cluster shows a value of zero for all metrics.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_unicast3_get_num_xmits</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of retransmitted messages.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_red_get_dropped_messages</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of dropped messages by the sender.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_red_get_drop_rate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Percentage of all messages that were dropped by the sender.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_network_partitions">Network Partitions</h3>
+<div class="sect3">
+<h4 id="_cluster_size">Cluster Size</h4>
+<div class="paragraph">
+<p>The cluster size metric reports the number of nodes present in the cluster.
+If it differs, it may signal that a node is joining, shutdown or, in the worst case, a network partition is happening.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+A healthy cluster shows the same value in all nodes.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_cluster_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of nodes in the cluster.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_cross_site_status">Cross-Site Status</h4>
+<div class="paragraph">
+<p>The cross-site status reports connection status to the other site.
+It returns a value of <code>1</code> if is online or <code>0</code> if offline.
+The value of <code>2</code> is used on nodes where the status is unknown; not all nodes establish connections to the remote sites and do not contain this information.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+A healthy cluster shows a value greater than zero.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_site_view_status</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The single site status (1 if online).</p></td>
+</tr>
+</tbody>
+</table>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Tags</strong></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>site=&lt;name&gt;</code></dt>
+<dd>
+<p>The name of the destination site.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_network_partition_events">Network Partition Events</h4>
+<div class="paragraph">
+<p>Network partitions in a cluster can happen due to various reasons.
+This metrics does not help predict network splits but signals that it happened, and the cluster has been merged.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+A healthy cluster shows a value of zero for this metric.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_merge3_get_num_merge_events</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The amount of time a network split was detected and healed.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_infinispan_caches">Infinispan Caches</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The metrics in this section help monitoring the Infinispan caches health and the cluster replication.</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Global tags</strong></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>cache=&lt;name&gt;</code></dt>
+<dd>
+<p>The cache name.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_size">Size</h3>
+<div class="paragraph">
+<p>Monitor the number of entries in your cache using these two metrics.
+If the cache is clustered, each entry has an owner node and zero or more backup copies of different nodes.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Sum the unique entry size metric to get a cluster total number of entries.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_approximate_entries</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The approximate number of entries stored by the node, including backup copies.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_approximate_entries_unique</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The approximate number of entries stored by the node, excluding backup copies.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_data_access">Data Access</h3>
+<div class="paragraph">
+<p>The following metrics monitor the cache accesses, such as the reads, writes and their duration.</p>
+</div>
+<div class="sect3">
+<h4 id="_stores">Stores</h4>
+<div class="paragraph">
+<p>A store operation is a write operation that writes or updates a value stored in the cache.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_store_times_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of store requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_store_times_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all store requests.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When histogram is enabled, the percentile buckets are available.
+Those are useful to create heat maps but, collecting and exposing the percentile buckets may have a negative impact on the deployment performance.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_reads">Reads</h4>
+<div class="paragraph">
+<p>A read operation reads a value from the cache.
+It divides into two groups, a hit if a value is found, and a miss if not found.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_hit_times_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of read hits requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_hit_times_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all read hits requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_miss_times_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of read misses requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_miss_times_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all read misses requests.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When histogram is enabled, the percentile buckets are available.
+Those are useful to create heat maps but, collecting and exposing the percentile buckets may have a negative impact on the deployment performance.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_removes">Removes</h4>
+<div class="paragraph">
+<p>A remove operation removes a value from the cache.
+It divides in two groups, a hit if a value exists, and a miss if the value does not exist.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_remove_hit_times_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of remove hits requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_remove_hit_times_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all remove hits requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_remove_miss_times_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of remove misses requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_statistics_remove_miss_times_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all remove misses requests.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When histogram is enabled, the percentile buckets are available.
+Those are useful to create heat maps but, collecting and exposing the percentile buckets may have a negative impact on the deployment performance.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_locking">Locking</h3>
+<div class="paragraph">
+<p>Write and remove operations hold the lock until the value is replicated in the local cluster and to the remote site.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+On a healthy cluster, the number of locks held should remain constant, but deadlocks may create temporary spikes.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_lock_manager_number_of_locks_held</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of locks currently being held by this node.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_transactions">Transactions</h3>
+<div class="paragraph">
+<p>Transactional caches use both One-Phase-Commit and Two-Phase-Commit protocols to complete a transaction.
+These metrics keep track of the operation duration.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>PESSMISTIC</code> locking mode uses One-Phase-Commit and does not create commit requests.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+In a healthy cluster, the number of rollbacks should remain zero.
+Deadlocks should be rare, but they increase the number of rollbacks.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_transactions_prepare_times_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of prepare requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_transactions_prepare_times_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all prepare requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_transactions_rollback_times_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of rollback requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_transactions_rollback_times_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all rollback requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_transactions_commit_times_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of commit requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_transactions_commit_times_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all commit requests.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When histogram is enabled, the percentile buckets are available.
+Those are useful to create heat maps but, collecting and exposing the percentile buckets may have a negative impact on the deployment performance.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_state_transfer">State Transfer</h3>
+<div class="paragraph">
+<p>State transfer happens when a node joins or leaves the cluster.
+It is required to balance the data stored and guarantee the desired number of copies.</p>
+</div>
+<div class="paragraph">
+<p>This operation increases the resource usage, and it will affect negatively the overall performance.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_state_transfer_manager_inflight_transactional_segment_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of in-flight transactional segments the local node requested from other nodes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_state_transfer_manager_inflight_segment_transfer_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of in-flight segments the local node requested from other nodes.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_cluster_data_replication">Cluster Data Replication</h3>
+<div class="paragraph">
+<p>The cluster data replication can be the main source of failure.
+These metrics not only report the response time, i.e., the time it takes to replicate an update, but also the failures.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+On a healthy cluster, the average replication time will be stable or with little variance.
+The number of failures should not increase.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_rpc_manager_replication_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of successful replications.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_rpc_manager_replication_failures</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of failed replications.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_rpc_manager_average_replication_time</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The average time spent, in milliseconds, replicating data in the cluster.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Success ratio</strong></p>
+</div>
+<div class="paragraph">
+<p>An expression can be used to compute the replication success ratio:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>(vendor_rpc_manager_replication_count)
+/
+(vendor_rpc_manager_replication_count
+ + vendor_rpc_manager_replication_failures)</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cross_site_data_replication">Cross Site Data Replication</h3>
+<div class="paragraph">
+<p>Like cluster data replication, the metrics in this section measure the time it takes to replicate the data to the other sites.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+On a healthy cluster, the average cross-site replication time will be stable or with little variance.
+</td>
+</tr>
+</table>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Tags</strong></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>site=&lt;name&gt;</code></dt>
+<dd>
+<p>indicates the receiving site.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_rpc_manager_cross_site_replication_times_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of cross-site requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_rpc_manager_cross_site_replication_times_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all cross-site requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_rpc_manager_replication_times_to_site_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of cross-site requests.
+This metric is more detailed with a per-site counter.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_rpc_manager_replication_times_to_site_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of all cross-site requests.
+This metric is more detailed with a per-site duration.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_rpc_manager_number_xsite_requests_received_from_site</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of cross-site requests handled by this node.
+This metric is more detailed with a per-site counter.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_x_site_admin_status</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The site status.
+A value of 1 indicates that it is online.
+This value reacts to the Infinispan CLI commands <code>bring-online</code> and <code>take-offline</code>.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When histogram is enabled, the percentile buckets are available.
+Those are useful to create heat maps but, collecting and exposing the percentile buckets may have a negative impact on the deployment performance.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps">Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Return back to the <a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting">Metrics for troubleshooting Keycloak deployment</a>.</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/metrics-for-troubleshooting-external-infinispan-multi-site.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2024. &copy; 2024 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

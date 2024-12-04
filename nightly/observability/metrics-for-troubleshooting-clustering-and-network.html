@@ -1,0 +1,588 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Clustering and network metrics - Keycloak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Keycloak is an open source identity and access management solution">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-clustering-and-network">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/js/ga.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#observability">Observability</a></li>
+                    <li class="breadcrumb-item active">Clustering and network metrics</li>
+                </ol>
+            </nav>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/guides">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <h1>Clustering and network metrics</h1>
+                    <span class="text-muted">Learn about metrics monitoring communication between Keycloak nodes</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is part of the <a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting">Metrics for troubleshooting Keycloak deployment</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites">Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Metrics need to be enabled for Keycloak. Follow the <a href="https://www.keycloak.org/nightly/observability/configuration-metrics">Enabling Keycloak Metrics</a> guide for more details.</p>
+</li>
+<li>
+<p>A monitoring system collecting the metrics.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_metrics">Metrics</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Deploying multiple Keycloak nodes allows the load to be distributed amongst them, but this requires communication between the nodes.
+This section describes metrics that are useful for monitoring the communication between Keycloak in order to identify possible faults.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This is relevant only for single site deployments.
+When multiple sites are used, as described in <a href="https://www.keycloak.org/nightly/high-availability/introduction">Multi-site deployments</a>, Keycloak nodes are not clustered together and therefore there is no communication between them directly.
+</td>
+</tr>
+</table>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Global tags</strong></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>cluster=&lt;name&gt;</code></dt>
+<dd>
+<p>The cluster name.
+If metrics from multiple clusters are being collected, this tag helps identify where they belong to.</p>
+</dd>
+<dt class="hdlist1"><code>node=&lt;node&gt;</code></dt>
+<dd>
+<p>The name of the node reporting the metric.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_response_time">Response Time</h3>
+<div class="paragraph">
+<p>The following metrics expose the response time for the remote requests.
+The response time is measured between two nodes and includes the processing time.
+All requests are measured by these metrics, and the response time should remain stable through the cluster lifecycle.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+In a healthy cluster, the response time will remain stable.
+An increase in response time may indicate a degraded cluster or a node under heavy load.
+</td>
+</tr>
+</table>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Tags</strong></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>node=&lt;node&gt;</code></dt>
+<dd>
+<p>It identifies the sender node.</p>
+</dd>
+<dt class="hdlist1"><code>target_node=&lt;node&gt;</code></dt>
+<dd>
+<p>It identifies the receiver node.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_stats_sync_requests_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of synchronous requests to a receiver node.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_stats_sync_requests_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration of synchronous request to a receiver node</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When histogram is enabled, the percentile buckets are available.
+Those are useful to create heat maps but, collecting and exposing the percentile buckets may have a negative impact on the deployment performance.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_bandwidth">Bandwidth</h3>
+<div class="paragraph">
+<p>All the bytes received and sent by the Keycloak are collected by these metrics.
+Also, all the internal messages, as heartbeats, are counted too.
+They allow computing the bandwidth currently used by each node.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The metric name depends on the JGroups transport protocol in use.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tcp_get_num_bytes_received</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TCP</code></p></td>
+<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">The total number of bytes received by a node.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_udp_get_num_bytes_received</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UDP</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_num_bytes_received</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TUNNEL</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tcp_get_num_bytes_sent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TCP</code></p></td>
+<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">The total number of bytes sent by a node.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_num_bytes_sent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UDP</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_num_bytes_sent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TUNNEL</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_thread_pool">Thread Pool</h3>
+<div class="paragraph">
+<p>Monitoring the thread pool size is a good indicator that a node is under a heavy load.
+All requests received are added to the thread pool for processing and, when it is full, the request is discarded.
+A retransmission mechanism ensures a reliable communication with an increase of resource usage.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+In a healthy cluster, the thread pool should never be closer to its maximum size (by default, <code>200</code> threads).
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Thread pool metrics are not available with virtual threads. Virtual threads are enabled by default when running with OpenJDK 21.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The metric name depends on the JGroups transport protocol in use. The default transport protocol is TCP.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tcp_get_thread_pool_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TCP</code></p></td>
+<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">Current number of threads in the thread pool.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_udp_get_thread_pool_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UDP</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_thread_pool_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TUNNEL</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tcp_get_largest_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TCP</code></p></td>
+<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">The largest number of threads that have ever simultaneously been in the pool.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_udp_get_largest_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UDP</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_tunnel_get_largest_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TUNNEL</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_flow_control">Flow Control</h3>
+<div class="paragraph">
+<p>Flow control takes care of adjusting the rate of a message sender to the rate of the slowest receiver over time.
+This is implemented through a credit-based system, where each sender decrements its credits when sending.
+The sender blocks when the credits fall below 0, and only resumes sending messages when it receives a replenishment message from the receivers.</p>
+</div>
+<div class="paragraph">
+<p>The metrics below show the number of blocked messages and the average blocking time.
+When a value is different from zero, it may signal that a receiver is overloaded and may degrade the cluster performance.</p>
+</div>
+<div class="paragraph">
+<p>Each node has two independent flow control protocols, <code>UFC</code> for unicast messages and <code>MFC</code> for multicast messages.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+A healthy cluster shows a value of zero for all metrics.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_ufc_get_number_of_blockings</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of times flow control blocks the sender for unicast messages.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_ufc_get_average_time_blocked</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Average time blocked (in ms) in flow control when trying to send an unicast message.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_mfc_get_number_of_blockings</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of times flow control blocks the sender for multicast messages.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_mfc_get_average_time_blocked</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Average time blocked (in ms) in flow control when trying to send a multicast message.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_retransmissions">Retransmissions</h3>
+<div class="paragraph">
+<p>JGroups provides reliable delivery of messages.
+When a message is dropped on the network, or the receiver cannot handle the message, a retransmission is required.
+Retransmissions increase resource usage, and it is usually a signal of an overload system.</p>
+</div>
+<div class="paragraph">
+<p>Random Early Drop (RED) monitors the sender queues.
+When the queues are almost full, the message is dropped, and a retransmission must happen.
+It prevents threads from being blocked by a full sender queue.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+A healthy cluster shows a value of zero for all metrics.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_unicast3_get_num_xmits</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of retransmitted messages.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_red_get_dropped_messages</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of dropped messages by the sender.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_red_get_drop_rate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Percentage of all messages that were dropped by the sender.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_network_partitions">Network Partitions</h3>
+<div class="sect3">
+<h4 id="_cluster_size">Cluster Size</h4>
+<div class="paragraph">
+<p>The cluster size metric reports the number of nodes present in the cluster.
+If it differs, it may signal that a node is joining, shutdown or, in the worst case, a network partition is happening.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+A healthy cluster shows the same value in all nodes.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_cluster_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of nodes in the cluster.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_network_partition_events">Network Partition Events</h4>
+<div class="paragraph">
+<p>Network partitions in a cluster can happen due to various reasons.
+This metrics does not help predict network splits but signals that it happened, and the cluster has been merged.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+A healthy cluster shows a value of zero for this metric.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vendor_jgroups_merge3_get_num_merge_events</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The amount of time a network split was detected and healed.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps">Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Return back to the <a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting">Metrics for troubleshooting Keycloak deployment</a> or proceed to <a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-embedded-caches">Embedded Infinispan metrics for single site deployments</a>.</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/metrics-for-troubleshooting-clustering-and-network.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2024. &copy; 2024 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>
