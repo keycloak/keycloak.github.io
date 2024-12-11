@@ -741,21 +741,9 @@ span.image img {
 <ul class="sectlevel2">
 <li><a href="#migrating-to-26-1-0">Migrating to 26.1.0</a>
 <ul class="sectlevel3">
-<li><a href="#infinispan-default-xml-configuration-location">Infinispan default XML configuration location</a></li>
-<li><a href="#embedded-infinispan-work-cache-must-be-replicated">Embedded Infinispan: <code>work</code> cache must be replicated</a></li>
-<li><a href="#deprecated-apis-for-javascript-authorization-client">Deprecated APIs for JavaScript Authorization client</a></li>
-<li><a href="#deprecating-getall-methods-in-organizations-and-organizationmembers-apis">Deprecating <code>getAll()</code> methods in <code>Organizations</code> and <code>OrganizationMembers</code> APIs</a></li>
-<li><a href="#virtual-threads-enabled-for-infinispan-and-jgroups-thread-pools">Virtual Threads enabled for Infinispan and JGroups thread pools</a></li>
-<li><a href="#default-transport-stack-changed-to-jdbc-ping-for-distributed-caches">Default transport stack changed to <code>jdbc-ping</code> for distributed caches</a></li>
-<li><a href="#deprecated-transport-stacks-for-distributed-caches">Deprecated transport stacks for distributed caches</a></li>
-<li><a href="#defining-dependencies-between-provider-factories">Defining dependencies between provider factories</a></li>
-<li><a href="#updated-format-of-keycloak_session-cookie-and-auth_session_id-cookie">Updated format of KEYCLOAK_SESSION cookie and AUTH_SESSION_ID cookie</a></li>
-<li><a href="#removal-of-robots-txt-file">Removal of robots.txt file</a></li>
-<li><a href="#offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange">Offline access removes the associated online session if the <code>offline_scope</code> is requested in the initial exchange</a></li>
-<li><a href="#new-client-scope-service_account-for-client_credentials-grant-mappers">New client scope <code>service_account</code> for <code>client_credentials</code> grant mappers</a></li>
-<li><a href="#admin-events-might-include-now-additional-details-about-the-context-when-the-event-is-fired">Admin events might include now additional details about the context when the event is fired</a></li>
-<li><a href="#imported-key-providers-check-and-passivate-keys-with-a-expired-cetificate">Imported key providers check and passivate keys with a expired cetificate</a></li>
-<li><a href="#sign-out-all-active-sessions-in-admin-console-now-effectively-removes-all-sessions">Sign out all active sessions in admin console now effectively removes all sessions</a></li>
+<li><a href="#breaking-changes">Breaking changes</a></li>
+<li><a href="#notable-changes">Notable changes</a></li>
+<li><a href="#deprecation-notices">Deprecation notices</a></li>
 </ul>
 </li>
 <li><a href="#migrating-to-26-0-6">Migrating to 26.0.6</a>
@@ -1422,7 +1410,7 @@ the Keycloak server. For more information, see the <a href="https://www.keycloak
 <div class="sect2">
 <h3 id="migrating-to-26-1-0"><a class="anchor" href="#migrating-to-26-1-0"></a>Migrating to 26.1.0</h3>
 <div class="sect3">
-<h4 id="infinispan-default-xml-configuration-location"><a class="anchor" href="#infinispan-default-xml-configuration-location"></a>Infinispan default XML configuration location</h4>
+<h4 id="breaking-changes"><a class="anchor" href="#breaking-changes"></a>Breaking changes</h4>
 <div class="sidebarblock page-links">
 <div class="content">
 <a href="https://github.com/keycloak/keycloak/tree/main/docs/documentation/upgrading/topics/changes/changes-26_1_0.adoc" target="_blank" rel="noopener">Edit this section</a>
@@ -1430,23 +1418,43 @@ the Keycloak server. For more information, see the <a href="https://www.keycloak
 </div>
 </div>
 <div class="paragraph">
-<p>Previous releases ignored any change  to <code>conf/cache-ispn.xml</code> if the <code>--cache-config-file</code> option was not provided.</p>
+<p>Breaking changes are identified as requiring changes from existing users to their configurations.</p>
 </div>
 <div class="paragraph">
-<p>Starting from this release, when <code>--cache-config-file</code> is not set, the default Infinispan XML configuration file is <code>conf/cache-ispn.xml</code> as this is both the expected behavior and the implied behavior given the docs of the current and previous releases.</p>
+<p>There are no breaking changes in this release to public APIs or documented behavior.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="embedded-infinispan-work-cache-must-be-replicated"><a class="anchor" href="#embedded-infinispan-work-cache-must-be-replicated"></a>Embedded Infinispan: <code>work</code> cache must be replicated</h4>
+<h4 id="notable-changes"><a class="anchor" href="#notable-changes"></a>Notable changes</h4>
 <div class="paragraph">
-<p>The embedded <code>work</code> cache needs to be configured as a <code>replicated-cache</code> for cache invalidation to work as expected.</p>
+<p>Notable changes where an internal behavior changed to prevent common misconfigurations, fix bugs or simplify running Keycloak.</p>
+</div>
+<div class="sect4">
+<h5 id="offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange"><a class="anchor" href="#offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange"></a>Offline access removes the associated online session if the <code>offline_scope</code> is requested in the initial exchange</h5>
+<div class="paragraph">
+<p>Any offline session in Keycloak is created from another online session. When the <code>offline_access</code> scope is requested, the current online session is used to create the associated offline session for the client. Therefore any <code>offline_access</code> request finished, until now, with two sessions, one online and one offline.</p>
 </div>
 <div class="paragraph">
-<p>Starting from this release, Keycloak check this at startup and will fail to start if it is not configured as such.</p>
+<p>Starting with this version, Keycloak removes the initial online session if the <code>offline_scope</code> is directly requested as the first interaction for the session. The client retrieves the offline token after the code to token exchange that is associated to the offline session, but the previous online session is removed. If the online session has been used before the <code>offline_scope</code> request, by the same or another client, the online session remains active as today. Although the new behavior makes sense because the client application is just asking for an offline token, it can affect some scenarios that rely on having the online session still active after the initial <code>offline_scope</code> token request.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="new-client-scope-service_account-for-client_credentials-grant-mappers"><a class="anchor" href="#new-client-scope-service_account-for-client_credentials-grant-mappers"></a>New client scope <code>service_account</code> for <code>client_credentials</code> grant mappers</h5>
+<div class="paragraph">
+<p>Keycloak introduces a new client scope at the realm level called <code>service_account</code> which is in charge of adding the specific claims for <code>client_credentials</code> grant (<code>client_id</code>, <code>clientHost</code> and <code>clientAddress</code>) via protocol mappers. This scope will be automatically assigned to and unassigned from the client when the <code>serviceAccountsEnabled</code> option is set or unset in the client configuration.</p>
+</div>
+<div class="paragraph">
+<p>Previously, the three mappers (<code>Client Id</code>, <code>Client Host</code> and <code>Client IP Address</code>) where added directly to the dedicated scope when the client was configured to enable service accounts, and they were never removed.</p>
+</div>
 </div>
 </div>
 <div class="sect3">
-<h4 id="deprecated-apis-for-javascript-authorization-client"><a class="anchor" href="#deprecated-apis-for-javascript-authorization-client"></a>Deprecated APIs for JavaScript Authorization client</h4>
+<h4 id="deprecation-notices"><a class="anchor" href="#deprecation-notices"></a>Deprecation notices</h4>
+<div class="paragraph">
+<p>This lists functionality that continues to work as before in this release, but will be removed in a future major release.</p>
+</div>
+<div class="sect4">
+<h5 id="deprecated-apis-for-javascript-authorization-client"><a class="anchor" href="#deprecated-apis-for-javascript-authorization-client"></a>Deprecated APIs for JavaScript Authorization client</h5>
 <div class="paragraph">
 <p>The following APIs for the JavaScript Authorization client are deprecated and will be removed in the next major release:</p>
 </div>
@@ -1464,125 +1472,19 @@ the Keycloak server. For more information, see the <a href="https://www.keycloak
 <p>These APIs are no longer needed as initialization is done automatically on demand when calling methods on the <code>KeycloakAuthorization</code> instance. You can safely remove any code that depends on these APIs.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="deprecating-getall-methods-in-organizations-and-organizationmembers-apis"><a class="anchor" href="#deprecating-getall-methods-in-organizations-and-organizationmembers-apis"></a>Deprecating <code>getAll()</code> methods in <code>Organizations</code> and <code>OrganizationMembers</code> APIs</h4>
+<div class="sect4">
+<h5 id="deprecating-getall-methods-in-organizations-and-organizationmembers-apis"><a class="anchor" href="#deprecating-getall-methods-in-organizations-and-organizationmembers-apis"></a>Deprecating <code>getAll()</code> methods in <code>Organizations</code> and <code>OrganizationMembers</code> APIs</h5>
 <div class="paragraph">
 <p><code>getAll()</code> methods in <code>Organizations</code> and <code>OrganizationMembers</code> APIs are now deprecated and will be removed in the next major release.
 Instead, use corresponding <code>list(first, max)</code> methods in <code>Organizations</code> and <code>OrganizationMembers</code> APIs.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="virtual-threads-enabled-for-infinispan-and-jgroups-thread-pools"><a class="anchor" href="#virtual-threads-enabled-for-infinispan-and-jgroups-thread-pools"></a>Virtual Threads enabled for Infinispan and JGroups thread pools</h4>
-<div class="paragraph">
-<p>Starting from this release, Keycloak automatically enables the virtual thread pool support in both the embedded Infinispan and JGroups  when running on OpenJDK 21.
-This removes the need to configure the JGroups thread pool, the need to align the JGroups thread pool with the HTTP worker thread pool, and reduces the overall memory footprint.
-To disable the virtual threads, add one of the Java system properties combinations to your deployment:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>-Dorg.infinispan.threads.virtual=false</code>: disables virtual thread in both Infinispan and JGroups.</p>
-</li>
-<li>
-<p><code>-Djgroups.thread.virtual=false</code>: disables virtual threads only in JGroups.</p>
-</li>
-<li>
-<p><code>-Dorg.infinispan.threads.virtual=false -Djgroups.thread.virtual=true</code>: disables virtual threads only in Infinispan.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect3">
-<h4 id="default-transport-stack-changed-to-jdbc-ping-for-distributed-caches"><a class="anchor" href="#default-transport-stack-changed-to-jdbc-ping-for-distributed-caches"></a>Default transport stack changed to <code>jdbc-ping</code> for distributed caches</h4>
-<div class="paragraph">
-<p>Previous versions of Keycloak used as a default UDP multicast to discover other nodes to form a cluster and to synchronize the replicated caches of Keycloak.
-This required multicast to be available and to be configured correctly, which is usually not the case in cloud environments.</p>
-</div>
-<div class="paragraph">
-<p>Starting with this version, the default changes to the <code>jdbc-ping</code> configuration which uses Keycloak&#8217;s database to discover other nodes.
-As this removes the need for multicast network capabilities and UDP and no longer using dynamic ports for the TCP-based failure detection, this is a simplification and a drop-in replacement for environments which used the previous default.
-To enable the previous behavior, choose the transport stack <code>udp</code> which is now deprecated.</p>
-</div>
-<div class="paragraph">
-<p>The Keycloak Operator will continue to configure <code>kubernetes</code> as a transport stack.</p>
-</div>
-<div class="paragraph">
-<p>See the <a href="https://www.keycloak.org/server/caching">Configuring distributed caches</a> guide for more information.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="deprecated-transport-stacks-for-distributed-caches"><a class="anchor" href="#deprecated-transport-stacks-for-distributed-caches"></a>Deprecated transport stacks for distributed caches</h4>
+<div class="sect4">
+<h5 id="deprecated-transport-stacks-for-distributed-caches"><a class="anchor" href="#deprecated-transport-stacks-for-distributed-caches"></a>Deprecated transport stacks for distributed caches</h5>
 <div class="paragraph">
 <p>The <code>udp</code>, <code>jdbc-ping-udp</code>, <code>tcp</code>, <code>azure</code>, <code>ec2</code> and <code>google</code> transport stacks have been deprecated.
 Users should use the TCP based <code>jdbc-ping</code> stack as a direct replacement.</p>
 </div>
-</div>
-<div class="sect3">
-<h4 id="defining-dependencies-between-provider-factories"><a class="anchor" href="#defining-dependencies-between-provider-factories"></a>Defining dependencies between provider factories</h4>
-<div class="paragraph">
-<p>When developing extensions for Keycloak, developers can now specify dependencies between provider factories classes by implementing the method <code>dependsOn()</code> in the <code>ProviderFactory</code> interface.
-See the Javadoc for a detailed description.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="updated-format-of-keycloak_session-cookie-and-auth_session_id-cookie"><a class="anchor" href="#updated-format-of-keycloak_session-cookie-and-auth_session_id-cookie"></a>Updated format of KEYCLOAK_SESSION cookie and AUTH_SESSION_ID cookie</h4>
-<div class="paragraph">
-<p>The format of <code>KEYCLOAK_SESSION</code> cookie was slightly updated to not contain any private data in plain text. Until now, the format of the cookie was <code>realmName/userId/userSessionId</code>. Now the cookie contains user session ID, which is hashed by SHA-256 and URL encoded.</p>
-</div>
-<div class="paragraph">
-<p>The format of <code>AUTH_SESSION_ID</code> cookie was updated to include a signature of the auth session id to ensure its integrity through signature verification. The new format is <code>base64(auth_session_id.auth_session_id_signature)</code>. With this update, the old format will no longer be accepted, meaning that old auth sessions will no longer be valid. This change has no impact on user sessions.</p>
-</div>
-<div class="paragraph">
-<p>These changes can affect you just in case when implementing your own providers and relying on the format of internal Keycloak cookies.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="removal-of-robots-txt-file"><a class="anchor" href="#removal-of-robots-txt-file"></a>Removal of robots.txt file</h4>
-<div class="paragraph">
-<p>The <code>robots.txt</code> file, previously included by default, is now removed. The default <code>robots.txt</code> file blocked all crawling, which prevented the <code>noindex</code>/<code>nofollow</code> directives from being followed. The desired default behaviour is for Keycloak pages to not show up in search engine results and this is accomplished by the existing <code>X-Robots-Tag</code> header, which is set to <code>none</code> by default. The value of this header can be overridden per-realm if a different behaviour is needed.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange"><a class="anchor" href="#offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange"></a>Offline access removes the associated online session if the <code>offline_scope</code> is requested in the initial exchange</h4>
-<div class="paragraph">
-<p>Any offline session in Keycloak is created from another online session. When the <code>offline_access</code> scope is requested, the current online session is used to create the associated offline session for the client. Therefore any <code>offline_access</code> request finished, until now, with two sessions, one online and one offline.</p>
-</div>
-<div class="paragraph">
-<p>Starting with this version, Keycloak removes the initial online session if the <code>offline_scope</code> is directly requested as the first interaction for the session. The client retrieves the offline token after the code to token exchange that is associated to the offline session, but the previous online session is removed. If the online session has been used before the <code>offline_scope</code> request, by the same or another client, the online session remains active as today. Although the new behavior makes sense because the client application is just asking for an offline token, it can affect some scenarios that rely on having the online session still active after the initial <code>offline_scope</code> token request.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="new-client-scope-service_account-for-client_credentials-grant-mappers"><a class="anchor" href="#new-client-scope-service_account-for-client_credentials-grant-mappers"></a>New client scope <code>service_account</code> for <code>client_credentials</code> grant mappers</h4>
-<div class="paragraph">
-<p>Keycloak introduces a new client scope at the realm level called <code>service_account</code> which is in charge of adding the specific claims for <code>client_credentials</code> grant (<code>client_id</code>, <code>clientHost</code> and <code>clientAddress</code>) via protocol mappers. This scope will be automatically assigned to and unassigned from the client when the <code>serviceAccountsEnabled</code> option is set or unset in the client configuration.</p>
-</div>
-<div class="paragraph">
-<p>Previously, the three mappers (<code>Client Id</code>, <code>Client Host</code> and <code>Client IP Address</code>) where added directly to the dedicated scope when the client was configured to enable service accounts, and they were never removed.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="admin-events-might-include-now-additional-details-about-the-context-when-the-event-is-fired"><a class="anchor" href="#admin-events-might-include-now-additional-details-about-the-context-when-the-event-is-fired"></a>Admin events might include now additional details about the context when the event is fired</h4>
-<div class="paragraph">
-<p>In this release, admin events might hold additional details about the context when the event is fired. When upgrading you should
-expect the database schema being updated to add a new column <code>DETAILS_JSON</code> to the <code>ADMIN_EVENT_ENTITY</code> table.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="imported-key-providers-check-and-passivate-keys-with-a-expired-cetificate"><a class="anchor" href="#imported-key-providers-check-and-passivate-keys-with-a-expired-cetificate"></a>Imported key providers check and passivate keys with a expired cetificate</h4>
-<div class="paragraph">
-<p>The key providers that allow to import externally generated keys (<code>rsa</code> and <code>java-keystore</code> factories) now check the validity of the associated certificate if present. Therefore a key with a certificate that is expired cannot be imported in Keycloak anymore. If the certificate expires at runtime, the key is converted into a passive key (enabled but not active). A passive key is not used for new tokens, but it is still valid for validating previous issued tokens.</p>
-</div>
-<div class="paragraph">
-<p>The default <code>generated</code> key providers generate a certificate valid for 10 years (the types that have or can have an associated certificate). Because of the long validity and the recommendation to rotate keys frequently, the generated providers do not perform this check.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="sign-out-all-active-sessions-in-admin-console-now-effectively-removes-all-sessions"><a class="anchor" href="#sign-out-all-active-sessions-in-admin-console-now-effectively-removes-all-sessions"></a>Sign out all active sessions in admin console now effectively removes all sessions</h4>
-<div class="paragraph">
-<p>In previous versions, clicking on <code>Sign out all active sessions</code> in the admin console resulted in the removal of regular sessions only. Offline sessions would still be displayed despite being effectively invalidated.</p>
-</div>
-<div class="paragraph">
-<p>This has been changed and now all sessions, regular and offline, are removed when signing out of all active sessions.</p>
 </div>
 </div>
 </div>
@@ -9031,7 +8933,7 @@ to preserve compatibility with older client adapters. For more details, see the 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-12-09 01:31:38 UTC
+Last updated 2024-12-11 01:25:06 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
