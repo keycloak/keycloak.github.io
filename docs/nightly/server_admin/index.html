@@ -981,6 +981,7 @@ span.image img {
 <ul class="sectlevel3">
 <li><a href="#available-conditions">Available conditions</a></li>
 <li><a href="#explicitly-denyallow-access-in-conditional-flows">Explicitly deny/allow access in conditional flows</a></li>
+<li><a href="#2fa-conditional-workflow-examples">2FA conditional workflow examples</a></li>
 </ul>
 </li>
 <li><a href="#_authentication-sessions">Authentication sessions</a>
@@ -9936,6 +9937,22 @@ In other words, the attribute should not be present.</p>
 </dl>
 </div>
 </dd>
+<dt class="hdlist1"><code>Condition - sub-flow executed</code></dt>
+<dd>
+<p>The condition checks if a previous sub-flow was successfully executed (or not executed) in the authentication process. Therefore, the flow can trigger other steps based on a previous sub-flow termination. These configuration fields exist:</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Flow name</dt>
+<dd>
+<p>The sub-flow name to check if it was executed or not executed. Required.</p>
+</dd>
+<dt class="hdlist1">Check result</dt>
+<dd>
+<p>When the condition evaluates to true. If <code>executed</code> returns true when the configured sub-flow was executed with output success, false otherwise. If <code>not-executed</code> returns false when the sub-flow was executed with output success, true otherwise (the negation of the previous option).</p>
+</dd>
+</dl>
+</div>
+</dd>
 </dl>
 </div>
 </div>
@@ -9997,6 +10014,58 @@ This example includes <code>Condition - User Role</code> and <code>Deny Access</
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight"><code>deny-role1 = You do not have required role!</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="2fa-conditional-workflow-examples"><a class="anchor" href="#2fa-conditional-workflow-examples"></a>2FA conditional workflow examples</h4>
+<div class="paragraph">
+<p>The section presents some examples of conditional workflows that integrates 2nd Factor Authentication (2FA) in different ways. The examples copy the default <code>browser</code> flow and modify the configuration inside the <code>forms</code> sub-flow.</p>
+</div>
+<div class="sect4">
+<h5 id="conditional-2fa-sub-flow"><a class="anchor" href="#conditional-2fa-sub-flow"></a>Conditional 2FA sub-flow</h5>
+<div class="paragraph">
+<p>The default <code>browser</code> flow uses a <code>Conditional OTP</code> sub-flow that already gives a 2FA with OTP Form (One Time Password). Following the same idea, different 2FA methods can be integrated with the <code>Condition - User Configured</code>.</p>
+</div>
+<div class="paragraph">
+<div class="title">2FA all alternative</div>
+<p><span class="image"><img src="./images/2fa-example1.png" alt="2FA all alternative"></span></p>
+</div>
+<div class="paragraph">
+<p>The <code>forms</code> sub-flow contains another <code>2FA</code> conditional sub-flow with <code>Condition - user configured</code>. Three 2FA steps (OTP, Webauthn and Recovery Codes) are allowed as alternative steps. The user will be able to choose one of the three options, if they are configured for the user. As the sub-flow is conditional, the authentication process will complete successfully if no 2FA credential is configured.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="conditional-2fa-sub-flow-and-deny-access"><a class="anchor" href="#conditional-2fa-sub-flow-and-deny-access"></a>Conditional 2FA sub-flow and deny access</h5>
+<div class="paragraph">
+<p>The second example continues the previous one. After the <code>2FA</code> sub-flow, another flow <code>Deny access if no 2FA</code> is used to check if the previous <code>2FA</code> was not executed. In that case (the user has no 2FA credential configured) the access is denied.</p>
+</div>
+<div class="paragraph">
+<div class="title">2FA all alternative and deny access</div>
+<p><span class="image"><img src="./images/2fa-example2.png" alt="2FA all alternative and deny access"></span></p>
+</div>
+<div class="paragraph">
+<p>The <code>Condition - sub-flow executed</code> is configured to detect if the <code>2FA</code> sub-flow was not executed previously.</p>
+</div>
+<div class="paragraph">
+<div class="title">Configuration for the sub-flow executed</div>
+<p><span class="image"><img src="./images/2fa-example2-config.png" alt="Configuration for the sub-flow executed"></span></p>
+</div>
+<div class="paragraph">
+<p>The step <code>Deny access</code> denies the authentication if not executed.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="conditional-2fa-sub-flow-with-otp-default"><a class="anchor" href="#conditional-2fa-sub-flow-with-otp-default"></a>Conditional 2FA sub-flow with OTP default</h5>
+<div class="paragraph">
+<p>The last example is very similar to the previous one. Instead of denying the access, step <code>OTP Form</code> is configured as required.</p>
+</div>
+<div class="paragraph">
+<div class="title">2FA all alternative with OTP default</div>
+<p><span class="image"><img src="./images/2fa-example3.png" alt="2FA all alternative with OTP default"></span></p>
+</div>
+<div class="paragraph">
+<p>With this flow, if the user has none of the 2FA methods configured, the OTP setup will be enforced to continue the login.</p>
 </div>
 </div>
 </div>
@@ -22135,7 +22204,7 @@ $ kcadm.sh get users -r demorealm -q q=username:testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-12-12 01:26:12 UTC
+Last updated 2024-12-13 01:32:50 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
