@@ -1432,10 +1432,13 @@ the Keycloak server. For more information, see the <a href="https://www.keycloak
 <div class="sect4">
 <h5 id="offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange"><a class="anchor" href="#offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange"></a>Offline access removes the associated online session if the <code>offline_scope</code> is requested in the initial exchange</h5>
 <div class="paragraph">
-<p>Any offline session in Keycloak is created from another online session. When the <code>offline_access</code> scope is requested, the current online session is used to create the associated offline session for the client. Therefore any <code>offline_access</code> request finished, until now, with two sessions, one online and one offline.</p>
+<p>Any offline session in Keycloak is created from an online session. When the <code>offline_access</code> scope is requested, the current online session is used to create the associated offline session for the client. Therefore, any <code>offline_access</code> request finished, until now, created two sessions: one online and one offline.
+This situation lead to unreliable behavior.  For example, when just the login with <code>scope=offline_access</code> was requested, there could be an unused online session created, which is then useless in most cases.
+This situation  caused the unnecessary consumption of server resources.</p>
 </div>
 <div class="paragraph">
-<p>Starting with this version, Keycloak removes the initial online session if the <code>offline_scope</code> is directly requested as the first interaction for the session. The client retrieves the offline token after the code to token exchange that is associated to the offline session, but the previous online session is removed. If the online session has been used before the <code>offline_scope</code> request, by the same or another client, the online session remains active as today. Although the new behavior makes sense because the client application is just asking for an offline token, it can affect some scenarios that rely on having the online session still active after the initial <code>offline_scope</code> token request.</p>
+<p>Starting with this version, Keycloak removes the initial online session if the <code>offline_scope</code> is directly requested as the first interaction for the session. The client retrieves the offline token after the code to token exchange that is associated to the offline session, but the previous online session is removed. If the online session has been used before the <code>offline_scope</code> request, by the same or another client, the online session remains active as today.
+This situation also means that the SSO session is not created in the browser if the login request with <code>scope=offline_access</code> is used and the user was not already authenticated in the SSO beforehand. Although the new behavior makes sense because the client application is just asking for an offline token, it can affect some scenarios that rely on having the online session still active after the initial <code>offline_scope</code> token request.</p>
 </div>
 </div>
 <div class="sect4">
@@ -1446,12 +1449,23 @@ the Keycloak server. For more information, see the <a href="https://www.keycloak
 <div class="paragraph">
 <p>Previously, the three mappers (<code>Client Id</code>, <code>Client Host</code> and <code>Client IP Address</code>) where added directly to the dedicated scope when the client was configured to enable service accounts, and they were never removed.</p>
 </div>
+<div class="paragraph">
+<p>The behavior should be effectively the same for most Keycloak deployments because claims in the token are effectively same as before. You might be affected in cases when you are using a client credentials grant
+and you are preparing the Keycloak environment by some tooling that is manually removing or updating the three protocol mappers mentioned above. For instance, if you use an admin CLI script to enable a service-account for a  client and then remove the built-in service-account protocol mappers, you may adjust your CLI to instead remove the assignment of the <code>service_account</code> client scope
+from the client instead of removing protocol mappers.</p>
+</div>
 </div>
 </div>
 <div class="sect3">
 <h4 id="deprecation-notices"><a class="anchor" href="#deprecation-notices"></a>Deprecation notices</h4>
 <div class="paragraph">
 <p>This lists functionality that continues to work as before in this release, but will be removed in a future major release.</p>
+</div>
+<div class="sect4">
+<h5 id="default-db-option-for-production-deprecated"><a class="anchor" href="#default-db-option-for-production-deprecated"></a>Default <code>db</code> option for production deprecated.</h5>
+<div class="paragraph">
+<p>In previous releases, the <code>db</code> option defaulted to <code>dev-file</code> both in production (<code>start</code>) and development (<code>start-dev</code>) modes while <code>dev-file</code> has never been supported in the production mode. In this release, we have deprecated this behaviour and in some future release the <code>db</code> option won&#8217;t default to <code>dev-file</code> in production mode. For <code>build</code> or non-optimized <code>start</code> and non-server commands <code>import</code>, <code>export</code>, or <code>bootstrap-admin</code> in the production profile, a value should be explicitly supplied. This is to prevent the unintentional usage of the <code>dev-file</code> (H2) database in a production environment, which is typically indicative of a misconfiguration.</p>
+</div>
 </div>
 <div class="sect4">
 <h5 id="deprecated-apis-for-javascript-authorization-client"><a class="anchor" href="#deprecated-apis-for-javascript-authorization-client"></a>Deprecated APIs for JavaScript Authorization client</h5>
@@ -8933,7 +8947,7 @@ to preserve compatibility with older client adapters. For more details, see the 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-12-13 01:32:54 UTC
+Last updated 2024-12-14 01:22:44 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
