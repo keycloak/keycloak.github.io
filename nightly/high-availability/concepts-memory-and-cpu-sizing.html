@@ -133,7 +133,7 @@ Still, those caches need to be filled when an instance is restarted, so do not s
 <p>The base memory usage for a Pod including caches of Realm data and 10,000 cached sessions is 1250 MB of RAM.</p>
 </li>
 <li>
-<p>In containers, Keycloak allocates 70% of the memory limit for heap based memory. It will also use approximately 300 MB of non-heap-based memory.
+<p>In containers, Keycloak allocates 70% of the memory limit for heap-based memory. It will also use approximately 300 MB of non-heap-based memory.
 To calculate the requested memory, use the calculation above. As memory limit, subtract the non-heap memory from the value above and divide the result by 0.7.</p>
 </li>
 <li>
@@ -143,17 +143,17 @@ To calculate the requested memory, use the calculation above. As memory limit, s
 </div>
 </li>
 <li>
-<p>For each 200 client credential grants per second, 1 vCPU to the cluster (tested with up to 2000 per second).</p>
+<p>For each 120 client credential grants per second, 1 vCPU to the cluster (tested with up to 2000 per second).<sup>*</sup></p>
 <div class="paragraph">
 <p>Most CPU time goes into creating new TLS connections, as each client runs only a single request.</p>
 </div>
 </li>
 <li>
-<p>For each 120 refresh token requests per second, 1 vCPU to the cluster (tested with up to 435 refresh token requests per second).</p>
+<p>For each 120 refresh token requests per second, 1 vCPU to the cluster (tested with up to 435 refresh token requests per second).<sup>*</sup></p>
 </li>
 <li>
 <p>Leave 150% extra head-room for CPU usage to handle spikes in the load.
-This ensures a fast startup of the node, and sufficient capacity to handle failover tasks.
+This ensures a fast startup of the node, and enough capacity to handle failover tasks.
 Performance of Keycloak dropped significantly when its Pods were throttled in our tests.</p>
 </li>
 <li>
@@ -223,10 +223,10 @@ you can ensure your system remains appropriately scaled and responsive to change
 <p>45 logins and logouts per seconds</p>
 </li>
 <li>
-<p>600 client credential grants per second</p>
+<p>360 client credential grants per second<sup>*</sup></p>
 </li>
 <li>
-<p>360 refresh token requests per second (1:8 ratio for logins)</p>
+<p>360 refresh token requests per second (1:8 ratio for logins)<sup>*</sup></p>
 </li>
 <li>
 <p>3 Pods</p>
@@ -241,7 +241,7 @@ you can ensure your system remains appropriately scaled and responsive to change
 <li>
 <p>CPU requested per Pod: 3 vCPU</p>
 <div class="paragraph">
-<p>(45 logins per second = 3 vCPU, 600 client credential grants per second = 3 vCPU, 345 refresh token = 3 vCPU. This sums up to 9 vCPU total. With 3 Pods running in the cluster, each Pod then requests 3 vCPU)</p>
+<p>(45 logins per second = 3 vCPU, 360 client credential grants per second = 3 vCPU, 360 refresh tokens = 3 vCPU. This sums up to 9 vCPU total. With 3 Pods running in the cluster, each Pod then requests 3 vCPU)</p>
 </div>
 </li>
 <li>
@@ -327,7 +327,7 @@ The benefit of this setup is that the number of Pods does not need to scale duri
 <p>OpenShift 4.16.x deployed on AWS via ROSA.</p>
 </li>
 <li>
-<p>Machine pool with <code>m5.2xlarge</code> instances.</p>
+<p>Machine pool with <code>c7g.2xlarge</code> instances.<sup>*</sup></p>
 </li>
 <li>
 <p>Keycloak deployed with the Operator and 3 pods in a high-availability setup with two sites in active/active mode.</p>
@@ -361,6 +361,9 @@ Expect a slightly higher performance for single-site setups as a fixed number of
 <p>OpenJDK 21</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p><sup>*</sup> For non-ARM CPU architectures on AWS (<code>c7i</code>/<code>c7a</code> vs. <code>c7g</code>) we found that client credential grants and refresh token workloads were able to deliver up to two times the number of operations per CPU core, while password hashing was delivering a constant number of operations per CPU core. Depending on your workload and your cloud pricing, please run your own tests and make your own calculations for mixed workloads to find out which architecture delivers a better pricing for you.</p>
 </div>
 </div>
 </div>            </div>
