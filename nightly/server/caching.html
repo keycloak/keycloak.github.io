@@ -481,28 +481,28 @@ Keycloak supports a wide range of transport stacks:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>tcp</p>
+<p><code>jdbc-ping</code>  (default)</p>
 </li>
 <li>
-<p>udp</p>
+<p><code>kubernetes</code></p>
 </li>
 <li>
-<p>jdbc-ping  (default)</p>
+<p><code>jdbc-ping-udp</code>   (deprecated)</p>
 </li>
 <li>
-<p>jdbc-ping-udp</p>
+<p><code>tcp</code>   (deprecated)</p>
 </li>
 <li>
-<p>kubernetes</p>
+<p><code>udp</code>   (deprecated)</p>
 </li>
 <li>
-<p>ec2</p>
+<p><code>ec2</code>   (deprecated)</p>
 </li>
 <li>
-<p>azure</p>
+<p><code>azure</code>   (deprecated)</p>
 </li>
 <li>
-<p>google</p>
+<p><code>google</code>   (deprecated)</p>
 </li>
 </ul>
 </div>
@@ -515,7 +515,7 @@ Keycloak supports a wide range of transport stacks:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>The default stack is set to <code>jdbc-ping</code> when distributed caches are enabled, which is backwards compatible with the 26.x release stream of Keycloak.</p>
+<p>The default stack is set to <code>jdbc-ping</code> when distributed caches are enabled, which is backwards compatible with the defaults in the 26.x release stream of Keycloak.</p>
 </div>
 <div class="sect2">
 <h3 id="_available_transport_stacks">Available transport stacks</h3>
@@ -539,12 +539,12 @@ Keycloak supports a wide range of transport stacks:</p>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Database registry - <code>JDBC_PING2</code> protocol.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database registry using the JGroups <code>JDBC_PING2</code> protocol.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping-udp</code> (deprecated)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Database registry - <code>JDBC_PING2</code> protocol.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database registry using the JGroups <code>JDBC_PING2</code> protocol.</p></td>
 </tr>
 </tbody>
 </table>
@@ -568,20 +568,36 @@ Keycloak supports a wide range of transport stacks:</p>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>kubernetes</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Dns resolution - <code>DNS_PING</code> protocol. It requires <code>-Djgroups.dns.query=&lt;headless-service-FQDN&gt;</code> to be added to your <code>JAVA_OPTS_APPEND</code> environment variable.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DNS resolution using the JGroups <code>DNS_PING</code> protocol. It requires to set <code>jgroups.dns.query</code> to the headless service FQDN.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code> (deprecated)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">IP multicast - <code>MPING</code> protocol. See below on how to configure a unique <code>jgroups.mcast_addr</code> or <code>jgroups.mcast_port</code> for each cluster.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IP multicast using the JGroups <code>MPING</code> protocol. See below on how to configure a unique <code>jgroups.mcast_addr</code> or <code>jgroups.mcast_port</code> for each cluster.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>udp</code> (deprecated)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">IP multicast - <code>PING</code> protocol. See below on how to configure a unique <code>jgroups.mcast_addr</code> or <code>jgroups.mcast_port</code> for each cluster.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IP multicast using the JGroups <code>PING</code> protocol. See below on how to configure a unique <code>jgroups.mcast_addr</code> or <code>jgroups.mcast_port</code> for each cluster.</p></td>
 </tr>
 </tbody>
 </table>
+<div class="paragraph">
+<p>When using the <code>tcp</code>, <code>udp</code> or <code>jdbc-ping-udp</code> stack, each cluster must use a different multicast address and/or port so that their nodes form distinct clusters.
+By default, Keycloak uses <code>239.6.7.8</code> as multicast address for <code>jgroups.mcast_addr</code> and <code>46655</code> for the multicast port <code>jgroups.mcast_port</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Use <code>-D&lt;property&gt;=&lt;value&gt;</code> to pass the properties via the <code>JAVA_OPTS_APPEND</code> environment variable or in the CLI command.
+</td>
+</tr>
+</table>
+</div>
 <div class="exampleblock">
 <div class="content">
 <div class="paragraph">
@@ -1174,7 +1190,7 @@ While these metrics provide more insights into the latency distribution, collect
 <p>Use 'jdbc-ping' instead
 <strong>Deprecated values: <code>azure</code>, <code>ec2</code>, <code>google</code>, <code>tcp</code>, <code>udp</code>, <code>jdbc-ping-udp</code></strong></p>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code> (deprecated), <code>udp</code> (deprecated), <code>jdbc-ping</code> (default), <code>jdbc-ping-udp</code> (deprecated), <code>kubernetes</code>, <code>ec2</code> (deprecated), <code>azure</code> (deprecated), <code>google</code> (deprecated), or any</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping</code> (default), <code>kubernetes</code>, <code>jdbc-ping-udp</code> (deprecated), <code>tcp</code> (deprecated), <code>udp</code> (deprecated), <code>ec2</code> (deprecated), <code>azure</code> (deprecated), <code>google</code> (deprecated), or any</p></td>
 </tr>
 </tbody>
 </table>
