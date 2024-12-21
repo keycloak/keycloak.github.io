@@ -1032,6 +1032,12 @@ span.image img {
 <li><a href="#_override_existing_broker_link">Override existing broker link</a></li>
 </ul>
 </li>
+<li><a href="#_identity_broker_post_login_flow">Post login flow</a>
+<ul class="sectlevel3">
+<li><a href="#post-login-flow-examples">Post login flow examples</a></li>
+<li><a href="#requesting-additional-authentication-steps-for-the-dedicated-clients">Requesting additional authentication steps for the dedicated clients</a></li>
+</ul>
+</li>
 <li><a href="#retrieving-external-idp-tokens">Retrieving external IDP tokens</a></li>
 <li><a href="#identity-broker-logout">Identity broker logout</a></li>
 </ul>
@@ -8119,9 +8125,9 @@ user clicks <strong>Register</strong> or <strong>Forget password</strong> on the
 <div class="ulist">
 <ul>
 <li>
-<p>When the client wants the user to be redirected directly to the registration, the OIDC client should replace the very last snippet from the OIDC login URL path (<code>/auth</code>) with <code>/registrations</code> . So the full URL
-might be similar to the following: <code><a href="https://keycloak.example.com/realms/your_realm/protocol/openid-connect/registrations" class="bare">https://keycloak.example.com/realms/your_realm/protocol/openid-connect/registrations</a></code>. As an alternative to using the <code>/registrations</code> endpoint, clients can use the OIDC
-<code>prompt</code> parameter with <code>prompt=create</code> to redirect the user to the registration.</p>
+<p>When the client wants the user to be redirected directly to the registration, the OIDC client should add parameter <code>prompt=create</code> to the login request. As a deprecated alternative, clients can replace the very last
+snippet from the OIDC login URL path (<code>/auth</code>) with <code>/registrations</code> . So the full URL might be similar to the following: <code><a href="https://keycloak.example.com/realms/your_realm/protocol/openid-connect/registrations" class="bare">https://keycloak.example.com/realms/your_realm/protocol/openid-connect/registrations</a></code>.
+The <code>prompt=create</code> is recommended as it is <a href="https://openid.net/specs/openid-connect-prompt-create-1_0.html">a specification standard</a>.</p>
 </li>
 <li>
 <p>When the client wants a user to be redirected directly to the <code>Reset credentials</code> flow, the OIDC client should replace the very last snippet from the OIDC login URL path (<code>/auth</code>) with <code>/forgot-credentials</code> .</p>
@@ -9954,6 +9960,22 @@ In other words, the attribute should not be present.</p>
 </dl>
 </div>
 </dd>
+<dt class="hdlist1"><code>Condition - client scope</code></dt>
+<dd>
+<p>The condition to evaluate if a configured client scope is present as a client scope of the client requesting authentication. These configuration fields exist:</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Client scope name</dt>
+<dd>
+<p>The name of the client scope, which should be present as a client scope of the client, which is requesting authentication. If requested client scope is default client scope of the client requesting login, the condition will be evaluated to true. If requested client scope is optional client scope of the client requesting login, condition will be evaluated to true if client scope is sent by the client in the login request (for example, by the <code>scope</code> parameter in case of OIDC/OAuth2 client login). Required.</p>
+</dd>
+<dt class="hdlist1">Negate output</dt>
+<dd>
+<p>Apply a NOT to the check result. When this is true, then the condition will evaluate to true just if configured client scope is not present.</p>
+</dd>
+</dl>
+</div>
+</dd>
 </dl>
 </div>
 </div>
@@ -10057,7 +10079,7 @@ This example includes <code>Condition - User Role</code> and <code>Deny Access</
 </div>
 </div>
 <div class="sect4">
-<h5 id="conditional-2fa-sub-flow-with-otp-default"><a class="anchor" href="#conditional-2fa-sub-flow-with-otp-default"></a>Conditional 2FA sub-flow with OTP default</h5>
+<h5 id="_conditional-2fa-otp-default"><a class="anchor" href="#_conditional-2fa-otp-default"></a>Conditional 2FA sub-flow with OTP default</h5>
 <div class="paragraph">
 <p>The last example is very similar to the previous one. Instead of denying the access, step <code>OTP Form</code> is configured as required.</p>
 </div>
@@ -10264,6 +10286,19 @@ If the user already exists, Keycloak may ask the user to link the identity retur
 </div>
 <div class="paragraph">
 <p>This authenticator is responsible for processing the <code>kc_idp_hint</code> query parameter. See the <a href="#_client_suggested_idp">client suggested identity provider</a> section for more information.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The authenticator will redirect to the identity provider and authentication is delegated to the identity provider. The <code>browser</code> authentication flow will not continue after the login with the identity provider
+is successfully finished. If you want to perform additional steps after the identity provider login (for example 2-factor authentication), it may be needed to configure <a href="#_identity_broker_post_login_flow">Post login flow</a>.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -12095,6 +12130,75 @@ This flow can be used if you want to delegate the identity to other identity pro
 </div>
 <div class="paragraph">
 <p>When creating authentication flows with this authenticator, make sure to add this authenticator once other authenticators that are already established the Keycloak user by other means (either by re-authentication or after <code>Detect existing broker user</code> as mentioned above.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_identity_broker_post_login_flow"><a class="anchor" href="#_identity_broker_post_login_flow"></a>Post login flow</h3>
+<div class="sidebarblock page-links">
+<div class="content">
+<a href="https://github.com/keycloak/keycloak/tree/main/docs/documentation/server_admin/topics/identity-broker/post-login-flow.adoc" target="_blank" rel="noopener">Edit this section</a>
+<a href="https://github.com/keycloak/keycloak/issues/new?template=bug.yml&amp;title=Docs:%20server_admin/topics/identity-broker/post-login-flow.adoc&amp;description=%0A%0AFile:%20server_admin/topics/identity-broker/post-login-flow.adoc&amp;version=DEV&amp;behaviorExpected=%3C!--%20describe%20what%20you%20want%20to%20see%20in%20the%20docs%20--%3E&amp;behaviorActual=%3C!--%20describe%20what%20is%20currently%20wrong%20or%20missing%20in%20the%20docs%20--%3E&amp;reproducer=%3C!--%20list%20steps%20in%20the%20application%20that%20show%20behavior%20that%20should%20be%20documented%20--%3E" target="_blank" rel="noopener">Report an issue</a>
+</div>
+</div>
+<div class="paragraph">
+<p>Post login flow is useful for the situations when you want to trigger some additional authentication actions after every login with the particular identity provider.
+For example, you may want to trigger 2-factor authentication after every login of Keycloak to <code>Facebook</code> because <code>Facebook</code> does not provide 2-factor authentication during its login.</p>
+</div>
+<div class="paragraph">
+<p>Once you setup the authentication flow with the needed steps, set it as <code>Post login flow</code> when configuring the identity provider.</p>
+</div>
+<div class="sect3">
+<h4 id="post-login-flow-examples"><a class="anchor" href="#post-login-flow-examples"></a>Post login flow examples</h4>
+<div class="sect4">
+<h5 id="requesting-2-factor-authentication-after-identity-provider-login"><a class="anchor" href="#requesting-2-factor-authentication-after-identity-provider-login"></a>Requesting 2-factor authentication after identity provider login</h5>
+<div class="paragraph">
+<p>The easiest way is to enforce authentication with one particular 2-factor method. For example, when requesting OTP, the flow can look like this with only a single authenticator configured.
+This type of flow asks the user to configure the OTP during the first login with the identity provide when the user does not have OTP set on the account.</p>
+</div>
+<div class="paragraph">
+<div class="title">2FA post login flow with OTP</div>
+<p><span class="image"><img src="./images/post-login-flow-otp.png" alt="Post login OTP"></span></p>
+</div>
+<div class="paragraph">
+<p>The more complex setup can include multiple 2-factor authentication methods configured as <code>ALTERNATIVE</code>. In this case, make sure that the user is requested to setup one of
+the methods if that user does not yet have any 2-factor authentication configured on the account. This could be done as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Make sure that one of the 2-factor methods is configured as <code>REQUIRED</code> in the <a href="#_identity_broker_first_login">First login flow</a>. This method can works if  you expect all your users to be registered by
+the identity provider login.</p>
+</li>
+<li>
+<p>Wrap the 2-factor methods as <code>ALTERNATIVE</code> into a conditional subflow such as one called <code>2FA</code> and create another conditional subflow such as one called <code>OTP if no 2FA</code>,
+which will be triggered only if the previous subflow was not executed and will ask user to add one of the 2-factor methods (for example, OTP). The example of a similar flow configuration is provided
+in the <a href="#_conditional-2fa-otp-default">Conditions section of the Authentication flows chapter</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="requesting-additional-authentication-steps-for-the-dedicated-clients"><a class="anchor" href="#requesting-additional-authentication-steps-for-the-dedicated-clients"></a>Requesting additional authentication steps for the dedicated clients</h4>
+<div class="paragraph">
+<p>In some cases, a client or group of clients may need to perform some additional steps after identity provider login.
+The following is an example of a flow that prescribes that when the client scope <code>foo</code> is requested, the user is required to authenticate with the OTP after identity provider login.</p>
+</div>
+<div class="paragraph">
+<div class="title">2FA post login flow with client scope and OTP</div>
+<p><span class="image"><img src="./images/post-login-flow-client-scope.png" alt="Post login with client scope and OTP"></span></p>
+</div>
+<div class="paragraph">
+<p>This is an example of configuring the <code>Condition - client scope</code> for requesting the specified client scope.</p>
+</div>
+<div class="paragraph">
+<div class="title">2FA post login flow client scope configuration</div>
+<p><span class="image"><img src="./images/post-login-flow-client-scope-config.png" alt="Post login flow client scope configuration"></span></p>
+</div>
+<div class="paragraph">
+<p>The requested clients need to have this client scope set on them either
+as default or as optional. In the latter case, the flow is executed only if the client scope is requested by the client (for example, by the <code>scope</code> parameter in the case of OIDC/OAuth2 client logins).</p>
 </div>
 </div>
 </div>
@@ -22205,7 +22309,7 @@ $ kcadm.sh get users -r demorealm -q q=username:testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-12-20 01:19:35 UTC
+Last updated 2024-12-21 01:18:10 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
