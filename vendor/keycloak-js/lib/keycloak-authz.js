@@ -25,8 +25,16 @@ var KeycloakAuthorization = function (keycloak, options) {
     // - https://github.com/keycloak/keycloak/pull/6619
     // - https://issues.redhat.com/browse/KEYCLOAK-10894
     // TODO: Remove both `ready` property and `init` method in a future version
-    this.ready = Promise.resolve();
-    this.init = () => {};
+    Object.defineProperty(this, 'ready', {
+        get() {
+            console.warn("The 'ready' property is deprecated and will be removed in a future version. Initialization now happens automatically, using this property is no longer required.");
+            return Promise.resolve();
+        },
+    });
+    
+    this.init = () => {
+        console.warn("The 'init()' method is deprecated and will be removed in a future version. Initialization now happens automatically, calling this method is no longer required.");
+    };
 
     /** @type {Promise<unknown> | undefined} */
     let configPromise;

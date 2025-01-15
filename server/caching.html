@@ -86,7 +86,8 @@ The current distributed cache implementation is built on top of <a href="https:/
 <p>When you start Keycloak in production mode, by using the <code>start</code> command, caching is enabled and all Keycloak nodes in your network are discovered.</p>
 </div>
 <div class="paragraph">
-<p>By default, caches are using a UDP transport stack so that nodes are discovered using IP multicast transport based on UDP. For most production environments, there are better discovery alternatives to UDP available. Keycloak allows you to either choose from a set of pre-defined default transport stacks, or to define your own custom stack, as you will see later in this guide.</p>
+<p>By default, caches use the <code>jdbc-ping</code> stack which is based upon a TCP transport and uses the configured database to track nodes joining the cluster.
+Keycloak allows you to either choose from a set of pre-defined default transport stacks, or to define your own custom stack, as you will see later in this guide.</p>
 </div>
 <div class="paragraph">
 <p>To explicitly enable distributed infinispan caching, enter this command:</p>
@@ -435,7 +436,7 @@ to change the number of owners accordingly to better fit into your availability 
 <h3 id="_cli_options_for_remote_server">CLI options for remote server</h3>
 <div class="paragraph">
 <p>For configuration of Keycloak server for high availability and multi-node clustered setup there was introduced following CLI options <code>cache-remote-host</code>, <code>cache-remote-port</code>, <code>cache-remote-username</code> and <code>cache-remote-password</code> simplifying configuration within the XML file.
-Once any of declared CLI parameters are present, it is expected there is no configuration related to remote store present in the XML file.</p>
+Once any of the declared CLI parameters are present, it is expected there is no configuration related to remote store present in the XML file.</p>
 </div>
 <div class="sect3">
 <h4 id="_connecting_to_an_insecure_infinispan_server">Connecting to an insecure Infinispan server</h4>
@@ -474,22 +475,28 @@ Keycloak supports a wide range of transport stacks:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>tcp</p>
+<p><code>jdbc-ping</code>  (default)</p>
 </li>
 <li>
-<p>udp</p>
+<p><code>kubernetes</code></p>
 </li>
 <li>
-<p>kubernetes</p>
+<p><code>jdbc-ping-udp</code>   (deprecated)</p>
 </li>
 <li>
-<p>ec2</p>
+<p><code>tcp</code>   (deprecated)</p>
 </li>
 <li>
-<p>azure</p>
+<p><code>udp</code>   (deprecated)</p>
 </li>
 <li>
-<p>google</p>
+<p><code>ec2</code>   (deprecated)</p>
+</li>
+<li>
+<p><code>azure</code>   (deprecated)</p>
+</li>
+<li>
+<p><code>google</code>   (deprecated)</p>
 </li>
 </ul>
 </div>
@@ -502,12 +509,12 @@ Keycloak supports a wide range of transport stacks:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>The default stack is set to <code>udp</code> when distributed caches are enabled.</p>
+<p>The default stack is set to <code>jdbc-ping</code> when distributed caches are enabled, which is backwards compatible with the defaults in the 26.x release stream of Keycloak.</p>
 </div>
 <div class="sect2">
 <h3 id="_available_transport_stacks">Available transport stacks</h3>
 <div class="paragraph">
-<p>The following table shows transport stacks that are available without any further configuration than using the <code>--cache-stack</code> build option:</p>
+<p>The following table shows transport stacks that are available without any further configuration than using the <code>--cache-stack</code> runtime option:</p>
 </div>
 <table class="tableblock frame-all grid-all fit-content">
 <colgroup>
@@ -524,14 +531,14 @@ Keycloak supports a wide range of transport stacks:</p>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">tcp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">MPING (uses UDP multicast).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database registry using the JGroups <code>JDBC_PING2</code> protocol.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">udp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping-udp</code> (deprecated)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">UDP multicast</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database registry using the JGroups <code>JDBC_PING2</code> protocol.</p></td>
 </tr>
 </tbody>
 </table>
@@ -553,62 +560,48 @@ Keycloak supports a wide range of transport stacks:</p>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kubernetes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>kubernetes</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">DNS_PING (requires <code>-Djgroups.dns.query=&lt;headless-service-FQDN&gt;</code> to be added to JAVA_OPTS or JAVA_OPTS_APPEND environment variable).</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_additional_transport_stacks">Additional transport stacks</h3>
-<div class="paragraph">
-<p>The following table shows transport stacks that are supported by Keycloak, but need some extra steps to work.
-Note that <em>none</em>  of these stacks are Kubernetes / OpenShift stacks, so no need exists to enable the <code>google</code> stack if you want to run Keycloak on top of the Google Kubernetes engine.
-In that case, use the <code>kubernetes</code> stack.
-Instead, when you have a distributed cache setup running on AWS EC2 instances, you would need to set the stack to <code>ec2</code>, because ec2 does not support a default discovery mechanism such as UDP.</p>
-</div>
-<table class="tableblock frame-all grid-all fit-content">
-<colgroup>
-<col>
-<col>
-<col>
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Stack name</th>
-<th class="tableblock halign-left valign-top">Transport protocol</th>
-<th class="tableblock halign-left valign-top">Discovery</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">ec2</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">NATIVE_S3_PING</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DNS resolution using the JGroups <code>DNS_PING</code> protocol. It requires to set <code>jgroups.dns.query</code> to the headless service FQDN.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">google</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code> (deprecated)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">GOOGLE_PING2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IP multicast using the JGroups <code>MPING</code> protocol. See below on how to configure a unique <code>jgroups.mcast_addr</code> or <code>jgroups.mcast_port</code> for each cluster.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">azure</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">AZURE_PING</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>udp</code> (deprecated)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IP multicast using the JGroups <code>PING</code> protocol. See below on how to configure a unique <code>jgroups.mcast_addr</code> or <code>jgroups.mcast_port</code> for each cluster.</p></td>
 </tr>
 </tbody>
 </table>
 <div class="paragraph">
-<p>Cloud vendor specific stacks have additional dependencies for Keycloak.
-For more information and links to repositories with these dependencies, see the <a href="https://infinispan.org/docs/dev/titles/embedding/embedding.html#jgroups-cloud-discovery-protocols_cluster-transport">Infinispan documentation</a>.</p>
+<p>When using the <code>tcp</code>, <code>udp</code> or <code>jdbc-ping-udp</code> stack, each cluster must use a different multicast address and/or port so that their nodes form distinct clusters.
+By default, Keycloak uses <code>239.6.7.8</code> as multicast address for <code>jgroups.mcast_addr</code> and <code>46655</code> for the multicast port <code>jgroups.mcast_port</code>.</p>
 </div>
-<div class="paragraph">
-<p>To provide the dependencies to Keycloak, put the respective JAR in the <code>providers</code> directory and build Keycloak by entering this command:</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Use <code>-D&lt;property&gt;=&lt;value&gt;</code> to pass the properties via the <code>JAVA_OPTS_APPEND</code> environment variable or in the CLI command.
+</td>
+</tr>
+</table>
 </div>
-<div class="listingblock">
+<div class="exampleblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --cache-stack=&lt;ec2|google|azure&gt;</code></pre>
+<div class="paragraph">
+<p><strong>Additional Stacks</strong></p>
+</div>
+<div class="paragraph">
+<p>It is recommended to use one of the stacks available above.
+Additional stacks are provided by Infinispan, but it is outside the scope of this guide how to configure them.
+Please refer to <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#cluster-transport">Setting up Infinispan cluster transport</a> for further documentation.</p>
+</div>
 </div>
 </div>
 </div>
@@ -619,7 +612,7 @@ For more information and links to repositories with these dependencies, see the 
 and define your own transport stack.</p>
 </div>
 <div class="paragraph">
-<p>For more details, see <a href="https://infinispan.org/docs/stable/titles/server/server.html#using-inline-jgroups-stacks_cluster-transport">Using inline JGroups stacks</a>.</p>
+<p>For more details, see <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#customizing-jgroups-stacks_cluster-transport">Customizing JGroups stacks</a>.</p>
 </div>
 <div class="listingblock">
 <div class="title">defining a custom transport stack</div>
@@ -673,7 +666,56 @@ To restrict unauthorized access, use a self-signed certificate for each Keycloak
 <p>For JGroups stacks with <code>UDP</code> or <code>TCP_NIO2</code>, see the <a href="http://jgroups.org/manual5/index.html#ENCRYPT">JGroups Encryption documentation</a> on how to set up the protocol stack.</p>
 </div>
 <div class="paragraph">
-<p>For more information about securing cache communication, see the <a href="https://infinispan.org/docs/stable/titles/security/security.html#">Infinispan security guide</a>.</p>
+<p>For more information about securing cache communication, see the <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#secure-cluster-transport">Encrypting cluster transport</a> documentation.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_network_ports">Network Ports</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To ensure a healthy Keycloak clustering, some network ports need to be open.
+The table below shows the TCP ports that need to be open for the <code>jdbc-ping</code> stack, and a description of the traffic that goes through it.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>7800</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.bind.address</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unicast data transmission.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>57800</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.fd.port-offset</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Failure detection by protocol <code>FD_SOCK2</code>.
+It listens to the abrupt closing of a socket to suspect a Keycloak server failure.
+The <code>jgroups.fd.port-offset</code> property defines the offset from the <code>jgroups.bind.address</code>.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Use <code>-D&lt;property&gt;=&lt;value</code> to modify the ports above in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -693,7 +735,7 @@ While these metrics provide more insights into the latency distribution, collect
 </div>
 </div>
 <div class="paragraph">
-<p>For more details about how to enable metrics, see <a href="https://www.keycloak.org/server/configuration-metrics">Enabling Keycloak Metrics</a>.</p>
+<p>For more details about how to enable metrics, see <a href="https://www.keycloak.org/observability/configuration-metrics">Enabling Keycloak Metrics</a>.</p>
 </div>
 </div>
 </div>
@@ -1016,12 +1058,12 @@ While these metrics provide more insights into the latency distribution, collect
 <p><span class="options-key"><code>cache-remote-host</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">The hostname of the remote server for the remote store configuration.</span></p>
+<p><span class="options-description">The hostname of the external Infinispan cluster.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">It replaces the <code>host</code> attribute of <code>remote-server</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-username</code> and <code>cache-remote-password</code> are required as well and the related configuration in XML file should not be present.</span></p>
+<p><span class="options-description-extended">Available only when feature <code>multi-site</code>, <code>clusterless</code> or <code>cache-embedded-remote-store</code> is set.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-remote-host</code><br>
@@ -1036,12 +1078,12 @@ While these metrics provide more insights into the latency distribution, collect
 <p><span class="options-key"><code>cache-remote-password</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">The password for the authentication to the remote server for the remote store.</span></p>
+<p><span class="options-description">The password for the authentication to the external Infinispan cluster.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">It replaces the <code>password</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-username</code> is required as well and the related configuration in XML file should not be present.</span></p>
+<p><span class="options-description-extended">It is optional if connecting to an unsecure external Infinispan cluster. If the option is specified, <code>cache-remote-username</code> is required as well.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-remote-password</code><br>
@@ -1059,13 +1101,10 @@ While these metrics provide more insights into the latency distribution, collect
 <p><span class="options-key"><code>cache-remote-port</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">The port of the remote server for the remote store configuration.</span></p>
+<p><span class="options-description">The port of the external Infinispan cluster.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
-<div class="paragraph">
-<p><span class="options-description-extended">It replaces the <code>port</code> attribute of <code>remote-server</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.).</span></p>
-</div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-remote-port</code><br>
 <strong>Env:</strong> <code>KC_CACHE_REMOTE_PORT</code></p>
@@ -1105,12 +1144,12 @@ While these metrics provide more insights into the latency distribution, collect
 <p><span class="options-key"><code>cache-remote-username</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">The username for the authentication to the remote server for the remote store.</span></p>
+<p><span class="options-description">The username for the authentication to the external Infinispan cluster.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">It replaces the <code>username</code> attribute of <code>digest</code> tag of the configuration specified via XML file (see <code>cache-config-file</code> option.). If the option is specified, <code>cache-remote-password</code> is required as well and the related configuration in XML file should not be present.</span></p>
+<p><span class="options-description-extended">It is optional if connecting to an unsecure external Infinispan cluster. If the option is specified, <code>cache-remote-password</code> is required as well.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-remote-username</code><br>
@@ -1133,15 +1172,19 @@ While these metrics provide more insights into the latency distribution, collect
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">This option only takes effect if <code>cache</code> is set to <code>ispn</code>. Default: udp.</span></p>
-</div>
-<div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-stack</code><br>
 <strong>Env:</strong> <code>KC_CACHE_STACK</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when 'cache' type is set to 'ispn'</p>
+</div>
+<div class="paragraph">
+<p>Use 'jdbc-ping' instead
+<strong>Deprecated values: <code>azure</code>, <code>ec2</code>, <code>google</code>, <code>tcp</code>, <code>udp</code>, <code>jdbc-ping-udp</code></strong></p>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code>, <code>udp</code>, <code>kubernetes</code>, <code>ec2</code>, <code>azure</code>, <code>google</code>, or any</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping</code> (default), <code>kubernetes</code>, <code>jdbc-ping-udp</code> (deprecated), <code>tcp</code> (deprecated), <code>udp</code> (deprecated), <code>ec2</code> (deprecated), <code>azure</code> (deprecated), <code>google</code> (deprecated), or any</p></td>
 </tr>
 </tbody>
 </table>

@@ -83,6 +83,14 @@ For a configuration where this is applied, visit <a href="https://www.keycloak.o
 <h2 id="_concepts">Concepts</h2>
 <div class="sectionbody">
 <div class="sect2">
+<h3 id="_jgroups_communications">JGroups communications</h3>
+<div class="paragraph">
+<p>JGroups communications, which is used in single-site setups for the communication between Keycloak nodes, benefits from the use of virtual threads which are available in OpenJDK 21.
+This reduces the memory usage and removes the need to configure thread pool sizes.
+Therefore, the use of OpenJDK 21 is recommended.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_quarkus_executor_pool">Quarkus executor pool</h3>
 <div class="paragraph">
 <p>Keycloak requests, as well as blocking probes, are handled by an executor pool. Depending on the available CPU cores, it has a maximum size of 50 or more threads.
@@ -104,41 +112,6 @@ The caller will receive a response with a 5xx HTTP status code indicating a serv
 <p>If you increase the number of database connections and the number of threads too much, the system will be congested under a high load with requests queueing up, which leads to a bad performance.
 The number of database connections is configured via the <a href="https://www.keycloak.org/server/all-config?q=db-pool"><code>Database</code> settings <code>db-pool-initial-size</code>, <code>db-pool-min-size</code> and <code>db-pool-max-size</code></a> respectively.
 Low numbers ensure fast response times for all clients, even if there is an occasionally failing request when there is a load spike.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_jgroups_connection_pool">JGroups connection pool</h3>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This currently applies to single-site setups only. In a multi-site setup with an external Infinispan this is no longer a restriction.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>The combined number of executor threads in all Keycloak nodes in the cluster should not exceed the number of threads available in JGroups thread pool to avoid the error <code>org.jgroups.util.ThreadPool: thread pool is full</code>.
-To see the error the first time it happens, the system property <code>jgroups.thread_dumps_threshold</code> needs to be set to <code>1</code>, as otherwise the message appears only after 10000 requests have been rejected.</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="paragraph">
-<p>The number of JGroup threads is <code>200</code> by default.
-While it can be configured using the Java system property <code>jgroups.thread_pool.max_threads</code>, we advise keeping it at this value.
-As shown in experiments, the total number of Quarkus worker threads in the cluster must not exceed the number of threads in the JGroup thread pool of 200 in each node to avoid deadlocks in the JGroups communication.
-Given a Keycloak cluster with four Pods, each Pod should then have 50 Quarkus worker threads.
-Use the Keycloak configuration option <code>http-pool-max-threads</code> to configure the maximum number of Quarkus worker threads.</p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Use metrics to monitor the total JGroup threads in the pool and for the threads active in the pool.
-When using TCP as the JGroups transport protocol, the metrics <code>vendor_jgroups_tcp_get_thread_pool_size</code> and <code>vendor_jgroups_tcp_get_thread_pool_size_active</code> are available for monitoring. When using UDP, the metrics <code>vendor_jgroups_udp_get_thread_pool_size</code> and <code>vendor_jgroups_udp_get_thread_pool_size_active</code> are available.
-This is useful to monitor that limiting the Quarkus thread pool size keeps the number of active JGroup threads below the maximum JGroup thread pool size.</p>
 </div>
 </div>
 <div class="sect2">

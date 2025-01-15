@@ -127,7 +127,7 @@ Still, those caches need to be filled when an instance is restarted, so do not s
 <p>The base memory usage for a Pod including caches of Realm data and 10,000 cached sessions is 1250 MB of RAM.</p>
 </li>
 <li>
-<p>In containers, Keycloak allocates 70% of the memory limit for heap based memory. It will also use approximately 300 MB of non-heap-based memory.
+<p>In containers, Keycloak allocates 70% of the memory limit for heap-based memory. It will also use approximately 300 MB of non-heap-based memory.
 To calculate the requested memory, use the calculation above. As memory limit, subtract the non-heap memory from the value above and divide the result by 0.7.</p>
 </li>
 <li>
@@ -137,18 +137,23 @@ To calculate the requested memory, use the calculation above. As memory limit, s
 </div>
 </li>
 <li>
-<p>For each 200 client credential grants per second, 1 vCPU to the cluster (tested with up to 2000 per second).</p>
+<p>For each 120 client credential grants per second, 1 vCPU to the cluster (tested with up to 2000 per second).<sup>*</sup></p>
 <div class="paragraph">
 <p>Most CPU time goes into creating new TLS connections, as each client runs only a single request.</p>
 </div>
 </li>
 <li>
-<p>For each 120 refresh token requests per second, 1 vCPU to the cluster (tested with up to 435 refresh token requests per second).</p>
+<p>For each 120 refresh token requests per second, 1 vCPU to the cluster (tested with up to 435 refresh token requests per second).<sup>*</sup></p>
 </li>
 <li>
 <p>Leave 150% extra head-room for CPU usage to handle spikes in the load.
-This ensures a fast startup of the node, and sufficient capacity to handle failover tasks.
+This ensures a fast startup of the node, and enough capacity to handle failover tasks.
 Performance of Keycloak dropped significantly when its Pods were throttled in our tests.</p>
+</li>
+<li>
+<p>When performing requests with more than 2500 different clients concurrently, not all client information will fit into Keycloak&#8217;s caches when those are using the standard cache sizes of 10000 entries each.
+Due to this, the database may become a bottleneck as client data is reloaded frequently from the database.
+To reduce the database usage, increase the <code>users</code> cache size by two times the number of concurrently used clients, and the <code>realms</code> cache size by four times the number of concurrently used clients.</p>
 </li>
 </ul>
 </div>
@@ -172,6 +177,40 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <p>The vCPU requirement is given as a range, as with an increased CPU saturation on the database host the CPU usage per request decreases while the response times increase. A lower CPU quota on the database can lead to slower response times during peak loads. Choose a larger CPU quota if fast response times during peak loads are critical. See below for an example.</p>
 </div>
 <div class="sect2">
+<h3 id="_measuring_the_activity_of_a_running_keycloak_instance">Measuring the activity of a running Keycloak instance</h3>
+<div class="paragraph">
+<p>Sizing of a Keycloak instance depends on the actual and forecasted numbers for password-based user logins, refresh token requests, and client credential grants as described in the previous section.</p>
+</div>
+<div class="paragraph">
+<p>To retrieve the actual numbers of a running Keycloak instance for these three key inputs, use the metrics Keycloak provides:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The user event metric <code>keycloak_user_events_total</code> for event type <code>login</code> includes both password-based logins and cookie-based logins, still it can serve as a first approximate input for this sizing guide.</p>
+</li>
+<li>
+<p>To find out number of password validations performed by Keycloak use the metric <code>keycloak_credentials_password_hashing_validations_total</code>.
+The metric also contains tags providing some details about the hashing algorithm used and the outcome of the validation.
+Here is the list of available tags: <code>realm</code>, <code>algorithm</code>, <code>hashing_strength</code>, <code>outcome</code>.</p>
+</li>
+<li>
+<p>Use the user event metric <code>keycloak_user_events_total</code> for the event types <code>refresh_token</code> and <code>client_login</code> for refresh token requests and client credential grants respectively.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/observability/event-metrics">Enabling Keycloak Event Metrics</a> and <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting-http">Keycloak HTTP metrics</a> guides for more information.</p>
+</div>
+<div class="paragraph">
+<p>These metrics are crucial for tracking daily and weekly fluctuations in user activity loads,
+identifying emerging trends that may indicate the need to resize the system and
+validating sizing calculations.
+By systematically measuring and evaluating these user event metrics,
+you can ensure your system remains appropriately scaled and responsive to changes in user behavior and demand.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_calculation_example_single_site">Calculation example (single site)</h3>
 <div class="paragraph">
 <p>Target size:</p>
@@ -182,10 +221,10 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <p>45 logins and logouts per seconds</p>
 </li>
 <li>
-<p>600 client credential grants per second</p>
+<p>360 client credential grants per second<sup>*</sup></p>
 </li>
 <li>
-<p>360 refresh token requests per second (1:8 ratio for logins)</p>
+<p>360 refresh token requests per second (1:8 ratio for logins)<sup>*</sup></p>
 </li>
 <li>
 <p>3 Pods</p>
@@ -200,7 +239,7 @@ Performance of Keycloak dropped significantly when its Pods were throttled in ou
 <li>
 <p>CPU requested per Pod: 3 vCPU</p>
 <div class="paragraph">
-<p>(45 logins per second = 3 vCPU, 600 client credential grants per second = 3 vCPU, 345 refresh token = 3 vCPU. This sums up to 9 vCPU total. With 3 Pods running in the cluster, each Pod then requests 3 vCPU)</p>
+<p>(45 logins per second = 3 vCPU, 360 client credential grants per second = 3 vCPU, 360 refresh tokens = 3 vCPU. This sums up to 9 vCPU total. With 3 Pods running in the cluster, each Pod then requests 3 vCPU)</p>
 </div>
 </li>
 <li>
@@ -286,7 +325,7 @@ The benefit of this setup is that the number of Pods does not need to scale duri
 <p>OpenShift 4.16.x deployed on AWS via ROSA.</p>
 </li>
 <li>
-<p>Machine pool with <code>m5.2xlarge</code> instances.</p>
+<p>Machine pool with <code>c7g.2xlarge</code> instances.<sup>*</sup></p>
 </li>
 <li>
 <p>Keycloak deployed with the Operator and 3 pods in a high-availability setup with two sites in active/active mode.</p>
@@ -320,6 +359,9 @@ Expect a slightly higher performance for single-site setups as a fixed number of
 <p>OpenJDK 21</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p><sup>*</sup> For non-ARM CPU architectures on AWS (<code>c7i</code>/<code>c7a</code> vs. <code>c7g</code>) we found that client credential grants and refresh token workloads were able to deliver up to two times the number of operations per CPU core, while password hashing was delivering a constant number of operations per CPU core. Depending on your workload and your cloud pricing, please run your own tests and make your own calculations for mixed workloads to find out which architecture delivers a better pricing for you.</p>
 </div>
 </div>
 </div>            </div>

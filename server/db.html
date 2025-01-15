@@ -101,7 +101,7 @@
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">MariaDB Server</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>mariadb</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">10.11</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">11.4</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Microsoft SQL Server</p></td>
@@ -111,17 +111,17 @@
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">MySQL</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>mysql</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8.4</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Oracle Database</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>oracle</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">19.3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">23.5</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">17</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Amazon Aurora PostgreSQL</p></td>
@@ -211,23 +211,50 @@ RUN /opt/keycloak/bin/kc.sh build</code></pre>
 <div class="paragraph">
 <p>For each supported database, the server provides some opinionated defaults to simplify database configuration. You complete the configuration by providing some key settings such as the database host and credentials.</p>
 </div>
+<div class="paragraph">
+<p>The configuration can be set during a <code>build</code> command OR a <code>start</code> command:</p>
+</div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Start the server and set the basic options to configure a database</p>
+<p>Using a <code>build</code> command followed by an optimized <code>start</code> command (recommended)</p>
+<div class="paragraph">
+<p>First, the minimum settings needed to connect to the database can be specified in <code>conf/keycloak.conf</code>:</p>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db postgres --db-url-host mypostgres --db-username myuser --db-password change_me</code></pre>
+<pre># The database vendor.
+db=postgres
+
+# The username of the database user.
+db-username=keycloak
+
+# The password of the database user.
+db-password=change_me
+
+# Sets the hostname of the default JDBC URL of the chosen vendor
+db-url-host=keycloak-postgres</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This command includes the minimum settings needed to connect to the database.</p>
+<p>Then, the following commands create a new and optimized server image based on the configuration options and start the server.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>bin/kc.[sh|bat] build
+bin/kc.[sh|bat] start --optimized</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Using <strong>only a <code>start</code></strong> command (without <code>--optimized</code>)</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db postgres --db-url-host keycloak-postgres --db-username keycloak --db-password change_me</code></pre>
+</div>
 </div>
 </li>
 </ol>
-</div>
-<div class="paragraph">
-<p>The default schema is <code>keycloak</code>, but you can change it by using the <code>db-schema</code> configuration option.</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -236,14 +263,26 @@ RUN /opt/keycloak/bin/kc.sh build</code></pre>
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-Do NOT use the <code>--optimized</code> flag for the <code>start</code> command if you want to use a particular DB (except the H2).
-Executing the build phase before starting the server instance is necessary.
-You can achieve it either by starting the instance without the <code>--optimized</code> flag,
-or by executing the <code>build</code> command before the optimized start.
-For more information, see <a href="https://www.keycloak.org/server/configuration">Configuring Keycloak</a>.
+The examples above include the minimum settings needed to connect to the database but it exposes the database password and is not recommended. Use the <code>conf/keycloak.conf</code> as shown above, environment variables, or keystore for at least the password.
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p>The default schema is <code>keycloak</code>, but you can change it by using the <code>db-schema</code> configuration option.</p>
+</div>
+<div class="paragraph">
+<p>It is also possible to configure the database when <a href="https://www.keycloak.org/server/importExport">Importing and Exporting Realms</a> or <a href="https://www.keycloak.org/server/bootstrap-admin-recovery">Admin bootstrap and recovery</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>bin/kc.[sh|bat] import --help
+bin/kc.[sh|bat] export --help
+bin/kc.[sh|bat] bootstrap-admin --help</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://www.keycloak.org/server/configuration">Configuring Keycloak</a>.</p>
 </div>
 </div>
 </div>
@@ -603,6 +642,9 @@ Enabling XA transactions in a containerized environment does not fully support X
 </div>
 <div class="openblock options-extended">
 <div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">In production mode the default value of <code>dev-file</code> is deprecated, you should explicitly specify the db instead.</span></p>
+</div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--db</code><br>
 <strong>Env:</strong> <code>KC_DB</code></p>

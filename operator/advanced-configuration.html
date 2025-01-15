@@ -397,6 +397,9 @@ To ensure proper TLS configuration, use the <code>tlsSecret</code> and <code>tru
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p>For more details, see <a href="https://www.keycloak.org/server/management-interface">Configuring the Management Interface</a>.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_truststores">Truststores</h3>
@@ -404,7 +407,7 @@ To ensure proper TLS configuration, use the <code>tlsSecret</code> and <code>tru
 <p>If you need to provide trusted certificates, the Keycloak CR provides a top level feature for configuring the server&#8217;s truststore as discussed in <a href="https://www.keycloak.org/server/keycloak-truststore">Configuring trusted certificates</a>.</p>
 </div>
 <div class="paragraph">
-<p>Use the truststores stanza of the Keycloak spec to specify Secrets containing PEM encoded files, or PKCS12 files with extension <code>.p12</code> or <code>.pfx</code>, for example:</p>
+<p>Use the truststores stanza of the Keycloak spec to specify Secrets containing PEM encoded files, or PKCS12 files with extension <code>.p12</code>, <code>.pfx</code>, or <code>.pkcs12</code>, for example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -450,6 +453,178 @@ This includes <code>/var/run/secrets/kubernetes.io/serviceaccount/ca.crt</code> 
 </div>
 <div class="paragraph">
 <p>For more information on how to bootstrap a temporary admin user or service account and recover lost admin access, refer to the <a href="https://www.keycloak.org/server/bootstrap-admin-recovery">Admin bootstrap and recovery</a> guide.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tracing_opentelemetry">Tracing (OpenTelemetry)</h3>
+<div class="paragraph">
+<p>Tracing allows for detailed monitoring of each request&#8217;s lifecycle, which helps quickly identify and diagnose issues, leading to more efficient debugging and maintenance.</p>
+</div>
+<div class="paragraph">
+<p>You can change tracing configuration via Keycloak CR fields as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  tracing:
+    enabled: true                             # default 'false'
+    endpoint: http://my-tracing:4317          # default 'http://localhost:4317'
+    samplerType: parentbased_traceidratio     # default 'traceidratio'
+    samplerRatio: 0.01                        # default '1'
+    resourceAttributes:
+      some.attribute: something
+  additionalOptions:
+    - name: tracing-jdbc-enabled
+      value: false                            # default 'true'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These fields should reflect 1:1 association with <code>tracing-*</code> options that contain more information.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>tracing-jdbc-enabled</code> is not promoted as a first-class citizen as it might not be well managed in the future, so it needs to be set via the <code>additionalOptions</code> field.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For more details about tracing, see <a href="https://www.keycloak.org/observability/tracing">Enabling Tracing</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_network_policies_preview">Network Policies (Preview)</h3>
+<div class="paragraph">
+<p>NetworkPolicies allow you to specify rules for traffic flow within your cluster, and also between Pods and the outside world.
+Your cluster must use a network plugin that supports NetworkPolicy enforcement.</p>
+</div>
+<div class="paragraph">
+<p>The operator can automatically create a NetworkPolicy to deny access to the clustering port of your Keycloak Pods.
+The HTTP(S) endpoint is open to traffic from any namespace and the outside world.
+To enable the NetworkPolicy, set <code>spec.networkPolicy.enabled</code> in your Keycloak CR, as shown in the example below.</p>
+</div>
+<div class="listingblock">
+<div class="title">Keycloak CR with Network Policies enabled</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  networkPolicy:
+    enabled: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The above example allows traffic from all sources.
+The Keycloak CR can be extended to include a list of rules for each of the endpoints exposed by Keycloak.
+These rules specify from where (the source) the traffic is allowed and it&#8217;s possible to communicate with the Keycloak Pods.</p>
+</div>
+<div class="listingblock">
+<div class="title">Extended Network Policy configuration</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  networkPolicy:
+    enabled: true
+    http: &lt;list of rules&gt; <i class="conum" data-value="1"></i><b>(1)</b>
+    https: &lt;list of rules&gt; <i class="conum" data-value="2"></i><b>(2)</b>
+    management: &lt;list of rules&gt; <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>It defines the rules for HTTP endpoint (port 8080 by default).
+Due to security reasons, the HTTP endpoint is disabled by default.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>It defines the access rules for HTTPS endpoint (port 8443 by default.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>It defines the access rules for management endpoint (port 9000 by default).
+The management endpoint is used by the Kubernetes Probes and to expose the Keycloak metrics.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The rule syntax is the same as the one used by the Kubernetes Network Policy.
+It makes it easy to migrate your existing rules into your Keycloak CP.
+For more information, check the <a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/#behavior-of-to-and-from-selectors">rule syntax</a>.</p>
+</div>
+<div class="sect3">
+<h4 id="_example_with_openshift">Example with OpenShift</h4>
+<div class="paragraph">
+<p>For a concrete example, let&#8217;s imagine we have a Keycloak deployment running in a OpenShift cluster.
+Users have to access Keycloak to login, so Keycloak must be accessible from the Internet.</p>
+</div>
+<div class="paragraph">
+<p>To make this example more interesting, let&#8217;s assume the Keycloak is monitored too.
+The monitoring is enabled as described in the OpenShift documentation page:
+<a href="https://docs.openshift.com/container-platform/4.12/observability/monitoring/enabling-monitoring-for-user-defined-projects.html">enabling Monitoring for user defined projects</a>.</p>
+</div>
+<div class="paragraph">
+<p>Based on those requirements, the Keycloak CR would be like this (most parts are omitted, like DB connection and security):</p>
+</div>
+<div class="listingblock">
+<div class="title">Keycloak CR</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  ingress:
+    enabled: true <i class="conum" data-value="1"></i><b>(1)</b>
+  networkPolicy:
+    enabled: true
+    https:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-ingress <i class="conum" data-value="2"></i><b>(2)</b>
+    management:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-user-workload-monitoring <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Enables Ingress for outside access.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The default OpenShift Ingress class pods are running in <code>openshift-ingress</code> namespace.
+We allow traffic from these pods to access the Keycloak HTTPS endpoint.
+The traffic from outside the OpenShift cluster goes through these pods.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Prometheus pods are running in <code>openshift-user-workload-monitoring</code>.
+They need to access Keycloak to scrape the available metrics.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Check the <a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/">Kubernetes Network Policies documentation</a> for more information about NetworkPolicies.</p>
+</div>
 </div>
 </div>
 </div>
