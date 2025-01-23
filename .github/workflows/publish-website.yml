@@ -1,0 +1,59 @@
+name: Publishing Documentation Site
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    # GitHub will not trigger workflows that originate from pushes with the regular GITHUB_TOKEN,
+    # therefore, name it here explicitly.
+    workflows:
+      - "Update nightly docs"
+    types:
+      - completed
+  push:
+    branches:
+      - main
+
+concurrency:
+  # Only run once for the latest commit per ref and cancel other (previous) runs.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Patch documentation
+        run: |
+          find docs-api -name '*.html' | java .github/java/PatchHtml.java
+          find docs -name '*.html' | java .github/java/PatchHtml.java
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  github-pages:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    name: GitHub Pages
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
