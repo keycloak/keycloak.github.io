@@ -934,6 +934,7 @@ span.image img {
 <li><a href="#built-in-flows">Built-in flows</a></li>
 <li><a href="#creating-flows">Creating flows</a></li>
 <li><a href="#creating-a-password-less-browser-login-flow">Creating a password-less browser login flow</a></li>
+<li><a href="#_client-policy-auth-flow">Using Client Policies to Select an Authentication Flow</a></li>
 <li><a href="#_step-up-flow">Creating a browser login flow with step-up mechanism</a></li>
 <li><a href="#_registration-rc-client-flows">Registration or Reset credentials requested by client</a></li>
 </ul>
@@ -7741,6 +7742,21 @@ Passwordless Authenticator.</p>
 </div>
 </div>
 <div class="sect3">
+<h4 id="_client-policy-auth-flow"><a class="anchor" href="#_client-policy-auth-flow"></a>Using Client Policies to Select an Authentication Flow</h4>
+<div class="paragraph">
+<p><a href="#_client_policies">Client Policies</a> can be used to dynamically select an Authentication Flow based on specific conditions, such as requesting a particular scope or an ACR (Authentication Context Class Reference) using the <code>AuthenticationFlowSelectorExecutor</code> in combination with the condition you prefer.</p>
+</div>
+<div class="paragraph">
+<p>The <code>AuthenticationFlowSelectorExecutor</code> allows you to select an appropriate authentication flow and set the level of authentication to be applied once the selected flow is completed.</p>
+</div>
+<div class="paragraph">
+<p>A possible configuration involves using the <code>ACRCondition</code> in combination with the <code>AuthenticationFlowSelectorExecutor</code>. This setup enables you to select an authentication flow based on the requested ACR and have the ACR value included in the token using <a href="#_mapping-acr-to-loa-realm">ACR to LoA Mapping</a>.</p>
+</div>
+<div class="paragraph">
+<p>For more details, see <a href="#_client_policies">Client Policies</a>.</p>
+</div>
+</div>
+<div class="sect3">
 <h4 id="_step-up-flow"><a class="anchor" href="#_step-up-flow"></a>Creating a browser login flow with step-up mechanism</h4>
 <div class="paragraph">
 <p>This section describes how to create advanced browser login flow using the step-up mechanism. The purpose of step-up authentication is to allow access to clients or resources based on a specific authentication level of a user.</p>
@@ -8069,6 +8085,23 @@ not be the desired behavior.
 </td>
 <td class="content">
 A conflict situation may arise when an admin specifies several flows, sets different LoA levels to each, and assigns the flows to different clients. However, the rule is always the same: if a user has a certain level, it needs only have that level to connect to a client. It&#8217;s up to the admin to make sure that the LoA is coherent.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Step-up authentication with Level of Authentication conditions is intended for use cases where each level
+requires all authentication methods from the preceding levels.
+For instance, level X must always include all authentication methods required by level X-1.
+For use cases where a specific level, such as level 3, requires a different authentication method from the previous levels,
+it may be more appropriate to use mapping of ACR to a specific flow.
+For more details, see <a href="#_client-policy-auth-flow">Using Client Policies to Select an Authentication Flow</a>.
 </td>
 </tr>
 </table>
@@ -17495,6 +17528,10 @@ If you want to evaluate using OR conditions, set this condition multiple times.<
 <dd>
 <p>This condition always evaluates to true. It can be used for example to ensure that all clients in the particular realm are FAPI compliant.</p>
 </dd>
+<dt class="hdlist1">ACR Condition</dt>
+<dd>
+<p>Applied when an ACR value requested in the authentication request matches the value configured in the condition. For example, it can be used to select an authentication flow based on the requested ACR value. For more details, see the <a href="#_client-policy-auth-flow">related documentation</a> and the <a href="https://openid.net/specs/openid-connect-core-1_0.html#acrSemantics">official OIDC specification</a>.</p>
+</dd>
 </dl>
 </div>
 </div>
@@ -17616,6 +17653,9 @@ settings. After that, the executor validates this configuration in validation ph
 <p>Enforce SAML Redirect binding cannot be used or SAML requests and assertions are signed</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>Another available executor is the <code>auth-flow-enforce</code>, which can be used to enforce an authentication flow during an authentication request. For instance, it can be used to select a flow based on certain conditions, such as a specific scope or an ACR value. For more details, see the <a href="#_client-policy-auth-flow">related documentation</a>.</p>
 </div>
 </div>
 <div class="sect4">
@@ -22331,7 +22371,7 @@ $ kcadm.sh get users -r demorealm -q q=username:testuser</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-01-23 01:16:08 UTC
+Last updated 2025-01-24 01:16:53 UTC
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.js"></script>
