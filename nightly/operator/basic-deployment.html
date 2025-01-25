@@ -314,7 +314,10 @@ CONDITION: RollingUpdate
 <div class="sect2">
 <h3 id="_accessing_the_keycloak_deployment">Accessing the Keycloak deployment</h3>
 <div class="paragraph">
-<p>The Keycloak deployment is exposed through a basic Ingress and is accessible through the provided hostname.  On installations with multiple default IngressClass instances
+<p>The Keycloak deployment can be exposed through a basic Ingress accessible through the provided hostname.</p>
+</div>
+<div class="paragraph">
+<p>On installations with multiple default IngressClass instances
 or when running on OpenShift 4.12+ you should provide an ingressClassName by setting <code>ingress</code> spec with <code>className</code> property to the desired class name:</p>
 </div>
 <div class="paragraph">
@@ -359,7 +362,12 @@ spec:
 </div>
 </div>
 <div class="paragraph">
-<p>You can provide an alternative ingress resource pointing to the service <code>&lt;keycloak-cr-name&gt;-service</code>.</p>
+<p>You can then provide an alternative ingress resource pointing to the service <code>&lt;keycloak-cr-name&gt;-service</code>. For example, on OpenShift you are not allowed to use wildcard certificates on passthrough Routes with HTTP/2 enabled. A Keycloak CR on OpenShift with TLS enabled using a wildcard certificate with the default IngressClass creates such a Route. In this case, you must disable the built-in ingress with <code>.spec.ingress.enabled: false</code>. Access may then be provided by creating a reencrypt Route instead:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">$ oc create route reencrypt --service=&lt;keycloak-cr-name&gt;-service --cert=&lt;configured-certificate&gt; --key=&lt;certificate-key&gt; --dest-ca-cert=&lt;ca-certificate&gt; --ca-cert=&lt;ca-certificate&gt; --hostname=&lt;hostname&gt;</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>For debugging and development purposes, consider directly connecting to the Keycloak service using a port forward. For example, enter this command:</p>

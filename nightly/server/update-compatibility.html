@@ -1,0 +1,351 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Update Compatibility Tool - Keycloak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Keycloak is an open source identity and access management solution">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/server/update-compatibility">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light">
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Update Compatibility Tool</li>
+                </ol>
+            </nav>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/guides">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <h1>Update Compatibility Tool</h1>
+                    <span class="text-muted">Learn how to use this tool before upgrade Keycloak</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This guide is describing a feature which is currently in preview.
+Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/36785">joining this discussion</a> while we’re continuing to work on this.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The goal of this tool is to assist with modifying a Keycloak deployment, whether upgrading to a new version, enabling/disabling features, or changing configuration.
+The outcome will indicate whether a rolling upgrade is possible or if a recreate upgrade is required.</p>
+</div>
+<div class="paragraph">
+<p>This has been designed to be fully scriptable, so an update procedure can adapt to a rolling or recreate strategy depending on the configuration or version change.
+It is also GitOps friendly as it allows storing the metadata of a currently running configuration in a file. This file can be used in a CI/CD run with the new configuration to determine if a rolling upgrade is possible or if a recreate upgrade is needed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<div class="title">Rolling Upgrade</div>
+<p>In the context of this guide, a rolling upgrade is an upgrade that can be performed with zero downtime for your deployment.
+Your Keycloak nodes must be updated one by one; in other words, shut down one of your old deployment nodes and start a new deployment node.
+Wait until the new node&#8217;s start-up probe returns success before proceeding to the next Keycloak node. See guide <a href="https://www.keycloak.org/nightly/observability/health">Enabling Keycloak Health checks</a> for details on how to enable and use the start-up probe.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<div class="title">Recreate Upgrade</div>
+<p>A recreate upgrade is not compatible with zero-downtime and requires downtime to be applied.
+Shut down all nodes of the cluster running the old version before starting the nodes with the new version.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The update compatibility tool involves two steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Generating the required metadata.</p>
+</li>
+<li>
+<p>Checking the metadata to determine the possible upgrade type.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This command is under development. At the moment, it takes into consideration only the version of Keycloak and the embedded Infinispan to determine if a rolling update is possible.
+If those are unchanged, it reports that a rolling update is possible.</p>
+</div>
+<div class="paragraph">
+<p>The current version does not yet verify configuration changes and assumes all configuration changes are eligible for a rolling update.
+The same applies to changes to custom extensions and themes.</p>
+</div>
+<div class="paragraph">
+<p>A good use case when to use this is, for example, when you want to do a rolling update when you change the Keycloak theme or your custom extensions, and only want run recreate update when the version of Keycloak changes which does not yet allow a rolling update.</p>
+</div>
+<div class="paragraph">
+<p>While consumers of these commands should be aware of the limitations that exist today, they should not rely on the internal behavior or the structure of the metadata file as this is about to be enhanced in future versions.
+Instead, they should rely only on the exit code of the <code>check</code> command to benefit from future enhancements on the internal logic to determine when a rolling update is possible.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_generating_the_metadata">Generating the Metadata</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To generate the metadata, execute the following command using the same Keycloak version and configuration options:</p>
+</div>
+<div class="listingblock">
+<div class="title">Generate and save the metadata from the current deployment.</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] update-compatibility metadata --file=/path/to/file.json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command accepts all options used by the <code>start</code> command.
+The metadata, in JSON format, is displayed in the console for debugging purposes.
+The <code>--file</code> parameter allows you to save the metadata to a file.
+This file is then used by the subsequent <code>check</code> command.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Ensure that all configuration options, whether set via environment variables or CLI arguments, are included when running the above command.</p>
+</div>
+<div class="paragraph">
+<p>Omitting any configuration options will result in incomplete metadata.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_checking_the_metadata">Checking the Metadata</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This command checks the metadata generated by the previous command and compares it with the current configuration and Keycloak version.
+If you are upgrading to a new Keycloak version, this command must be executed with the new version.</p>
+</div>
+<div class="listingblock">
+<div class="title">Check the metadata from a previous deployment.</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] update-compatibility check --file=/path/to/file.json</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>Ensure that all configuration options, whether set via environment variables or CLI arguments, are included when running this command.</p>
+</li>
+<li>
+<p>Verify that the correct Keycloak version is used.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Failure to meet these requirements will result in an incorrect outcome.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The command will print the result to the console.
+For example, if a rolling upgrade is possible, it will display:</p>
+</div>
+<div class="listingblock">
+<div class="title">Rolling Upgrade possible message</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">[OK] Rolling Upgrade is available.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Otherwise, the command will indicate that a rolling upgrade is not possible and, optionally, provide details about the incompatibility:</p>
+</div>
+<div class="listingblock">
+<div class="title">Rolling Upgrade not possible message</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">[Versions] Rolling Upgrade is not available. 'infinispan' is incompatible: Old=15.0.0.Final, New=15.0.11.Final <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>In this example, the Infinispan version <code>15.0.0.Final</code> is not compatible with version <code>15.0.11.Final</code> and a rolling upgrade is not possible.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><strong>Command exit code</strong></p>
+</div>
+<div class="paragraph">
+<p>To aid in the development of your automation and/or DevOps pipelines, the command&#8217;s exit code can be used to determine the upgrade type:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Exit Code</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Upgrade is possible.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unexpected error occurred (e.g., the metadata file is missing or corrupted).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Invalid CLI option.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>3</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Upgrade is not possible.
+The deployment must be shut down before applying the new configuration.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/server/update-compatibility.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5">
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2024. &copy; 2024 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>
