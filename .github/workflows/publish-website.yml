@@ -1,14 +1,9 @@
 name: Publishing Documentation Site
 
 on:
+  schedule:
+    - cron: '0 4 * * *'
   workflow_dispatch:
-  workflow_run:
-    # GitHub will not trigger workflows that originate from pushes with the regular GITHUB_TOKEN,
-    # therefore, name it here explicitly.
-    workflows:
-      - "Update nightly docs"
-    types:
-      - completed
   push:
     branches:
       - main
@@ -25,6 +20,24 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+
+      - name: Update nightly api-docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release -R keycloak/keycloak download nightly -p keycloak-api-docs-999.0.0-SNAPSHOT.zip
+          unzip keycloak-api-docs-999.0.0-SNAPSHOT.zip
+          rm keycloak-api-docs-999.0.0-SNAPSHOT.zip
+          mv keycloak-api-docs-999.0.0-SNAPSHOT docs-api/nightly
+
+      - name: Update nightly docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release -R keycloak/keycloak download nightly -p keycloak-documentation-999.0.0-SNAPSHOT.zip
+          unzip keycloak-documentation-999.0.0-SNAPSHOT.zip
+          rm keycloak-documentation-999.0.0-SNAPSHOT.zip
+          mv keycloak-documentation-999.0.0-SNAPSHOT docs/nightly
 
       - name: Setup Java
         uses: actions/setup-java@v3
