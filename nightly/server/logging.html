@@ -297,11 +297,8 @@ When using other config sources, the category name must be specified "as is", fo
 <div class="paragraph">
 <p>The more specific handler configuration mentioned below will only take effect when the handler is added to this comma-separated list.</p>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_specify_log_level_for_each_handler">Specify log level for each handler</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_specify_log_level_for_each_handler">Specify log level for each handler</h3>
 <div class="paragraph">
 <p>The <code>log-level</code> property specifies the global root log level and levels for selected categories.
 However, a more fine-grained approach for log levels is necessary to comply with the modern application requirements.</p>
@@ -342,8 +339,8 @@ More information in log handlers settings below.
 <p>Only log levels specified in <a href="#_log_levels">Log levels</a> section are accepted, and <strong>must be in lowercase</strong>.
 There is no support for specifying particular categories for log handlers yet.</p>
 </div>
-<div class="sect2">
-<h3 id="_general_principle">General principle</h3>
+<div class="sect3">
+<h4 id="_general_principle">General principle</h4>
 <div class="paragraph">
 <p>It is necessary to understand that setting the log levels for each particular handler <strong>does not override the root level</strong> specified in the <code>log-level</code> property.
 Log handlers respect the root log level, which represents the maximal verbosity for the whole logging system.
@@ -355,8 +352,8 @@ In that case, the root <code>log-level</code> must also be assessed.
 Log handler levels provide the <strong>restriction for the root log level</strong>, and the default log level for log handlers is <code>all</code> - without any restriction.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_examples">Examples</h3>
+<div class="sect3">
+<h4 id="_examples">Examples</h4>
 <div class="listingblock">
 <div class="title">Example: <code>debug</code> for file handler, but <code>info</code> for console handler:</div>
 <div class="content">
@@ -384,6 +381,67 @@ To hide <code>debug</code> records in the console, we need to set the minimal (l
 </div>
 <div class="paragraph">
 <p>In order to see the <code>org.keycloak.events:trace</code>, the <code>trace</code> level must be set for the Syslog handler.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_use_different_json_format_for_log_handlers">Use different JSON format for log handlers</h3>
+<div class="paragraph">
+<p>Every log handler provides the ability to have structured log output in JSON format.
+It can be enabled by properties in the format <code>log-&lt;handler&gt;-output=json</code> (where <code>&lt;handler&gt;</code> is a log handler).</p>
+</div>
+<div class="paragraph">
+<p>If you need a different format of the produced JSON, you can leverage the following JSON output formats:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>default</code> (default)</p>
+</li>
+<li>
+<p><code>ecs</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The <code>ecs</code> value refers to the <a href="https://www.elastic.co/guide/en/ecs-logging/overview/current/intro.html">ECS</a> (Elastic Common Schema).</p>
+</div>
+<div class="paragraph">
+<p>ECS is an open-source, community-driven specification that defines a common set of fields to be used with Elastic solutions.
+The ECS specification is being converged with <a href="https://opentelemetry.io/docs/concepts/semantic-conventions/">OpenTelemetry Semantic Conventions</a> with the goal of creating a single standard maintained by OpenTelemetry.</p>
+</div>
+<div class="paragraph">
+<p>In order to change the JSON output format, properties in the format <code>log-&lt;handler&gt;-json-format</code> (where <code>&lt;handler&gt;</code> is a log handler) were introduced:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>log-console-json-format</code> - Console log handler</p>
+</li>
+<li>
+<p><code>log-file-json-format</code> - File log handler</p>
+</li>
+<li>
+<p><code>log-syslog-json-format</code> - Syslog log handler</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_example">Example</h4>
+<div class="paragraph">
+<p>If you want to have JSON logs in <strong>ECS</strong> (Elastic Common Schema) format for the console log handler, you can enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-output=json --log-console-json-format=ecs</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example Log Message</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{"@timestamp":"2025-02-03T14:53:22.539484211+01:00","event.sequence":9608,"log.logger":"io.quarkus","log.level":"INFO","message":"Keycloak 999.0.0-SNAPSHOT on JVM (powered by Quarkus 3.17.8) started in 4.615s. Listening on: http://0.0.0.0:8080","process.thread.name":"main","process.thread.id":1,"mdc":{},"ndc":"","host.hostname":"host-name","process.name":"/usr/lib/jvm/jdk-21.0.3+9/bin/java","process.pid":77561,"data_stream.type":"logs","ecs.version":"1.12.2","service.environment":"prod","service.name":"Keycloak","service.version":"999.0.0-SNAPSHOT"}</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -560,7 +618,7 @@ To hide <code>debug</code> records in the console, we need to set the minimal (l
 <div class="listingblock">
 <div class="title">Example Log Message</div>
 <div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{"timestamp":"2022-02-25T10:31:32.452+01:00","sequence":8442,"loggerClassName":"org.jboss.logging.Logger","loggerName":"io.quarkus","level":"INFO","message":"Keycloak 18.0.0-SNAPSHOT on JVM (powered by Quarkus 2.7.2.Final) started in 3.253s. Listening on: http://0.0.0.0:8080","threadName":"main","threadId":1,"mdc":{},"ndc":"","hostName":"host-name","processName":"QuarkusEntryPoint","processId":36946}</code></pre>
+<pre class="highlight"><code class="language-json" data-lang="json">{"timestamp":"2025-02-03T14:52:20.290353085+01:00","sequence":9605,"loggerClassName":"org.jboss.logging.Logger","loggerName":"io.quarkus","level":"INFO","message":"Keycloak 999.0.0-SNAPSHOT on JVM (powered by Quarkus 3.17.8) started in 4.440s. Listening on: http://0.0.0.0:8080","threadName":"main","threadId":1,"mdc":{},"ndc":"","hostName":"host-name","processName":"/usr/lib/jvm/jdk-21.0.3+9/bin/java","processId":76944}</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -577,7 +635,7 @@ To hide <code>debug</code> records in the console, we need to set the minimal (l
 <div class="listingblock">
 <div class="title">Example Log Message</div>
 <div class="content">
-<pre class="highlight"><code>2022-03-02 10:36:50,603 INFO  [io.quarkus] (main) Keycloak 18.0.0-SNAPSHOT on JVM (powered by Quarkus 2.7.2.Final) started in 3.615s. Listening on: http://0.0.0.0:8080</code></pre>
+<pre class="highlight"><code>2025-02-03 14:53:56,653 INFO  [io.quarkus] (main) Keycloak 999.0.0-SNAPSHOT on JVM (powered by Quarkus 3.17.8) started in 4.795s. Listening on: http://0.0.0.0:8080</code></pre>
 </div>
 </div>
 </div>
@@ -921,6 +979,62 @@ To use structured JSON log output instead, enter the following command:</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-level</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The log level of the root category or a comma-separated list of individual categories and their levels.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">For the root category, you don&#8217;t need to specify a category.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-level</code><br>
+<strong>Env:</strong> <code>KC_LOG_LEVEL</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>[info]</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-level-&lt;category&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The log level of a category.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Takes precedence over the <code>log-level</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-level-&lt;category&gt;</code><br>
+<strong>Env:</strong> <code>KC_LOG_LEVEL_&lt;CATEGORY&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>off</code>, <code>fatal</code>, <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code>, <code>all</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_console">Console</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>log-console-color</code></span></p>
 </div>
 <div class="paragraph">
@@ -987,6 +1101,26 @@ To use structured JSON log output instead, enter the following command:</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-json-format</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the format of the produced JSON.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-json-format</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_JSON_FORMAT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated and output is set to 'json'</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>ecs</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>log-console-level</code></span></p>
 </div>
 <div class="paragraph">
@@ -1028,6 +1162,23 @@ To use structured JSON log output instead, enter the following command:</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>json</code></p></td>
 </tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_file">File</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>log-file</code></span></p>
@@ -1093,6 +1244,26 @@ To use structured JSON log output instead, enter the following command:</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-json-format</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the format of the produced JSON.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-json-format</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_JSON_FORMAT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated and output is set to 'json'</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>ecs</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>log-file-level</code></span></p>
 </div>
 <div class="paragraph">
@@ -1134,46 +1305,23 @@ To use structured JSON log output instead, enter the following command:</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>json</code></p></td>
 </tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_syslog">Syslog</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
 <tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>log-level</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">The log level of the root category or a comma-separated list of individual categories and their levels.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><span class="options-description-extended">For the root category, you don&#8217;t need to specify a category.</span></p>
-</div>
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--log-level</code><br>
-<strong>Env:</strong> <code>KC_LOG_LEVEL</code></p>
-</div>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>[info]</code></span> (default)</p></td>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
 </tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>log-level-&lt;category&gt;</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">The log level of a category.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><span class="options-description-extended">Takes precedence over the <code>log-level</code> option.</span></p>
-</div>
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--log-level-&lt;category&gt;</code><br>
-<strong>Env:</strong> <code>KC_LOG_LEVEL_&lt;CATEGORY&gt;</code></p>
-</div>
-</div>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>off</code>, <code>fatal</code>, <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code>, <code>all</code></p></td>
-</tr>
+</thead>
+<tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>log-syslog-app-name</code></span></p>
@@ -1256,6 +1404,26 @@ To use structured JSON log output instead, enter the following command:</p>
 <p>Available only when Syslog handler and Tracing is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-json-format</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the format of the produced JSON.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-json-format</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_JSON_FORMAT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated and output is set to 'json'</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code> (default), <code>ecs</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1365,6 +1533,7 @@ To use structured JSON log output instead, enter the following command:</p>
 </tr>
 </tbody>
 </table>
+</div>
 </div>
 </div>            </div>
         </div>
