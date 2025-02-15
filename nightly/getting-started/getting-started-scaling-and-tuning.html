@@ -194,7 +194,45 @@ gtag('config', 'G-0J2P9316N6');
 To minimize this time we limit number of entries in session related caches to 10000 by default. Note, this optimization is possible only if <code>persistent-user-sessions</code> feature is not explicitly disabled in your configuration.</p>
 </div>
 <div class="paragraph">
-<p>On Kubernetes, the Keycloak custom resource is scalable meaning that it can be targeted by the <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">built-in autoscaler</a>.</p>
+<p>On Kubernetes, the Keycloak custom resource is scalable meaning that it can be targeted by the <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">built-in autoscaler</a>. For example to scale on average CPU utilization:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: keycloak-hpa
+  namespace: keycloak-cluster
+spec:
+  scaleTargetRef:
+    apiVersion: k8s.keycloak.org/v2alpha1
+    kind: Keycloak
+    name: keycloak
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Scaling on memory is generally not needed with persistent sessions enabled, and should not be needed at all when using remote Infinispan. If you are using persistent sessions or remote Infinispan and you experience memory issues, it is best to fully diagnose the problem and revisit the <a href="https://www.keycloak.org/nightly/high-availability/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> guide. Adjusting the memory request and limit is preferable to horizontal scaling.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Consult the <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Kubernetes docs</a> for additional information, including the usage of <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/#autoscaling-on-multiple-metrics-and-custom-metrics">custom metrics</a>.</p>
 </div>
 </div>
 </div>
