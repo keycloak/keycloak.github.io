@@ -491,7 +491,7 @@ If the Infinispan server has authentication enabled, Keycloak will fail to start
 <h2 id="_transport_stacks"><a class="anchor" href="#_transport_stacks"></a>Transport stacks</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Transport stacks ensure that distributed cache nodes in a cluster communicate in a reliable fashion.
+<p>Transport stacks ensure that Keycloak nodes in a cluster communicate in a reliable fashion.
 Keycloak supports a wide range of transport stacks:</p>
 </div>
 <div class="ulist">
@@ -622,67 +622,19 @@ Use <code>-D&lt;property&gt;=&lt;value&gt;</code> to pass the properties via the
 <div class="paragraph">
 <p>It is recommended to use one of the stacks available above.
 Additional stacks are provided by Infinispan, but it is outside the scope of this guide how to configure them.
-Please refer to <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#cluster-transport">Setting up Infinispan cluster transport</a> for further documentation.</p>
+Please refer to <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#cluster-transport">Setting up Infinispan cluster transport</a> and <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#customizing-jgroups-stacks_cluster-transport">Customizing JGroups stacks</a> for further documentation.</p>
 </div>
 </div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_custom_transport_stacks"><a class="anchor" href="#_custom_transport_stacks"></a>Custom transport stacks</h3>
-<div class="paragraph">
-<p>If none of the available transport stacks are enough for your deployment, you are able to change your cache configuration file
-and define your own transport stack.</p>
-</div>
-<div class="paragraph">
-<p>For more details, see <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#customizing-jgroups-stacks_cluster-transport">Customizing JGroups stacks</a>.</p>
-</div>
-<div class="listingblock">
-<div class="title">defining a custom transport stack</div>
-<div class="content">
-<pre class="highlight"><code>&lt;jgroups&gt;
-    &lt;stack name="my-encrypt-udp" extends="udp"&gt;
-    &lt;SSL_KEY_EXCHANGE keystore_name="server.jks"
-        keystore_password="password"
-        stack.combine="INSERT_AFTER"
-        stack.position="VERIFY_SUSPECT2"/&gt;
-        &lt;ASYM_ENCRYPT asym_keylength="2048"
-        asym_algorithm="RSA"
-        change_key_on_coord_leave = "false"
-        change_key_on_leave = "false"
-        use_external_key_exchange = "true"
-        stack.combine="INSERT_BEFORE"
-        stack.position="pbcast.NAKACK2"/&gt;
-    &lt;/stack&gt;
-&lt;/jgroups&gt;
-
-&lt;cache-container name="keycloak"&gt;
-    &lt;transport lock-timeout="60000" stack="my-encrypt-udp"/&gt;
-    ...
-&lt;/cache-container&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>By default, the value set to the <code>cache-stack</code> option has precedence over the transport stack you define in the cache configuration file.
-If you are defining a custom stack, make sure the <code>cache-stack</code> option is not used for the custom changes to take effect.</p>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_securing_cache_communication"><a class="anchor" href="#_securing_cache_communication"></a>Securing cache communication</h2>
+<h2 id="_securing_transport_stacks"><a class="anchor" href="#_securing_transport_stacks"></a>Securing transport stacks</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The current Infinispan cache implementation should be secured by various security measures such as RBAC, ACLs, and transport stack encryption.</p>
-</div>
-<div class="paragraph">
-<p>JGroups handles all the communication between Keycloak server, and it supports Java SSL sockets for TCP communication.
-Keycloak uses CLI options to configure the TLS communication without having to create a customized JGroups stack or modifying the cache XML file.</p>
-</div>
-<div class="paragraph">
-<p>To enable TLS, <code>cache-embedded-mtls-enabled</code> must be set to <code>true</code>.
-It requires a keystore with the certificate to use: <code>cache-embedded-mtls-key-store-file</code> sets the path to the keystore, and <code>cache-embedded-mtls-key-store-password</code> sets the password to decrypt it.
-The truststore contains the valid certificates to accept connection from, and it can be configured with <code>cache-embedded-mtls-trust-store-file</code> (path to the truststore), and <code>cache-embedded-mtls-trust-store-password</code> (password to decrypt it).
-To restrict unauthorized access, use a self-signed certificate for each Keycloak deployment.</p>
+<p>Encryption using TLS is enabled by default for TCP-based transport stacks, which is also the default configuration
+No additional CLI options or modifications of the cache XML are required as long as you are using a TCP-based transport stack.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -692,29 +644,35 @@ To restrict unauthorized access, use a self-signed certificate for each Keycloak
 </td>
 <td class="content">
 <div class="paragraph">
-<p><strong>Zero Configuration Encryption</strong></p>
+<p>If you are using a transport stack based on <code>UDP</code> or <code>TCP_NIO2</code>, proceed as follows to configure the encryption of the transport stack:</p>
 </div>
-<div class="paragraph">
-<p>Keycloak offers a zero-configuration approach to encrypting network communication between nodes.
-This feature automatically generates self-signed certificates, eliminating the need for manual certificate creation and management.
-The generated certificate and associated keys are stored within the database of each Keycloak instance.</p>
-</div>
-<div class="paragraph">
-<p>To enable zero-configuration TLS encryption, set the <code>cache-embedded-mtls-enabled</code> option to true.
-No other <code>cache-embedded-mtls-*</code> must be set to enable the zero-configuration mode.</p>
-</div>
-<div class="paragraph">
-<p>The <code>cache-embedded-mtls-rotation-interval-days</code> option (default: 30 days) configures the certificate rotation period, and the certificate&#8217;s expiration duration is calculated as twice the specified interval.</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Set the option <code>cache-embedded-mtls-enabled</code> to <code>false</code>.</p>
+</li>
+<li>
+<p>Follow the documentation in <a href="http://jgroups.org/manual5/index.html#ENCRYPT">JGroups Encryption documentation</a> and <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#secure-cluster-transport">Encrypting cluster transport</a>.</p>
+</li>
+</ol>
 </div>
 </td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p>For JGroups stacks with <code>UDP</code> or <code>TCP_NIO2</code>, see the <a href="http://jgroups.org/manual5/index.html#ENCRYPT">JGroups Encryption documentation</a> on how to set up the protocol stack.</p>
+<p>With TLS enabled, Keycloak auto-generates a self-signed RSA 2048 bit certificate to secure the connection and uses TLS 1.3 to secure the communication.
+The keys and the certificate are stored in the database so they are available to all nodes.
+By default, the certificate is valid for 60 days and is rotated at runtime every 30 days.
+Use the option <code>cache-embedded-mtls-rotation-interval-days</code> to change this.</p>
 </div>
+<div class="sect2">
+<h3 id="_proving_your_own_keys_and_certificates"><a class="anchor" href="#_proving_your_own_keys_and_certificates"></a>Proving your own keys and certificates</h3>
 <div class="paragraph">
-<p>For more information about securing cache communication, see the <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#secure-cluster-transport">Encrypting cluster transport</a> documentation.</p>
+<p>Although not recommended for standard setups, if it is essential in a specific setup, you can configure the keystore with the certificate for the transport stack manually. <code>cache-embedded-mtls-key-store-file</code> sets the path to the keystore, and <code>cache-embedded-mtls-key-store-password</code> sets the password to decrypt it.
+The truststore contains the valid certificates to accept connection from, and it can be configured with <code>cache-embedded-mtls-trust-store-file</code> (path to the truststore), and <code>cache-embedded-mtls-trust-store-password</code> (password to decrypt it).
+To restrict unauthorized access, always use a self-signed certificate for each Keycloak deployment.</p>
+</div>
 </div>
 </div>
 </div>
@@ -1063,12 +1021,18 @@ While these metrics provide more insights into the latency distribution, collect
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
+<p><span class="options-description-extended">If no additional parameters about a keystore and truststore are provided, ephemeral key pairs and certificates are created and rotated automatically, which is recommended for standard setups.</span></p>
+</div>
+<div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-embedded-mtls-enabled</code><br>
 <strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_ENABLED</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when a TCP based cache-stack is used</p>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1080,7 +1044,7 @@ While these metrics provide more insights into the latency distribution, collect
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">The Keystore must contain the certificate to use by the TLS protocol. By default, it lookup <code>cache-mtls-keystore.p12</code> under conf/ directory.</span></p>
+<p><span class="options-description-extended">The Keystore must contain the certificate to use by the TLS protocol. By default, it looks up <code>cache-mtls-keystore.p12</code> under conf/ directory.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-embedded-mtls-key-store-file</code><br>
