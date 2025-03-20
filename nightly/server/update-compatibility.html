@@ -10,13 +10,13 @@ gtag('js', new Date());
 gtag('config', 'G-0J2P9316N6');
 </script>
 <meta charset="utf-8"/>
-<title>Update Compatibility Tool - Keycloak</title>
+<title>Checking if rolling updates are possible - Keycloak</title>
 <meta name="twitter:card" content="summary_large">
 <meta name="twitter:site" content="@keycloak">
 <meta property="og:site_name" content="Keycloak">
-<meta property="og:title" content="Update Compatibility Tool">
+<meta property="og:title" content="Checking if rolling updates are possible">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Learn how to use this tool before upgrade Keycloak">
+<meta name="description" property="og:description" content="Execute the update compatibility command to check if Keycloak supports a rolling update for a change in your deployment.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <meta name="robots" content="noindex">
@@ -70,7 +70,7 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#server">Server</a></li>
-                    <li class="breadcrumb-item active">Update Compatibility Tool</li>
+                    <li class="breadcrumb-item active">Checking if rolling updates are possible</li>
                 </ol>
             </nav>
 
@@ -81,8 +81,8 @@ gtag('config', 'G-0J2P9316N6');
                 </div>
 
             <div class="mb-4">
-                <h1>Update Compatibility Tool</h1>
-                    <span class="text-muted">Learn how to use this tool before upgrade Keycloak</span>
+                <h1>Checking if rolling updates are possible</h1>
+                    <span class="text-muted">Execute the update compatibility command to check if Keycloak supports a rolling update for a change in your deployment.</span>
             </div>
 
 
@@ -90,85 +90,56 @@ gtag('config', 'G-0J2P9316N6');
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-This guide is describing a feature which is currently in preview.
-Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/36785">joining this discussion</a> while we’re continuing to work on this.
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock caution">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-caution" title="Caution"></i>
-</td>
-<td class="content">
 <div class="paragraph">
-<p>While on preview stage, the feature <code>rolling-updates</code> must be enabled.
-Otherwise, the commands will fail.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>Use the update compatibility command to determine if you can update your deployment with a rolling update strategy when enabling or disabling features or changing the Keycloak version, configurations or providers and themes.
+The outcome shows whether a rolling update is possible or if a recreate update is required.</p>
 </div>
 <div class="paragraph">
-<p>The goal of this tool is to assist with modifying a Keycloak deployment, whether upgrading to a new version, enabling/disabling features, or changing configuration.
-The outcome will indicate whether a rolling upgrade is possible or if a recreate upgrade is required.</p>
+<p>In its current version, it shows that a rolling update is possible when the Keycloak version is the same for the old and the new version.
+Future versions of Keycloak might change that behavior to use additional information from the configuration, the image and the version to determine if a rolling update is possible.</p>
 </div>
 <div class="paragraph">
-<p>This has been designed to be fully scriptable, so an update procedure can adapt to a rolling or recreate strategy depending on the configuration or version change.
-It is also GitOps friendly as it allows storing the metadata of a currently running configuration in a file. This file can be used in a CI/CD run with the new configuration to determine if a rolling upgrade is possible or if a recreate upgrade is needed.</p>
+<p>This is fully scriptable, so your update procedure can use that information to perform a rolling or recreate strategy depending on the change performed.
+It is also GitOps friendly, as it allows storing the metadata of the previous configuration in a file. Use  this file in a CI/CD pipeline with the new configuration to determine if a rolling update is possible or if a recreate update is needed.</p>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
 <div class="paragraph">
-<div class="title">Rolling Upgrade</div>
-<p>In the context of this guide, a rolling upgrade is an upgrade that can be performed with zero downtime for your deployment.
-Your Keycloak nodes must be updated one by one; in other words, shut down one of your old deployment nodes and start a new deployment node.
+<p>If you are using the Keycloak Operator, continue to the <a href="https://www.keycloak.org/nightly/operator/rolling-updates">Avoiding downtime with rolling updates</a> guide and the <code>Auto</code> strategy for more information.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_supported_update_strategies"><a class="anchor" href="#_supported_update_strategies"></a>Supported update strategies</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Rolling Update</dt>
+<dd>
+<p>In this guide, a rolling update is an update that can be performed with zero downtime for your deployment, which consists of at least two nodes.
+Update your Keycloak one by one; shut down one of your old deployment nodes and start a new deployment node.
 Wait until the new node&#8217;s start-up probe returns success before proceeding to the next Keycloak node. See guide <a href="https://www.keycloak.org/nightly/observability/health">Enabling Keycloak Health checks</a> for details on how to enable and use the start-up probe.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<div class="title">Recreate Upgrade</div>
-<p>A recreate upgrade is not compatible with zero-downtime and requires downtime to be applied.
+</dd>
+<dt class="hdlist1">Recreate Update</dt>
+<dd>
+<p>A recreate update is not compatible with zero-downtime and requires downtime to be applied.
 Shut down all nodes of the cluster running the old version before starting the nodes with the new version.</p>
+</dd>
+</dl>
 </div>
-</td>
-</tr>
-</table>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_determining_the_update_strategy_for_an_updated_configuration"><a class="anchor" href="#_determining_the_update_strategy_for_an_updated_configuration"></a>Determining the update strategy for an updated configuration</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>The update compatibility tool involves two steps:</p>
+<p>To determine if a rolling update is possible, run the update compatibility command:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Generating the required metadata.</p>
+<p>Generate the required metadata with the old configuration.</p>
 </li>
 <li>
-<p>Checking the metadata to determine the possible upgrade type.</p>
+<p>Check the metadata with the new configuration to determine the update strategy.</p>
 </li>
 </ol>
 </div>
@@ -180,7 +151,7 @@ Shut down all nodes of the cluster running the old version before starting the n
 </td>
 <td class="content">
 <div class="paragraph">
-<p>This command is under development. At the moment, it takes into consideration only the version of Keycloak and the embedded Infinispan to determine if a rolling update is possible.
+<p>This command currently offers only a limited functionality. At the moment, it takes into consideration only the version of Keycloak and the embedded Infinispan to determine if a rolling update is possible.
 If those are unchanged, it reports that a rolling update is possible.</p>
 </div>
 <div class="paragraph">
@@ -191,32 +162,29 @@ The same applies to changes to custom extensions and themes.</p>
 <p>A good use case when to use this is, for example, when you want to do a rolling update when you change the Keycloak theme or your custom extensions, and only want run recreate update when the version of Keycloak changes which does not yet allow a rolling update.</p>
 </div>
 <div class="paragraph">
-<p>While consumers of these commands should be aware of the limitations that exist today, they should not rely on the internal behavior or the structure of the metadata file as this is about to be enhanced in future versions.
+<p>While consumers of these commands should know the limitations that exist today, they should not rely on the internal behavior or the structure of the metadata file.
 Instead, they should rely only on the exit code of the <code>check</code> command to benefit from future enhancements on the internal logic to determine when a rolling update is possible.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_generating_the_metadata"><a class="anchor" href="#_generating_the_metadata"></a>Generating the Metadata</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_generating_the_metadata"><a class="anchor" href="#_generating_the_metadata"></a>Generating the Metadata</h3>
 <div class="paragraph">
 <p>To generate the metadata, execute the following command using the same Keycloak version and configuration options:</p>
 </div>
 <div class="listingblock">
 <div class="title">Generate and save the metadata from the current deployment.</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] update-compatibility metadata --file=/path/to/file.json --features=rolling-updates</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] update-compatibility metadata --file=/path/to/file.json</code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>This command accepts all options used by the <code>start</code> command.
-The metadata, in JSON format, is displayed in the console for debugging purposes.
+The command displays the metadata, in JSON format, in the console for debugging purposes.
 The <code>--file</code> parameter allows you to save the metadata to a file.
-This file is then used by the subsequent <code>check</code> command.</p>
+Use this file with the subsequent <code>check</code> command.</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -229,17 +197,15 @@ This file is then used by the subsequent <code>check</code> command.</p>
 <p>Ensure that all configuration options, whether set via environment variables or CLI arguments, are included when running the above command.</p>
 </div>
 <div class="paragraph">
-<p>Omitting any configuration options will result in incomplete metadata.</p>
+<p>Omitting any configuration options results in incomplete metadata, and could lead to a wrong reported result in the next step.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_checking_the_metadata"><a class="anchor" href="#_checking_the_metadata"></a>Checking the Metadata</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_checking_the_metadata"><a class="anchor" href="#_checking_the_metadata"></a>Checking the Metadata</h3>
 <div class="paragraph">
 <p>This command checks the metadata generated by the previous command and compares it with the current configuration and Keycloak version.
 If you are upgrading to a new Keycloak version, this command must be executed with the new version.</p>
@@ -247,7 +213,7 @@ If you are upgrading to a new Keycloak version, this command must be executed wi
 <div class="listingblock">
 <div class="title">Check the metadata from a previous deployment.</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] update-compatibility check --file=/path/to/file.json --features=rolling-updates</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] update-compatibility check --file=/path/to/file.json</code></pre>
 </div>
 </div>
 <div class="admonitionblock warning">
@@ -268,36 +234,36 @@ If you are upgrading to a new Keycloak version, this command must be executed wi
 </ul>
 </div>
 <div class="paragraph">
-<p>Failure to meet these requirements will result in an incorrect outcome.</p>
+<p>Failure to meet these requirements results in an incorrect outcome.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p>The command will print the result to the console.
-For example, if a rolling upgrade is possible, it will display:</p>
+<p>The command prints the result to the console.
+For example, if a rolling update is possible, it displays:</p>
 </div>
 <div class="listingblock">
-<div class="title">Rolling Upgrade possible message</div>
+<div class="title">Rolling Update possible message</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">[OK] Rolling Upgrade is available.</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">[OK] Rolling Update is available.</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Otherwise, the command will indicate that a rolling upgrade is not possible and, optionally, provide details about the incompatibility:</p>
+<p>If no rolling update is possible, the command provides details about the incompatibility:</p>
 </div>
 <div class="listingblock">
-<div class="title">Rolling Upgrade not possible message</div>
+<div class="title">Rolling Update not possible message</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">[Versions] Rolling Upgrade is not available. 'infinispan' is incompatible: Old=15.0.0.Final, New=15.0.11.Final <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">[keycloak] Rolling Update is not available. 'keycloak.version' is incompatible: 26.2.0 -&gt; 26.2.1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>In this example, the Infinispan version <code>15.0.0.Final</code> is not compatible with version <code>15.0.11.Final</code> and a rolling upgrade is not possible.</td>
+<td>In this example, the Keycloak version <code>26.2.0</code> is not compatible with version <code>26.2.1</code> and a rolling update is not possible.</td>
 </tr>
 </table>
 </div>
@@ -305,7 +271,7 @@ For example, if a rolling upgrade is possible, it will display:</p>
 <p><strong>Command exit code</strong></p>
 </div>
 <div class="paragraph">
-<p>To aid in the development of your automation and/or DevOps pipelines, the command&#8217;s exit code can be used to determine the upgrade type:</p>
+<p>Use the command&#8217;s exit code to determine the update type in your automation pipeline:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -321,7 +287,7 @@ For example, if a rolling upgrade is possible, it will display:</p>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>0</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Upgrade is possible.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Update is possible.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>1</code></p></td>
@@ -333,16 +299,25 @@ For example, if a rolling upgrade is possible, it will display:</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>3</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Upgrade is not possible.
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Update is not possible.
 The deployment must be shut down before applying the new configuration.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>4</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Upgrade is not possible.
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Update is not possible.
 The feature <code>rolling-updates</code> is disabled.</p></td>
 </tr>
 </tbody>
 </table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_reading"><a class="anchor" href="#_further_reading"></a>Further reading</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak Operator uses the functionality described above to determine if a rolling update is possible. See the <a href="https://www.keycloak.org/nightly/operator/rolling-updates">Avoiding downtime with rolling updates</a> guide and the <code>Auto</code> strategy for more information.</p>
+</div>
 </div>
 </div>            </div>
         </div>
