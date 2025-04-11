@@ -125,7 +125,7 @@ gtag('config', 'G-0J2P9316N6');
 <div class="ulist">
 <ul>
 <li>
-<p>By default if the option is not specified, no reverse proxy headers are parsed.</p>
+<p>By default if the option is not specified, no reverse proxy headers are parsed. This should be used when no proxy is in use or with https passthrough.</p>
 </li>
 <li>
 <p><code>forwarded</code> enables parsing of the <code>Forwarded</code> header as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC7239</a>.</p>
@@ -162,7 +162,7 @@ If you are using a reverse proxy for anything other than https passthrough and d
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-If either <code>forwarded</code> or <code>xforwarded</code> is selected, make sure your reverse proxy properly sets and overwrites the <code>Forwarded</code> or <code>X-Forwarded-*</code> headers respectively. To set these headers, consult the documentation for your reverse proxy. Misconfiguration will leave Keycloak exposed to security vulnerabilities.
+If either <code>forwarded</code> or <code>xforwarded</code> is selected, make sure your reverse proxy properly sets and overwrites the <code>Forwarded</code> or <code>X-Forwarded-*</code> headers respectively. To set these headers, consult the documentation for your reverse proxy. Do not use <code>forwarded</code> or <code>xforwarded</code> with https passthrough. Misconfiguration will leave Keycloak exposed to security vulnerabilities.
 </td>
 </tr>
 </table>
@@ -359,7 +359,7 @@ If not, prefix the path with your desired one.</p>
 <h2 id="_proxy_protocol"><a class="anchor" href="#_proxy_protocol"></a>PROXY Protocol</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The <code>proxy-protocol-enabled</code> option controls whether the server should use the HA PROXY protocol when serving requests from behind a proxy. When set to true, the remote address returned will be the one from the actual connecting client.</p>
+<p>The <code>proxy-protocol-enabled</code> option controls whether the server should use the HA PROXY protocol when serving requests from behind a proxy. When set to true, the remote address returned will be the one from the actual connecting client. The value cannot be <code>true</code> when using the <code>proxy-headers</code> option.</p>
 </div>
 <div class="paragraph">
 <p>This is useful when running behind a compatible https passthrough proxy because the request headers cannot be manipulated.</p>
@@ -408,9 +408,6 @@ and edge TLS termination.</p>
 </li>
 <li>
 <p>Make sure that the proxy overwrites the header that is configured in <code>spi-x509cert-lookup-&lt;provider&gt;-ssl-client-cert</code> option.</p>
-</li>
-<li>
-<p>Keep in mind that any of the <code>spi-x509cert-*</code> options don&#8217;t reflect the <code>proxy-trusted-addresses</code> option.</p>
 </li>
 <li>
 <p>Pay extra attention to the <code>spi-x509cert-lookup-&lt;provider&gt;-trust-proxy-verification</code> setting. Make sure you enable it only if you can trust your proxy to verify the client certificate.
@@ -506,6 +503,10 @@ to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">trust-proxy-verification</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Enable trusting NGINX proxy certificate verification, instead of forwarding the certificate to Keycloak and verifying it in Keycloak.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cert-is-url-encoded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the forwarded certificate is url-encoded or not. In NGINX, this corresponds to the <code>$ssl_client_cert</code> and <code>$ssl_client_escaped_cert</code> variables. This can also be used for the Traefik PassTlsClientCert middleware, as it sends the client certficate unencoded.</p></td>
 </tr>
 </tbody>
 </table>
@@ -632,7 +633,7 @@ to configure a Keycloak Truststore.</p>
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">When set to true, the remote address returned will be the one from the actual connecting client.</span></p>
+<p><span class="options-description-extended">When set to true, the remote address returned will be the one from the actual connecting client. Cannot be enabled when the <code>proxy-headers</code> is used.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--proxy-protocol-enabled</code><br>

@@ -1,0 +1,276 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Analyzing outliers and errors with exemplars - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Analyzing outliers and errors with exemplars">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Use exemplars to connect a metric to a recorded trace to analyze the root cause of errors or latencies.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/observability/exemplars">
+<meta property="og:url" content="https://www.keycloak.org/observability/exemplars">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#observability">Observability</a></li>
+                    <li class="breadcrumb-item active">Analyzing outliers and errors with exemplars</li>
+                </ol>
+            </nav>
+
+
+            <div class="mb-4">
+                <h1>Analyzing outliers and errors with exemplars</h1>
+                    <span class="text-muted">Use exemplars to connect a metric to a recorded trace to analyze the root cause of errors or latencies.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Metrics are aggregations over several events, and show you if your system is operating within defined bounds.
+They are great to monitor error rates or tail latencies and to set up alerting or drive performance optimizations.
+Still, the aggregation makes it difficult to find root causes for latencies or errors reported in metrics.</p>
+</div>
+<div class="paragraph">
+<p>Root causes for errors and latencies can be found by enabling tracing.
+To connect a metric to a recorded trace, there is the concept of <a href="https://grafana.com/docs/grafana/latest/fundamentals/exemplars/">exemplars</a>.</p>
+</div>
+<div class="paragraph">
+<p>Once exemplars are set up, Keycloak reports metrics with their last recorded trace as an exemplar.
+A dashboard tool like Grafana can link the exemplar from a metrics dashboard to a trace view.</p>
+</div>
+<div class="paragraph">
+<p>Metrics that support exemplars are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>http_server_requests_seconds_count</code> (including histograms)<br>
+See the guide <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting-http">HTTP metrics</a> for details on this metric.</p>
+</li>
+<li>
+<p><code>keycloak_credentials_password_hashing_validations_total</code><br>
+See the guide <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting-keycloak">Self-provided metrics</a>  for details on this metric.</p>
+</li>
+<li>
+<p><code>keycloak_user_events_total</code><br>
+See the guide <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting-keycloak">Self-provided metrics</a>  for details on this metric.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>See below for a screenshot of a heatmap visualization for latencies that is showing an exemplar when hovering over one of the pink indicators.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/observability/exemplar.png" alt="exemplar">
+</div>
+<div class="title">Figure 1. Heatmap diagram with exemplar</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setting_up_exemplars"><a class="anchor" href="#_setting_up_exemplars"></a>Setting up exemplars</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To benefit from exemplars, perform the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Enable metrics for Keycloak as described in guide <a href="https://www.keycloak.org/observability/configuration-metrics">Gaining insights with metrics</a>.</p>
+</li>
+<li>
+<p>Enable tracing for Keycloak as described in guide <a href="https://www.keycloak.org/observability/tracing">Root cause analysis with tracing</a>.</p>
+</li>
+<li>
+<p>Enable exemplar storage in your monitoring system.</p>
+<div class="paragraph">
+<p>For Prometheus, this is a <a href="https://prometheus.io/docs/prometheus/latest/feature_flags/#exemplars-storage">preview feature that you need to enable</a>.</p>
+</div>
+</li>
+<li>
+<p>Scrape the metrics using the <code>OpenMetricsText1.0.0</code> protocol, which is not enabled by default in Prometheus.</p>
+<div class="paragraph">
+<p>If you are using <code>PodMonitors</code> or similar in a Kubernetes environment, this can be achieved by adding it to the spec of the custom resource:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  ...
+spec:
+  scrapeProtocols:
+    - OpenMetricsText1.0.0</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure your metrics datasource where to link to for traces.</p>
+<div class="paragraph">
+<p>When using Grafana and Prometheus, this would be setting up a <code>exemplarTraceIdDestinations</code> for the Prometheus datasource, which then points to your tracing datasource that is provided by tools like Jaeger or Tempo.</p>
+</div>
+</li>
+<li>
+<p>Enable exemplars in your dashboards.</p>
+<div class="paragraph">
+<p>Enable the <strong>Exemplars</strong> toggle in each query on each dashboard where you want to show exemplars.
+When set up correctly, you will notice little dots or stars in your dashboards that you can click on to view the traces.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>If you do not specify the scrape protocol, Prometheus will by default not send it in the content negotiation, and Keycloak will then fall back to the PrometheusText protocol which will not contain the exemplars.</p>
+</li>
+<li>
+<p>If you enabled tracing and metrics, but the request sampling did not record a trace, the exposed metric will not contain any exemplars.</p>
+</li>
+<li>
+<p>If you access the metrics endpoint with your browser, the content negotiation will lead to the format PrometheusText being returned, and you will not see any exemplars.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verifying_that_exemplars_work_as_expected"><a class="anchor" href="#_verifying_that_exemplars_work_as_expected"></a>Verifying that exemplars work as expected</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Perform the following steps to verify that Keycloak is set up correctly for exemplars:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Follow the instructions to set up metrics and tracing for Keycloak.</p>
+</li>
+<li>
+<p>For test purposes, record all traces by setting the tracing ration to <code>1.0</code>.
+See <a href="https://www.keycloak.org/observability/tracing#sampling">Root cause analysis with tracing</a> for recommended sampling settings in production systems.</p>
+</li>
+<li>
+<p>Log in to the Keycloak instance to create some traces.</p>
+</li>
+<li>
+<p>Scrape the metrics with a command similar to the following and search for those metrics that have an exemplar set:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>$ curl -s http://localhost:9000/metrics \
+-H 'Accept: application/openmetrics-text; version=1.0.0; charset=utf-8' \
+| grep "#.*trace_id"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This should result in an output similar to the following. Note the additional <code>#</code> after which the span and trace IDs are added:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>http_server_requests_seconds_count {...} ... # {span_id="...",trace_id="..."} ...</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/exemplars.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

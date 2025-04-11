@@ -162,6 +162,11 @@ You configure these caches in <code>conf/cache-ispn.xml</code>:</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Cache external public keys</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">crl</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache for X.509 authenticator CRLs</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">work</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Replicated</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Propagate invalidation messages across nodes</p></td>
@@ -480,7 +485,7 @@ If the Infinispan server has authentication enabled, Keycloak will fail to start
 <h2 id="_transport_stacks"><a class="anchor" href="#_transport_stacks"></a>Transport stacks</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Transport stacks ensure that distributed cache nodes in a cluster communicate in a reliable fashion.
+<p>Transport stacks ensure that Keycloak nodes in a cluster communicate in a reliable fashion.
 Keycloak supports a wide range of transport stacks:</p>
 </div>
 <div class="ulist">
@@ -611,73 +616,57 @@ Use <code>-D&lt;property&gt;=&lt;value&gt;</code> to pass the properties via the
 <div class="paragraph">
 <p>It is recommended to use one of the stacks available above.
 Additional stacks are provided by Infinispan, but it is outside the scope of this guide how to configure them.
-Please refer to <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#cluster-transport">Setting up Infinispan cluster transport</a> for further documentation.</p>
+Please refer to <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#cluster-transport">Setting up Infinispan cluster transport</a> and <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#customizing-jgroups-stacks_cluster-transport">Customizing JGroups stacks</a> for further documentation.</p>
 </div>
 </div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_custom_transport_stacks"><a class="anchor" href="#_custom_transport_stacks"></a>Custom transport stacks</h3>
-<div class="paragraph">
-<p>If none of the available transport stacks are enough for your deployment, you are able to change your cache configuration file
-and define your own transport stack.</p>
-</div>
-<div class="paragraph">
-<p>For more details, see <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#customizing-jgroups-stacks_cluster-transport">Customizing JGroups stacks</a>.</p>
-</div>
-<div class="listingblock">
-<div class="title">defining a custom transport stack</div>
-<div class="content">
-<pre class="highlight"><code>&lt;jgroups&gt;
-    &lt;stack name="my-encrypt-udp" extends="udp"&gt;
-    &lt;SSL_KEY_EXCHANGE keystore_name="server.jks"
-        keystore_password="password"
-        stack.combine="INSERT_AFTER"
-        stack.position="VERIFY_SUSPECT2"/&gt;
-        &lt;ASYM_ENCRYPT asym_keylength="2048"
-        asym_algorithm="RSA"
-        change_key_on_coord_leave = "false"
-        change_key_on_leave = "false"
-        use_external_key_exchange = "true"
-        stack.combine="INSERT_BEFORE"
-        stack.position="pbcast.NAKACK2"/&gt;
-    &lt;/stack&gt;
-&lt;/jgroups&gt;
-
-&lt;cache-container name="keycloak"&gt;
-    &lt;transport lock-timeout="60000" stack="my-encrypt-udp"/&gt;
-    ...
-&lt;/cache-container&gt;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>By default, the value set to the <code>cache-stack</code> option has precedence over the transport stack you define in the cache configuration file.
-If you are defining a custom stack, make sure the <code>cache-stack</code> option is not used for the custom changes to take effect.</p>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_securing_cache_communication"><a class="anchor" href="#_securing_cache_communication"></a>Securing cache communication</h2>
+<h2 id="_securing_transport_stacks"><a class="anchor" href="#_securing_transport_stacks"></a>Securing transport stacks</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The current Infinispan cache implementation should be secured by various security measures such as RBAC, ACLs, and transport stack encryption.</p>
+<p>Encryption using TLS is enabled by default for TCP-based transport stacks, which is also the default configuration
+No additional CLI options or modifications of the cache XML are required as long as you are using a TCP-based transport stack.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you are using a transport stack based on <code>UDP</code> or <code>TCP_NIO2</code>, proceed as follows to configure the encryption of the transport stack:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Set the option <code>cache-embedded-mtls-enabled</code> to <code>false</code>.</p>
+</li>
+<li>
+<p>Follow the documentation in <a href="http://jgroups.org/manual5/index.html#ENCRYPT">JGroups Encryption documentation</a> and <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#secure-cluster-transport">Encrypting cluster transport</a>.</p>
+</li>
+</ol>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>JGroups handles all the communication between Keycloak server, and it supports Java SSL sockets for TCP communication.
-Keycloak uses CLI options to configure the TLS communication without having to create a customized JGroups stack or modifying the cache XML file.</p>
+<p>With TLS enabled, Keycloak auto-generates a self-signed RSA 2048 bit certificate to secure the connection and uses TLS 1.3 to secure the communication.
+The keys and the certificate are stored in the database so they are available to all nodes.
+By default, the certificate is valid for 60 days and is rotated at runtime every 30 days.
+Use the option <code>cache-embedded-mtls-rotation-interval-days</code> to change this.</p>
 </div>
+<div class="sect2">
+<h3 id="_proving_your_own_keys_and_certificates"><a class="anchor" href="#_proving_your_own_keys_and_certificates"></a>Proving your own keys and certificates</h3>
 <div class="paragraph">
-<p>To enable TLS, <code>cache-embedded-mtls-enabled</code> must be set to <code>true</code>.
-It requires a keystore with the certificate to use: <code>cache-embedded-mtls-key-store-file</code> sets the path to the keystore, and <code>cache-embedded-mtls-key-store-password</code> sets the password to decrypt it.
+<p>Although not recommended for standard setups, if it is essential in a specific setup, you can configure the keystore with the certificate for the transport stack manually. <code>cache-embedded-mtls-key-store-file</code> sets the path to the keystore, and <code>cache-embedded-mtls-key-store-password</code> sets the password to decrypt it.
 The truststore contains the valid certificates to accept connection from, and it can be configured with <code>cache-embedded-mtls-trust-store-file</code> (path to the truststore), and <code>cache-embedded-mtls-trust-store-password</code> (password to decrypt it).
-To restrict unauthorized access, use a self-signed certificate for each Keycloak deployment.</p>
+To restrict unauthorized access, always use a self-signed certificate for each Keycloak deployment.</p>
 </div>
-<div class="paragraph">
-<p>For JGroups stacks with <code>UDP</code> or <code>TCP_NIO2</code>, see the <a href="http://jgroups.org/manual5/index.html#ENCRYPT">JGroups Encryption documentation</a> on how to set up the protocol stack.</p>
-</div>
-<div class="paragraph">
-<p>For more information about securing cache communication, see the <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#secure-cluster-transport">Encrypting cluster transport</a> documentation.</p>
 </div>
 </div>
 </div>
@@ -826,7 +815,7 @@ While these metrics provide more insights into the latency distribution, collect
 </div>
 </div>
 <div class="paragraph">
-<p>For more details about how to enable metrics, see <a href="https://www.keycloak.org/observability/configuration-metrics">Enabling Keycloak Metrics</a>.</p>
+<p>For more details about how to enable metrics, see <a href="https://www.keycloak.org/observability/configuration-metrics">Gaining insights with metrics</a>.</p>
 </div>
 </div>
 </div>
@@ -887,6 +876,66 @@ While these metrics provide more insights into the latency distribution, collect
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-metrics-histograms-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enable histograms for metrics for the embedded caches.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-metrics-histograms-enabled</code><br>
+<strong>Env:</strong> <code>KC_CACHE_METRICS_HISTOGRAMS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-stack</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Define the default stack to use for cluster communication and node discovery.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-stack</code><br>
+<strong>Env:</strong> <code>KC_CACHE_STACK</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when 'cache' type is set to 'ispn'</p>
+</div>
+<div class="paragraph">
+<p>Use 'jdbc-ping' instead
+<strong>Deprecated values: <code>azure</code>, <code>ec2</code>, <code>google</code>, <code>tcp</code>, <code>udp</code>, <code>jdbc-ping-udp</code></strong></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping</code> (default), <code>kubernetes</code>, <code>jdbc-ping-udp</code> (deprecated), <code>tcp</code> (deprecated), <code>udp</code> (deprecated), <code>ec2</code> (deprecated), <code>azure</code> (deprecated), <code>google</code> (deprecated), or any</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_embedded_cache"><a class="anchor" href="#_embedded_cache"></a>Embedded Cache</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>cache-embedded-authorization-max-count</code></span></p>
 </div>
 <div class="paragraph">
@@ -924,6 +973,23 @@ While these metrics provide more insights into the latency distribution, collect
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-crl-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the crl cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-crl-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_CRL_MAX_COUNT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>cache-embedded-keys-max-count</code></span></p>
 </div>
 <div class="paragraph">
@@ -949,12 +1015,18 @@ While these metrics provide more insights into the latency distribution, collect
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
+<p><span class="options-description-extended">If no additional parameters about a keystore and truststore are provided, ephemeral key pairs and certificates are created and rotated automatically, which is recommended for standard setups.</span></p>
+</div>
+<div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-embedded-mtls-enabled</code><br>
 <strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_ENABLED</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when a TCP based cache-stack is used</p>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -966,13 +1038,16 @@ While these metrics provide more insights into the latency distribution, collect
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">The Keystore must contain the certificate to use by the TLS protocol. By default, it lookup <code>cache-mtls-keystore.p12</code> under conf/ directory.</span></p>
+<p><span class="options-description-extended">The Keystore must contain the certificate to use by the TLS protocol. By default, it looks up <code>cache-mtls-keystore.p12</code> under conf/ directory.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--cache-embedded-mtls-key-store-file</code><br>
 <strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_KEY_STORE_FILE</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
@@ -990,8 +1065,31 @@ While these metrics provide more insights into the latency distribution, collect
 <strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_KEY_STORE_PASSWORD</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-rotation-interval-days</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Rotation period in days of automatic JGroups MTLS certificates.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-rotation-interval-days</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_ROTATION_INTERVAL_DAYS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>30</code></span> (default)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1010,6 +1108,9 @@ While these metrics provide more insights into the latency distribution, collect
 <strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_TRUST_STORE_FILE</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
@@ -1027,6 +1128,9 @@ While these metrics provide more insights into the latency distribution, collect
 <strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_TRUST_STORE_PASSWORD</code></p>
 </div>
 </div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
@@ -1124,26 +1228,23 @@ While these metrics provide more insights into the latency distribution, collect
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_remote_cache"><a class="anchor" href="#_remote_cache"></a>Remote Cache</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
 <tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>cache-metrics-histograms-enabled</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">Enable histograms for metrics for the embedded caches.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--cache-metrics-histograms-enabled</code><br>
-<strong>Env:</strong> <code>KC_CACHE_METRICS_HISTOGRAMS_ENABLED</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Available only when metrics are enabled</p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
 </tr>
+</thead>
+<tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>cache-remote-host</code></span></p>
@@ -1253,32 +1354,9 @@ While these metrics provide more insights into the latency distribution, collect
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>cache-stack</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">Define the default stack to use for cluster communication and node discovery.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--cache-stack</code><br>
-<strong>Env:</strong> <code>KC_CACHE_STACK</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Available only when 'cache' type is set to 'ispn'</p>
-</div>
-<div class="paragraph">
-<p>Use 'jdbc-ping' instead
-<strong>Deprecated values: <code>azure</code>, <code>ec2</code>, <code>google</code>, <code>tcp</code>, <code>udp</code>, <code>jdbc-ping-udp</code></strong></p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping</code> (default), <code>kubernetes</code>, <code>jdbc-ping-udp</code> (deprecated), <code>tcp</code> (deprecated), <code>udp</code> (deprecated), <code>ec2</code> (deprecated), <code>azure</code> (deprecated), <code>google</code> (deprecated), or any</p></td>
-</tr>
 </tbody>
 </table>
+</div>
 </div>
 </div>            </div>
         </div>

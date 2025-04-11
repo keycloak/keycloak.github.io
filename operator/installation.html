@@ -150,6 +150,102 @@ gtag('config', 'G-0J2P9316N6');
 <p>You may select to either have the Operator watch the namespace where it is installed, or to watch a single namespace of your choosing.</p>
 </div>
 </div>
+<div class="sect3">
+<h4 id="_configuring_manual_approval_for_olm_upgrades"><a class="anchor" href="#_configuring_manual_approval_for_olm_upgrades"></a>Configuring Manual Approval for OLM Upgrades</h4>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p><strong>Important: Automatic OLM Upgrades</strong></p>
+</div>
+<div class="paragraph">
+<p>By default, OLM automatically updates the Keycloak Operator when a new version is released. This can cause several significant issues:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>When using the default Keycloak image, the Operator uses a matching image of the corresponding Keycloak version, resulting in <strong>unintended Keycloak upgrades</strong> when the Operator is upgraded</p>
+</li>
+<li>
+<p><strong>Even when using custom images</strong>, major Operator upgrades can introduce significant compatibility issues with your existing Keycloak CR configuration, potentially requiring manual intervention</p>
+</li>
+<li>
+<p>New fields in Keycloak CR or behavioral changes could impact existing deployments</p>
+</li>
+<li>
+<p>No option to downgrade to the previous Keycloak version due to changes related to database migration</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Recommendation:</strong></p>
+</div>
+<div class="paragraph">
+<p><strong>We strongly recommend using manual approval mode for the Keycloak Operator.</strong> This ensures you can:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Review release notes and follow migration changes before approving upgrades</p>
+</li>
+<li>
+<p>Schedule maintenance windows for upgrades</p>
+</li>
+<li>
+<p>Test upgrades in a non-production environment first</p>
+</li>
+<li>
+<p>Back up the database to allow downgrading to the previous Keycloak in case of issues</p>
+</li>
+</ol>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To prevent automatic upgrades by OLM, set the approval strategy to <code>Manual</code> when installing the Operator:</p>
+</div>
+<div class="sect4">
+<h5 id="_using_the_openshift_web_console_2"><a class="anchor" href="#_using_the_openshift_web_console_2"></a>Using the OpenShift web console</h5>
+<div class="paragraph">
+<p>When installing the Operator, select <code>Manual</code> approval in the update approval strategy section:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/manual-approval-olm.png" alt="Configure manual approval in OLM">
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_using_the_cli"><a class="anchor" href="#_using_the_cli"></a>Using the CLI</h5>
+<div class="paragraph">
+<p>For command-line installation, create a Subscription with <code>installPlanApproval: Manual</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: keycloak-operator
+  namespace: &lt;target-namespace&gt;
+spec:
+  channel: fast
+  name: keycloak-operator
+  source: &lt;catalog-source&gt;
+  sourceNamespace: &lt;catalog-namespace&gt;
+  installPlanApproval: Manual</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After installation, any upgrade will require manual approval through the OLM interface or via the CLI.</p>
+</div>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_installing_by_using_kubectl_without_operator_lifecycle_manager"><a class="anchor" href="#_installing_by_using_kubectl_without_operator_lifecycle_manager"></a>Installing by using kubectl without Operator Lifecycle Manager</h3>
@@ -162,8 +258,8 @@ gtag('config', 'G-0J2P9316N6');
 <p>Install the CRDs by entering the following commands:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.1.5/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
-kubectl apply -f https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.1.5/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.0/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
+kubectl apply -f https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.0/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml</code></pre>
 </div>
 </div>
 </li>
@@ -171,7 +267,7 @@ kubectl apply -f https://raw.githubusercontent.com/keycloak/keycloak-k8s-resourc
 <p>Install the Keycloak Operator deployment by entering the following command:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.1.5/kubernetes/kubernetes.yml</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.0/kubernetes/kubernetes.yml</code></pre>
 </div>
 </div>
 </li>

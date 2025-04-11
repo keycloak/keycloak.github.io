@@ -1,0 +1,305 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Visualizing activities in a dashboard - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Visualizing activities in a dashboard">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Install the Keycloak Grafana dashboards to vitualize the metrics that capture the status and activities of your deployment.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/observability/grafana-dashboards">
+<meta property="og:url" content="https://www.keycloak.org/observability/grafana-dashboards">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#observability">Observability</a></li>
+                    <li class="breadcrumb-item active">Visualizing activities in a dashboard</li>
+                </ol>
+            </nav>
+
+
+            <div class="mb-4">
+                <h1>Visualizing activities in a dashboard</h1>
+                    <span class="text-muted">Install the Keycloak Grafana dashboards to vitualize the metrics that capture the status and activities of your deployment.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides metrics to observe what is happening inside the deployment.
+To understand how metrics evolve over time, it is helpful to collect them and visualize in graphs.</p>
+</div>
+<div class="paragraph">
+<p>This guide provides instructions on how to visualize collected Keycloak metrics in a running Grafana instance.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Keycloak metrics are enabled. Follow <a href="https://www.keycloak.org/observability/configuration-metrics">Gaining insights with metrics</a> guide for more details.</p>
+</li>
+<li>
+<p>Grafana instance is running and Keycloak metrics are collected into a Prometheus instance.</p>
+</li>
+<li>
+<p>For the HTTP request latency heatmaps to work, enable histograms for HTTP metrics by setting <code>http-metrics-histograms-enabled</code> to <code>true</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_keycloak_grafana_dashboards"><a class="anchor" href="#_keycloak_grafana_dashboards"></a>Keycloak Grafana dashboards</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Grafana dashboards are distributed in the form of a JSON file that is imported into a Grafana instance.
+JSON definitions of Keycloak Grafana dashboards are available in the <a href="https://github.com/keycloak/keycloak-grafana-dashboard">keycloak/keycloak-grafana-dashboard GitHub repository</a>.</p>
+</div>
+<div class="paragraph">
+<p>Follow these steps to download JSON file definitions.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Identify the branch from <code>keycloak-grafana-dashboards</code> to use from the following table.</p>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Keycloak version</th>
+<th class="tableblock halign-left valign-top"><code>keycloak-grafana-dashboards</code> branch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&gt;= 26.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>main</code></p></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Clone the GitHub repository</p>
+<div class="listingblock">
+<div class="content">
+<pre>git clone -b BRANCH_FROM_STEP_1 https://github.com/keycloak/keycloak-grafana-dashboard.git</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The dashboards are available in the directory <code>keycloak-grafana-dashboard/dashboards</code>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The following sections describe the purpose of each dashboard.</p>
+</div>
+<div class="sect2">
+<h3 id="_keycloak_troubleshooting_dashboard"><a class="anchor" href="#_keycloak_troubleshooting_dashboard"></a>Keycloak troubleshooting dashboard</h3>
+<div class="paragraph">
+<p>This dashboard is available in the JSON file: <code>keycloak-troubleshooting-dashboard.json</code>.</p>
+</div>
+<div class="paragraph">
+<p>On the top of the dashboard, graphs display the service level indicators as defined in <a href="https://www.keycloak.org/observability/keycloak-service-level-indicators">Monitoring performance with Service Level Indicators</a>.
+This dashboard can be also used while troubleshooting a Keycloak deployment following the <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting">Troubleshooting using metrics</a> guide, for example, when SLI graphs do not show expected results.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/observability/keycloak-troubleshooting-grafana-dashboard.png" alt="Troubleshooting dashboard">
+</div>
+<div class="title">Figure 1. Troubleshooting dashboard</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_keycloak_capacity_planning_dashboard"><a class="anchor" href="#_keycloak_capacity_planning_dashboard"></a>Keycloak capacity planning dashboard</h3>
+<div class="paragraph">
+<p>This dashboard is available in the JSON file: <code>keycloak-capacity-planning-dashboard.json</code>.</p>
+</div>
+<div class="paragraph">
+<p>This dashboard shows metrics that are important when estimating the load handled by a Keycloak deployment.
+For example, it shows the number of password validations or login flows performed by Keycloak.
+For more detail on these metrics, see the guide <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting-keycloak">Self-provided metrics</a>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Keycloak event metrics must be enabled for this dashboard to work correctly.  To enable them, see the guide <a href="https://www.keycloak.org/observability/event-metrics">Monitoring user activities with event metrics</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/observability/keycloak-capacity-planning-dashboard.png" alt="Capacity planning dashboard">
+</div>
+<div class="title">Figure 2. Capacity planning dashboard</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_import_a_dashboard"><a class="anchor" href="#_import_a_dashboard"></a>Import a dashboard</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Open the dashboard page from the left Grafana menu.</p>
+</li>
+<li>
+<p>Click <strong>New</strong> and <strong>Import</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Upload dashboard JSON file</strong> and select the JSON file of the dashboard you want to import.</p>
+</li>
+<li>
+<p>Pick your Prometheus datasource.</p>
+</li>
+<li>
+<p>Click <strong>Import</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_export_a_dashboard"><a class="anchor" href="#_export_a_dashboard"></a>Export a dashboard</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Exporting a dashboard to JSON format may be useful. For example, you may want to suggest a change in our dashboard repository.</p>
+</div>
+<div class="grafana-share-icon">
+<style>
+.grafana-share-icon img {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+</style>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Open a dashboard you would like to export.</p>
+</li>
+<li>
+<p>Click <strong>share</strong> (<span class="image"><img src="https://www.keycloak.org/resources/images/guides/observability/grafana-share-icon.svg" alt="Grafana share icon"></span>) in the top left corner next to the dashboard name.</p>
+</li>
+<li>
+<p>Click the <strong>Export</strong> tab.</p>
+</li>
+<li>
+<p>Enable <strong>Export for sharing externally</strong>.</p>
+</li>
+<li>
+<p>Click either <strong>Save to file</strong> or <strong>View JSON</strong> and <strong>Copy to Clipboard</strong> according to where you want to store the resulting JSON.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_reading"><a class="anchor" href="#_further_reading"></a>Further reading</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Continue reading on how to connect traces to dashboard in the <a href="https://www.keycloak.org/observability/exemplars">Analyzing outliers and errors with exemplars</a> guide.</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/grafana-dashboards.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>
