@@ -1,0 +1,210 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Observability in Keycloak 26.2 - Keycloak</title>
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:image" content="https://www.keycloak.org/preview/blog/2025/04/keycloak-hour-of-code-s02v06.png">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Observability in Keycloak 26.2">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Observability improved a lot in Keycloak's latest release. Learn what changed in this post and in our online meetup on 7th May 2025.">
+<meta name="author" content="Michal Hajas">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2025/04/observability-26-2">
+<meta property="og:url" content="https://www.keycloak.org/2025/04/observability-26-2">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2025/04/observability-26-2","headline":"Observability in Keycloak 26.2","name":"Observability in Keycloak 26.2","datePublished":"2025-04-24T08:00:00Z","inLanguage":"en","abstract":"Observability improved a lot in Keycloak's latest release. Learn what changed in this post and in our online meetup on 7th May 2025.","url":"https://www.keycloak.org/2025/04/observability-26-2","image":"https://www.keycloak.org/preview/blog/2025/04/keycloak-hour-of-code-s02v06.png","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Michal Hajas"}]}
+</script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <h1>Observability in Keycloak 26.2</h1>
+    <p class="blog-date text-muted">April 24 2025 by Michal Hajas</p>
+
+
+<div class="paragraph">
+<p>When running a central single sign on service like Keycloak in production, you need to understand how well the system performs and whether there are service degradations.
+Having a proper monitoring stack in place is essential for this.
+Moreover, when the system performance degrades, it is crucial to identify which part of the system is causing the problem to address it.</p>
+</div>
+<div class="paragraph">
+<p>In the latest Keycloak release, all the above became more straightforward and works without additional extensions.</p>
+</div>
+<div class="paragraph">
+<p>Read on to learn more and <a href="https://www.meetup.com/keycloak-hour-of-code/events/307445176">join our online session on May 7th to ask live questions</a>!</p>
+</div>
+<div class="sect1">
+<h2 id="_hey_keycloak_how_are_you">Hey Keycloak! How are you?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Users rely on Keycloak to log in to their applications, and service level indicators (SLIs) capture the key metrics capturing that behavior.
+Misbehavior of the system can be detected by monitoring these SLIs.</p>
+</div>
+<div class="paragraph">
+<p>One of the indicators can be the availability of the system.
+The indicator for availability can be defined as: percentage of the time the system can answer requests.
+The lower the indicator is for your system, the less available it was in the observed period.</p>
+</div>
+<div class="paragraph">
+<p>Find an example set of SLIs for Keycloak and more details on this topic in the <a href="https://www.keycloak.org/observability/keycloak-service-level-indicators">Monitoring performance with Service Level Indicators</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_oh_no_you_are_not_doing_well">Oh no! You are not doing well?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now we know how to detect when Keycloak is not performing well.
+But what should I do when a service level indicator shows a degradation of the service?
+This situation usually means some part of Keycloak does not perform well. However, from the indicator itself, it is hard to say what part of Keycloak it is.</p>
+</div>
+<div class="paragraph">
+<p>To identify the culprit of the problem, we provide the <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting">Troubleshooting using metrics</a> guide that lists chosen metrics.
+Using these metrics, you can visualize what is happening in your deployment and down problems.</p>
+</div>
+<div class="paragraph">
+<p>Some examples of metrics from the guide are listed below:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Number of operations performed by Keycloak like password hashes, login flows, token refreshes, etc.</p>
+</li>
+<li>
+<p>Memory usage</p>
+</li>
+<li>
+<p>Database connection pool utilization</p>
+</li>
+<li>
+<p>Number of HTTP requests per URL and outcome</p>
+</li>
+<li>
+<p>Hit ratios for internal caches</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For environments with Prometheus for collecting metrics and Grafana for displaying them, we also provide Grafana dashboards to make troubleshooting smoother.
+Find instructions on how to deploy our dashboards into your Grafana instance in the <a href="https://www.keycloak.org/observability/grafana-dashboards">Visualizing activities in dashboards</a> guide.</p>
+</div>
+<div class="openblock">
+<div class="title">Grafana dashboards with SLIs (click to enlarge)</div>
+<div class="content">
+<div class="paragraph">
+<a href="https://www.keycloak.org/resources/images/blog/grafana-dashboards-2025.png"><img src="https://www.keycloak.org/resources/images/blog/grafana-dashboards-2025.png" alt="Grafana dashboards with SLIs, password validations, database connections pool and http metrics." style="width: 100%; max-width: 1049px; object-fit: cover; height: 350px; object-position: 0 0"></a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_my_keycloak_is_still_sick_i_need_an_in_depth_examination">My Keycloak is still sick :( I need an in-depth examination</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Thanks to metrics, you can observe certain aspects of the system and how they evolve over time.
+However, they may not provide a detailed picture of what is happening inside Keycloak for a specific request.
+For this, you can leverage traces.
+Learn more in the <a href="https://www.keycloak.org/observability/tracing">Root cause analysis with tracing</a> guide.</p>
+</div>
+<div class="paragraph">
+<p>With tracing, you can observe steps that Keycloak was performing for a specific request, including the respective timing for each of them.
+These steps include operations by Keycloak but also waiting time for responses from third party services like the database, LDAP, Infinispan and others.
+This helps you to reveal where the bottleneck in your system is.</p>
+</div>
+<div class="paragraph">
+<p>In the example below, you can see steps Keycloak was performing when a user submitted the username and password form.
+You can see the most time-consuming step was password hashing, which took 30 milliseconds out of 48-millisecond total request processing time.</p>
+</div>
+<div class="openblock">
+<div class="title">Trace displayed in Jaeger (click to enlarge)</div>
+<div class="content">
+<div class="paragraph">
+<a href="https://www.keycloak.org/resources/images/blog/tracing-2025.png"><img src="https://www.keycloak.org/resources/images/blog/tracing-2025.png" alt="Trace displayed in Jaeger for username password form submission." style="width: 100%; max-width: 2202px; height: 350px; object-position: 30% 30%; object-fit: cover;"></a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps">Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To see all of this in action and to ask live questions, <a href="https://www.meetup.com/keycloak-hour-of-code/events/307445176">join the Keycloak hour of code online meetup held on 7th May 2025 at 4pm CEST dedicated to observability</a>.</p>
+</div>
+<div class="paragraph">
+<p>As an appetizer, see a shorter version of <a href="https://youtu.be/bC4xbBJs0CA?si=WfptsITHZvpYBM_8&amp;t=769">a demo by Ryan Emerson recorded at KubeCon London 2025</a>.</p>
+</div>
+<div class="paragraph">
+<p>To ask questions outside the meetup, use the <a href="https://cloud-native.slack.com/channels/keycloak-sre-sig">CNCF #keycloak-sre-sig Slack channel</a>.
+Use <a href="https://slack.cncf.io/" class="bare">https://slack.cncf.io/</a> to join the CNCF Slack if you do not have an account yet.</p>
+</div>
+<div class="paragraph">
+<p>You can also leave the feedback in the <a href="https://github.com/keycloak/keycloak/discussions/39160">Keycloak GitHub discussion dedicated to this blog post</a>.</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>
