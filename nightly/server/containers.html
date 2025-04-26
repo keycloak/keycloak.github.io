@@ -16,7 +16,7 @@ gtag('config', 'G-0J2P9316N6');
 <meta property="og:site_name" content="Keycloak">
 <meta property="og:title" content="Running Keycloak in a container">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Learn how to run Keycloak from a container image">
+<meta name="description" property="og:description" content="Run Keycloak from a container image.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <meta name="robots" content="noindex">
@@ -82,7 +82,7 @@ gtag('config', 'G-0J2P9316N6');
 
             <div class="mb-4">
                 <h1>Running Keycloak in a container</h1>
-                    <span class="text-muted">Learn how to run Keycloak from a container image</span>
+                    <span class="text-muted">Run Keycloak from a container image.</span>
             </div>
 
 
@@ -276,6 +276,44 @@ Some packages have a large tree of dependencies. By installing new RPMs you may 
 </div>
 <div class="paragraph">
 <p>Opening up <code><a href="https://localhost:9000/metrics" class="bare">https://localhost:9000/metrics</a></code> leads to a page containing operational metrics that could be used by your monitoring solution.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_known_issues_with_docker"><a class="anchor" href="#_known_issues_with_docker"></a>Known issues with Docker</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>If a <code>RUN dnf install</code> command seems to be taking an excessive amount of time, then likely your Docker systemd service has the file limit setting <code>LimitNOFILE</code> configured incorrectly.
+Either update the service configuration to use a better value, such as 1024000, or directly use <code>ulimit</code> in the RUN command:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">...
+RUN ulimit -n 1024000 &amp;&amp; dnf install --installroot ...
+...</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If you are including provider JARs and your container fails a <code>start --optimized</code> with a notification that a provider JAR has changed, this is due to Docker truncating
+or otherwise modifying file modification timestamps from what the <code>build</code> command recorded to what is seen at runtime.
+  In this case you will need to force the image to use a known timestamp of your choosing with a <code>touch</code> command prior to running a <code>build</code>:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">...
+# ADD or copy one or more provider jars
+ADD --chown=keycloak:keycloak --chmod=644 some-jar.jar /opt/keycloak/providers/
+...
+RUN touch -m --date=@1743465600 /opt/keycloak/providers/*
+RUN /opt/keycloak/bin/kc.sh build
+...</code></pre>
+</div>
 </div>
 </div>
 </div>
