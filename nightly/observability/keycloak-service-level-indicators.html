@@ -206,13 +206,13 @@ can ensure that deployments are aligned with user&#8217;s expectations and that 
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Latency</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Response time for authentication related HTTP requests as measured by the server</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">95% of all authentication related requests should be faster than 250 ms within a 5-minute-range.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">95% of all authentication related requests should be faster than 250 ms within 30 days.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Keycloak server-side metrics to track latency for specific endpoints along with Response Time Distribution using <code>http_server_requests_seconds_bucket</code> and <code>http_server_requests_seconds_count</code>.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Errors</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Failed authentication requests due to server problems as measured by the server</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The rate of errors due to server problems for authentication requests should be less than 0.1% within a 5-minute-range.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The rate of errors due to server problems for authentication requests should be less than 0.1% within 30 days.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Identify server side error by filtering the metric <code>http_server_requests_seconds_count</code> on the tag <code>outcome</code> for value <code>SERVER_ERROR</code>.</p></td>
 </tr>
 </tbody>
@@ -295,7 +295,7 @@ In Grafana you can replace value <code>30d:15s</code> with <code>$<em>range:$</e
 <div class="sect2">
 <h3 id="_latency_of_authentication_requests"><a class="anchor" href="#_latency_of_authentication_requests"></a>Latency of authentication requests</h3>
 <div class="paragraph">
-<p>This Prometheus query calculates the percentage of authentication requests that completed within 0.25 seconds relative to all authentication requests for specific Keycloak endpoints, targeting a particular namespace and pod, over the past 5 minutes.</p>
+<p>This Prometheus query calculates the percentage of authentication requests that completed within 0.25 seconds relative to all authentication requests for specific Keycloak endpoints, targeting a particular namespace and pod, over the past 30 days.</p>
 </div>
 <div class="paragraph">
 <p>This example requires the Keycloak configuration <code>http-metrics-slos</code> to contain value <code>250</code> indicating that buckets for requests faster and slower than 250 ms should be recorded.
@@ -310,7 +310,7 @@ Setting <code>http-metrics-histograms-enabled</code> to <code>true</code> would 
       le="0.25", <i class="conum" data-value="2"></i><b>(2)</b>
       container="keycloak", <i class="conum" data-value="3"></i><b>(3)</b>
       namespace="$namespace"}
-    [5m] <i class="conum" data-value="4"></i><b>(4)</b>
+    [30d] <i class="conum" data-value="4"></i><b>(4)</b>
   )
 ) without (le,uri,status,outcome,method,pod,instance) <i class="conum" data-value="5"></i><b>(5)</b>
 /
@@ -320,7 +320,7 @@ sum(
       uri=~"/realms/{realm}/protocol/{protocol}.*|/realms/{realm}/login-actions.*", <i class="conum" data-value="1"></i><b>(1)</b>
       container="keycloak",
       namespace="$namespace"}
-    [5m] <i class="conum" data-value="3"></i><b>(3)</b>
+    [30d] <i class="conum" data-value="3"></i><b>(3)</b>
   )
 ) without (le,uri,status,outcome,method,pod,instance) <i class="conum" data-value="5"></i><b>(5)</b></pre>
 </div>
@@ -356,7 +356,7 @@ sum(
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-In Grafana you can replace value <code>5m</code> with <code>$__range</code> to compute latency SLI in the time range selected for the dashboard.
+In Grafana, you can replace value <code>30d</code> with <code>$__range</code> to compute latency SLI in the time range selected for the dashboard.
 </td>
 </tr>
 </table>
@@ -367,7 +367,7 @@ In Grafana you can replace value <code>5m</code> with <code>$__range</code> to c
 <div class="paragraph">
 <p>This Prometheus query calculates the percentage of authentication requests
 that returned a server side error for all authentication requests,
-targeting a particular namespace, over the past 5 minutes.</p>
+targeting a particular namespace, over the past 30 days.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -378,7 +378,7 @@ targeting a particular namespace, over the past 5 minutes.</p>
       outcome="SERVER_ERROR", <i class="conum" data-value="2"></i><b>(2)</b>
       container="keycloak", <i class="conum" data-value="3"></i><b>(3)</b>
       namespace="$namespace"}
-    [5m] <i class="conum" data-value="4"></i><b>(4)</b>
+    [30d] <i class="conum" data-value="4"></i><b>(4)</b>
   )
 ) without (le,uri,status,outcome,method,pod,instance) <i class="conum" data-value="5"></i><b>(5)</b>
 /
@@ -388,7 +388,7 @@ sum(
       uri=~"/realms/{realm}/protocol/{protocol}.*|/realms/{realm}/login-actions.*", <i class="conum" data-value="1"></i><b>(1)</b>
       container="keycloak", <i class="conum" data-value="3"></i><b>(3)</b>
       namespace="$namespace"}
-    [5m] <i class="conum" data-value="4"></i><b>(4)</b>
+    [30d] <i class="conum" data-value="4"></i><b>(4)</b>
   )
 ) without (le,uri,status,outcome,method,pod,instance) <i class="conum" data-value="5"></i><b>(5)</b></code></pre>
 </div>
@@ -414,6 +414,18 @@ sum(
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>Ignore as many labels necessary to create a single sum</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In Grafana, you can replace value <code>30d</code> with <code>$__range</code> to compute errors SLI in the time range selected for the dashboard.
+</td>
 </tr>
 </table>
 </div>
