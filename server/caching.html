@@ -16,7 +16,7 @@ gtag('config', 'G-0J2P9316N6');
 <meta property="og:site_name" content="Keycloak">
 <meta property="og:title" content="Configuring distributed caches">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Understand how to configure the caching layer">
+<meta name="description" property="og:description" content="Configure the caching layer to cluster multiple Keycloak instances and to increase performance.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -76,7 +76,7 @@ gtag('config', 'G-0J2P9316N6');
 
             <div class="mb-4">
                 <h1>Configuring distributed caches</h1>
-                    <span class="text-muted">Understand how to configure the caching layer</span>
+                    <span class="text-muted">Configure the caching layer to cluster multiple Keycloak instances and to increase performance.</span>
             </div>
 
 
@@ -659,6 +659,66 @@ No additional CLI options or modifications of the cache XML are required as long
 The keys and the certificate are stored in the database so they are available to all nodes.
 By default, the certificate is valid for 60 days and is rotated at runtime every 30 days.
 Use the option <code>cache-embedded-mtls-rotation-interval-days</code> to change this.</p>
+</div>
+<div class="sect2">
+<h3 id="_running_inside_a_service_mesh"><a class="anchor" href="#_running_inside_a_service_mesh"></a>Running inside a service mesh</h3>
+<div class="paragraph">
+<p>When using a service mesh like Istio, you might need to allow a direct mTLS communication between the Keycloak Pods to allow for the mutual authentication to work.
+Otherwise, you might see error messages like <code>JGRP000006: failed accepting connection from peer SSLSocket</code> that indicate that a wrong certificate was presented, and the cluster will not form correctly.</p>
+</div>
+<div class="paragraph">
+<p>You then have the option to allow direct mTLS communication between the Keycloak Pods, or rely on the service mesh transport security to encrypt the communication and to authenticate peers.</p>
+</div>
+<div class="paragraph">
+<p>To allow direct mTLS communication for Keycloak when using Istio:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Apply the following configuration to allow direct communication.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: infinispan-allow-nomtls
+spec:
+  selector:
+    matchLabels:
+      app: keycloak <i class="conum" data-value="1"></i><b>(1)</b>
+  portLevelMtls:
+    "7800": <i class="conum" data-value="2"></i><b>(2)</b>
+      mode: PERMISSIVE</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Update the labels to match your Keycloak deployment.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Port 7800 is the default. Adjust it if you change the data transmission port.</td>
+</tr>
+</table>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>As an alternative, to disable the mTLS communication, and rely on the service mesh to encrypt the traffic:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Set the option <code>cache-embedded-mtls-enabled</code> to <code>false</code>.</p>
+</li>
+<li>
+<p>Configure your service mesh to authorize only traffic from other Keycloak Pods for the data transmission port (default: 7800).</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_proving_your_own_keys_and_certificates"><a class="anchor" href="#_proving_your_own_keys_and_certificates"></a>Proving your own keys and certificates</h3>
