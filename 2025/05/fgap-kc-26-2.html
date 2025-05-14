@@ -1,0 +1,213 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Beyond Roles: Achieving Fine-Grained Authorization with Keycloak - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Beyond Roles: Achieving Fine-Grained Authorization with Keycloak">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Keycloak's latest release introduces new suported version of long-in-preview feature fine-grained admin permissions.">
+<meta name="author" content="Vlasta Ramik">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2025/05/fgap-kc-26-2">
+<meta property="og:url" content="https://www.keycloak.org/2025/05/fgap-kc-26-2">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2025/05/fgap-kc-26-2","headline":"Beyond Roles: Achieving Fine-Grained Authorization with Keycloak","name":"Beyond Roles: Achieving Fine-Grained Authorization with Keycloak","datePublished":"2025-05-06T08:00:00Z","inLanguage":"en","abstract":"Keycloak's latest release introduces new suported version of long-in-preview feature fine-grained admin permissions.","url":"https://www.keycloak.org/2025/05/fgap-kc-26-2","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Vlasta Ramik"}]}
+</script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <h1>Beyond Roles: Achieving Fine-Grained Authorization with Keycloak</h1>
+    <p class="blog-date text-muted">May 06 2025 by Vlasta Ramik</p>
+
+
+<div class="paragraph">
+<p>For years, Role-Based Access Control (RBAC) has been the cornerstone of authorization in many applications. Assigning users to roles
+provides a simple and effective way to manage access for common use cases. However, as applications become more complex and security
+requirements more demanding, RBAC alone often falls short.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak is leveling up administrative access control with the release of <strong>Fine Grained Admin Permissions V2</strong> a major step towards
+introducing delegated administration to Keycloak so that server administrators can assign management privileges to other users
+in a realm. By doing that, you should be able to reduce management costs and effort, and improve the overall efficiency and security
+of your deployments by authorizing access to specific resources in a realm.</p>
+</div>
+<div class="sect1">
+<h2 id="_why_fine_grained_admin_permissions_fgap_v2">Why Fine-Grained Admin Permissions (FGAP) V2?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In previous Keycloak versions, administrative access was largely driven by broad roles such as <code>realm-admin</code> or <code>manage-users</code>.
+While effective for simple setups, these roles often granted more access than necessary and lacked clarity around which actions
+they allowed.</p>
+</div>
+<div class="paragraph">
+<p><strong>FGAP V2</strong> introduces a cleaner, more deliberate permission model that enables:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Granular access control</strong> over users, clients, groups, and roles</p>
+</li>
+<li>
+<p><strong>Clear boundaries</strong> between operations—no more implicit permissions</p>
+</li>
+<li>
+<p><strong>Easier management</strong> of the permissions and policies</p>
+</li>
+<li>
+<p><strong>Better evaluation mechanism</strong> to allow authorization administrators audit the model</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_key_highlights">✨ Key Highlights</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_centralized_permissions_management">🧭 Centralized Permissions Management</h3>
+<div class="paragraph">
+<p>A new <strong>Permissions</strong> section in the Admin Console provides a single place to view and manage all fine-grained permissions for a realm.
+This simplifies navigation and makes it easier to design and audit your permission model.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_improved_manageability_and_evaluation">🔍 Improved Manageability and Evaluation</h3>
+<div class="paragraph">
+<p>Permissions are now easier to discover, filter, and evaluate. You can inspect which scopes are assigned to which identities—making
+it more transparent and manageable to build tailored administrative roles.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_resource_specific_and_global_permissions">🎯 Resource-Specific and Global Permissions</h3>
+<div class="paragraph">
+<p>Define permissions either at the individual resource level (e.g., a single or set of users or clients), or across all resources
+of a given type (e.g., all groups). This dual mode offers flexibility for both tightly scoped delegation and broader administrative
+policies.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_️_explicit_operation_scoping">✂️ Explicit Operation Scoping</h3>
+<div class="paragraph">
+<p>Gone are the days of hidden dependencies between permissions. FGAP V2 makes every scope explicit—such as <code>view-users</code>, <code>manage-users</code>,
+<code>map-roles</code>, or <code>configure-client</code>. This reduces confusion and gives you full visibility into what&#8217;s granted and why.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_️_per_realm_enablement">🛠️ Per-Realm Enablement</h3>
+<div class="paragraph">
+<p>FGAP V2 can be enabled independently for each realm. This allows administrators to adopt the new model incrementally, experiment
+safely, and customize permission boundaries realm-by-realm.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_to_enable_it">🔧 How to Enable It</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Start Keycloak. The feature is enabled by default.</p>
+</li>
+<li>
+<p>Go to <strong>Realm Settings → Admin Permissions</strong> and enable FGAP for the realm.</p>
+</li>
+<li>
+<p>Use the new <strong>Permissions</strong> section to define permissions and policies for users, clients, groups, and roles.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>For full configuration details, refer to the [Fine-Grained Admin Permissions documentation](<a href="https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions" class="bare">https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions</a>).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_migration_and_compatibility">🔄 Migration and Compatibility</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>FGAP V2 provides the same level of access control over realm resources as the previous version, while improving manageability and
+clarity. Automatic migration is not available, but if you&#8217;re upgrading from an earlier Keycloak version, see the
+[Upgrading Guide](<a href="https://www.keycloak.org/docs/latest/upgrading/index.html#migrating-to-26-2-0" class="bare">https://www.keycloak.org/docs/latest/upgrading/index.html#migrating-to-26-2-0</a>) for important key changes and migration notes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_next">What’s Next?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is just the beginning. Upcoming Keycloak releases will continue to expand FGAP support to additional resource types (such as
+Organizations) and more fine grained actions for existing resources.</p>
+</div>
+<hr>
+<div class="paragraph">
+<p>Try it out, experiment with permissions and policies and let us know what you think. Fine-Grained Admin Permissions V2 is here
+to help you run Keycloak with confidence, clarity, and control.</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>
