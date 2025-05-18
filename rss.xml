@@ -9,6 +9,131 @@
   <language>en-us</language>
   <category>Keycloak/SSO/Identity and Access Management</category>
       <item>
+        <title>Secure email delivery with XOAUTH2</title>
+        <link>https://www.keycloak.org/2025/05/send-mails-xoauth-26-2</link>
+        <description>&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Keycloak relies on email functionality for tasks like password resets, user verifications, and notifications.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;A common setup is for Keycloak to authenticate to the SMTP server with a username and password.
+With issue &lt;a href=&quot;https://github.com/keycloak/keycloak/issues/17432&quot;&gt;#17432&lt;/a&gt;, the Keycloak community raised the need for token-based authentication with XOAUTH2, as some providers deprecated the authentication for SMTP with passwords.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;With Keycloak 26.2, the SMTP AUTH configuration now supports XOAUTH2.
+As Keycloak&amp;#8217;s role is that of an application, it uses the client credentials grant to fetch the token.
+The SMTP AUTH configuration in Keycloak now supports all required fields to fetch such a token with client id and client secret.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;When implementing this functionality, I found that while it works with Microsoft Azure and Office365, it would need a different mechanism for providers like Google.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;So let&amp;#8217;s follow through this example, and then discuss if we need something different from SMTP altogether.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_configuring_keycloak_to_send_emails_with_xoauth2&quot;&gt;Configuring Keycloak to send emails with XOAUTH2&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The following assumes that you are working with Keycloak 26.2.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In a realm, navigate to &lt;strong&gt;Realm Settings&lt;/strong&gt; &amp;#8594; &lt;strong&gt;Email&lt;/strong&gt; and fill in the fields.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;To see the new XOAUTH2 feature, enable &lt;strong&gt;Authentication&lt;/strong&gt; via the radio-button and switch the &lt;strong&gt;Authentication Type&lt;/strong&gt; from &lt;strong&gt;Password&lt;/strong&gt; to &lt;strong&gt;Token&lt;/strong&gt;.
+You can find further details in the documentation on &lt;a href=&quot;https://www.keycloak.org/docs/latest/server_admin/index.html#_email&quot;&gt;sending emails&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;openblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;/style&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/smtp-xoauth2-26-2.png&quot; alt=&quot;Settings for token based authentication&quot; style=&quot;width: 100%; max-width: 863px; object-fit: cover; object-fit: none; object-position: 0 0&quot;&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Once you fill all the settings for gathering an access token and the username, you can test the configuration via the built-in &quot;Test connection&quot; button.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_challenges_with_real_world_cloud_providers&quot;&gt;Challenges with real world cloud providers&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Testing Microsoft Azure, I found it supports fetching an XOAUTH2 token through a client credentials grant using a client secret.
+It needs several configuration changes in several places on Microsoft Azure to make it work, which is annoying, but eventually it all works in Keycloak 26.2.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Google does not support the client credentials grant with a client secret, but requires sending a JWT token.
+Therefore, it does not work with Keycloak 26.2 yet, as that would need additional functionality and even more configuration options for Keycloak.
+Please vote on issue &lt;a href=&quot;https://github.com/keycloak/keycloak/issues/39610&quot;&gt;#39610&lt;/a&gt; to add Google with SMTP and XOAUTH2 to a future Keycloak release.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;When analyzing the Google APIs, we found that a Google Enterprise account seems to have no possibility of restricting the sender email address.
+So any email address, even the CEO&amp;#8217;s email address, could be as a sender with Google and XOAUTH2 authentication, which feels wrong.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Looking at the different capabilities of those two cloud providers, it raises the question of how to support scenarios for additional providers:
+Should Keycloak show provider-specific configuration screens, or would we need to make the UI even more generic and complex?&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_re_thinking_sending_messages_to_users&quot;&gt;Re-thinking sending messages to users&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;While implementing XOAUTH2, I learned a lot more details on a modern cloud-provider&amp;#8217;s perspective handle sending of emails.
+Another big impulse came from discussions during the &lt;a href=&quot;https://www.keycloak-day.dev/&quot;&gt;Keycloak DevDay 2025&lt;/a&gt; Hackathon.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Let&amp;#8217;s break apart what happens when we talk about the current email functionality of Keycloak:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Keycloak is sending a message to an identity.
+This message could be any format, and building a message could be separated from the actual delivery of that message.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;An identity could have all kinds of message handles and email just one of them.
+Also, the way to send an email in a cloud world might no longer be the Simple Mail Transfer Protocol (SMTP), but an HTTP- and JSON-based API.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;To me, working with SMTP and XOAUTH2 feels like working on something quite ancient.
+So what might be other steps for the bright future of Keycloak regarding sending messages to identities?&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Providers offer HTTP-based messaging APIs to send email without using SMTP.
+Looking at these and remembering the discussions from the Keycloak DevDay 2025 Hackathon:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Why use email addresses at all?&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;All kinds of handles could reach an identity.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;In some parts of the planet, only mobile phones are used to reach out to somebody.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;In development scenarios, even a chat-message to, for example, Slack might be enough.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;I started a discussion about the &lt;a href=&quot;https://github.com/keycloak/keycloak/discussions/37848&quot;&gt;Future of sending messages to identities in Keycloak&lt;/a&gt;. Please join the discussion and let me know what you think.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description>
+        <guid>https://www.keycloak.org/2025/05/send-mails-xoauth-26-2</guid>
+        <pubDate>Sun, 18 May 2025 00:00:00 GMT</pubDate>
+        
+        <author>Sebastian Rose</author>
+      </item>
+      <item>
         <title>OpenTalk Keycloak case study published</title>
         <link>https://www.keycloak.org/2025/05/opentalk-case-study</link>
         <description>&lt;div class=&quot;paragraph&quot;&gt;
