@@ -1,0 +1,900 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Deploying an AWS Lambda to disable a non-responding site - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Deploying an AWS Lambda to disable a non-responding site">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Deploy an AWS Lambda as part of the load-balancer building block in a multi-site deployment.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/deploy-aws-accelerator-fencing-lambda">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/deploy-aws-accelerator-fencing-lambda">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Deploying an AWS Lambda to disable a non-responding site</li>
+                </ol>
+            </nav>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/guides">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <h1>Deploying an AWS Lambda to disable a non-responding site</h1>
+                    <span class="text-muted">Deploy an AWS Lambda as part of the load-balancer building block in a multi-site deployment.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide explains how to resolve split-brain scenarios between two sites in a multi-site deployment.
+It also disables replication if one site fails, so the other site can continue to serve requests.</p>
+</div>
+<div class="paragraph">
+<p>This deployment is intended to be used with the setup described in the <a href="https://www.keycloak.org/nightly/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.
+Use this deployment with the other building blocks outlined in the <a href="https://www.keycloak.org/nightly/high-availability/bblocks-multi-site">Building blocks multi-site deployments</a> guide.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+We provide these blueprints to show a minimal functionally complete example with a good baseline performance for regular installations.
+You would still need to adapt it to your environment and your organization&#8217;s standards and security best practices.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_architecture"><a class="anchor" href="#_architecture"></a>Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In the event of a network communication failure between sites in a multi-site deployment, it is no longer possible for the two sites to continue to replicate the data between them.
+The Infinispan is configured with a <code>FAIL</code> failure policy, which ensures consistency over availability. Consequently, all user requests are served with an error message until the failure is resolved, either by restoring the network connection or by disabling cross-site replication.</p>
+</div>
+<div class="paragraph">
+<p>In such scenarios, a quorum is commonly used to determine which sites are marked as online or offline.
+However, as multi-site deployments only consist of two sites, this is not possible.
+Instead, we leverage &#8220;fencing&#8221; to ensure that when one of the sites is unable to connect to the other site, only one site remains in the load balancer configuration, and hence only this site is able to serve subsequent users requests.</p>
+</div>
+<div class="paragraph">
+<p>In addition to the load balancer configuration, the fencing procedure disables replication between the two Infinispan clusters to allow serving user requests from the site that remains in the load balancer configuration.
+As a result, the sites will be out-of-sync once the replication has been disabled.</p>
+</div>
+<div class="paragraph">
+<p>To recover from the out-of-sync state, a manual re-sync is necessary as described in <a href="https://www.keycloak.org/nightly/high-availability/operate-synchronize">Synchronizing sites</a>.
+This is why a site which is removed via fencing will not be re-added automatically when the network communication failure is resolved. The remove site should only be re-added once the two sites have been synchronized using the outlined procedure <a href="https://www.keycloak.org/nightly/high-availability/operate-site-online">Bringing a site online</a>.</p>
+</div>
+<div class="paragraph">
+<p>In this guide we describe how to implement fencing using a combination of <a href="https://prometheus.io/docs/alerting/latest/overview/">Prometheus Alerts</a>
+and AWS Lambda functions.
+A Prometheus Alert is triggered when split-brain is detected by the Infinispan server metrics, which results in the Prometheus AlertManager calling the AWS Lambda based webhook.
+The triggered Lambda function inspects the current Global Accelerator configuration and removes the site reported to be offline.</p>
+</div>
+<div class="paragraph">
+<p>In a true split-brain scenario, where both sites are still up but network communication is down, it is possible that both sites will trigger the webhook simultaneously.
+We guard against this by ensuring that only a single Lambda instance can be executed at a given time.
+The logic in the AWS Lambda ensures that always one site entry remains in the load balancer configuration.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>ROSA HCP based multi-site Keycloak deployment</p>
+</li>
+<li>
+<p>AWS CLI Installed</p>
+</li>
+<li>
+<p>AWS Global Accelerator load balancer</p>
+</li>
+<li>
+<p><code>jq</code> tool installed</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Enable Openshift user alert routing</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f - &lt;&lt; EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-workload-monitoring-config
+  namespace: openshift-user-workload-monitoring
+data:
+  config.yaml: |
+    alertmanager:
+      enabled: true
+      enableAlertmanagerConfig: true
+EOF
+kubectl -n openshift-user-workload-monitoring rollout status --watch statefulset.apps/alertmanager-user-workload</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p><a id="aws-secret"></a>Decide upon a username/password combination which will be used to authenticate the Lambda webhook and create an AWS Secret storing the password</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws secretsmanager create-secret \
+  --name webhook-password \ <i class="conum" data-value="1"></i><b>(1)</b>
+  --secret-string changeme \ <i class="conum" data-value="2"></i><b>(2)</b>
+  --region eu-west-1 <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The name of the secret</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The password to be used for authentication</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The AWS region that hosts the secret</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Create the Role used to execute the Lambda.</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">FUNCTION_NAME= <i class="conum" data-value="1"></i><b>(1)</b>
+ROLE_ARN=$(aws iam create-role \
+  --role-name ${FUNCTION_NAME} \
+  --assume-role-policy-document \
+  '{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "lambda.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }' \
+  --query 'Role.Arn' \
+  --region eu-west-1 \ <i class="conum" data-value="2"></i><b>(2)</b>
+  --output text
+)</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>A name of your choice to associate with the Lambda and related resources</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The AWS Region hosting your Kubernetes clusters</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Create and attach the 'LambdaSecretManager' Policy so that the Lambda can access AWS Secrets</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">POLICY_ARN=$(aws iam create-policy \
+  --policy-name LambdaSecretManager \
+  --policy-document \
+  '{
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Effect": "Allow",
+              "Action": [
+                  "secretsmanager:GetSecretValue"
+              ],
+              "Resource": "*"
+          }
+      ]
+  }' \
+  --query 'Policy.Arn' \
+  --output text
+)
+aws iam attach-role-policy \
+  --role-name ${FUNCTION_NAME} \
+  --policy-arn ${POLICY_ARN}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Attach the <code>ElasticLoadBalancingReadOnly</code> policy so that the Lambda can query the provisioned Network Load Balancers</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws iam attach-role-policy \
+  --role-name ${FUNCTION_NAME} \
+  --policy-arn arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Attach the <code>GlobalAcceleratorFullAccess</code> policy so that the Lambda can update the Global Accelerator EndpointGroup</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws iam attach-role-policy \
+  --role-name ${FUNCTION_NAME} \
+  --policy-arn arn:aws:iam::aws:policy/GlobalAcceleratorFullAccess</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a Lambda ZIP file containing the required fencing logic</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">LAMBDA_ZIP=/tmp/lambda.zip
+cat &lt;&lt; EOF &gt; /tmp/lambda.py
+
+from urllib.error import HTTPError
+
+import boto3
+import jmespath
+import json
+import os
+import urllib3
+
+from base64 import b64decode
+from urllib.parse import unquote
+
+# Prevent unverified HTTPS connection warning
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+class MissingEnvironmentVariable(Exception):
+    pass
+
+
+class MissingSiteUrl(Exception):
+    pass
+
+
+def env(name):
+    if name in os.environ:
+        return os.environ[name]
+    raise MissingEnvironmentVariable(f"Environment Variable '{name}' must be set")
+
+
+def handle_site_offline(labels):
+    a_client = boto3.client('globalaccelerator', region_name='us-west-2')
+
+    acceleratorDNS = labels['accelerator']
+    accelerator = jmespath.search(f"Accelerators[?(DnsName=='{acceleratorDNS}'|| DualStackDnsName=='{acceleratorDNS}')]", a_client.list_accelerators())
+    if not accelerator:
+        print(f"Ignoring SiteOffline alert as accelerator with DnsName '{acceleratorDNS}' not found")
+        return
+
+    accelerator_arn = accelerator[0]['AcceleratorArn']
+    listener_arn = a_client.list_listeners(AcceleratorArn=accelerator_arn)['Listeners'][0]['ListenerArn']
+
+    endpoint_group = a_client.list_endpoint_groups(ListenerArn=listener_arn)['EndpointGroups'][0]
+    endpoints = endpoint_group['EndpointDescriptions']
+
+    # Only update accelerator endpoints if two entries exist
+    if len(endpoints) &gt; 1:
+        # If the reporter endpoint is not healthy then do nothing for now
+        # A Lambda will eventually be triggered by the other offline site for this reporter
+        reporter = labels['reporter']
+        reporter_endpoint = [e for e in endpoints if endpoint_belongs_to_site(e, reporter)][0]
+        if reporter_endpoint['HealthState'] == 'UNHEALTHY':
+            print(f"Ignoring SiteOffline alert as reporter '{reporter}' endpoint is marked UNHEALTHY")
+            return
+
+        offline_site = labels['site']
+        endpoints = [e for e in endpoints if not endpoint_belongs_to_site(e, offline_site)]
+        del reporter_endpoint['HealthState']
+        a_client.update_endpoint_group(
+            EndpointGroupArn=endpoint_group['EndpointGroupArn'],
+            EndpointConfigurations=endpoints
+        )
+        print(f"Removed site={offline_site} from Accelerator EndpointGroup")
+
+        take_infinispan_site_offline(reporter, offline_site)
+        print(f"Backup site={offline_site} caches taken offline")
+    else:
+        print("Ignoring SiteOffline alert only one Endpoint defined in the EndpointGroup")
+
+
+def endpoint_belongs_to_site(endpoint, site):
+    lb_arn = endpoint['EndpointId']
+    region = lb_arn.split(':')[3]
+    client = boto3.client('elbv2', region_name=region)
+    tags = client.describe_tags(ResourceArns=[lb_arn])['TagDescriptions'][0]['Tags']
+    for tag in tags:
+        if tag['Key'] == 'site':
+            return tag['Value'] == site
+    return false
+
+
+def take_infinispan_site_offline(reporter, offlinesite):
+    endpoints = json.loads(INFINISPAN_SITE_ENDPOINTS)
+    if reporter not in endpoints:
+        raise MissingSiteUrl(f"Missing URL for site '{reporter}' in 'INFINISPAN_SITE_ENDPOINTS' json")
+
+    endpoint = endpoints[reporter]
+    password = get_secret(INFINISPAN_USER_SECRET)
+    url = f"https://{endpoint}/rest/v2/container/x-site/backups/{offlinesite}?action=take-offline"
+    http = urllib3.PoolManager(cert_reqs='CERT_NONE')
+    headers = urllib3.make_headers(basic_auth=f"{INFINISPAN_USER}:{password}")
+    try:
+        rsp = http.request("POST", url, headers=headers)
+        if rsp.status &gt;= 400:
+            raise HTTPError(f"Unexpected response status '%d' when taking site offline", rsp.status)
+        rsp.release_conn()
+    except HTTPError as e:
+        print(f"HTTP error encountered: {e}")
+
+
+def get_secret(secret_name):
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=SECRETS_REGION
+    )
+    return client.get_secret_value(SecretId=secret_name)['SecretString']
+
+
+def decode_basic_auth_header(encoded_str):
+    split = encoded_str.strip().split(' ')
+    if len(split) == 2:
+        if split[0].strip().lower() == 'basic':
+            try:
+                username, password = b64decode(split[1]).decode().split(':', 1)
+            except:
+                raise DecodeError
+        else:
+            raise DecodeError
+    else:
+        raise DecodeError
+
+    return unquote(username), unquote(password)
+
+
+def handler(event, context):
+    print(json.dumps(event))
+
+    authorization = event['headers'].get('authorization')
+    if authorization is None:
+        print("'Authorization' header missing from request")
+        return {
+            "statusCode": 401
+        }
+
+    expectedPass = get_secret(WEBHOOK_USER_SECRET)
+    username, password = decode_basic_auth_header(authorization)
+    if username != WEBHOOK_USER and password != expectedPass:
+        print('Invalid username/password combination')
+        return {
+            "statusCode": 403
+        }
+
+    body = event.get('body')
+    if body is None:
+        raise Exception('Empty request body')
+
+    body = json.loads(body)
+    print(json.dumps(body))
+
+    if body['status'] != 'firing':
+        print("Ignoring alert as status is not 'firing', status was: '%s'" % body['status'])
+        return {
+            "statusCode": 204
+        }
+
+    for alert in body['alerts']:
+        labels = alert['labels']
+        if labels['alertname'] == 'SiteOffline':
+            handle_site_offline(labels)
+
+    return {
+        "statusCode": 204
+    }
+
+
+INFINISPAN_USER = env('INFINISPAN_USER')
+INFINISPAN_USER_SECRET = env('INFINISPAN_USER_SECRET')
+INFINISPAN_SITE_ENDPOINTS = env('INFINISPAN_SITE_ENDPOINTS')
+SECRETS_REGION = env('SECRETS_REGION')
+WEBHOOK_USER = env('WEBHOOK_USER')
+WEBHOOK_USER_SECRET = env('WEBHOOK_USER_SECRET')
+
+EOF
+zip -FS --junk-paths ${LAMBDA_ZIP} /tmp/lambda.py</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the Lambda function.</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws lambda create-function \
+  --function-name ${FUNCTION_NAME} \
+  --zip-file fileb://${LAMBDA_ZIP} \
+  --handler lambda.handler \
+  --runtime python3.12 \
+  --role ${ROLE_ARN} \
+  --region eu-west-1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The AWS Region hosting your Kubernetes clusters</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Expose a Function URL so the Lambda can be triggered as webhook</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws lambda create-function-url-config \
+  --function-name ${FUNCTION_NAME} \
+  --auth-type NONE \
+  --region eu-west-1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The AWS Region hosting your Kubernetes clusters</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Allow public invocations of the Function URL</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws lambda add-permission \
+  --action "lambda:InvokeFunctionUrl" \
+  --function-name ${FUNCTION_NAME} \
+  --principal "*" \
+  --statement-id FunctionURLAllowPublicAccess \
+  --function-url-auth-type NONE \
+  --region eu-west-1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The AWS Region hosting your Kubernetes clusters</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Configure the Lambda&#8217;s Environment variables:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In each Kubernetes cluster, retrieve the exposed Infinispan URL endpoint:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n ${NAMESPACE} get route infinispan-external -o jsonpath='{.status.ingress[].host}' <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Replace <code>${NAMESPACE}</code> with the namespace containing your Infinispan server</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Upload the desired Environment variables</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">ACCELERATOR_NAME= <i class="conum" data-value="1"></i><b>(1)</b>
+LAMBDA_REGION= <i class="conum" data-value="2"></i><b>(2)</b>
+CLUSTER_1_NAME= <i class="conum" data-value="3"></i><b>(3)</b>
+CLUSTER_1_ISPN_ENDPOINT= <i class="conum" data-value="4"></i><b>(4)</b>
+CLUSTER_2_NAME= <i class="conum" data-value="5"></i><b>(5)</b>
+CLUSTER_2_ISPN_ENDPOINT= <i class="conum" data-value="6"></i><b>(6)</b>
+INFINISPAN_USER= <i class="conum" data-value="7"></i><b>(7)</b>
+INFINISPAN_USER_SECRET= <i class="conum" data-value="8"></i><b>(8)</b>
+WEBHOOK_USER= <i class="conum" data-value="9"></i><b>(9)</b>
+WEBHOOK_USER_SECRET= <i class="conum" data-value="10"></i><b>(10)</b>
+
+INFINISPAN_SITE_ENDPOINTS=$(echo "{\"${CLUSTER_NAME_1}\":\"${CLUSTER_1_ISPN_ENDPOINT}\",\"${CLUSTER_2_NAME}\":\"${CLUSTER_2_ISPN_ENDPOINT\"}" | jq tostring)
+aws lambda update-function-configuration \
+    --function-name ${ACCELERATOR_NAME} \
+    --region ${LAMBDA_REGION} \
+    --environment "{
+      \"Variables\": {
+        \"INFINISPAN_USER\" : \"${INFINISPAN_USER}\",
+        \"INFINISPAN_USER_SECRET\" : \"${INFINISPAN_USER_SECRET}\",
+        \"INFINISPAN_SITE_ENDPOINTS\" : ${INFINISPAN_SITE_ENDPOINTS},
+        \"WEBHOOK_USER\" : \"${WEBHOOK_USER}\",
+        \"WEBHOOK_USER_SECRET\" : \"${WEBHOOK_USER_SECERT}\",
+        \"SECRETS_REGION\" : \"eu-central-1\"
+      }
+    }"</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The name of the AWS Global Accelerator used by your deployment</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The AWS Region hosting your Kubernetes cluster and Lambda function</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The name of one of your Infinispan sites as defined in <a href="https://www.keycloak.org/nightly/high-availability/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The Infinispan endpoint URL associated with the CLUSER_1_NAME site</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The name of the second Infinispan site</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The Infinispan endpoint URL associated with the CLUSER_2_NAME site</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>The username of a Infinispan user which has sufficient privileges to perform REST requests on the server</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>The name of the AWS secret containing the password associated with the Infinispan user</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>The username used to authenticate requests to the Lambda Function</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="10"></i><b>10</b></td>
+<td>The name of the AWS secret containing the password used to authenticate requests to the Lambda function</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Retrieve the Lambda Function URL</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws lambda get-function-url-config \
+  --function-name ${FUNCTION_NAME} \
+  --query "FunctionUrl" \
+  --region eu-west-1 \<i class="conum" data-value="1"></i><b>(1)</b>
+  --output text</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The AWS region where the Lambda was created</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">https://tjqr2vgc664b6noj6vugprakoq0oausj.lambda-url.eu-west-1.on.aws</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>In each Kubernetes cluster, configure a Prometheus Alert routing to trigger the Lambda on split-brain</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">NAMESPACE= # The namespace containing your deployments
+kubectl apply -n ${NAMESPACE} -f - &lt;&lt; EOF
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/basic-auth
+metadata:
+  name: webhook-credentials
+stringData:
+  username: 'keycloak' <i class="conum" data-value="1"></i><b>(1)</b>
+  password: 'changme' <i class="conum" data-value="2"></i><b>(2)</b>
+---
+apiVersion: monitoring.coreos.com/v1beta1
+kind: AlertmanagerConfig
+metadata:
+  name: example-routing
+spec:
+  route:
+    receiver: default
+    groupBy:
+      - accelerator
+    groupInterval: 90s
+    groupWait: 60s
+    matchers:
+      - matchType: =
+        name: alertname
+        value: SiteOffline
+  receivers:
+    - name: default
+      webhookConfigs:
+        - url: 'https://tjqr2vgc664b6noj6vugprakoq0oausj.lambda-url.eu-west-1.on.aws/' <i class="conum" data-value="3"></i><b>(3)</b>
+          httpConfig:
+            basicAuth:
+              username:
+                key: username
+                name: webhook-credentials
+              password:
+                key: password
+                name: webhook-credentials
+            tlsConfig:
+              insecureSkipVerify: true
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: xsite-status
+spec:
+  groups:
+    - name: xsite-status
+      rules:
+        - alert: SiteOffline
+          expr: 'min by (namespace, site) (vendor_jgroups_site_view_status{namespace="default",site="site-b"}) == 0' <i class="conum" data-value="4"></i><b>(4)</b>
+          labels:
+            severity: critical
+            reporter: site-a <i class="conum" data-value="5"></i><b>(5)</b>
+            accelerator: a3da6a6cbd4e27b02.awsglobalaccelerator.com <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The username required to authenticate Lambda requests</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The password required to authenticate Lambda requests</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The Lambda Function URL</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The namespace value should be the namespace hosting the Infinispan CR and the site should be the remote site defined
+by <code>spec.service.sites.locations[0].name</code> in your Infinispan CR</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The name of your local site defined by <code>spec.service.sites.local.name</code> in your Infinispan CR</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The DNS of your Global Accelerator</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verify"><a class="anchor" href="#_verify"></a>Verify</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To test that the Prometheus alert triggers the webhook as expected, perform the following steps to simulate a split-brain:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In each of your clusters execute the following:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n openshift-operators scale --replicas=0 deployment/infinispan-operator-controller-manager <i class="conum" data-value="1"></i><b>(1)</b>
+kubectl -n openshift-operators rollout status -w deployment/infinispan-operator-controller-manager
+kubectl -n ${NAMESPACE} scale --replicas=0 deployment/infinispan-router <i class="conum" data-value="2"></i><b>(2)</b>
+kubectl -n ${NAMESPACE} rollout status -w deployment/infinispan-router</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Scale down the Infinispan Operator so that the next step does not result in the deployment being recreated by the operator</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Scale down the Gossip Router deployment.Replace <code>${NAMESPACE}</code> with the namespace containing your Infinispan server</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Verify the <code>SiteOffline</code> event has been fired on a cluster by inspecting the <strong>Observe</strong> &#8594; <strong>Alerting</strong> menu in the Openshift
+console</p>
+</li>
+<li>
+<p>Inspect the Global Accelerator EndpointGroup in the AWS console and there should only be a single endpoint present</p>
+</li>
+<li>
+<p>Scale up the Infinispan Operator and Gossip Router to re-establish a connection between sites:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n openshift-operators scale --replicas=1 deployment/infinispan-operator-controller-manager
+kubectl -n openshift-operators rollout status -w deployment/infinispan-operator-controller-manager
+kubectl -n ${NAMESPACE} scale --replicas=1 deployment/infinispan-router <i class="conum" data-value="1"></i><b>(1)</b>
+kubectl -n ${NAMESPACE} rollout status -w deployment/infinispan-router</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Replace <code>${NAMESPACE}</code> with the namespace containing your Infinispan server</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Inspect the <code>vendor_jgroups_site_view_status</code> metric in each site. A value of <code>1</code> indicates that the site is reachable.</p>
+</li>
+<li>
+<p>Update the Accelerator EndpointGroup to contain both Endpoints. See the <a href="https://www.keycloak.org/nightly/high-availability/operate-site-online">Bringing a site online</a> guide for details.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_reading"><a class="anchor" href="#_further_reading"></a>Further reading</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/operate-site-online">Bringing a site online</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/operate-site-offline">Taking a site offline</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/deploy-aws-accelerator-fencing-lambda.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

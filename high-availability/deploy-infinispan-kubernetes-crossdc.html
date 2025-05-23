@@ -1,0 +1,1122 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Deploying Infinispan for HA with the Infinispan Operator - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Deploying Infinispan for HA with the Infinispan Operator">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Deploy Infinispan for high availability in multi availability zones on Kubernetes.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">
+<meta property="og:url" content="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Deploying Infinispan for HA with the Infinispan Operator</li>
+                </ol>
+            </nav>
+
+
+            <div class="mb-4">
+                <h1>Deploying Infinispan for HA with the Infinispan Operator</h1>
+                    <span class="text-muted">Deploy Infinispan for high availability in multi availability zones on Kubernetes.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide describes the procedures required to deploy Infinispan in a multiple-cluster environment (cross-site).
+For simplicity, this topic uses the minimum configuration possible that allows Keycloak to be used with an external Infinispan.</p>
+</div>
+<div class="paragraph">
+<p>This guide assumes two OpenShift clusters named <code>Site-A</code> and <code>Site-B</code>.</p>
+</div>
+<div class="paragraph">
+<p>This is a building block following the concepts described in the <a href="https://www.keycloak.org/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.
+See the <a href="https://www.keycloak.org/high-availability/introduction">Multi-site deployments</a> guide for an overview.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Only Infinispan version 15.0.14.Final or more recent patch releases are supported for external Infinispan deployments.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_architecture"><a class="anchor" href="#_architecture"></a>Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This setup deploys two synchronously replicating Infinispan clusters in two sites with a low-latency network connection.
+An example of this scenario could be two availability zones in one AWS region.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak, loadbalancer and database have been removed from the following diagram for simplicity.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/high-availability/infinispan-crossdc-az.dio.svg" alt="infinispan crossdc az.dio">
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift or Kubernetes cluster running</p>
+</li>
+<li>
+<p>Understanding of the <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html">Infinispan Operator</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install the <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#installation">Infinispan Operator</a></p>
+</li>
+<li>
+<p>Configure the credential to access the Infinispan cluster.</p>
+<div class="paragraph">
+<p>Keycloak needs this credential to be able to authenticate with the Infinispan cluster.
+The following <code>identities.yaml</code> file sets the username and password with admin permissions</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">credentials:
+  - username: developer
+    password: strong-password
+    roles:
+      - admin</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>identities.yaml</code> could be set in a secret as one of the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>As a Kubernetes Resource:</p>
+<div class="listingblock wrap">
+<div class="title">Credential Secret</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: connect-secret
+  namespace: keycloak
+data:
+  identities.yaml: Y3JlZGVudGlhbHM6CiAgLSB1c2VybmFtZTogZGV2ZWxvcGVyCiAgICBwYXNzd29yZDogc3Ryb25nLXBhc3N3b3JkCiAgICByb2xlczoKICAgICAgLSBhZG1pbgo= <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>identities.yaml</code> from the previous example base64 encoded.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Using the CLI</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create secret generic connect-secret --from-file=identities.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#configuring-authentication">Configuring Authentication</a> documentation for more details.</p>
+</div>
+<div class="paragraph">
+<p>These commands must be executed on both OpenShift clusters.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Create a service account.</p>
+<div class="paragraph">
+<p>A service account is required to establish a connection between clusters.
+The Infinispan Operator uses it to inspect the network configuration from the remote site and to configure the local Infinispan cluster accordingly.</p>
+</div>
+<div class="paragraph">
+<p>For more details, see the <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#managed-cross-site-connections_cross-site">Managing Cross-Site Connections</a> documentation.</p>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create a <code>service-account-token</code> secret type as follows.
+The same YAML file can be used in both OpenShift clusters.</p>
+<div class="listingblock">
+<div class="title">xsite-sa-secret-token.yaml</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: ispn-xsite-sa-token <i class="conum" data-value="1"></i><b>(1)</b>
+  annotations:
+    kubernetes.io/service-account.name: "xsite-sa" <i class="conum" data-value="2"></i><b>(2)</b>
+type: kubernetes.io/service-account-token</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The secret name.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The service account name.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Create the service account and generate an access token in both OpenShift clusters.</p>
+<div class="listingblock">
+<div class="title">Create the service account in <code>Site-A</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create sa -n keycloak xsite-sa
+oc policy add-role-to-user view -n keycloak -z xsite-sa
+kubectl create -f xsite-sa-secret-token.yaml
+kubectl get secrets ispn-xsite-sa-token -o jsonpath="{.data.token}" | base64 -d &gt; Site-A-token.txt</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Create the service account in <code>Site-B</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create sa -n keycloak xsite-sa
+oc policy add-role-to-user view -n keycloak -z xsite-sa
+kubectl create -f xsite-sa-secret-token.yaml
+kubectl get secrets ispn-xsite-sa-token -o jsonpath="{.data.token}" | base64 -d &gt; Site-B-token.txt</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The next step is to deploy the token from <code>Site-A</code> into <code>Site-B</code> and the reverse:</p>
+<div class="listingblock">
+<div class="title">Deploy <code>Site-B</code> token into <code>Site-A</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create secret generic -n keycloak xsite-token-secret \
+  --from-literal=token="$(cat Site-B-token.txt)"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Deploy <code>Site-A</code> token into <code>Site-B</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create secret generic -n keycloak xsite-token-secret \
+  --from-literal=token="$(cat Site-A-token.txt)"</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Create TLS secrets</p>
+<div class="paragraph">
+<p>In this guide, Infinispan uses an OpenShift Route for the cross-site communication.
+It uses the SNI extension of TLS to direct the traffic to the correct Pods.
+To achieve that, JGroups use TLS sockets, which require a Keystore and Truststore with the correct certificates.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see the <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#securing-cross-site-connections_cross-site">Securing Cross Site Connections</a> documentation or this <a href="https://developers.redhat.com/learn/openshift/cross-site-and-cross-applications-red-hat-openshift-and-red-hat-data-grid">Red Hat Developer Guide</a>.</p>
+</div>
+<div class="paragraph">
+<p>Upload the Keystore and the Truststore in an OpenShift Secret.
+The secret contains the file content, the password to access it, and the type of the store.
+Instructions for creating the certificates and the stores are beyond the scope of this guide.</p>
+</div>
+<div class="paragraph">
+<p>To upload the Keystore as a Secret, use the following command:</p>
+</div>
+<div class="listingblock">
+<div class="title">Deploy a Keystore</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n keycloak create secret generic xsite-keystore-secret \
+  --from-file=keystore.p12="./certs/keystore.p12" \ <i class="conum" data-value="1"></i><b>(1)</b>
+  --from-literal=password=secret \ <i class="conum" data-value="2"></i><b>(2)</b>
+  --from-literal=type=pkcs12 <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The filename and the path to the Keystore.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The password to access the Keystore.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The Keystore type.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To upload the Truststore as a Secret, use the following command:</p>
+</div>
+<div class="listingblock">
+<div class="title">Deploy a Truststore</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n keycloak create secret generic xsite-truststore-secret \
+        --from-file=truststore.p12="./certs/truststore.p12" \  <i class="conum" data-value="1"></i><b>(1)</b>
+        --from-literal=password=caSecret \  <i class="conum" data-value="2"></i><b>(2)</b>
+        --from-literal=type=pkcs12  <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The filename and the path to the Truststore.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The password to access the Truststore.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The Truststore type.</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Keystore and Truststore must be uploaded in both OpenShift clusters.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Create a Cluster for Infinispan with Cross-Site enabled</p>
+<div class="paragraph">
+<p>The <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#setting-up-xsite">Setting Up Cross-Site</a> documentation provides all the information on how to create and configure your Infinispan cluster with cross-site enabled, including the previous steps.</p>
+</div>
+<div class="paragraph">
+<p>A basic example is provided in this guide using the credentials, tokens, and TLS Keystore/Truststore created by the commands from the previous steps.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="listingblock">
+<div class="title">The <code>Infinispan</code> CR for <code>Site-A</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v1
+kind: Infinispan
+metadata:
+  name: infinispan <i class="conum" data-value="1"></i><b>(1)</b>
+  namespace: keycloak
+  annotations:
+    infinispan.org/monitoring: 'true' <i class="conum" data-value="2"></i><b>(2)</b>
+spec:
+  replicas: 3
+  jmx:
+    enabled: true
+  security:
+    endpointSecretName: connect-secret <i class="conum" data-value="3"></i><b>(3)</b>
+  service:
+    type: DataGrid
+    sites:
+      local:
+        name: site-a <i class="conum" data-value="4"></i><b>(4)</b>
+        expose:
+          type: Route <i class="conum" data-value="5"></i><b>(5)</b>
+        maxRelayNodes: 128
+        encryption:
+          transportKeyStore:
+            secretName: xsite-keystore-secret <i class="conum" data-value="6"></i><b>(6)</b>
+            alias: xsite <i class="conum" data-value="7"></i><b>(7)</b>
+            filename: keystore.p12 <i class="conum" data-value="8"></i><b>(8)</b>
+          routerKeyStore:
+            secretName: xsite-keystore-secret <i class="conum" data-value="6"></i><b>(6)</b>
+            alias: xsite <i class="conum" data-value="7"></i><b>(7)</b>
+            filename: keystore.p12 <i class="conum" data-value="8"></i><b>(8)</b>
+          trustStore:
+            secretName: xsite-truststore-secret <i class="conum" data-value="9"></i><b>(9)</b>
+            filename: truststore.p12 <i class="conum" data-value="10"></i><b>(10)</b>
+      locations:
+        - name: site-b <i class="conum" data-value="11"></i><b>(11)</b>
+          clusterName: infinispan
+          namespace: keycloak <i class="conum" data-value="12"></i><b>(12)</b>
+          url: openshift://api.site-b <i class="conum" data-value="13"></i><b>(13)</b>
+          secretName: xsite-token-secret <i class="conum" data-value="14"></i><b>(14)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The cluster name</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Allows the cluster to be monitored by Prometheus.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>If using a custom credential, configure here the secret name.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The name of the local site, in this case <code>Site-A</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Exposing the cross-site connection using OpenShift Route.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The secret name where the Keystore exists as defined in the previous step.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>The alias of the certificate inside the Keystore.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>The secret key (filename) of the Keystore as defined in the previous step.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>The secret name where the Truststore exists as defined in the previous step.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="10"></i><b>10</b></td>
+<td>The Truststore key (filename) of the Keystore as defined in the previous step.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="11"></i><b>11</b></td>
+<td>The remote site&#8217;s name, in this case  <code>Site-B</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="12"></i><b>12</b></td>
+<td>The namespace of the Infinispan cluster from the remote site.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="13"></i><b>13</b></td>
+<td>The OpenShift API URL for the remote site.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="14"></i><b>14</b></td>
+<td>The secret with the access token to authenticate into the remote site.</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>For <code>Site-B</code>, the <code>Infinispan</code> CR looks similar to the above.
+Note the differences in point 4, 11 and 13.</p>
+</div>
+<div class="listingblock">
+<div class="title">The <code>Infinispan</code> CR for <code>Site-B</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v1
+kind: Infinispan
+metadata:
+  name: infinispan <i class="conum" data-value="1"></i><b>(1)</b>
+  namespace: keycloak
+  annotations:
+    infinispan.org/monitoring: 'true' <i class="conum" data-value="2"></i><b>(2)</b>
+spec:
+  replicas: 3
+  jmx:
+    enabled: true
+  security:
+    endpointSecretName: connect-secret <i class="conum" data-value="3"></i><b>(3)</b>
+  service:
+    type: DataGrid
+    sites:
+      local:
+        name: site-b <i class="conum" data-value="4"></i><b>(4)</b>
+        expose:
+          type: Route <i class="conum" data-value="5"></i><b>(5)</b>
+        maxRelayNodes: 128
+        encryption:
+          transportKeyStore:
+            secretName: xsite-keystore-secret <i class="conum" data-value="6"></i><b>(6)</b>
+            alias: xsite <i class="conum" data-value="7"></i><b>(7)</b>
+            filename: keystore.p12 <i class="conum" data-value="8"></i><b>(8)</b>
+          routerKeyStore:
+            secretName: xsite-keystore-secret <i class="conum" data-value="6"></i><b>(6)</b>
+            alias: xsite <i class="conum" data-value="7"></i><b>(7)</b>
+            filename: keystore.p12 <i class="conum" data-value="8"></i><b>(8)</b>
+          trustStore:
+            secretName: xsite-truststore-secret <i class="conum" data-value="9"></i><b>(9)</b>
+            filename: truststore.p12 <i class="conum" data-value="10"></i><b>(10)</b>
+      locations:
+        - name: site-a <i class="conum" data-value="11"></i><b>(11)</b>
+          clusterName: infinispan
+          namespace: keycloak <i class="conum" data-value="12"></i><b>(12)</b>
+          url: openshift://api.site-a <i class="conum" data-value="13"></i><b>(13)</b>
+          secretName: xsite-token-secret <i class="conum" data-value="14"></i><b>(14)</b></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Creating the caches for Keycloak.</p>
+<div class="paragraph">
+<p>Keycloak requires the following caches to be present: <code>actionTokens</code>, <code>authenticationSessions</code>, <code>loginFailures</code>, and <code>work</code>.</p>
+</div>
+<div class="paragraph">
+<p>The Infinispan <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#creating-caches">Cache CR</a> allows deploying the caches in the Infinispan cluster.
+Cross-site needs to be enabled per cache as documented by <a href="https://infinispan.org/docs/stable/titles/xsite/xsite.html">Cross Site Documentation</a>.
+The documentation contains more details about the options used by this guide.
+The following example shows the <code>Cache</code> CR for <code>Site-A</code>.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In <code>Site-A</code> create a <code>Cache</code> CR for each of the caches mentioned above with the following content.</p>
+<div class="listingblock">
+<div class="title">Cache <code>actionTokens</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+kind: Cache
+metadata:
+  name: actiontokens
+  namespace: keycloak
+spec:
+  clusterName: infinispan
+  name: actionTokens
+  template: |-
+    distributedCache:
+      mode: "SYNC"
+      owners: "2"
+      statistics: "true"
+      remoteTimeout: "5000"
+      encoding:
+        media-type: "application/x-protostream"
+      locking:
+        acquireTimeout: "4000"
+      transaction:
+        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
+        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
+      stateTransfer:
+        chunkSize: "16"
+      backups:
+        site-b: <i class="conum" data-value="3"></i><b>(3)</b>
+          backup:
+            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
+            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
+            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
+            stateTransfer:
+              chunkSize: "16"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Cache <code>authenticationSessions</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+kind: Cache
+metadata:
+  name: authenticationsessions
+  namespace: keycloak
+spec:
+  clusterName: infinispan
+  name: authenticationSessions
+  template: |-
+    distributedCache:
+      mode: "SYNC"
+      owners: "2"
+      statistics: "true"
+      remoteTimeout: "5000"
+      encoding:
+        media-type: "application/x-protostream"
+      locking:
+        acquireTimeout: "4000"
+      transaction:
+        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
+        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
+      stateTransfer:
+        chunkSize: "16"
+      indexing:
+        enabled: true
+        indexed-entities:
+        - keycloak.RootAuthenticationSessionEntity
+      backups:
+        site-b: <i class="conum" data-value="3"></i><b>(3)</b>
+          backup:
+            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
+            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
+            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
+            stateTransfer:
+              chunkSize: "16"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Cache <code>loginFailures</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+kind: Cache
+metadata:
+  name: loginfailures
+  namespace: keycloak
+spec:
+  clusterName: infinispan
+  name: loginFailures
+  template: |-
+    distributedCache:
+      mode: "SYNC"
+      owners: "2"
+      statistics: "true"
+      remoteTimeout: "5000"
+      encoding:
+        media-type: "application/x-protostream"
+      locking:
+        acquireTimeout: "4000"
+      transaction:
+        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
+        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
+      stateTransfer:
+        chunkSize: "16"
+      indexing:
+        enabled: true
+        indexed-entities:
+        - keycloak.LoginFailureEntity
+      backups:
+        site-b: <i class="conum" data-value="3"></i><b>(3)</b>
+          backup:
+            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
+            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
+            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
+            stateTransfer:
+              chunkSize: "16"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Cache <code>work</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+kind: Cache
+metadata:
+  name: work
+  namespace: keycloak
+spec:
+  clusterName: infinispan
+  name: work
+  template: |-
+    distributedCache:
+      mode: "SYNC"
+      owners: "2"
+      statistics: "true"
+      remoteTimeout: "5000"
+      encoding:
+        media-type: "application/x-protostream"
+      locking:
+        acquireTimeout: "4000"
+      transaction:
+        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
+        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
+      stateTransfer:
+        chunkSize: "16"
+      backups:
+        site-b: <i class="conum" data-value="3"></i><b>(3)</b>
+          backup:
+            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
+            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
+            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
+            stateTransfer:
+              chunkSize: "16"</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The transaction mode.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The locking mode used by the transaction.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The remote site name.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The cross-site communication strategy, in this case, <code>SYNC</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The cross-site replication timeout.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The cross-site replication failure policy.</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The example above is the recommended configuration to achieve the best data consistency.</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Background information</strong></p>
+</div>
+<div class="paragraph">
+<p>Deadlocks may occur in an active-active setup as entries are modified concurrently in both sites.</p>
+</div>
+<div class="paragraph">
+<p>The <code>transaction.mode: NON_DURABLE_XA</code> ensures that the transaction is rolled back keeping the data consistent if this occurs.
+The setting <code>backup.failurePolicy: FAIL</code> is required in this case.
+It will throw an error that allows the transaction to be safely rolled back.
+When this occurs, Keycloak will attempt a retry.</p>
+</div>
+<div class="paragraph">
+<p>The <code>transaction.locking: PESSIMISTIC</code> is the only supported locking mode; <code>OPTIMISTIC</code> is not recommended due to its network costs.
+The same settings also prevent that one site is updated while the other site is unreachable.</p>
+</div>
+<div class="paragraph">
+<p>The <code>backup.strategy: SYNC</code> ensures the data is visible and stored in the other site when the Keycloak request is completed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>locking.acquireTimeout</code> can be reduced to fail fast in a deadlock scenario.
+The <code>backup.timeout</code> must always be higher than the <code>locking.acquireTimeout</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>For <code>Site-B</code>, the <code>Cache</code> CR is similar, except for the <code>backups.&lt;name&gt;</code> outlined in point 3 of the above diagram.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example for <code>actionTokens</code> cache in <code>Site-B</code></div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+kind: Cache
+metadata:
+  name: actiontokens
+  namespace: keycloak
+spec:
+  clusterName: infinispan
+  name: actionTokens
+  template: |-
+    distributedCache:
+      mode: "SYNC"
+      owners: "2"
+      statistics: "true"
+      remoteTimeout: "5000"
+      encoding:
+        media-type: "application/x-protostream"
+      locking:
+        acquireTimeout: "4000"
+      transaction:
+        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
+        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
+      stateTransfer:
+        chunkSize: "16"
+      backups:
+        site-a: <i class="conum" data-value="3"></i><b>(3)</b>
+          backup:
+            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
+            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
+            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
+            stateTransfer:
+              chunkSize: "16"</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verifying_the_deployment"><a class="anchor" href="#_verifying_the_deployment"></a>Verifying the deployment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Confirm that the Infinispan cluster is formed, and the cross-site connection is established between the OpenShift clusters.</p>
+</div>
+<div class="listingblock">
+<div class="title">Wait until the Infinispan cluster is formed</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl wait --for condition=WellFormed --timeout=300s infinispans.infinispan.org -n keycloak infinispan</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Wait until the Infinispan cross-site connection is established</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl wait --for condition=CrossSiteViewFormed --timeout=300s infinispans.infinispan.org -n keycloak infinispan</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="connecting-infinispan-to-keycloak"><a class="anchor" href="#connecting-infinispan-to-keycloak"></a>Connecting Infinispan with Keycloak</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now that the Infinispan server is running, here are the relevant Keycloak CR changes necessary to connect it to Keycloak. These changes will be required in the <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a Secret with the username and password to connect to the external Infinispan deployment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: remote-store-secret
+  namespace: keycloak
+type: Opaque
+data:
+  username: ZGV2ZWxvcGVy # base64 encoding for 'developer'
+  password: c2VjdXJlX3Bhc3N3b3Jk # base64 encoding for 'secure_password'</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Extend the Keycloak Custom Resource with <code>additionalOptions</code> as shown below.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>All the memory, resource and database configurations are skipped from the CR below as they have been described in the <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide already.
+Administrators should leave those configurations untouched.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  labels:
+    app: keycloak
+  name: keycloak
+  namespace: keycloak
+spec:
+  additionalOptions:
+    - name: cache-remote-host <i class="conum" data-value="1"></i><b>(1)</b>
+      value: "infinispan.keycloak.svc"
+    - name: cache-remote-port <i class="conum" data-value="2"></i><b>(2)</b>
+      value: "11222"
+    - name: cache-remote-username <i class="conum" data-value="3"></i><b>(3)</b>
+      secret:
+        name: remote-store-secret
+        key: username
+    - name: cache-remote-password <i class="conum" data-value="4"></i><b>(4)</b>
+      secret:
+        name: remote-store-secret
+        key: password
+    - name: spi-connections-infinispan-quarkus-site-name <i class="conum" data-value="5"></i><b>(5)</b>
+      value: keycloak</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The hostname of the remote Infinispan cluster.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The port of the remote Infinispan cluster.
+This is optional and it defaults to <code>11222</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The Secret <code>name</code> and <code>key</code> with the Infinispan username credential.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The Secret <code>name</code> and <code>key</code> with the Infinispan password credential.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The <code>spi-connections-infinispan-quarkus-site-name</code> is an arbitrary Infinispan site name which Keycloak needs for its Infinispan caches deployment when a remote store is used.
+This site-name is related only to the Infinispan caches and does not need to match any value from the external Infinispan deployment.
+If you are using multiple sites for Keycloak in a cross-DC setup such as <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a>, the site name must be different in each site.</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+<div class="sect2">
+<h3 id="_architecture_2"><a class="anchor" href="#_architecture_2"></a>Architecture</h3>
+<div class="paragraph">
+<p>This connects Keycloak to Infinispan using TCP connections secured by TLS 1.3.
+It uses the Keycloak&#8217;s truststore to verify Infinispan&#8217;s server certificate.
+As Keycloak is deployed using its Operator on OpenShift in the prerequisites listed below, the Operator already added the <code>service-ca.crt</code> to the truststore which is used to sign Infinispan&#8217;s server certificates.
+In other environments, add the necessary certificates to Keycloak&#8217;s truststore.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After the Aurora AWS database and Infinispan are deployed and running, use the procedure in the <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide to deploy Keycloak and connect it to all previously created building blocks.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-host</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The hostname of the external Infinispan cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Available only when feature <code>multi-site</code>, <code>clusterless</code> or <code>cache-embedded-remote-store</code> is set.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-host</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_HOST</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password for the authentication to the external Infinispan cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It is optional if connecting to an unsecure external Infinispan cluster. If the option is specified, <code>cache-remote-username</code> is required as well.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-password</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PASSWORD</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The port of the external Infinispan cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PORT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>11222</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-tls-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enable TLS support to communicate with a secured remote Infinispan server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Recommended to be enabled in production.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-tls-enabled</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_TLS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-username</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The username for the authentication to the external Infinispan cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It is optional if connecting to an unsecure external Infinispan cluster. If the option is specified, <code>cache-remote-password</code> is required as well.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-username</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_USERNAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/deploy-infinispan-kubernetes-crossdc.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

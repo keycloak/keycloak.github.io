@@ -10,20 +10,21 @@ gtag('js', new Date());
 gtag('config', 'G-0J2P9316N6');
 </script>
 <meta charset="utf-8"/>
-<title>Database Metrics - Keycloak</title>
+<title>Concepts for database connection pools - Keycloak</title>
 <meta name="twitter:card" content="summary_large">
 <meta name="twitter:site" content="@keycloak">
 <meta property="og:site_name" content="Keycloak">
-<meta property="og:title" content="Database Metrics">
+<meta property="og:title" content="Concepts for database connection pools">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Use metrics to describe Keycloak's connection to the database.">
+<meta name="description" property="og:description" content="Understand concepts for avoiding resource exhaustion and congestion.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/observability/metrics-for-troubleshooting-database">
-<meta property="og:url" content="https://www.keycloak.org/observability/metrics-for-troubleshooting-database">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/concepts-database-connections">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/concepts-database-connections">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
 <script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
 <script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
@@ -67,16 +68,21 @@ gtag('config', 'G-0J2P9316N6');
         <div class="col-md-9 col-xl-10 col-sm-12">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
-                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#observability">Observability</a></li>
-                    <li class="breadcrumb-item active">Database Metrics</li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Concepts for database connection pools</li>
                 </ol>
             </nav>
 
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/guides">here</a>.
+                </div>
 
             <div class="mb-4">
-                <h1>Database Metrics</h1>
-                    <span class="text-muted">Use metrics to describe Keycloak's connection to the database.</span>
+                <h1>Concepts for database connection pools</h1>
+                    <span class="text-muted">Understand concepts for avoiding resource exhaustion and congestion.</span>
             </div>
 
 
@@ -85,89 +91,30 @@ gtag('config', 'G-0J2P9316N6');
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This is part of the <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting">Troubleshooting using metrics</a> guide.</p>
+<p>This section is intended when you want to understand considerations and best practices on how to configure database connection pools for Keycloak.
+For a configuration where this is applied, visit <a href="https://www.keycloak.org/nightly/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
-<div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p>Metrics need to be enabled for Keycloak. Follow the <a href="https://www.keycloak.org/observability/configuration-metrics">Gaining insights with metrics</a> guide for more details.</p>
-</li>
-<li>
-<p>A monitoring system collecting the metrics.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_database_connection_pool_metrics"><a class="anchor" href="#_database_connection_pool_metrics"></a>Database connection pool metrics</h2>
+<h2 id="_concepts"><a class="anchor" href="#_concepts"></a>Concepts</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Configure Keycloak to use a fixed size database connection pool.
-See the <a href="https://www.keycloak.org/high-availability/concepts-database-connections">Concepts for database connection pools</a> guide for more information.</p>
+<p>Creating new database connections is expensive as it takes time.
+Creating them when a request arrives will delay the response, so it is good to have them created before the request arrives.
+It can also contribute to a <a href="https://en.wikipedia.org/wiki/Cache_stampede">stampede effect</a> where creating a lot of connections in a short time makes things worse as it slows down the system and blocks threads.
+Closing a connection also invalidates all server side statements caching for that connection.</p>
 </div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
 <div class="paragraph">
-<p>If there is a high count of threads waiting for a database connection, increasing the database connection pool size is not always the best option. It might overload the database which would then become the bottleneck. Consider the following options instead:</p>
+<p>For the best performance, the values for the initial, minimal and maximum database connection pool size should all be equal.
+This avoids creating new database connections when a new request comes in which is costly.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Reduce the number of HTTP worker threads using the option <code>http-pool-max-threads</code> to make it match the available database connections, and thereby reduce contention and resource usage in Keycloak and increase throughput.</p>
-</li>
-<li>
-<p>Check which database statements are executed on the database. If you see, for example, a lot of information about clients and groups being fetched, and the <code>users</code> and <code>realms</code> cache are full, this might indicate that it is time to increase the sizes of those caches and see if this reduces your database load.</p>
-</li>
-</ul>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Metric</th>
-<th class="tableblock halign-left valign-top">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>agroal_available_count</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Idle database connections.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>agroal_active_count</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Database connections used in ongoing transactions.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>agroal_awaiting_count</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Threads waiting for a database connection to become available.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
-<div class="sectionbody">
 <div class="paragraph">
-<p>Return back to the <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting">Troubleshooting using metrics</a> or proceed to <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting-http">HTTP metrics</a>.</p>
+<p>Keeping the database connection open for as long as possible allows for server side statement caching bound to a connection.
+In the case of PostgreSQL, to use a server-side prepared statement, <a href="https://jdbc.postgresql.org/documentation/server-prepare/#activation">a query needs to be executed (by default) at least five times</a>.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.postgresql.org/docs/current/sql-prepare.html">PostgreSQL docs on prepared statements</a> for more information.</p>
 </div>
 </div>
 </div>            </div>
@@ -178,7 +125,7 @@ See the <a href="https://www.keycloak.org/high-availability/concepts-database-co
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/metrics-for-troubleshooting-database.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/concepts-database-connections.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

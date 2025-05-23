@@ -1,0 +1,347 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Multi-site deployments - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Multi-site deployments">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Connect multiple Keycloak deployments in different sites to increase the overall availability.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/introduction">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/introduction">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Multi-site deployments</li>
+                </ol>
+            </nav>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/guides">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <h1>Multi-site deployments</h1>
+                    <span class="text-muted">Connect multiple Keycloak deployments in different sites to increase the overall availability.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak supports deployments that consist of multiple Keycloak instances that connect to each other using its Infinispan caches; load balancers can distribute the load evenly across those instances.
+Those setups are intended for a transparent network on a single site.</p>
+</div>
+<div class="paragraph">
+<p>The Keycloak high-availability guide goes one step further to describe setups across multiple sites.
+While this setup adds additional complexity, that extra amount of high availability may be needed for some environments.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_when_to_use_a_multi_site_setup"><a class="anchor" href="#_when_to_use_a_multi_site_setup"></a>When to use a multi-site setup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The multi-site deployment capabilities of Keycloak are targeted at use cases that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Are constrained to a single
+AWS Region or an equivalent low-latency setup.</p>
+</li>
+<li>
+<p>Permit planned outages for maintenance.</p>
+</li>
+<li>
+<p>Fit within a defined user and request count.</p>
+</li>
+<li>
+<p>Can accept the impact of periodic outages.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tested_configuration"><a class="anchor" href="#_tested_configuration"></a>Tested Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We regularly test Keycloak with the following configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Two Openshift single-AZ clusters, in the same AWS Region</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Provisioned with <a href="https://www.redhat.com/en/technologies/cloud-computing/openshift/aws">Red Hat OpenShift Service on AWS</a> (ROSA),
+using ROSA HCP.</p>
+</li>
+<li>
+<p>Each Openshift cluster has all its workers in a single Availability Zone.</p>
+</li>
+<li>
+<p>OpenShift version
+4.17.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Amazon Aurora PostgreSQL database</p>
+<div class="ulist">
+<ul>
+<li>
+<p>High availability with a primary DB instance in one Availability Zone, and a synchronously replicated reader in the second Availability Zone</p>
+</li>
+<li>
+<p>Version 16.1</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>AWS Global Accelerator, sending traffic to both ROSA clusters</p>
+</li>
+<li>
+<p>AWS Lambda
+triggered by ROSA&#8217;s Prometheus and Alert Manager
+to automate failover</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>While equivalent setups should work, you will need to verify the performance and failure behavior of your environment.
+We provide functional tests, failure tests and load tests in the <a href="https://github.com/keycloak/keycloak-benchmark">Keycloak Benchmark Project</a>.</p>
+</div>
+<div class="paragraph">
+<p>Read more on each item in the <a href="https://www.keycloak.org/nightly/high-availability/bblocks-multi-site">Building blocks multi-site deployments</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tested_load"><a class="anchor" href="#_tested_load"></a>Tested load</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We regularly test Keycloak with the following load:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>100,000 users</p>
+</li>
+<li>
+<p>300 requests per second</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>While we did not see a hard limit in our tests with these values, we ask you to test for higher volumes with horizontally and vertically scaled Keycloak name instances and databases.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/nightly/high-availability/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> guide for more information.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_limitations"><a class="anchor" href="#_limitations"></a>Limitations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Even with the additional redundancy of the two sites, downtimes can still occur:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>During upgrades of Keycloak or Infinispan both sites needs to be taken offline for the duration of the upgrade.</p>
+</li>
+<li>
+<p>During certain failure scenarios, there may be downtime of up to 5 minutes.</p>
+</li>
+<li>
+<p>After certain failure scenarios, manual intervention may be required to restore redundancy by bringing the failed site back online.</p>
+</li>
+<li>
+<p>During certain switchover scenarios, there may be downtime of up to 5 minutes.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more details on limitations see the <a href="https://www.keycloak.org/nightly/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The different guides introduce the necessary concepts and building blocks.
+For each building block, a blueprint shows how to set a fully functional example.
+Additional performance tuning and security hardening are still recommended when preparing a production setup.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_concept_and_building_block_overview"><a class="anchor" href="#_concept_and_building_block_overview"></a>Concept and building block overview</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/concepts-multi-site">Concepts for multi-site deployments</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/bblocks-multi-site">Building blocks multi-site deployments</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/concepts-database-connections">Concepts for database connection pools</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/concepts-threads">Concepts for configuring thread pools</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/concepts-infinispan-cli-batch">Concepts to automate Infinispan CLI commands</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_blueprints_for_building_blocks"><a class="anchor" href="#_blueprints_for_building_blocks"></a>Blueprints for building blocks</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/deploy-aurora-multi-az">Deploying AWS Aurora in multiple availability zones</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/deploy-aws-accelerator-loadbalancer">Deploying an AWS Global Accelerator load balancer</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/deploy-aws-accelerator-fencing-lambda">Deploying an AWS Lambda to disable a non-responding site</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_operational_procedures"><a class="anchor" href="#_operational_procedures"></a>Operational procedures</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/operate-synchronize">Synchronizing sites</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/operate-site-offline">Taking a site offline</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/operate-site-online">Bringing a site online</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/nightly/high-availability/health-checks-multi-site">Health checks for multi-site deployments</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/introduction.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>

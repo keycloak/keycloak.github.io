@@ -1,0 +1,198 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Concepts for configuring thread pools - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Concepts for configuring thread pools">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Understand concepts for avoiding resource exhaustion and congestion.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/concepts-threads">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/concepts-threads">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.ico">
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=GitHub%20Stars" style="height: 25px" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://img.shields.io/github/stars/keycloak/keycloak?label=" style="height: 25px" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
+                    <li class="breadcrumb-item active">Concepts for configuring thread pools</li>
+                </ol>
+            </nav>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/guides">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <h1>Concepts for configuring thread pools</h1>
+                    <span class="text-muted">Understand concepts for avoiding resource exhaustion and congestion.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section is intended when you want to understand the considerations and best practices on how to configure thread pools connection pools for Keycloak.
+For a configuration where this is applied, visit <a href="https://www.keycloak.org/nightly/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_concepts"><a class="anchor" href="#_concepts"></a>Concepts</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_jgroups_communications"><a class="anchor" href="#_jgroups_communications"></a>JGroups communications</h3>
+<div class="paragraph">
+<p>JGroups communications, which is used in single-site setups for the communication between Keycloak nodes, benefits from the use of virtual threads which are available in OpenJDK 21 when at least two cores are available for Keycloak.
+This reduces the memory usage and removes the need to configure thread pool sizes.
+Therefore, the use of OpenJDK 21 is recommended.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_quarkus_executor_pool"><a class="anchor" href="#_quarkus_executor_pool"></a>Quarkus executor pool</h3>
+<div class="paragraph">
+<p>Keycloak requests, as well as blocking probes, are handled by an executor pool. Depending on the available CPU cores, it has a maximum size of 50 or more threads.
+Threads are created as needed, and will end when no longer needed, so the system will scale up and down automatically.
+Keycloak allows configuring the maximum thread pool size by the <a href="https://www.keycloak.org/nightly/server/all-config?q=http-pool-max-threads"><code>http-pool-max-threads</code></a> configuration option. See <a href="https://www.keycloak.org/nightly/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> for an example.</p>
+</div>
+<div class="paragraph">
+<p>When running on Kubernetes, adjust the number of worker threads to avoid creating more load than what the CPU limit allows for the Pod to avoid throttling, which would lead to congestion.
+When running on physical machines, adjust the number of worker threads to avoid creating more load than the node can handle to avoid congestion.
+Congestion would result in longer response times and an increased memory usage, and eventually an unstable system.</p>
+</div>
+<div class="paragraph">
+<p>Ideally, you should start with a low limit of threads and adjust it accordingly to the target throughput and response time.
+When the load and the number of threads increases, the database connections can also become a bottleneck.
+Once a request cannot acquire a database connection within 5 seconds, it will fail with a message in the log like <code>Unable to acquire JDBC Connection</code>.
+The caller will receive a response with a 5xx HTTP status code indicating a server side error.</p>
+</div>
+<div class="paragraph">
+<p>If you increase the number of database connections and the number of threads too much, the system will be congested under a high load with requests queueing up, which leads to a bad performance.
+The number of database connections is configured via the <a href="https://www.keycloak.org/nightly/server/all-config?q=db-pool"><code>Database</code> settings <code>db-pool-initial-size</code>, <code>db-pool-min-size</code> and <code>db-pool-max-size</code></a> respectively.
+Low numbers ensure fast response times for all clients, even if there is an occasionally failing request when there is a load spike.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="load-shedding"><a class="anchor" href="#load-shedding"></a>Load Shedding</h3>
+<div class="paragraph">
+<p>By default, Keycloak will queue all incoming requests infinitely, even if the request processing stalls.
+This will use additional memory in the Pod, can exhaust resources in the load balancers, and the requests will eventually time out on the client side without the client knowing if the request has been processed.
+To limit the number of queued requests in Keycloak, set an additional Quarkus configuration option.</p>
+</div>
+<div class="paragraph">
+<p>Configure <code>http-max-queued-requests</code> to specify a maximum queue length to allow for effective load shedding once this queue size is exceeded.
+Assuming a Keycloak Pod processes around 200 requests per second, a queue of 1000 would lead to maximum waiting times of around 5 seconds.</p>
+</div>
+<div class="paragraph">
+<p>When this setting is active, requests that exceed the number of queued requests will return with an HTTP 503 error.
+Keycloak logs the error message in its log.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="probes"><a class="anchor" href="#probes"></a>Probes</h3>
+<div class="paragraph">
+<p>Keycloak&#8217;s liveness probe is non-blocking to avoid a restart of a Pod under a high load.</p>
+</div>
+<div class="paragraph">
+<p>The overall health probe and the readiness probe can in some cases block to check the connection to the database, so they might fail under a high load.
+Due to this, a Pod can become non-ready under a high load.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_os_resources"><a class="anchor" href="#_os_resources"></a>OS Resources</h3>
+<div class="paragraph">
+<p>In order for Java to create threads, when running on Linux it needs to have file handles available.
+Therefore, the number of open files (as retrieved as <code>ulimit -n</code> on Linux) need to provide head-space for Keycloak to increase the number of threads needed.
+Each thread will also consume memory, and the container memory limits need to be set to a value that allows for this or the Pod will be killed by Kubernetes.</p>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/concepts-threads.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+</body>
+</html>
