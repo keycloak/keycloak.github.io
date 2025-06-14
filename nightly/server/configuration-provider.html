@@ -107,7 +107,15 @@ any provider, including those you have implemented to extend the server capabili
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>spi-&lt;spi-id&gt;-&lt;provider-id&gt;-&lt;property&gt;=&lt;value&gt;</code></pre>
+<pre class="highlight"><code>spi-&lt;spi-id&gt;--&lt;provider-id&gt;--&lt;property&gt;=&lt;value&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or if there is no possibility of ambiguity between multiple providers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>spi-&lt;spi-id&gt;-&lt;provider-id&gt;-&lt;property&gt;=&lt;value&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -117,7 +125,19 @@ any provider, including those you have implemented to extend the server capabili
 <p>The <code>&lt;provider-id&gt;</code> is the id of the provider you want to configure. This is the id set to the corresponding provider factory implementation.</p>
 </div>
 <div class="paragraph">
-<p>The <code>&lt;property&gt;</code> is the actual name of the property you want to set for a given provider.</p>
+<p>The <code>&lt;property&gt;</code> is the actual name of the property you want to set for a given provider</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+the property name <code>enabled</code> is effectively reserved for enabling / disabling a provider
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>All those names (for spi, provider, and property) should be in lower case and if the name is in camel-case such as <code>myKeycloakProvider</code>, it should include dashes (<code>-</code>) before upper-case letters as follows: <code>my-keycloak-provider</code>.</p>
@@ -127,31 +147,48 @@ any provider, including those you have implemented to extend the server capabili
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>spi-connections-http-client-default-connection-pool-size=10</code></pre>
+<pre class="highlight"><code>spi-connections-http-client--default--connection-pool-size=10</code></pre>
 </div>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_setting_a_provider_configuration_option"><a class="anchor" href="#_setting_a_provider_configuration_option"></a>Setting a provider configuration option</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_setting_a_provider_configuration_option"><a class="anchor" href="#_setting_a_provider_configuration_option"></a>Setting a provider configuration option</h3>
 <div class="paragraph">
 <p>Provider configuration options are provided when starting the server. See all support configuration sources and formats for options in <a href="https://www.keycloak.org/nightly/server/configuration">Configuring Keycloak</a>. For example via a command line option:</p>
 </div>
 <div class="listingblock">
 <div class="title">Setting the <code>connection-pool-size</code> for the <code>default</code> provider of the <code>connections-http-client</code> SPI</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-http-client-default-connection-pool-size=10</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-http-client--default--connection-pool-size=10</code></pre>
+</div>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configuring_a_single_provider_for_an_spi"><a class="anchor" href="#_configuring_a_single_provider_for_an_spi"></a>Configuring a single provider for an SPI</h2>
+<h2 id="_build_time_options"><a class="anchor" href="#_build_time_options"></a>Build time options</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_configuring_a_single_provider_for_an_spi"><a class="anchor" href="#_configuring_a_single_provider_for_an_spi"></a>Configuring a single provider for an SPI</h3>
 <div class="paragraph">
 <p>Depending on the SPI, multiple provider implementations can co-exist but only one of them is going to be used at runtime.
-For these SPIs, a specific provider is the primary implementation that is going to be active and used at runtime.</p>
+For these SPIs, a specific provider is the primary implementation that is going to be active and used at runtime. The format consists of:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>spi-&lt;spi-id&gt;--provider=&lt;provider-id&gt;</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>spi-&lt;spi-id&gt;-provider=&lt;provider-id&gt;</code> may still be used, but the server will not properly detect when reaugmentation is needed.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>To configure a provider as the single provider you should run the <code>build</code> command as follows:</p>
@@ -159,18 +196,33 @@ For these SPIs, a specific provider is the primary implementation that is going 
 <div class="listingblock">
 <div class="title">Marking the <code>mycustomprovider</code> provider as the single provider for the <code>email-template</code> SPI</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --spi-email-template-provider=mycustomprovider</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --spi-email-template--provider=mycustomprovider</code></pre>
 </div>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_configuring_a_default_provider_for_an_spi"><a class="anchor" href="#_configuring_a_default_provider_for_an_spi"></a>Configuring a default provider for an SPI</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_configuring_a_default_provider_for_an_spi"><a class="anchor" href="#_configuring_a_default_provider_for_an_spi"></a>Configuring a default provider for an SPI</h3>
 <div class="paragraph">
 <p>Depending on the SPI, multiple provider implementations can co-exist and one is used by default.
 For these SPIs, a specific provider is the default implementation that is going to selected unless a specific provider
-is requested.</p>
+is requested. The format consists of:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>spi-&lt;spi-id&gt;--provider-default=&lt;provider-id&gt;</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>spi-&lt;spi-id&gt;-provider-default=&lt;provider-id&gt;</code> may still be used, but the server will not properly detect when reaugmentation is needed.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>The following logic is used to determine the default provider:</p>
@@ -194,25 +246,44 @@ is requested.</p>
 <div class="listingblock">
 <div class="title">Marking the <code>mycustomhash</code> provider as the default provider for the <code>password-hashing</code> SPI</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --spi-password-hashing-provider-default=mycustomprovider</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --spi-password-hashing--provider-default=mycustomprovider</code></pre>
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_enabling_and_disabling_a_provider"><a class="anchor" href="#_enabling_and_disabling_a_provider"></a>Enabling and disabling a provider</h3>
+<div class="paragraph">
+<p>The format consists of:</p>
 </div>
-<div class="sect1">
-<h2 id="_enabling_and_disabling_a_provider"><a class="anchor" href="#_enabling_and_disabling_a_provider"></a>Enabling and disabling a provider</h2>
-<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>spi-&lt;spi-id&gt;--&lt;provider-id&gt;--enabled=&lt;boolean&gt;</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>spi-&lt;spi-id&gt;-&lt;provider-id&gt;-enabled=&lt;boolean&gt;</code> may still be used, but the server will not properly detect when reaugmentation is needed.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>To enable or disable a provider you should run the <code>build</code> command as follows:</p>
 </div>
 <div class="listingblock">
 <div class="title">Enabling a provider</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --spi-email-template-mycustomprovider-enabled=true</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --spi-email-template--mycustomprovider--enabled=true</code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>To disable a provider, use the same command and set the <code>enabled</code> property to <code>false</code>.</p>
+</div>
 </div>
 </div>
 </div>

@@ -232,7 +232,7 @@ formats. For all configuration options, see <a href="https://www.keycloak.org/ni
 </div>
 </div>
 <div class="sect2">
-<h3 id="_formats_for_environment_variables"><a class="anchor" href="#_formats_for_environment_variables"></a>Formats for environment variables</h3>
+<h3 id="_format_for_referencing_environment_variables"><a class="anchor" href="#_format_for_referencing_environment_variables"></a>Format for referencing environment variables</h3>
 <div class="paragraph">
 <p>You can use placeholders to resolve an environment specific value from environment variables inside the <code>keycloak.conf</code> file by using the <code>${ENV_VAR}</code> syntax:</p>
 </div>
@@ -359,6 +359,29 @@ For example, bash single quotes preserve the single backslash <code>--db-passwor
 </div>
 <div class="paragraph">
 <p>PowerShell handles quotes differently. It interprets the quoted string before passing it to the <code>kc.bat</code> script, removing the outer quote characters. Therefore, an extra layer of quotes is needed to preserve the value structure. Otherwise, the comma would be interpreted as a delimiter. In Windows CMD, you can use double quotes directly.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_formats_for_environment_variable_keys_with_special_characters"><a class="anchor" href="#_formats_for_environment_variable_keys_with_special_characters"></a>Formats for environment variable keys with special characters</h3>
+<div class="paragraph">
+<p>Some configuration keys, such as those for logging, may contain characters such as <code><em></code> or <code>$</code> - e.g. <code>kc.log-level-package.class_name</code>. Non-alphanumeric characters in your configuration key must be converted to <code>\</em></code> in the corresponding environment variable key.</p>
+</div>
+<div class="paragraph">
+<p>The automatic handling of the environment variable key may not preserve the intended key. For example <code>KC_LOG_LEVEL_PACKAGE_CLASS_NAME</code> will become <code>kc.log-level-package.class.name</code> because logging properties default to replacing <code>_</code> in the "wildcard"
+part of the key with <code>.</code> as that is what is most commonly needed in a class / package name. However this does not match the intent of <code>kc.log-level-package.class_name</code>.</p>
+</div>
+<div class="paragraph">
+<p>You have a couple of options in this case:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>create an entry in your <code>keycloak.conf</code> file that references an environment variable of your choosing. e.g. <code>kc.log-level-package.class_name=${CLASS_NAME_LEVEL}</code>. See more on referencing environment variables in <a href="#_format_for_referencing_environment_variables">Format for referencing environment variables</a>.</p>
+</li>
+<li>
+<p>or in situations where modifying the <code>keycloak.conf</code> may not be easy, you can use a pair of environment variables <code>KC_UNIQUEIFIER=value</code> and <code>KCKEY_UNIQUEIFIER=key</code>, e.g. <code>KC_MYKEY=debug</code> and <code>KCKEY_MYKEY=log-level-package.class_name</code>, or <code>KC_LOG_LEVEL_PACKAGE_CLASS_NAME=debug</code> and <code>KCKEY_LOG_LEVEL_PACKAGE_CLASS_NAME=log-level-package.class_name</code></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -595,7 +618,7 @@ https-certificate-file</code></pre>
 the realm and its components.</p>
 </div>
 <div class="paragraph">
-<p>By default, Keycloak disallow using system variables but only those explicitly specified through the <code>spi-admin-allowed-system-variables</code> configuration
+<p>By default, Keycloak disallow using system variables but only those explicitly specified through the <code>spi-admin--allowed-system-variables</code> configuration
 option. This option allows you to specify a comma-separated list of keys that will eventually resolve to values from system variables with the same key.</p>
 </div>
 <div class="olist arabic">
@@ -604,7 +627,7 @@ option. This option allows you to specify a comma-separated list of keys that wi
 <p>Start the server and expose a set of system variables to the server runtime</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-admin-allowed-system-variables=FOO,BAR</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-admin--allowed-system-variables=FOO,BAR</code></pre>
 </div>
 </div>
 </li>
