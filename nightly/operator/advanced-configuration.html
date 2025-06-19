@@ -181,11 +181,11 @@ metadata:
 spec:
   ...
   additionalOptions:
-    - name: spi-connections-http-client-default-connection-pool-size
+    - name: spi-connections-http-client--default--connection-pool-size
       secret: # Secret reference
         name: http-client-secret # name of the Secret
         key: poolSize # name of the Key in the Secret
-    - name: spi-email-template-mycustomprovider-enabled
+    - name: spi-email-template--mycustomprovider--enabled
       value: true # plain text value</code></pre>
 </div>
 </div>
@@ -262,18 +262,9 @@ spec:
 </div>
 </div>
 <div class="sect4">
-<h5 id="_probe_timeouts"><a class="anchor" href="#_probe_timeouts"></a>Probe Timeouts</h5>
+<h5 id="_probe_configuration"><a class="anchor" href="#_probe_configuration"></a>Probe Configuration</h5>
 <div class="paragraph">
-<p>The unsupported podTemplate may be used to override the default probes.</p>
-</div>
-<div class="paragraph">
-<p>In particular the default startup probe timeout of 10 minutes may be too short in scenarios where there is a long-running migration.</p>
-</div>
-<div class="paragraph">
-<p>If your instances encounter this startup failure or if you wish to proactively prevent such a startup failure from occurring, then the startup probe timeout should be increased.</p>
-</div>
-<div class="paragraph">
-<p>With otherwise default settings, something like the following increases the timeout to 20 minutes:</p>
+<p>The Keycloak CR exposes options to set periodSeconds and failureThreshold on each of the three probes (readiness, liveness and startup)</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -282,22 +273,16 @@ kind: Keycloak
 metadata:
   name: example-kc
 spec:
-  ...
-  unsupported:
-    podTemplate:
-      spec:
-        containers:
-          startupProbe:
-            httpGet:
-              path: "/health/started"
-            port: 9000
-            scheme: "HTTPS"
-            failureThreshold: 1200
-            periodSeconds: 1</code></pre>
+  readinessProbe:
+    periodSeconds: 20
+    failureThreshold: 5
+  livenessProbe:
+    periodSeconds: 20
+    failureThreshold: 5
+  startupProbe:
+    periodSeconds: 20
+    failureThreshold: 5</code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p>Note that the usage of a relative HTTP path, or an alternative management port, requires changes to the probe configuration.</p>
 </div>
 </div>
 </div>
@@ -680,6 +665,29 @@ They need to access Keycloak to scrape the available metrics.</td>
 </div>
 <div class="paragraph">
 <p>Check the <a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/">Kubernetes Network Policies documentation</a> for more information about NetworkPolicies.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_parameterizing_service_labels_and_annotations"><a class="anchor" href="#_parameterizing_service_labels_and_annotations"></a>Parameterizing service labels and annotations</h3>
+<div class="paragraph">
+<p>If you need to set custom labels or annotations to keycloak service you can do that through <code>spec.http.labels</code> and <code>spec.http.annotations</code></p>
+</div>
+<div class="listingblock">
+<div class="title">Custom service labels and annotations</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  http:
+    labels:
+      label1: label-value1
+      label2: label-value2
+    annotations:
+      annotation1: annotation-value1
+      annotation2: annotation-value2</code></pre>
 </div>
 </div>
 </div>
