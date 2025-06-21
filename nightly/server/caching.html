@@ -356,8 +356,7 @@ It is possible to configure Keycloak to store regular user sessions in the cache
 </div>
 <div class="paragraph">
 <p>When using volatile user sessions, the cache is the source of truth for user and client sessions.
-Therefore, it is necessary to not define an upper limit on the total number of entries that can be stored via the setting <code>max-count</code>.
-Similarly, it&#8217;s crucial that we replicate each entry to two nodes to prevent data loss on node failures and rolling restarts.</p>
+Keycloak automatically adjusts the number of entries that can be stored in memory, and increases the number of copies to prevent data loss.</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -366,9 +365,6 @@ Similarly, it&#8217;s crucial that we replicate each entry to two nodes to preve
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-<div class="paragraph">
-<p>When using volatile user sessions, the <code>max-count</code> setting for the offline session is ignored.</p>
-</div>
 <div class="paragraph">
 <p>It is not recommended to use volatile user sessions when using offline sessions extensively due to potentially high memory usage.
 For volatile sessions, the time offline sessions are cached in memory can be limited with the SPI options <code>spi-user-sessions&#8212;&#8203;infinispan&#8212;&#8203;offline-client-session-cache-entry-lifespan-override</code> and <code>spi-user-sessions&#8212;&#8203;infinispan&#8212;&#8203;offline-session-cache-entry-lifespan-override</code>.</p>
@@ -382,33 +378,6 @@ For volatile sessions, the time offline sessions are cached in memory can be lim
 </div>
 <div class="olist arabic">
 <ol class="arabic">
-<li>
-<p>Edit Keycloak&#8217;s cache config file (<code>conf/cache-ispn.xml</code>) for caches <code>sessions</code>, <code>clientSessions</code>, <code>offlineSessions</code> and <code>offlineClientSessions</code> with the following update:</p>
-<div class="openblock">
-<div class="content">
-<div class="ulist">
-<ul>
-<li>
-<p>Remove the <code>&lt;memory max-count="..."/&gt;</code></p>
-</li>
-<li>
-<p>Change <code>owners</code> attribute of the <code>distributed-cache</code> tag to 2 or more</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>An example of the resulting configuration for the <code>sessions</code> cache would look as follows.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-xml" data-lang="xml">&lt;distributed-cache name="sessions" owners="2"&gt;
-    &lt;expiration lifespan="-1"/&gt;
-&lt;/distributed-cache&gt;</code></pre>
-</div>
-</div>
-</li>
 <li>
 <p>Disable <code>persistent-user-sessions</code> feature using the following command:</p>
 <div class="listingblock">
