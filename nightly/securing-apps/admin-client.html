@@ -86,6 +86,8 @@ gtag('config', 'G-0J2P9316N6');
 
 
             <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
 <div class="paragraph">
 <p>The Keycloak admin client is a Java library that facilitates the access and usage of the Keycloak Admin REST API.
 The library requires Java 11 or higher at runtime (RESTEasy dependency enforces this requirement).
@@ -121,6 +123,54 @@ RealmRepresentation realm = keycloak.realm("master").toRepresentation();</code><
 </div>
 <div class="paragraph">
 <p>Complete Javadoc for the admin client is available at <a href="https://www.keycloak.org/docs/latest/api_documentation/">API Documentation</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_admin_client_compatibility"><a class="anchor" href="#_admin_client_compatibility"></a>Compatibility with Keycloak server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak admin client aims to work with multiple versions of the Keycloak server. The admin client may be supported with a newer version of the Keycloak server that is
+released later than the client and older versions of the Keycloak server that were released earlier.
+As a result of this change, the Java fields of the underlying "representation" classes, which are representing JSON properties of the request/response body (such as the <code>RealmRepresentation</code> class
+shown in the previous section) might not be exactly same for the client and the server.</p>
+</div>
+<div class="paragraph">
+<p>To avoid compatibility issues, ensure that the <code>com.fasterxml.jackson.databind.ObjectMapper</code> class, which is used by the admin client under the covers, is initialized with these two properties:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are using the basic ways of admin client creation as described above, then these properties are added by default as admin client uses by default the <code>org.keycloak.admin.client.JacksonProvider</code> class for creating <code>ObjectMapper</code>,
+which adds these properties automatically. However if you are injecting your own <code>customJacksonProvider</code> when creating <code>Keycloak</code> object, make sure that object mapper is initialized with
+the properties above if you want to avoid compatibility issues.</p>
+</div>
+<div class="paragraph">
+<p>For example, consider the situation that the admin client is instantiated in a way as described below with your own <code>MyCustomJacksonProvider</code> class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">Keycloak.getInstance(
+                "http://localhost:8080",
+                "master",
+                "admin",
+                "admin",
+                "admin-cli",
+                null,
+                null,
+                new MyCustomJacksonProvider()
+        );</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, please make sure that your class <code>MyCustomJacksonProvider</code> extends from the class <code>org.keycloak.admin.client.JacksonProvider</code> or make sure to configure the <code>ObjectMapper</code> manually in a way described above.
+The similar care should be taken when using <code>KeycloakBuilder</code> to create the admin client and the RestEasy client is manually injected and created.</p>
+</div>
+</div>
 </div>            </div>
         </div>
 

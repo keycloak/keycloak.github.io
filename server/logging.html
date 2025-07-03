@@ -441,6 +441,114 @@ The ECS specification is being converged with <a href="https://opentelemetry.io/
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_asynchronous_logging"><a class="anchor" href="#_asynchronous_logging"></a>Asynchronous logging</h3>
+<div class="paragraph">
+<p>Keycloak supports asynchronous logging, which might be useful for deployments requiring <strong>high throughput</strong> and <strong>low latency</strong>.
+Asynchronous logging uses a separate thread to take care of processing all log records.
+The logging handlers are invoked in exactly the same way as with synchronous logging, only done in separate threads.
+You can enable asynchronous logging for all Keycloak log handlers.
+A dedicated thread will be created for every log handler with enabled asynchronous logging.</p>
+</div>
+<div class="paragraph">
+<p>The underlying mechanism for asynchronous logging uses a queue for processing log records.
+Every new log record is added to the queue and then published to the particular log handler with enabled asynchronous logging.
+Every log handler has a different queue.</p>
+</div>
+<div class="paragraph">
+<p>If the queue is already full, it blocks the main thread and waits for free space in the queue.</p>
+</div>
+<div class="sect3">
+<h4 id="_when_to_use_asynchronous_logging"><a class="anchor" href="#_when_to_use_asynchronous_logging"></a>When to use asynchronous logging</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>You need <strong>lower latencies</strong> for incoming requests</p>
+</li>
+<li>
+<p>You need <strong>higher throughput</strong></p>
+</li>
+<li>
+<p>You have <strong>small worker thread pool</strong> and want to offload logging to separate threads</p>
+</li>
+<li>
+<p>You want to reduce the impact of <strong>I/O-heavy log handlers</strong></p>
+</li>
+<li>
+<p>You are logging to <strong>remote destinations</strong> (e.g., network syslog servers) and want to avoid blocking worker threads</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Be aware that enabling asynchronous logging might bring some <strong>additional memory overhead</strong> due to the additional separate thread and the inner queue.
+In that case, it is not recommended to use it for resource-constrained environments.
+Additionally, unexpected server shutdowns create a risk of <strong>losing log records</strong>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_enable_asynchronous_logging"><a class="anchor" href="#_enable_asynchronous_logging"></a>Enable asynchronous logging</h4>
+<div class="paragraph">
+<p>You can enable asynchronous logging globally for all log handlers by using <code>log-async</code> property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-async=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or you can enable the asynchronous logging for every specific handler by using properties in the format <code>log-&lt;handler&gt;-async</code> (where <code>&lt;handler&gt;</code> is a log handler).
+If the property for a specific handler is not set, the value from the parent <code>log-async</code> property is used.</p>
+</div>
+<div class="paragraph">
+<p>You can use these properties as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-async=true --log-file-async=true --log-syslog-async=true</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>log-console-async</code> - Console log handler</p>
+</li>
+<li>
+<p><code>log-file-async</code> - File log handler</p>
+</li>
+<li>
+<p><code>log-syslog-async</code> - Syslog log handler</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_change_queue_length"><a class="anchor" href="#_change_queue_length"></a>Change queue length</h4>
+<div class="paragraph">
+<p>You can change the size of the queue used for the asynchronous logging.
+The default size is <strong>512</strong> log records in the queue.</p>
+</div>
+<div class="paragraph">
+<p>You can change the queue length as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-async-queue-length=512 --log-file-async-queue-length=512 --log-syslog-async-queue-length=512</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These properties are available only when asynchronous logging is enabled for these specific log handlers.</p>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -814,6 +922,40 @@ To use UDP instead of TCP, add the <code>--log-syslog-protocol</code> option as 
 </div>
 </div>
 <div class="sect2">
+<h3 id="_configuring_the_syslog_counting_framing"><a class="anchor" href="#_configuring_the_syslog_counting_framing"></a>Configuring the Syslog counting framing</h3>
+<div class="paragraph">
+<p>By default, Syslog messages sent over TCP or SSL-TCP are prefixed with the message size, as required by certain Syslog receivers.
+This behavior is controlled by the <code>--log-syslog-counting-framing</code> option.</p>
+</div>
+<div class="paragraph">
+<p>To explicitly enable or disable this feature, use the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-counting-framing=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can set the value to one of the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>protocol-dependent</code> (default) – Enable counting framing only when the <code>log-syslog-protocol</code> is <code>tcp</code> or <code>ssl-tcp</code>.</p>
+</li>
+<li>
+<p><code>true</code> – Always enable counting framing by prefixing messages with their size.</p>
+</li>
+<li>
+<p><code>false</code> – Never use counting framing.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Note that using <code>protocol-dependent</code> ensures compatibility with most Syslog servers by enabling the prefix only when required by the protocol.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_configuring_the_syslog_log_format"><a class="anchor" href="#_configuring_the_syslog_log_format"></a>Configuring the Syslog log format</h3>
 <div class="paragraph">
 <p>To set the logging format for a logged line, perform these steps:</p>
@@ -976,6 +1118,23 @@ To use structured JSON log output instead, enter the following command:</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-async</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Indicates whether to log asynchronously to all handlers.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-async</code><br>
+<strong>Env:</strong> <code>KC_LOG_ASYNC</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>log-level</code></span></p>
 </div>
 <div class="paragraph">
@@ -1010,6 +1169,49 @@ To use structured JSON log output instead, enter the following command:</p>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-async</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Indicates whether to log asynchronously to console.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not set, value from the parent property <code>log-async</code> is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-async</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_ASYNC</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-async-queue-length</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The queue length to use before flushing writing when logging to console.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-async-queue-length</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_ASYNC_QUEUE_LENGTH</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler is activated and asynchronous logging is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>512</code></span> (default)</p></td>
+</tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>log-console-color</code></span></p>
@@ -1178,6 +1380,49 @@ To use structured JSON log output instead, enter the following command:</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-async</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Indicates whether to log asynchronously to file log.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not set, value from the parent property <code>log-async</code> is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-async</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_ASYNC</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-async-queue-length</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The queue length to use before flushing writing when logging to file log.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-async-queue-length</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_ASYNC_QUEUE_LENGTH</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated and asynchronous logging is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>512</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>log-file-format</code></span></p>
 </div>
 <div class="paragraph">
@@ -1318,6 +1563,72 @@ To use structured JSON log output instead, enter the following command:</p>
 <p>Available only when Syslog is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>keycloak</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-async</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Indicates whether to log asynchronously to Syslog.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not set, value from the parent property <code>log-async</code> is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-async</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_ASYNC</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-async-queue-length</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The queue length to use before flushing writing when logging to Syslog.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-async-queue-length</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_ASYNC_QUEUE_LENGTH</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated and asynchronous logging is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>512</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-counting-framing</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If <code>true</code>, the message being sent is prefixed with the size of the message.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If <code>protocol-dependent</code>, the default value is <code>true</code> when <code>log-syslog-protocol</code> is <code>tcp</code> or <code>ssl-tcp</code>, otherwise <code>false</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-counting-framing</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_COUNTING_FRAMING</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code>, <code>protocol-dependent</code> (default)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
