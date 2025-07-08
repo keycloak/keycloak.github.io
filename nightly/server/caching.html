@@ -358,21 +358,6 @@ It is possible to configure Keycloak to store regular user sessions in the cache
 <p>When using volatile user sessions, the cache is the source of truth for user and client sessions.
 Keycloak automatically adjusts the number of entries that can be stored in memory, and increases the number of copies to prevent data loss.</p>
 </div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>It is not recommended to use volatile user sessions when using offline sessions extensively due to potentially high memory usage.
-For volatile sessions, the time offline sessions are cached in memory can be limited with the SPI options <code>spi-user-sessions&#8212;&#8203;infinispan&#8212;&#8203;offline-client-session-cache-entry-lifespan-override</code> and <code>spi-user-sessions&#8212;&#8203;infinispan&#8212;&#8203;offline-session-cache-entry-lifespan-override</code>.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>Follow these steps to enable this setup:</p>
 </div>
@@ -739,13 +724,15 @@ The table below shows the TCP ports that need to be open for the <code>jdbc-ping
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
-<col style="width: 33.3333%;">
-<col style="width: 33.3333%;">
-<col style="width: 33.3334%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Option</th>
 <th class="tableblock halign-left valign-top">Property</th>
 <th class="tableblock halign-left valign-top">Description</th>
 </tr>
@@ -753,15 +740,17 @@ The table below shows the TCP ports that need to be open for the <code>jdbc-ping
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>7800</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache-embedded-network-bind-port</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.bind.port</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Unicast data transmission.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>57800</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.fd.port-offset</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Failure detection by protocol <code>FD_SOCK2</code>.
 It listens to the abrupt closing of a socket to suspect a Keycloak server failure.
-The <code>jgroups.fd.port-offset</code> property defines the offset from the <code>jgroups.bind.port</code>.
+The <code>jgroups.fd.port-offset</code> property defines the offset from the <code>cache-embedded-network-bind-port</code> option or <code>jgroups.bind.port</code> property.
 By default, the offset is set to 50000, making the failure detection port 57800.</p></td>
 </tr>
 </tbody>
@@ -773,7 +762,8 @@ By default, the offset is set to 50000, making the failure detection port 57800.
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Use <code>-D&lt;property&gt;=&lt;value&gt;</code> to modify the ports above in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
+If an option is not available for the port you require, configure it using a system property <code>-D&lt;property&gt;=&lt;value&gt;</code>
+in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
 </td>
 </tr>
 </table>
@@ -790,22 +780,10 @@ Use <code>-D&lt;property&gt;=&lt;value&gt;</code> to modify the ports above in y
 <p>By default, it picks a site local (non-routable) IP address, for example, from the 192.168.0.0/16 or 10.0.0.0/8 address range.</p>
 </div>
 <div class="paragraph">
-<p>To override the address, set the <code>jgroups.bind.address</code> property.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Use <code>-Djgroups.bind.address=&lt;IP&gt;</code> to modify the bind address in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
-</td>
-</tr>
-</table>
+<p>To override the address, set the option <code>cache-embedded-network-bind-address=&lt;IP&gt;</code>.</p>
 </div>
 <div class="paragraph">
-<p>The following special values are also recognized for <code>jgroups.bind.address</code>:</p>
+<p>The following special values are also recognized:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -879,7 +857,7 @@ For example, <code>match-host:linux.\*</code>.</p></td>
 In such a case, set up a port forwarding rule (sometimes called &#8220;virtual server&#8221;) to their local IP address.</p>
 </div>
 <div class="paragraph">
-<p>When using port forwarding, use the following properties so each node correctly advertises its external address to the other nodes:</p>
+<p>When using port forwarding, use the following options so each node correctly advertises its external address to the other nodes:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -888,33 +866,21 @@ In such a case, set up a port forwarding rule (sometimes called &#8220;virtual s
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Option</th>
 <th class="tableblock halign-left valign-top">Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.external_port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache-embedded-network-external-port</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Port that other instances in the Keycloak cluster should use to contact this node.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.external_addr</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache-embedded-network-external-address</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">IP address that other instances in the Keycloak should use to contact this node.</p></td>
 </tr>
 </tbody>
 </table>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Use <code>-D&lt;property&gt;=&lt;value&gt;</code> set this in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
-</td>
-</tr>
-</table>
-</div>
 </div>
 </div>
 <div class="sect1">
@@ -1252,6 +1218,98 @@ While these metrics provide more insights into the latency distribution, collect
 </div>
 <div class="paragraph">
 <p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-bind-address</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">IP address used by clustering transport.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">By default, SITE_LOCAL is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-bind-address</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_BIND_ADDRESS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-bind-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The Port the clustering transport will bind to.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">By default, port 7800 is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-bind-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_BIND_PORT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-external-address</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">IP address that other instances in the cluster should use to contact this node.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Set only if it is different to cache-embedded-network-bind-address, for example when this instance is behind a firewall.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-external-address</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_EXTERNAL_ADDRESS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-external-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Port that other instances in the cluster should use to contact this node.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Set only if it is different to cache-embedded-network-bind-port, for example when this instance is behind a firewall</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-external-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_EXTERNAL_PORT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
