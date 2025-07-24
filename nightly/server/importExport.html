@@ -91,6 +91,11 @@ gtag('config', 'G-0J2P9316N6');
 <div class="paragraph">
 <p>In this guide, you are going to understand the different approaches for importing and exporting realms using JSON files.</p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_import_export_commands"><a class="anchor" href="#_import_export_commands"></a>Import / Export Commands</h2>
+<div class="sectionbody">
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -100,7 +105,7 @@ gtag('config', 'G-0J2P9316N6');
 <td class="content">
 <div class="paragraph">
 <p>Exporting and importing into single files can produce large files which may run the export / import process out of memory. If your database contains more than 50,000 users, export to a directory and not a single file.
-The default count of users per file and per transaction is fifty, but you may use a much larger value if desired.</p>
+The default count of users per file is fifty, but you may use a much larger value if desired.</p>
 </div>
 <div class="paragraph">
 <p>The <code>import</code> and <code>export</code> commands are essentially server launches that exit before bringing up the full server. They are not currently designed to be run from the same machine as a running server instance, which may result in port or other conflicts.</p>
@@ -108,15 +113,16 @@ The default count of users per file and per transaction is fifty, but you may us
 <div class="paragraph">
 <p>It is recommended that all Keycloak nodes are stopped prior to using the <code>kc.[sh|bat] export</code> command. This ensures that the results will have no consistency issues with user or realm modifications during the export.</p>
 </div>
+<div class="paragraph">
+<p>It is required that all Keycloak nodes are stopped prior to performing an <code>kc.[sh|bat] import</code> command with the override option.
+The command does not attach to the cache cluster, so overwriting a realm will lead to inconsistent caches in the cluster, which then would show and use inconsistent or outdated information. Instead of overwriting a realm with the import command, consider using the Admin API to delete realms that need to be overwritten prior to running the import.</p>
+</div>
 </td>
 </tr>
 </table>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_providing_options_for_database_connection_parameters"><a class="anchor" href="#_providing_options_for_database_connection_parameters"></a>Providing options for database connection parameters</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_providing_options_for_database_connection_parameters"><a class="anchor" href="#_providing_options_for_database_connection_parameters"></a>Providing options for database connection parameters</h3>
 <div class="paragraph">
 <p>When using the <code>export</code> and the <code>import</code> commands below, Keycloak needs to know how to connect to the database where the information about realms, clients, users and other entities is stored.
 As described in <a href="https://www.keycloak.org/nightly/server/configuration">Configuring Keycloak</a> that information can be provided as command line parameters, environment variables or a configuration file.
@@ -143,10 +149,8 @@ if you do not use <code>--optimized</code> keep in mind that an <code>import</co
 </table>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_exporting_a_realm_to_a_directory"><a class="anchor" href="#_exporting_a_realm_to_a_directory"></a>Exporting a Realm to a Directory</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_exporting_a_realm_to_a_directory"><a class="anchor" href="#_exporting_a_realm_to_a_directory"></a>Exporting a Realm to a Directory</h3>
 <div class="paragraph">
 <p>To export a realm, you can use the <code>export</code> command. Your Keycloak server instance must not be started when invoking this command.</p>
 </div>
@@ -166,8 +170,8 @@ if you do not use <code>--optimized</code> keep in mind that an <code>import</co
 <div class="paragraph">
 <p>When exporting realms to a directory, the server is going to create separate files for each realm being exported.</p>
 </div>
-<div class="sect2">
-<h3 id="_configuring_how_users_are_exported"><a class="anchor" href="#_configuring_how_users_are_exported"></a>Configuring how users are exported</h3>
+<div class="sect3">
+<h4 id="_configuring_how_users_are_exported"><a class="anchor" href="#_configuring_how_users_are_exported"></a>Configuring how users are exported</h4>
 <div class="paragraph">
 <p>You are also able to configure how users are going to be exported by setting the <code>--users &lt;strategy&gt;</code> option. The values available for this
 option are:</p>
@@ -202,10 +206,8 @@ option are:</p>
 </div>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_exporting_a_realm_to_a_file"><a class="anchor" href="#_exporting_a_realm_to_a_file"></a>Exporting a Realm to a File</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_exporting_a_realm_to_a_file"><a class="anchor" href="#_exporting_a_realm_to_a_file"></a>Exporting a Realm to a File</h3>
 <div class="paragraph">
 <p>To export a realm to a file, you can use the <code>--file &lt;file&gt;</code> option.</p>
 </div>
@@ -218,10 +220,8 @@ option are:</p>
 <p>When exporting realms to a file, the server is going to use the same file to store the configuration for all the realms being exported.</p>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_exporting_a_specific_realm"><a class="anchor" href="#_exporting_a_specific_realm"></a>Exporting a specific realm</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_exporting_a_specific_realm"><a class="anchor" href="#_exporting_a_specific_realm"></a>Exporting a specific realm</h3>
 <div class="paragraph">
 <p>If you do not specify a specific realm to export, all realms are exported. To export a single realm, you can use the <code>--realm</code> option as follows:</p>
 </div>
@@ -231,20 +231,16 @@ option are:</p>
 </div>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_import_file_naming_conventions"><a class="anchor" href="#_import_file_naming_conventions"></a>Import File Naming Conventions</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_import_file_naming_conventions"><a class="anchor" href="#_import_file_naming_conventions"></a>Import File Naming Conventions</h3>
 <div class="paragraph">
 <p>When you export a realm specific file name conventions are used, which must also be used for importing from a directory or import at startup. The realm file to be imported must be named &lt;realm name&gt;-realm.json.
 Regular and federated user files associated with a realm must be named &lt;realm-name&gt;-users-&lt;file number&gt;.json and &lt;realm-name&gt;-federated-users-&lt;file number&gt;.json. Failure to use this convention will result in errors or
 user files not being imported.</p>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_importing_a_realm_from_a_directory"><a class="anchor" href="#_importing_a_realm_from_a_directory"></a>Importing a Realm from a Directory</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_importing_a_realm_from_a_directory"><a class="anchor" href="#_importing_a_realm_from_a_directory"></a>Importing a Realm from a Directory</h3>
 <div class="paragraph">
 <p>To import a realm, you can use the <code>import</code> command. Your Keycloak server instance must not be started when invoking this command.</p>
 </div>
@@ -274,10 +270,8 @@ you can set the <code>--override</code> option as follows:</p>
 <p>By default, the <code>--override</code> option is set to <code>true</code> so that realms are always overridden with the new configuration.</p>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_importing_a_realm_from_a_file"><a class="anchor" href="#_importing_a_realm_from_a_file"></a>Importing a Realm from a File</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_importing_a_realm_from_a_file"><a class="anchor" href="#_importing_a_realm_from_a_file"></a>Importing a Realm from a File</h3>
 <div class="paragraph">
 <p>To import a realm previously exported in a single file, you can use the <code>--file &lt;file&gt;</code> option as follows:</p>
 </div>
@@ -287,10 +281,8 @@ you can set the <code>--override</code> option as follows:</p>
 </div>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_using_environment_variables_within_the_realm_configuration_files"><a class="anchor" href="#_using_environment_variables_within_the_realm_configuration_files"></a>Using Environment Variables within the Realm Configuration Files</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_using_environment_variables_within_the_realm_configuration_files"><a class="anchor" href="#_using_environment_variables_within_the_realm_configuration_files"></a>Using Environment Variables within the Realm Configuration Files</h3>
 <div class="paragraph">
 <p>You are able to use placeholders to resolve values from environment variables for any realm configuration.</p>
 </div>
@@ -306,6 +298,7 @@ you can set the <code>--override</code> option as follows:</p>
 </div>
 <div class="paragraph">
 <p>In the example above, the value set to the <code>MY_REALM_NAME</code> environment variable is going to be used to set the <code>realm</code> property.</p>
+</div>
 </div>
 </div>
 </div>
@@ -342,6 +335,18 @@ realms and potentially lose state between server restarts.</p>
 <div class="paragraph">
 <p>To re-create realms you should explicitly run the <code>import</code> command prior to starting the server.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The server will not fully start until the imports are complete.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -349,8 +354,8 @@ realms and potentially lose state between server restarts.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>You can also import and export a realm using the Admin Console. This functionality is
-different from the other CLI options described in previous sections because the Admin Console offers only the capability to
-<em>partially</em>  export a realm. In this case, the current realm settings, along with some resources like clients,
+different from the other CLI options described in previous sections because the Admin Console requires the cluster to be online.
+The Admin Console also offers only the capability to <em>partially</em>  export a realm. In this case, the current realm settings, along with some resources like clients,
 roles, and groups, can be exported. The users for that realm <em>cannot</em> be exported using this method.</p>
 </div>
 <div class="admonitionblock note">
@@ -463,7 +468,7 @@ unresponsive to user requests for a while. Use this feature with caution, especi
 </td>
 <td class="content">
 The Admin Console partial import can also import files created by the CLI <code>export</code> command. In other words, full exports created
-by the CLI can be imported  by using the Admin Console. If the file contains users, those users will also be available for importing into the
+by the CLI can be imported by using the Admin Console. If the file contains users, those users will also be available for importing into the
 current realm.
 </td>
 </tr>
