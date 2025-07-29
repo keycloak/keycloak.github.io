@@ -884,6 +884,65 @@ In such a case, set up a port forwarding rule (sometimes called &#8220;virtual s
 </div>
 </div>
 <div class="sect1">
+<h2 id="_verify_cluster_and_network_health"><a class="anchor" href="#_verify_cluster_and_network_health"></a>Verify cluster and network health</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section provides methods to verify that your Keycloak cluster has formed correctly and that network communication between instances is functioning as expected.
+It is crucial to perform these checks after deployment to ensure high availability and data consistency.</p>
+</div>
+<div class="paragraph">
+<p>To verify if the cluster is formed properly, check one of these locations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Admin UI</p>
+<div class="paragraph">
+<p>Access the Keycloak Web UI, typically available at <code>https://&lt;your-host&gt;/admin/master/console/#/master/providers</code>.
+Under the <strong>Provider Info</strong> section, locate the <strong>connectionsInfinispan</strong> entry.
+Click on <strong>Show more</strong> to expand its details.
+You should find information about the cluster status and the health of individual caches.</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="https://www.keycloak.org/resources/images/guides/nightly/server/infinispan_info.png" alt="Infinispan Cluster Information in Web UI"></span></p>
+</div>
+</li>
+<li>
+<p>Logs</p>
+<div class="paragraph">
+<p>Infinispan logs a cluster view every time a new instance joins or leaves the cluster.
+Search for log entries with the ID <code>ISPN000094</code>.</p>
+</div>
+<div class="paragraph">
+<p>A healthy cluster view will show all expected nodes.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-text" data-lang="text">ISPN000094: Received new cluster view for channel ISPN: [node1-26186|1] (2) [node1-26186, node2-37007]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This log entry indicates that the cluster named "ISPN" currently has 2 nodes: <code>node1-26186</code> and <code>node2-37007</code>.
+The <code>(2)</code> confirms the total number of nodes in the cluster.</p>
+</div>
+</li>
+<li>
+<p>Metrics</p>
+<div class="paragraph">
+<p>Keycloak exposes Infinispan metrics via a Prometheus endpoint, which can be visualized in tools like Grafana.
+The metric <code>vendor_cluster_size</code> shows the current number of instances in the cluster.
+You should verify that this metric matches the expected number of running instances configured in your cluster.</p>
+</div>
+<div class="paragraph">
+<p>Refer to <a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-clustering-and-network#_cluster_size">Clustering metrics</a> for more information.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_exposing_metrics_from_caches"><a class="anchor" href="#_exposing_metrics_from_caches"></a>Exposing metrics from caches</h2>
 <div class="sectionbody">
 <div class="paragraph">
