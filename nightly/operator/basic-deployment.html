@@ -338,6 +338,65 @@ spec:
       className: openshift-default</code></pre>
 </div>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The operator annotates the Ingress to match expectations for TLS passthrough or TLS termination on OpenShift with the default IngressClass.
+See below for more on TLS termination.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_proxy_modes_with_the_basic_ingress"><a class="anchor" href="#_proxy_modes_with_the_basic_ingress"></a>Proxy modes with the basic Ingress</h4>
+<div class="paragraph">
+<p>The operator annotates the Ingress to match expectations for TLS termination or passthrough on OpenShift with the default IngressClass.
+For this reason TLS reencryption is not yet considered supported by basic Ingress, but you may be able to specify the <code>tlsSecret</code> on both the <code>http</code> and <code>ingress</code> specs as a starting point.
+You should double check the requirements of your IngressClass and platform to see if additional Ingress or Service annotations are needed in your desired scenario.</p>
+</div>
+<div class="paragraph">
+<p>TLS passthrough is shown in the preceding <code>example-kc</code> example. It is enabled when you associate a <code>tlsSecret</code> with the <code>http</code> configuration and leave Ingress enabled without specifying a <code>tlsSecret</code> on it.</p>
+</div>
+<div class="paragraph">
+<p>TLS termination, or edge mode, is enabled by associating a <code>tlsSecret</code> with the <code>ingress</code> spec and by enabling HTTP access.</p>
+</div>
+<div class="paragraph">
+<p>Example TLS Termination YAML:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  instances: 1
+  db:
+    vendor: postgres
+    host: postgres-db
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+  http:
+    httpEnabled: true
+  ingress:
+    tlsSecret: example-tls-secret
+  hostname:
+    hostname: test.keycloak.org
+  proxy:
+    headers: xforwarded # double check your reverse proxy sets and overwrites the X-Forwarded-* headers</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_custom_access"><a class="anchor" href="#_custom_access"></a>Custom Access</h4>
 <div class="paragraph">
 <p>If the default ingress does not fit your use case, disable it by setting <code>ingress</code> spec with <code>enabled</code> property to <code>false</code> value:</p>
 </div>
@@ -378,6 +437,7 @@ spec:
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">kubectl port-forward service/example-kc-service 8443:8443</code></pre>
+</div>
 </div>
 </div>
 <div class="sect3">
