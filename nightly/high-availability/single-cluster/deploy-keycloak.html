@@ -10,11 +10,11 @@ gtag('js', new Date());
 gtag('config', 'G-0J2P9316N6');
 </script>
 <meta charset="utf-8"/>
-<title>Deploying Keycloak for HA with the Operator - Keycloak</title>
+<title>Deploying Keycloak across multiple availability-zones with the Operator - Keycloak</title>
 <meta name="twitter:card" content="summary_large">
 <meta name="twitter:site" content="@keycloak">
 <meta property="og:site_name" content="Keycloak">
-<meta property="og:title" content="Deploying Keycloak for HA with the Operator">
+<meta property="og:title" content="Deploying Keycloak across multiple availability-zones with the Operator">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" property="og:description" content="Deploy Keycloak for high availability with the Keycloak Operator as a building block.">
 <meta name="author" content="Keycloak Team">
@@ -23,8 +23,8 @@ gtag('config', 'G-0J2P9316N6');
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/deploy-keycloak-kubernetes">
-<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/deploy-keycloak-kubernetes">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-keycloak">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-keycloak">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -68,7 +68,8 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
-                    <li class="breadcrumb-item active">Deploying Keycloak for HA with the Operator</li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/high-availability/single-cluster/introduction">Single cluster</a></li>
+                    <li class="breadcrumb-item active">Deploying Keycloak across multiple availability-zones with the Operator</li>
                 </ol>
             </nav>
 
@@ -79,7 +80,7 @@ gtag('config', 'G-0J2P9316N6');
                 </div>
 
             <div class="mb-4">
-                <h1>Deploying Keycloak for HA with the Operator</h1>
+                <h1>Deploying Keycloak across multiple availability-zones with the Operator</h1>
                     <span class="text-muted">Deploy Keycloak for high availability with the Keycloak Operator as a building block.</span>
             </div>
 
@@ -89,54 +90,46 @@ gtag('config', 'G-0J2P9316N6');
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide describes advanced Keycloak configurations for Kubernetes which are load tested and will recover from single Pod failures.</p>
+<p>This guide describes advanced Keycloak configurations for Kubernetes which are load tested and will recover availability-zone
+failures.</p>
 </div>
 <div class="paragraph">
-<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/nightly/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.
-Use it together with the other building blocks outlined in the <a href="https://www.keycloak.org/nightly/high-availability/bblocks-multi-site">Building blocks multi-site deployments</a> guide.</p>
+<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/concepts">Concepts for single-cluster deployments</a> guide.
+Use it together with the other building blocks outlined in the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/building-blocks">Building blocks single-cluster deployments</a> guide.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<h2 id="single-cluster-deploy-keycloak-prerequisites"><a class="anchor" href="#single-cluster-deploy-keycloak-prerequisites"></a>Prerequisites</h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p>OpenShift or Kubernetes cluster running.</p>
+<p>Kubernetes cluster deployed across multiple availability-zones with a worker-pool configured for each.</p>
 </li>
 <li>
 <p>Understanding of a <a href="https://www.keycloak.org/nightly/operator/basic-deployment">Basic Keycloak deployment</a> of Keycloak with the Keycloak Operator.</p>
 </li>
 <li>
-<p>Aurora AWS database deployed using the <a href="https://www.keycloak.org/nightly/high-availability/deploy-aurora-multi-az">Deploying AWS Aurora in multiple availability zones</a> guide.</p>
-</li>
-<li>
-<p>Infinispan server deployed using the <a href="https://www.keycloak.org/nightly/high-availability/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a> guide.</p>
-</li>
-<li>
-<p>Running Keycloak with OpenJDK 21, which is the default for the containers distributed for Keycloak, as this enabled virtual threads for the JGroups communication.</p>
+<p>AWS Aurora database deployed using the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-aurora">Deploying AWS Aurora in multiple availability zones</a> guide.</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h2>
+<h2 id="single-cluster-deploy-keycloak-procedure"><a class="anchor" href="#single-cluster-deploy-keycloak-procedure"></a>Procedure</h2>
 <div class="sectionbody">
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Determine the sizing of the deployment using the <a href="https://www.keycloak.org/nightly/high-availability/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> guide.</p>
+<p>Determine the sizing of the deployment using the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> guide.</p>
 </li>
 <li>
 <p>Install the Keycloak Operator as described in the <a href="https://www.keycloak.org/nightly/operator/installation">Keycloak Operator Installation</a> guide.</p>
 </li>
 <li>
-<p>Notice the configuration file below contains options relevant for connecting to the Aurora database from <a href="https://www.keycloak.org/nightly/high-availability/deploy-aurora-multi-az#connecting-aurora-to-keycloak">Deploying AWS Aurora in multiple availability zones</a></p>
-</li>
-<li>
-<p>Notice the configuration file below options relevant for connecting to the Infinispan server from <a href="https://www.keycloak.org/nightly/high-availability/deploy-infinispan-kubernetes-crossdc#connecting-infinispan-to-keycloak">Deploying Infinispan for HA with the Infinispan Operator</a></p>
+<p>Notice the configuration file below contains options relevant for connecting to the Aurora database from <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-aurora#single-cluster-aurora-connecting">Deploying AWS Aurora in multiple availability zones</a></p>
 </li>
 <li>
 <p>Build a custom Keycloak image which is <a href="https://www.keycloak.org/nightly/server/db#preparing-keycloak-for-amazon-aurora-postgresql">prepared for usage with the Amazon Aurora PostgreSQL database</a>.</p>
@@ -176,28 +169,13 @@ spec:
       key: password
   image: &lt;KEYCLOAK_IMAGE_HERE&gt; <i class="conum" data-value="2"></i><b>(2)</b>
   startOptimized: false <i class="conum" data-value="2"></i><b>(2)</b>
-  features:
-    enabled:
-      - multi-site <i class="conum" data-value="3"></i><b>(3)</b>
   additionalOptions:
     - name: log-console-output
       value: json
-    - name: metrics-enabled <i class="conum" data-value="4"></i><b>(4)</b>
+    - name: metrics-enabled <i class="conum" data-value="3"></i><b>(3)</b>
       value: 'true'
     - name: event-metrics-user-enabled
       value: 'true'
-    - name: cache-remote-host
-      value: "infinispan.keycloak.svc"
-    - name: cache-remote-port
-      value: "11222"
-    - name: cache-remote-username
-      secret:
-        name: remote-store-secret
-        key: username
-    - name: cache-remote-password
-      secret:
-        name: remote-store-secret
-        key: password
     - name: db-driver
       value: software.amazon.jdbc.Driver
   http:
@@ -212,7 +190,7 @@ spec:
 <td>The database connection pool initial, max and min size should be identical to allow statement caching for the database.
 Adjust this number to meet the needs of your system.
 As most requests will not touch the database due to the Keycloak embedded cache, this change can server several hundreds of requests per second.
-See the <a href="https://www.keycloak.org/nightly/high-availability/concepts-database-connections">Concepts for database connection pools</a> guide for details.</td>
+See the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/concepts-database-connections">Concepts for database connection pools</a> guide for details.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -220,10 +198,6 @@ See the <a href="https://www.keycloak.org/nightly/high-availability/concepts-dat
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Enable additional features for multi-site support like the loadbalancer probe <code>/lb-check</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>To be able to analyze the system under load, enable the metrics endpoint.</td>
 </tr>
 </table>
@@ -234,7 +208,7 @@ See the <a href="https://www.keycloak.org/nightly/high-availability/concepts-dat
 </div>
 </div>
 <div class="sect1">
-<h2 id="_verifying_the_deployment"><a class="anchor" href="#_verifying_the_deployment"></a>Verifying the deployment</h2>
+<h2 id="single-cluster-verify-deployment"><a class="anchor" href="#single-cluster-verify-deployment"></a>Verifying the deployment</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Confirm that the Keycloak deployment is ready.</p>
@@ -248,7 +222,7 @@ kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keyc
 </div>
 </div>
 <div class="sect1">
-<h2 id="_optional_load_shedding"><a class="anchor" href="#_optional_load_shedding"></a>Optional: Load shedding</h2>
+<h2 id="single-cluster-load-shedding"><a class="anchor" href="#single-cluster-load-shedding"></a>Optional: Load shedding</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>To enable load shedding, limit the number of queued requests.</p>
@@ -269,12 +243,12 @@ kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keyc
 <p>You might consider limiting the value for <code>http-pool-max-threads</code> further because multiple concurrent threads will lead to throttling by Kubernetes once the requested CPU limit is reached.</p>
 </div>
 <div class="paragraph">
-<p>See the <a href="https://www.keycloak.org/nightly/high-availability/concepts-threads">Concepts for configuring thread pools</a> guide about load shedding for details.</p>
+<p>See the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/concepts-threads#single-cluster-load-shedding">Concepts for configuring thread pools</a> guide about load shedding for details.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_optional_disable_sticky_sessions"><a class="anchor" href="#_optional_disable_sticky_sessions"></a>Optional: Disable sticky sessions</h2>
+<h2 id="single-cluster-sticky-sessions"><a class="anchor" href="#single-cluster-sticky-sessions"></a>Optional: Disable sticky sessions</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>When running on OpenShift and the default passthrough Ingress setup as provided by the Keycloak Operator, the load balancing done by HAProxy is done by using sticky sessions based on the IP address of the source.
@@ -304,7 +278,7 @@ When running load tests, or when having a reverse proxy in front of HAProxy, you
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/deploy-keycloak-kubernetes.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/single-cluster/deploy-keycloak.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

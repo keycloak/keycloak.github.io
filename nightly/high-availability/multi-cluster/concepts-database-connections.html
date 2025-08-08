@@ -10,21 +10,21 @@ gtag('js', new Date());
 gtag('config', 'G-0J2P9316N6');
 </script>
 <meta charset="utf-8"/>
-<title>Concepts to automate Infinispan CLI commands - Keycloak</title>
+<title>Concepts for database connection pools - Keycloak</title>
 <meta name="twitter:card" content="summary_large">
 <meta name="twitter:site" content="@keycloak">
 <meta property="og:site_name" content="Keycloak">
-<meta property="og:title" content="Concepts to automate Infinispan CLI commands">
+<meta property="og:title" content="Concepts for database connection pools">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Infinispan CLI commands can be automated by creating a `Batch` CR instance.">
+<meta name="description" property="og:description" content="Understand concepts for avoiding resource exhaustion and congestion.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <meta name="robots" content="noindex">
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/concepts-infinispan-cli-batch">
-<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/concepts-infinispan-cli-batch">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/multi-cluster/concepts-database-connections">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/multi-cluster/concepts-database-connections">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -68,7 +68,8 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
-                    <li class="breadcrumb-item active">Concepts to automate Infinispan CLI commands</li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/introduction">Multi cluster</a></li>
+                    <li class="breadcrumb-item active">Concepts for database connection pools</li>
                 </ol>
             </nav>
 
@@ -79,8 +80,8 @@ gtag('config', 'G-0J2P9316N6');
                 </div>
 
             <div class="mb-4">
-                <h1>Concepts to automate Infinispan CLI commands</h1>
-                    <span class="text-muted">Infinispan CLI commands can be automated by creating a `Batch` CR instance.</span>
+                <h1>Concepts for database connection pools</h1>
+                    <span class="text-muted">Understand concepts for avoiding resource exhaustion and congestion.</span>
             </div>
 
 
@@ -89,85 +90,30 @@ gtag('config', 'G-0J2P9316N6');
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>When interacting with an external Infinispan in Kubernetes, the <code>Batch</code> CR allows you to automate this using standard <code>kubectl</code> commands.</p>
+<p>This section is intended when you want to understand considerations and best practices on how to configure database connection pools for Keycloak.
+For a configuration where this is applied, visit <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_when_to_use_it"><a class="anchor" href="#_when_to_use_it"></a>When to use it</h2>
+<h2 id="multi-cluster-db-concepts"><a class="anchor" href="#multi-cluster-db-concepts"></a>Concepts</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Use this when automating interactions on Kubernetes.
-This avoids providing usernames and passwords and checking shell script outputs and their status.</p>
+<p>Creating new database connections is expensive as it takes time.
+Creating them when a request arrives will delay the response, so it is good to have them created before the request arrives.
+It can also contribute to a <a href="https://en.wikipedia.org/wiki/Cache_stampede">stampede effect</a> where creating a lot of connections in a short time makes things worse as it slows down the system and blocks threads.
+Closing a connection also invalidates all server side statements caching for that connection.</p>
 </div>
 <div class="paragraph">
-<p>For human interactions, the CLI shell might still be a better fit.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_example"><a class="anchor" href="#_example"></a>Example</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The following <code>Batch</code> CR takes a site offline as described in the operational procedure <a href="https://www.keycloak.org/nightly/high-availability/operate-site-offline">Taking a site offline</a>.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
-kind: Batch
-metadata:
-  name: take-offline
-  namespace: keycloak <i class="conum" data-value="1"></i><b>(1)</b>
-spec:
-  cluster: infinispan <i class="conum" data-value="2"></i><b>(2)</b>
-  config: | <i class="conum" data-value="3"></i><b>(3)</b>
-    site take-offline --all-caches --site=site-a
-    site status --all-caches --site=site-a</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The <code>Batch</code> CR must be created in the same namespace as the Infinispan deployment.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>The name of the Infinispan CR.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>A multiline string containing one or more Infinispan CLI commands.</td>
-</tr>
-</table>
+<p>For the best performance, the values for the initial, minimal and maximum database connection pool size should all be equal.
+This avoids creating new database connections when a new request comes in which is costly.</p>
 </div>
 <div class="paragraph">
-<p>Once the CR has been created, wait for the status to show the completion.</p>
+<p>Keeping the database connection open for as long as possible allows for server side statement caching bound to a connection.
+In the case of PostgreSQL, to use a server-side prepared statement, <a href="https://jdbc.postgresql.org/documentation/server-prepare/#activation">a query needs to be executed (by default) at least five times</a>.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n keycloak wait --for=jsonpath='{.status.phase}'=Succeeded Batch/take-offline</code></pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Modifying a <code>Batch</code> CR instance has no effect. Batch operations are &#8220;one-time&#8221; events that modify Infinispan resources. To update <code>.spec</code> fields for the CR, or when a batch operation fails, you must create a new instance of the <code>Batch</code> CR.
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_further_reading"><a class="anchor" href="#_further_reading"></a>Further reading</h2>
-<div class="sectionbody">
 <div class="paragraph">
-<p>For more information, see the <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#batch-cr">Infinispan Operator <code>Batch</code> CR documentation</a>.</p>
+<p>See the <a href="https://www.postgresql.org/docs/current/sql-prepare.html">PostgreSQL docs on prepared statements</a> for more information.</p>
 </div>
 </div>
 </div>            </div>
@@ -178,7 +124,7 @@ Modifying a <code>Batch</code> CR instance has no effect. Batch operations are &
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/concepts-infinispan-cli-batch.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/multi-cluster/concepts-database-connections.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

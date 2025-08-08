@@ -1,0 +1,942 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Deploying AWS Aurora in multiple availability zones - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Deploying AWS Aurora in multiple availability zones">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Deploy an AWS Aurora as the database building block in a single-cluster deployment.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-aurora">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-aurora">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-small.svg" style="height: 25px; aspect-ratio: 59/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/high-availability/single-cluster/introduction">Single cluster</a></li>
+                    <li class="breadcrumb-item active">Deploying AWS Aurora in multiple availability zones</li>
+                </ol>
+            </nav>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/guides">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <h1>Deploying AWS Aurora in multiple availability zones</h1>
+                    <span class="text-muted">Deploy an AWS Aurora as the database building block in a single-cluster deployment.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This topic describes how to deploy an Aurora regional deployment of a PostgreSQL instance across multiple availability zones to tolerate one or more availability zone failures in a given AWS region.</p>
+</div>
+<div class="paragraph">
+<p>This deployment is intended to be used with the setup described in the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/concepts">Concepts for single-cluster deployments</a> guide.
+Use this deployment with the other building blocks outlined in the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/building-blocks">Building blocks single-cluster deployments</a> guide.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+We provide these blueprints to show a minimal functionally complete example with a good baseline performance for regular installations.
+You would still need to adapt it to your environment and your organization&#8217;s standards and security best practices.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="single-cluster-aurora-architecture"><a class="anchor" href="#single-cluster-aurora-architecture"></a>Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Aurora database clusters consist of multiple Aurora database instances, with one instance designated as the primary writer and all others as backup readers.
+To ensure high availability in the event of availability zone failures, Aurora allows database instances to be deployed across multiple zones in a single AWS region.
+In the event of a failure on the availability zone that is hosting the Primary database instance, Aurora automatically heals itself and promotes a reader instance from a non-failed availability zone to be the new writer instance.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/nightly/high-availability/aurora-multi-az.dio.svg" alt="aurora multi az.dio">
+</div>
+<div class="title">Figure 1. Aurora Multiple Availability Zone Deployment</div>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_AuroraOverview.html">AWS Aurora documentation</a> for more details on the semantics provided by Aurora databases.</p>
+</div>
+<div class="paragraph">
+<p>This documentation follows AWS best practices and creates a private Aurora database that is not exposed to the Internet.
+To access the database from a ROSA cluster, <a href="#single-cluster-establish-peering-connection-with-rosa-cluster">establish a peering connection between the database and the ROSA cluster</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="single-cluster-aurora-procedure"><a class="anchor" href="#single-cluster-aurora-procedure"></a>Procedure</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following procedure contains two sections:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Creation of an Aurora Multi-AZ database cluster with the name "keycloak-aurora" in eu-west-1.</p>
+</li>
+<li>
+<p>Creation of a peering connection between the ROSA cluster(s) and the Aurora VPC to allow applications deployed on the ROSA clusters to establish connections with the database.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="single-cluster-aurora-create"><a class="anchor" href="#single-cluster-aurora-create"></a>Create Aurora database Cluster</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a VPC for the Aurora cluster</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 create-vpc \
+  --cidr-block 192.168.0.0/16 \
+  --tag-specifications "ResourceType=vpc, Tags=[{Key=AuroraCluster,Value=keycloak-aurora}]" \<i class="conum" data-value="1"></i><b>(1)</b>
+  --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>We add an optional tag with the name of the Aurora cluster so that we can easily retrieve the VPC.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "Vpc": {
+        "CidrBlock": "192.168.0.0/16",
+        "DhcpOptionsId": "dopt-0bae7798158bc344f",
+        "State": "pending",
+        "VpcId": "vpc-0b40bd7c59dbe4277",
+        "OwnerId": "606671647913",
+        "InstanceTenancy": "default",
+        "Ipv6CidrBlockAssociationSet": [],
+        "CidrBlockAssociationSet": [
+            {
+                "AssociationId": "vpc-cidr-assoc-09a02a83059ba5ab6",
+                "CidrBlock": "192.168.0.0/16",
+                "CidrBlockState": {
+                    "State": "associated"
+                }
+            }
+        ],
+        "IsDefault": false
+    }
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a subnet for each availability zone that Aurora will be deployed to, using the <code>VpcId</code> of the newly created VPC.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The cidr-block range specified for each of the availability zones must not overlap.
+</td>
+</tr>
+</table>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Zone A</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 create-subnet \
+  --availability-zone "eu-west-1a" \
+  --vpc-id vpc-0b40bd7c59dbe4277 \
+  --cidr-block 192.168.0.0/19 \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "Subnet": {
+        "AvailabilityZone": "eu-west-1a",
+        "AvailabilityZoneId": "euw1-az3",
+        "AvailableIpAddressCount": 8187,
+        "CidrBlock": "192.168.0.0/19",
+        "DefaultForAz": false,
+        "MapPublicIpOnLaunch": false,
+        "State": "available",
+        "SubnetId": "subnet-0d491a1a798aa878d",
+        "VpcId": "vpc-0b40bd7c59dbe4277",
+        "OwnerId": "606671647913",
+        "AssignIpv6AddressOnCreation": false,
+        "Ipv6CidrBlockAssociationSet": [],
+        "SubnetArn": "arn:aws:ec2:eu-west-1:606671647913:subnet/subnet-0d491a1a798aa878d",
+        "EnableDns64": false,
+        "Ipv6Native": false,
+        "PrivateDnsNameOptionsOnLaunch": {
+            "HostnameType": "ip-name",
+            "EnableResourceNameDnsARecord": false,
+            "EnableResourceNameDnsAAAARecord": false
+        }
+    }
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Zone B</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 create-subnet \
+  --availability-zone "eu-west-1b" \
+  --vpc-id vpc-0b40bd7c59dbe4277 \
+  --cidr-block 192.168.32.0/19 \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "Subnet": {
+        "AvailabilityZone": "eu-west-1b",
+        "AvailabilityZoneId": "euw1-az1",
+        "AvailableIpAddressCount": 8187,
+        "CidrBlock": "192.168.32.0/19",
+        "DefaultForAz": false,
+        "MapPublicIpOnLaunch": false,
+        "State": "available",
+        "SubnetId": "subnet-057181b1e3728530e",
+        "VpcId": "vpc-0b40bd7c59dbe4277",
+        "OwnerId": "606671647913",
+        "AssignIpv6AddressOnCreation": false,
+        "Ipv6CidrBlockAssociationSet": [],
+        "SubnetArn": "arn:aws:ec2:eu-west-1:606671647913:subnet/subnet-057181b1e3728530e",
+        "EnableDns64": false,
+        "Ipv6Native": false,
+        "PrivateDnsNameOptionsOnLaunch": {
+            "HostnameType": "ip-name",
+            "EnableResourceNameDnsARecord": false,
+            "EnableResourceNameDnsAAAARecord": false
+        }
+    }
+}</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Obtain the ID of the Aurora VPC route-table</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 describe-route-tables \
+  --filters Name=vpc-id,Values=vpc-0b40bd7c59dbe4277 \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "RouteTables": [
+        {
+            "Associations": [
+                {
+                    "Main": true,
+                    "RouteTableAssociationId": "rtbassoc-02dfa06f4c7b4f99a",
+                    "RouteTableId": "rtb-04a644ad3cd7de351",
+                    "AssociationState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+            "PropagatingVgws": [],
+            "RouteTableId": "rtb-04a644ad3cd7de351",
+            "Routes": [
+                {
+                    "DestinationCidrBlock": "192.168.0.0/16",
+                    "GatewayId": "local",
+                    "Origin": "CreateRouteTable",
+                    "State": "active"
+                }
+            ],
+            "Tags": [],
+            "VpcId": "vpc-0b40bd7c59dbe4277",
+            "OwnerId": "606671647913"
+        }
+    ]
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Associate the Aurora VPC route-table each availability zone&#8217;s subnet</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Zone A</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 associate-route-table \
+  --route-table-id rtb-04a644ad3cd7de351 \
+  --subnet-id subnet-0d491a1a798aa878d \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Zone B</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 associate-route-table \
+  --route-table-id rtb-04a644ad3cd7de351 \
+  --subnet-id subnet-057181b1e3728530e \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Create Aurora Subnet Group</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws rds create-db-subnet-group \
+  --db-subnet-group-name keycloak-aurora-subnet-group \
+  --db-subnet-group-description "Aurora DB Subnet Group" \
+  --subnet-ids subnet-0d491a1a798aa878d subnet-057181b1e3728530e \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create Aurora Security Group</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 create-security-group \
+  --group-name keycloak-aurora-security-group \
+  --description "Aurora DB Security Group" \
+  --vpc-id vpc-0b40bd7c59dbe4277 \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "GroupId": "sg-0d746cc8ad8d2e63b"
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the Aurora DB Cluster</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws rds create-db-cluster \
+    --db-cluster-identifier keycloak-aurora \
+    --database-name keycloak \
+    --engine aurora-postgresql \
+    --engine-version ${properties["aurora-postgresql.version"]} \
+    --master-username keycloak \
+    --master-user-password secret99 \
+    --vpc-security-group-ids sg-0d746cc8ad8d2e63b \
+    --db-subnet-group-name keycloak-aurora-subnet-group \
+    --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+You should replace the <code>--master-username</code> and <code>--master-user-password</code> values.
+The values specified here must be used when configuring the Keycloak database credentials.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "DBCluster": {
+        "AllocatedStorage": 1,
+        "AvailabilityZones": [
+            "eu-west-1b",
+            "eu-west-1c",
+            "eu-west-1a"
+        ],
+        "BackupRetentionPeriod": 1,
+        "DatabaseName": "keycloak",
+        "DBClusterIdentifier": "keycloak-aurora",
+        "DBClusterParameterGroup": "default.aurora-postgresql15",
+        "DBSubnetGroup": "keycloak-aurora-subnet-group",
+        "Status": "creating",
+        "Endpoint": "keycloak-aurora.cluster-clhthfqe0h8p.eu-west-1.rds.amazonaws.com",
+        "ReaderEndpoint": "keycloak-aurora.cluster-ro-clhthfqe0h8p.eu-west-1.rds.amazonaws.com",
+        "MultiAZ": false,
+        "Engine": "aurora-postgresql",
+        "EngineVersion": "15.5",
+        "Port": 5432,
+        "MasterUsername": "keycloak",
+        "PreferredBackupWindow": "02:21-02:51",
+        "PreferredMaintenanceWindow": "fri:03:34-fri:04:04",
+        "ReadReplicaIdentifiers": [],
+        "DBClusterMembers": [],
+        "VpcSecurityGroups": [
+            {
+                "VpcSecurityGroupId": "sg-0d746cc8ad8d2e63b",
+                "Status": "active"
+            }
+        ],
+        "HostedZoneId": "Z29XKXDKYMONMX",
+        "StorageEncrypted": false,
+        "DbClusterResourceId": "cluster-IBWXUWQYM3MS5BH557ZJ6ZQU4I",
+        "DBClusterArn": "arn:aws:rds:eu-west-1:606671647913:cluster:keycloak-aurora",
+        "AssociatedRoles": [],
+        "IAMDatabaseAuthenticationEnabled": false,
+        "ClusterCreateTime": "2023-11-01T10:40:45.964000+00:00",
+        "EngineMode": "provisioned",
+        "DeletionProtection": false,
+        "HttpEndpointEnabled": false,
+        "CopyTagsToSnapshot": false,
+        "CrossAccountClone": false,
+        "DomainMemberships": [],
+        "TagList": [],
+        "AutoMinorVersionUpgrade": true,
+        "NetworkType": "IPV4"
+    }
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create Aurora DB instances</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create Zone A Writer instance</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">  aws rds create-db-instance \
+    --no-auto-minor-version-upgrade \
+    --db-cluster-identifier keycloak-aurora \
+    --db-instance-identifier "keycloak-aurora-instance-1" \
+    --db-instance-class db.t4g.large \
+    --engine aurora-postgresql \
+    --region eu-west-1</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create Zone B Reader instance</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">  aws rds create-db-instance \
+    --no-auto-minor-version-upgrade \
+    --db-cluster-identifier keycloak-aurora \
+    --db-instance-identifier "keycloak-aurora-instance-2" \
+    --db-instance-class db.t4g.large \
+    --engine aurora-postgresql \
+    --region eu-west-1</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Wait for all Writer and Reader instances to be ready</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws rds wait db-instance-available --db-instance-identifier keycloak-aurora-instance-1 --region eu-west-1
+aws rds wait db-instance-available --db-instance-identifier keycloak-aurora-instance-2 --region eu-west-1</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p><a id="aurora-writer-url"></a>Obtain the Writer endpoint URL for use by Keycloak</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws rds describe-db-clusters \
+  --db-cluster-identifier keycloak-aurora \
+  --query 'DBClusters[*].Endpoint' \
+  --region eu-west-1 \
+  --output text</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">[
+    "keycloak-aurora.cluster-clhthfqe0h8p.eu-west-1.rds.amazonaws.com"
+]</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="single-cluster-establish-peering-connection-with-rosa-cluster"><a class="anchor" href="#single-cluster-establish-peering-connection-with-rosa-cluster"></a>Establish Peering Connection with ROSA cluster</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Retrieve the Aurora VPC</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 describe-vpcs \
+  --filters "Name=tag:AuroraCluster,Values=keycloak-aurora" \
+  --query 'Vpcs[*].VpcId' \
+  --region eu-west-1 \
+  --output text</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code>vpc-0b40bd7c59dbe4277</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Retrieve the ROSA cluster VPC</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Log in to the ROSA cluster using <code>oc</code></p>
+</li>
+<li>
+<p>Retrieve the ROSA VPC</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">NODE=$(kubectl get nodes --selector=node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
+aws ec2 describe-instances \
+  --filters "Name=private-dns-name,Values=${NODE}" \
+  --query 'Reservations[0].Instances[0].VpcId' \
+  --region eu-west-1 \
+  --output text</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code>vpc-0b721449398429559</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Create Peering Connection</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 create-vpc-peering-connection \
+  --vpc-id vpc-0b721449398429559 \<i class="conum" data-value="1"></i><b>(1)</b>
+  --peer-vpc-id vpc-0b40bd7c59dbe4277 \<i class="conum" data-value="2"></i><b>(2)</b>
+  --peer-region eu-west-1 \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>ROSA cluster VPC</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Aurora VPC</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "VpcPeeringConnection": {
+        "AccepterVpcInfo": {
+            "OwnerId": "606671647913",
+            "VpcId": "vpc-0b40bd7c59dbe4277",
+            "Region": "eu-west-1"
+        },
+        "ExpirationTime": "2023-11-08T13:26:30+00:00",
+        "RequesterVpcInfo": {
+            "CidrBlock": "10.0.17.0/24",
+            "CidrBlockSet": [
+                {
+                    "CidrBlock": "10.0.17.0/24"
+                }
+            ],
+            "OwnerId": "606671647913",
+            "PeeringOptions": {
+                "AllowDnsResolutionFromRemoteVpc": false,
+                "AllowEgressFromLocalClassicLinkToRemoteVpc": false,
+                "AllowEgressFromLocalVpcToRemoteClassicLink": false
+            },
+            "VpcId": "vpc-0b721449398429559",
+            "Region": "eu-west-1"
+        },
+        "Status": {
+            "Code": "initiating-request",
+            "Message": "Initiating Request to 606671647913"
+        },
+        "Tags": [],
+        "VpcPeeringConnectionId": "pcx-0cb23d66dea3dca9f"
+    }
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Wait for Peering connection to exist</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 wait vpc-peering-connection-exists --vpc-peering-connection-ids pcx-0cb23d66dea3dca9f</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Accept the peering connection</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">aws ec2 accept-vpc-peering-connection \
+  --vpc-peering-connection-id pcx-0cb23d66dea3dca9f \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "VpcPeeringConnection": {
+        "AccepterVpcInfo": {
+            "CidrBlock": "192.168.0.0/16",
+            "CidrBlockSet": [
+                {
+                    "CidrBlock": "192.168.0.0/16"
+                }
+            ],
+            "OwnerId": "606671647913",
+            "PeeringOptions": {
+                "AllowDnsResolutionFromRemoteVpc": false,
+                "AllowEgressFromLocalClassicLinkToRemoteVpc": false,
+                "AllowEgressFromLocalVpcToRemoteClassicLink": false
+            },
+            "VpcId": "vpc-0b40bd7c59dbe4277",
+            "Region": "eu-west-1"
+        },
+        "RequesterVpcInfo": {
+            "CidrBlock": "10.0.17.0/24",
+            "CidrBlockSet": [
+                {
+                    "CidrBlock": "10.0.17.0/24"
+                }
+            ],
+            "OwnerId": "606671647913",
+            "PeeringOptions": {
+                "AllowDnsResolutionFromRemoteVpc": false,
+                "AllowEgressFromLocalClassicLinkToRemoteVpc": false,
+                "AllowEgressFromLocalVpcToRemoteClassicLink": false
+            },
+            "VpcId": "vpc-0b721449398429559",
+            "Region": "eu-west-1"
+        },
+        "Status": {
+            "Code": "provisioning",
+            "Message": "Provisioning"
+        },
+        "Tags": [],
+        "VpcPeeringConnectionId": "pcx-0cb23d66dea3dca9f"
+    }
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Update ROSA cluster VPC route-table</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">ROSA_PUBLIC_ROUTE_TABLE_ID=$(aws ec2 describe-route-tables \
+  --filters "Name=vpc-id,Values=vpc-0b721449398429559" "Name=association.main,Values=true" \<i class="conum" data-value="1"></i><b>(1)</b>
+  --query "RouteTables[*].RouteTableId" \
+  --output text \
+  --region eu-west-1
+)
+aws ec2 create-route \
+  --route-table-id ${ROSA_PUBLIC_ROUTE_TABLE_ID} \
+  --destination-cidr-block 192.168.0.0/16 \<i class="conum" data-value="2"></i><b>(2)</b>
+  --vpc-peering-connection-id pcx-0cb23d66dea3dca9f \
+  --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>ROSA cluster VPC</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>This must be the same as the cidr-block used when creating the Aurora VPC</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Update the Aurora Security Group</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">AURORA_SECURITY_GROUP_ID=$(aws ec2 describe-security-groups \
+  --filters "Name=group-name,Values=keycloak-aurora-security-group" \
+  --query "SecurityGroups[*].GroupId" \
+  --region eu-west-1 \
+  --output text
+)
+aws ec2 authorize-security-group-ingress \
+  --group-id ${AURORA_SECURITY_GROUP_ID} \
+  --protocol tcp \
+  --port 5432 \
+  --cidr 10.0.17.0/24 \<i class="conum" data-value="1"></i><b>(1)</b>
+  --region eu-west-1</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The "machine_cidr" of the ROSA cluster</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "Return": true,
+    "SecurityGroupRules": [
+        {
+            "SecurityGroupRuleId": "sgr-0785d2f04b9cec3f5",
+            "GroupId": "sg-0d746cc8ad8d2e63b",
+            "GroupOwnerId": "606671647913",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 5432,
+            "ToPort": 5432,
+            "CidrIpv4": "10.0.17.0/24"
+        }
+    ]
+}</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="single-cluster-aurora-verify"><a class="anchor" href="#single-cluster-aurora-verify"></a>Verifying the connection</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The simplest way to verify that a connection is possible between a ROSA cluster and an Aurora DB cluster is to deploy
+<code>psql</code> on the OpenShift cluster and attempt to connect to the writer endpoint.</p>
+</div>
+<div class="paragraph">
+<p>The following command creates a pod in the default namespace and establishes a <code>psql</code> connection with the Aurora cluster if possible.
+Upon exiting the pod shell, the pod is deleted.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">USER=keycloak <i class="conum" data-value="1"></i><b>(1)</b>
+PASSWORD=secret99 <i class="conum" data-value="2"></i><b>(2)</b>
+DATABASE=keycloak <i class="conum" data-value="3"></i><b>(3)</b>
+HOST=$(aws rds describe-db-clusters \
+  --db-cluster-identifier keycloak-aurora \<i class="conum" data-value="4"></i><b>(4)</b>
+  --query 'DBClusters[*].Endpoint' \
+  --region eu-west-1 \
+  --output text
+)
+kubectl run -i --tty --rm debug --image=postgres:15 --restart=Never -- psql postgresql://${USER}:${PASSWORD}@${HOST}/${DATABASE}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Aurora DB user, this can be the same as <code>--master-username</code> used when creating the DB.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Aurora DB user-password, this can be the same as <code>--master&#8212;&#8203;user-password</code> used when creating the DB.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The name of the Aurora DB, such as <code>--database-name</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The name of your Aurora DB cluster.</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="single-cluster-aurora-connecting"><a class="anchor" href="#single-cluster-aurora-connecting"></a>Connecting Aurora database with Keycloak</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now that an Aurora database has been established and linked with all of your ROSA clusters, here are the relevant Keycloak CR options to connect the Aurora database with Keycloak. These changes will be required in the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-keycloak">Deploying Keycloak across multiple availability-zones with the Operator</a> guide. The JDBC url is configured to use the Aurora database writer endpoint.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Update <code>spec.db.url</code> to be <code>jdbc:aws-wrapper:postgresql://$HOST:5432/keycloak</code> where <code>$HOST</code> is the
+<a href="#aurora-writer-url">Aurora writer endpoint URL</a>.</p>
+</li>
+<li>
+<p>Ensure that the Secrets referenced by <code>spec.db.usernameSecret</code> and <code>spec.db.passwordSecret</code> contain usernames and passwords defined when creating Aurora.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After successful deployment of the Aurora database continue with <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-keycloak">Deploying Keycloak across multiple availability-zones with the Operator</a></p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/single-cluster/deploy-aurora.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

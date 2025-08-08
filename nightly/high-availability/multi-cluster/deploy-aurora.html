@@ -16,15 +16,15 @@ gtag('config', 'G-0J2P9316N6');
 <meta property="og:site_name" content="Keycloak">
 <meta property="og:title" content="Deploying AWS Aurora in multiple availability zones">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Deploy an AWS Aurora as the database building block in a multi-site deployment.">
+<meta name="description" property="og:description" content="Deploy an AWS Aurora as the database building block in a multi-cluster deployment.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <meta name="robots" content="noindex">
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/deploy-aurora-multi-az">
-<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/deploy-aurora-multi-az">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-aurora">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-aurora">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -68,6 +68,7 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/introduction">Multi cluster</a></li>
                     <li class="breadcrumb-item active">Deploying AWS Aurora in multiple availability zones</li>
                 </ol>
             </nav>
@@ -80,7 +81,7 @@ gtag('config', 'G-0J2P9316N6');
 
             <div class="mb-4">
                 <h1>Deploying AWS Aurora in multiple availability zones</h1>
-                    <span class="text-muted">Deploy an AWS Aurora as the database building block in a multi-site deployment.</span>
+                    <span class="text-muted">Deploy an AWS Aurora as the database building block in a multi-cluster deployment.</span>
             </div>
 
 
@@ -92,8 +93,8 @@ gtag('config', 'G-0J2P9316N6');
 <p>This topic describes how to deploy an Aurora regional deployment of a PostgreSQL instance across multiple availability zones to tolerate one or more availability zone failures in a given AWS region.</p>
 </div>
 <div class="paragraph">
-<p>This deployment is intended to be used with the setup described in the <a href="https://www.keycloak.org/nightly/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.
-Use this deployment with the other building blocks outlined in the <a href="https://www.keycloak.org/nightly/high-availability/bblocks-multi-site">Building blocks multi-site deployments</a> guide.</p>
+<p>This deployment is intended to be used with the setup described in the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/concepts">Concepts for multi-cluster deployments</a> guide.
+Use this deployment with the other building blocks outlined in the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/building-blocks">Building blocks multi-cluster deployments</a> guide.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -111,7 +112,7 @@ You would still need to adapt it to your environment and your organization&#8217
 </div>
 </div>
 <div class="sect1">
-<h2 id="_architecture"><a class="anchor" href="#_architecture"></a>Architecture</h2>
+<h2 id="multi-cluster-aurora-architecture"><a class="anchor" href="#multi-cluster-aurora-architecture"></a>Architecture</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Aurora database clusters consist of multiple Aurora database instances, with one instance designated as the primary writer and all others as backup readers.
@@ -129,12 +130,12 @@ In the event of a failure on the availability zone that is hosting the Primary d
 </div>
 <div class="paragraph">
 <p>This documentation follows AWS best practices and creates a private Aurora database that is not exposed to the Internet.
-To access the database from a ROSA cluster, <a href="#establish-peering-connections-with-rosa-clusters">establish a peering connection between the database and the ROSA cluster</a>.</p>
+To access the database from a ROSA cluster, <a href="#multi-cluster-establish-peering-connection-with-rosa-cluster">establish a peering connection between the database and the ROSA cluster</a>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h2>
+<h2 id="multi-cluster-aurora-procedure"><a class="anchor" href="#multi-cluster-aurora-procedure"></a>Procedure</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The following procedure contains two sections:</p>
@@ -150,7 +151,7 @@ To access the database from a ROSA cluster, <a href="#establish-peering-connecti
 </ul>
 </div>
 <div class="sect2">
-<h3 id="_create_aurora_database_cluster"><a class="anchor" href="#_create_aurora_database_cluster"></a>Create Aurora database Cluster</h3>
+<h3 id="multi-cluster-aurora-create"><a class="anchor" href="#multi-cluster-aurora-create"></a>Create Aurora database Cluster</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -569,7 +570,7 @@ aws rds wait db-instance-available --db-instance-identifier keycloak-aurora-inst
 </div>
 </div>
 <div class="sect2">
-<h3 id="establish-peering-connections-with-rosa-clusters"><a class="anchor" href="#establish-peering-connections-with-rosa-clusters"></a>Establish Peering Connections with ROSA clusters</h3>
+<h3 id="multi-cluster-establish-peering-connection-with-rosa-cluster"><a class="anchor" href="#multi-cluster-establish-peering-connection-with-rosa-cluster"></a>Establish Peering Connections with ROSA clusters</h3>
 <div class="paragraph">
 <p>Perform these steps once for each ROSA cluster that contains a Keycloak deployment.</p>
 </div>
@@ -842,7 +843,7 @@ aws ec2 authorize-security-group-ingress \
 <div class="sectionbody">
 <div class="paragraph">
 <p>The simplest way to verify that a connection is possible between a ROSA cluster and an Aurora DB cluster is to deploy
-<code>psql</code> on the Openshift cluster and attempt to connect to the writer endpoint.</p>
+<code>psql</code> on the OpenShift cluster and attempt to connect to the writer endpoint.</p>
 </div>
 <div class="paragraph">
 <p>The following command creates a pod in the default namespace and establishes a <code>psql</code> connection with the Aurora cluster if possible.
@@ -885,10 +886,10 @@ kubectl run -i --tty --rm debug --image=postgres:15 --restart=Never -- psql post
 </div>
 </div>
 <div class="sect1">
-<h2 id="connecting-aurora-to-keycloak"><a class="anchor" href="#connecting-aurora-to-keycloak"></a>Connecting Aurora database with Keycloak</h2>
+<h2 id="multi-cluster-aurora-connecting"><a class="anchor" href="#multi-cluster-aurora-connecting"></a>Connecting Aurora database with Keycloak</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now that an Aurora database has been established and linked with all of your ROSA clusters, here are the relevant Keycloak CR options to connect the Aurora database with Keycloak. These changes will be required in the <a href="https://www.keycloak.org/nightly/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide. The JDBC url is configured to use the Aurora database writer endpoint.</p>
+<p>Now that an Aurora database has been established and linked with all of your ROSA clusters, here are the relevant Keycloak CR options to connect the Aurora database with Keycloak. These changes will be required in the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide. The JDBC url is configured to use the Aurora database writer endpoint.</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -907,7 +908,7 @@ kubectl run -i --tty --rm debug --image=postgres:15 --restart=Never -- psql post
 <h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>After successful deployment of the Aurora database continue with <a href="https://www.keycloak.org/nightly/high-availability/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a></p>
+<p>After successful deployment of the Aurora database continue with <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a></p>
 </div>
 </div>
 </div>            </div>
@@ -918,7 +919,7 @@ kubectl run -i --tty --rm debug --image=postgres:15 --restart=Never -- psql post
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/deploy-aurora-multi-az.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/multi-cluster/deploy-aurora.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

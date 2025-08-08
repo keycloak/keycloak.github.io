@@ -23,8 +23,8 @@ gtag('config', 'G-0J2P9316N6');
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/concepts-threads">
-<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/concepts-threads">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/single-cluster/concepts-threads">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/single-cluster/concepts-threads">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -68,6 +68,7 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/high-availability/single-cluster/introduction">Single cluster</a></li>
                     <li class="breadcrumb-item active">Concepts for configuring thread pools</li>
                 </ol>
             </nav>
@@ -90,27 +91,28 @@ gtag('config', 'G-0J2P9316N6');
 <div class="sectionbody">
 <div class="paragraph">
 <p>This section is intended when you want to understand the considerations and best practices on how to configure thread pools connection pools for Keycloak.
-For a configuration where this is applied, visit <a href="https://www.keycloak.org/nightly/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a>.</p>
+For a configuration where this is applied, visit <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-keycloak">Deploying Keycloak across multiple availability-zones with the Operator</a>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_concepts"><a class="anchor" href="#_concepts"></a>Concepts</h2>
+<h2 id="single-cluster-threads-concept"><a class="anchor" href="#single-cluster-threads-concept"></a>Concepts</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_jgroups_communications"><a class="anchor" href="#_jgroups_communications"></a>JGroups communications</h3>
+<h3 id="single-cluster-jgroups-communications"><a class="anchor" href="#single-cluster-jgroups-communications"></a>JGroups communications</h3>
 <div class="paragraph">
-<p>JGroups communications, which is used in single-site setups for the communication between Keycloak nodes, benefits from the use of virtual threads which are available in OpenJDK 21 when at least two cores are available for Keycloak.
+<p>JGroups communications, which is used in single cluster setups for the communication between Keycloak nodes,
+benefits from the use of virtual threads which are available in OpenJDK 21 when at least two cores are available for Keycloak.
 This reduces the memory usage and removes the need to configure thread pool sizes.
 Therefore, the use of OpenJDK 21 is recommended.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_quarkus_executor_pool"><a class="anchor" href="#_quarkus_executor_pool"></a>Quarkus executor pool</h3>
+<h3 id="single-cluster-quarkus-executor-pool"><a class="anchor" href="#single-cluster-quarkus-executor-pool"></a>Quarkus executor pool</h3>
 <div class="paragraph">
 <p>Keycloak requests, as well as blocking probes, are handled by an executor pool. Depending on the available CPU cores, it has a maximum size of 50 or more threads.
 Threads are created as needed, and will end when no longer needed, so the system will scale up and down automatically.
-Keycloak allows configuring the maximum thread pool size by the <a href="https://www.keycloak.org/nightly/server/all-config?q=http-pool-max-threads"><code>http-pool-max-threads</code></a> configuration option. See <a href="https://www.keycloak.org/nightly/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> for an example.</p>
+Keycloak allows configuring the maximum thread pool size by the <a href="https://www.keycloak.org/nightly/server/all-config?q=http-pool-max-threads"><code>http-pool-max-threads</code></a> configuration option.</p>
 </div>
 <div class="paragraph">
 <p>When running on Kubernetes, adjust the number of worker threads to avoid creating more load than what the CPU limit allows for the Pod to avoid throttling, which would lead to congestion.
@@ -130,7 +132,7 @@ Low numbers ensure fast response times for all clients, even if there is an occa
 </div>
 </div>
 <div class="sect2">
-<h3 id="load-shedding"><a class="anchor" href="#load-shedding"></a>Load Shedding</h3>
+<h3 id="single-cluster-load-shedding"><a class="anchor" href="#single-cluster-load-shedding"></a>Load Shedding</h3>
 <div class="paragraph">
 <p>By default, Keycloak will queue all incoming requests infinitely, even if the request processing stalls.
 This will use additional memory in the Pod, can exhaust resources in the load balancers, and the requests will eventually time out on the client side without the client knowing if the request has been processed.
@@ -146,7 +148,7 @@ Keycloak logs the error message in its log.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="probes"><a class="anchor" href="#probes"></a>Probes</h3>
+<h3 id="single-cluster-probes"><a class="anchor" href="#single-cluster-probes"></a>Probes</h3>
 <div class="paragraph">
 <p>Keycloak&#8217;s liveness probe is non-blocking to avoid a restart of a Pod under a high load.</p>
 </div>
@@ -156,7 +158,7 @@ Due to this, a Pod can become non-ready under a high load.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_os_resources"><a class="anchor" href="#_os_resources"></a>OS Resources</h3>
+<h3 id="single-cluster-os-resources"><a class="anchor" href="#single-cluster-os-resources"></a>OS Resources</h3>
 <div class="paragraph">
 <p>In order for Java to create threads, when running on Linux it needs to have file handles available.
 Therefore, the number of open files (as retrieved as <code>ulimit -n</code> on Linux) need to provide head-space for Keycloak to increase the number of threads needed.
@@ -172,7 +174,7 @@ Each thread will also consume memory, and the container memory limits need to be
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/concepts-threads.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/single-cluster/concepts-threads.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

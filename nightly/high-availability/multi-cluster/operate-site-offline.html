@@ -10,21 +10,21 @@ gtag('js', new Date());
 gtag('config', 'G-0J2P9316N6');
 </script>
 <meta charset="utf-8"/>
-<title>Bringing a site online - Keycloak</title>
+<title>Taking a site offline - Keycloak</title>
 <meta name="twitter:card" content="summary_large">
 <meta name="twitter:site" content="@keycloak">
 <meta property="og:site_name" content="Keycloak">
-<meta property="og:title" content="Bringing a site online">
+<meta property="og:title" content="Taking a site offline">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Bring a site online so that it can process client requests.">
+<meta name="description" property="og:description" content="Take a site offline so that it no longer processes client requests.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <meta name="robots" content="noindex">
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/operate-site-online">
-<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/operate-site-online">
+<link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/multi-cluster/operate-site-offline">
+<meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/multi-cluster/operate-site-offline">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -68,7 +68,8 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#high-availability">High availability</a></li>
-                    <li class="breadcrumb-item active">Bringing a site online</li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/introduction">Multi cluster</a></li>
+                    <li class="breadcrumb-item active">Taking a site offline</li>
                 </ol>
             </nav>
 
@@ -79,8 +80,8 @@ gtag('config', 'G-0J2P9316N6');
                 </div>
 
             <div class="mb-4">
-                <h1>Bringing a site online</h1>
-                    <span class="text-muted">Bring a site online so that it can process client requests.</span>
+                <h1>Taking a site offline</h1>
+                    <span class="text-muted">Take a site offline so that it no longer processes client requests.</span>
             </div>
 
 
@@ -90,8 +91,9 @@ gtag('config', 'G-0J2P9316N6');
 <h2 id="_when_to_use_this_procedure"><a class="anchor" href="#_when_to_use_this_procedure"></a>When to use this procedure</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This procedure describes how to re-add a Keycloak site to the Global Accelerator, after it has previously been taken offline,
-so that it can once again service client requests.</p>
+<p>During the deployment lifecycle it might be required that one of the sites is temporarily taken offline
+for maintenance or to allow for software upgrades. To ensure that no user requests are routed to the site requiring
+maintenance, it is necessary for the site to be removed from your load balancer configuration.</p>
 </div>
 </div>
 </div>
@@ -99,14 +101,14 @@ so that it can once again service client requests.</p>
 <h2 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Follow these steps to re-add a Keycloak site to the AWS Global Accelerator so that it can handle client requests.</p>
+<p>Follow these steps to remove a site from the load balancer so that no traffic can be routed to it.</p>
 </div>
 <div class="sect2">
 <h3 id="_global_accelerator"><a class="anchor" href="#_global_accelerator"></a>Global Accelerator</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Determine the ARN of the Network Load Balancer (NLB) associated with the site to be brought online</p>
+<p>Determine the ARN of the Network Load Balancer (NLB) associated with the site to be kept online</p>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
@@ -139,7 +141,7 @@ aws elbv2 describe-load-balancers \
 </div>
 </li>
 <li>
-<p>Update the Accelerator EndpointGroup to include both sites</p>
+<p>Update the Accelerator EndpointGroup to only include a single site</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
@@ -186,6 +188,12 @@ aws globalaccelerator list-endpoint-groups \
             "EndpointGroupRegion": "eu-west-1",
             "EndpointDescriptions": [
                 {
+                    "EndpointId": "arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/a49e56e51e16843b9a3bc686327c907b/9b786f80ed4eba3d",
+                    "Weight": 128,
+                    "HealthState": "HEALTHY",
+                    "ClientIPPreservationEnabled": false
+                },
+                {
                     "EndpointId": "arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/a3c75f239541c4a6e9c48cf8d48d602f/5ba333e87019ccf0",
                     "Weight": 128,
                     "HealthState": "HEALTHY",
@@ -204,7 +212,7 @@ aws globalaccelerator list-endpoint-groups \
 </div>
 </li>
 <li>
-<p>Update the EndpointGroup to include the existing Endpoint and the NLB retrieved in step 1.</p>
+<p>Update the EndpointGroup to only include the NLB retrieved in step 1.</p>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
@@ -213,11 +221,6 @@ aws globalaccelerator list-endpoint-groups \
   --region us-west-2 \
   --endpoint-configurations '
   [
-    {
-        "EndpointId": "arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/a3c75f239541c4a6e9c48cf8d48d602f/5ba333e87019ccf0",
-        "Weight": 128,
-        "ClientIPPreservationEnabled": false
-    },
     {
         "EndpointId": "arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/a49e56e51e16843b9a3bc686327c907b/9b786f80ed4eba3d",
         "Weight": 128,
@@ -243,7 +246,7 @@ aws globalaccelerator list-endpoint-groups \
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/operate-site-online.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/multi-cluster/operate-site-offline.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>
