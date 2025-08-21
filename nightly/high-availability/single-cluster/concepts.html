@@ -116,31 +116,30 @@ the Kubernetes cluster. Typically, Kubernetes clusters are deployed on a single 
 increase fault-tolerance, it is possible to <a href="https://kubernetes.io/docs/setup/best-practices/multiple-zones/">deploy the cluster across multiple availability-zones</a>.</p>
 </div>
 <div class="paragraph">
-<p>The Keycloak Operator defines the following anti-affinity strategy by default to prefer that Keycloak pods are
+<p>The Keycloak Operator defines the following topology spread constraints by default to prefer that Keycloak pods are
 deployed on distinct nodes and distinct availability-zones when possible:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app: keycloak
-                  app.kubernetes.io/managed-by: keycloak-operator
-                  app.kubernetes.io/component: server
-                  app.kubernetes.io/instance: keycloak
-              topologyKey: topology.kubernetes.io/zone
-          - weight: 90
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app: keycloak
-                  app.kubernetes.io/managed-by: keycloak-operator
-                  app.kubernetes.io/component: server
-                  app.kubernetes.io/instance: keycloak
-              topologyKey: kubernetes.io/hostname</code></pre>
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: "topology.kubernetes.io/zone"
+          whenUnsatisfiable: "ScheduleAnyway"
+          labelSelector:
+            matchLabels:
+              app: "keycloak"
+              app.kubernetes.io/managed-by: "keycloak-operator"
+              app.kubernetes.io/instance: "keycloak"
+              app.kubernetes.io/component: "server"
+        - maxSkew: 1
+          topologyKey: "kubernetes.io/hostname"
+          whenUnsatisfiable: "ScheduleAnyway"
+          labelSelector:
+            matchLabels:
+              app: "keycloak"
+              app.kubernetes.io/managed-by: "keycloak-operator"
+              app.kubernetes.io/instance: "keycloak"
+              app.kubernetes.io/component: "server"</code></pre>
 </div>
 </div>
 <div class="admonitionblock important">
@@ -297,19 +296,28 @@ The Keycloak will eventually remove the unreachable pods from its local view and
 </li>
 <li>
 <p>Multiple node failures can result in a loss of entries from the <code>authenticationSessions</code>, <code>loginFailures</code>
-and <code>actionTokens</code> caches if the number of node failures is greater than or equal to the cache&#8217;s configured <code>num_owners</code>.</p>
+and <code>actionTokens</code> caches if the number of node failures is greater than or equal to the cache&#8217;s configured <code>num_owners</code>,
+which by default is 2.</p>
 </li>
 <li>
-<p>Deployments using the default <code>preferredDuringSchedulingIgnoredDuringExecution</code> anti-affinity rules,
-may experience data-loss on node/availability-zone failure if multiple pods are scheduled on the failed node/zone.</p>
+<p>Deployments using the default <code>topologySpreadConstraints</code> with <code>whenUnsatisfiable: ScheduleAnyway</code>, may experience
+data-loss on node/availability-zone failure if multiple pods are scheduled on the failed node/zone.</p>
 <div class="paragraph">
-<p>Users can prevent this scenario by explicitly configuring anti-affinity strategies with <code>requiredDuringSchedulingIgnoredDuringExecution</code>
-to ensure that pods are always provisioned on distinct nodes or zones. However, this comes at the expense of
-flexibility as the Keycloak will not scale up to the expected number of pods if the defined rules cannot be satisfied.</p>
+<p>Users can mitigate against this scenario by defining <code>topologySpreadConstraints</code> with <code>whenUnsatisfiable: DoNotSchedule</code>,
+to ensure that pods are always evenly scheduled across zones and nodes. However, this can result in some Keycloak
+instances not being deployed if the constraints cannot be satisfied.</p>
+</div>
+<div class="paragraph">
+<p>As Infinispan is unaware of the network topology when distributing cache entries, it is still possible for data-loss to
+occur on node/availability-zone failure if all <code>num_owner</code> copies of cached data are stored in the failed node/zone.
+You can restrict the total number of Keycloak instances to the number of nodes or availability-zones available by
+defining a <code>requiredDuringSchedulingIgnoredDuringExecution</code> for nodes and zones. However, this comes at the expense of
+scalability as the number of Keycloak instances that can be provisioned will be restricted to the number of
+nodes/availability-zones in your Kubernetes cluster.</p>
 </div>
 <div class="paragraph">
 <p>See the Operator <a href="https://www.keycloak.org/nightly/operator/advanced-configuration#_scheduling">Advanced configuration</a> details of how to configure custom
-anti-affinity strategies.</p>
+anti-affinity <code>topologySpreadConstraints</code> policies.</p>
 </div>
 </li>
 </ol>
