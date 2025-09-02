@@ -34,7 +34,6 @@ gtag('config', 'G-0J2P9316N6');
         <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
     </a>
     <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
-    <a class="nav-link d-block d-sm-none d-md-block d-lg-none" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-small.svg" style="height: 25px; aspect-ratio: 59/20" alt="GitHub stars"/></a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
       <span class="fa fa-bars fa-lg px-1 py-2"></span>
     </button>
@@ -56,6 +55,9 @@ gtag('config', 'G-0J2P9316N6');
           <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
         </li>
       </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
     </div>
 </nav>
 </header>
@@ -485,6 +487,89 @@ Keycloak will fail to start if the Infinispan server is configured to accept onl
 If the Infinispan server has authentication enabled, Keycloak will fail to start.</p>
 </div>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="cache-topology"><a class="anchor" href="#cache-topology"></a>Topology aware data distribution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Configuring Keycloak to be aware of your network topology, increases data availability in the presence of hardware failures, as Infinispan is able to ensure that data is distributed correctly.
+For example, if <code>num_owners=2</code> is configured for a cache, it will ensure that the two owners are not stored on the same node when possible.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>By default, user and client sessions are safely stored in the database, and they are not affected by these settings.
+The remaining distributed caches are affected by this configuration.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following topology information is available to configure:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Site name</dt>
+<dd>
+<p>If your Keycloak cluster is deployed between different datacenters (stretched cluster), use this option to ensure the data replicas are stored in a different datacenter.
+It prevents data loss if a datacenter goes offline or fails.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;site-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__SITE_NAME</code>).
+The value itself is not important, but each datacenter must have a unique value.</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;site-name=site-1</code></p>
+</div>
+</dd>
+<dt class="hdlist1">Rack name</dt>
+<dd>
+<p>If your Keycloak cluster is running in different racks on your datacenter, set this option to ensure the data replicas are stored in a different physical rack.
+It prevents data loss if a rack is suddenly disconnected or fails.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;rack-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__RACK_NAME</code>).
+The value itself is not important, but each rack must have a unique value.</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;rack-name=rack-1</code></p>
+</div>
+</dd>
+<dt class="hdlist1">Machine name</dt>
+<dd>
+<p>If you have multiple Keycloak instances running on the same physical machine (using virtual machines or containers for example), use this option to ensure the data replicas are stored in different physical machines.
+It prevents data loss against a physical machine failure.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;machine-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__MACHINE_NAME</code>).
+The value itself is not important, but each machine must have a unique value.</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;machine-name=machine-1</code></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The Keycloak Operator automatically configure the machine name based on the Kubernetes node.
+It ensures that if multiple pods are scheduled on the same node, data replicas are still replicated across distinct nodes when possible.
+We recommend to set up anti-affinity rules and/or topology spread constraints to prevent multiple Pods from being scheduled on the same node, further reducing the risk of a single node failure causing data loss.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</dd>
+</dl>
 </div>
 </div>
 </div>
