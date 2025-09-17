@@ -204,6 +204,19 @@ The name format of options defined in this way is identical to the key format of
 </tr>
 </table>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you configure mTLS with <code>https-client-auth</code> set to <code>required</code>, this configuration is inherited by the management interface.
+If you have not otherwise configured the usage of HTTP for the health endpoints, you will likely want to also set the additionalOption <code>https-management-client-auth</code> to <code>request</code> or <code>none</code> so that a valid client certificate is not required for probe requests.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect3">
 <h4 id="_custom_environment_variables"><a class="anchor" href="#_custom_environment_variables"></a>Custom environment variables</h4>
@@ -740,6 +753,105 @@ spec:
     annotations:
       annotation1: annotation-value1
       annotation2: annotation-value2</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_servicemonitor"><a class="anchor" href="#_servicemonitor"></a>ServiceMonitor</h3>
+<div class="paragraph">
+<p>A <code>ServiceMonitor</code> resource is used to define how a service&#8217;s metrics are discovered and scraped by Prometheus.
+The Keycloak Operator automatically generates a <code>ServiceMonitor</code> resource for your deployment. In order for the
+<code>ServiceMonitor</code> resource to be created, the <code>monitoring.coreos.com/v1:ServiceMonitor</code> Custom Resource Definition (CRD)
+must be installed on your Kubernetes cluster.</p>
+</div>
+<div class="paragraph">
+<p>The Operator generates a <code>ServiceMonitor</code> with the following spec:</p>
+</div>
+<div class="listingblock">
+<div class="title">Default ServiceMonitor</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: example-kc <i class="conum" data-value="1"></i><b>(1)</b>
+  namespace: example-namespace <i class="conum" data-value="2"></i><b>(2)</b>
+spec:
+  endpoints:
+  - interval: 30s
+    path: /metrics <i class="conum" data-value="3"></i><b>(3)</b>
+    port: management
+    scheme: https <i class="conum" data-value="4"></i><b>(4)</b>
+    scrapeTimeout: 10s
+    tlsConfig:
+      insecureSkipVerify: true
+  namespaceSelector:
+    matchNames:
+    - example-namespace <i class="conum" data-value="2"></i><b>(2)</b>
+  selector:
+    matchLabels:
+      app: keycloak
+      app.kubernetes.io/instance: example-kc <i class="conum" data-value="2"></i><b>(2)</b>
+      app.kubernetes.io/managed-by: keycloak-operator
+  scrapeProtocols:
+    - OpenMetricsText1.0.0</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>ServiceMonitor</code> is created with the same name as the Keycloak CR.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The <code>ServiceMonitor</code> is always deployed to the same namespace as the Keycloak CR and will only match a Service
+in that namespace.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The configured path defaults to <code>/metrics</code>, but respects the <code>http-management-relative-path</code> value if configured.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The configured scheme is changed automatically depending on whether TLS is enabled or not.</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_modify_servicemonitor_configuration"><a class="anchor" href="#_modify_servicemonitor_configuration"></a>Modify ServiceMonitor configuration</h4>
+<div class="paragraph">
+<p>You can configure the <code>interval</code> and <code>scrapeTimeout</code> fields of the generated <code>ServiceMonitor</code> by modifying the Keycloak CR spec.</p>
+</div>
+<div class="listingblock">
+<div class="title">Modified ServiceMonitor</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  serviceMonitor:
+    interval: 10s
+    scrapeTimeout: 5s</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_disable_servicemonitor_creation"><a class="anchor" href="#_disable_servicemonitor_creation"></a>Disable ServiceMonitor creation</h4>
+<div class="paragraph">
+<p>You can prevent the Operator from creating a ServiceMonitor by configuring the Keycloak CR as follows:</p>
+</div>
+<div class="listingblock">
+<div class="title">Disabled ServiceMonitor</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  serviceMonitor:
+    enabled: false</code></pre>
+</div>
 </div>
 </div>
 </div>
