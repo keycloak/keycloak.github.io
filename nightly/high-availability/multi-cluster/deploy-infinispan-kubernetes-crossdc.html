@@ -481,7 +481,7 @@ spec:
 </tr>
 <tr>
 <td><i class="conum" data-value="11"></i><b>11</b></td>
-<td>The remote site&#8217;s name, in this case  <code>Site-B</code>.</td>
+<td>The remote site&#8217;s name, in this case  <code>Site-B</code>. Use this value in Keycloak option <code>cache-remote-backup-sites</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="12"></i><b>12</b></td>
@@ -551,282 +551,9 @@ spec:
 <li>
 <p>Creating the caches for Keycloak.</p>
 <div class="paragraph">
-<p>Keycloak requires the following caches to be present: <code>actionTokens</code>, <code>authenticationSessions</code>, <code>loginFailures</code>, and <code>work</code>.</p>
-</div>
-<div class="paragraph">
-<p>The Infinispan <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#creating-caches">Cache CR</a> allows deploying the caches in the Infinispan cluster.
-Cross-site needs to be enabled per cache as documented by <a href="https://infinispan.org/docs/stable/titles/xsite/xsite.html">Cross Site Documentation</a>.
-The documentation contains more details about the options used by this guide.
-The following example shows the <code>Cache</code> CR for <code>Site-A</code>.</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>In <code>Site-A</code> create a <code>Cache</code> CR for each of the caches mentioned above with the following content.</p>
-<div class="listingblock">
-<div class="title">Cache <code>actionTokens</code></div>
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
-kind: Cache
-metadata:
-  name: actiontokens
-  namespace: keycloak
-spec:
-  clusterName: infinispan
-  name: actionTokens
-  template: |-
-    distributedCache:
-      mode: "SYNC"
-      owners: "2"
-      statistics: "true"
-      remoteTimeout: "5000"
-      encoding:
-        media-type: "application/x-protostream"
-      locking:
-        acquireTimeout: "4000"
-      transaction:
-        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
-        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
-      stateTransfer:
-        chunkSize: "16"
-      backups:
-        site-b: <i class="conum" data-value="3"></i><b>(3)</b>
-          backup:
-            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
-            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
-            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
-            stateTransfer:
-              chunkSize: "16"</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">Cache <code>authenticationSessions</code></div>
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
-kind: Cache
-metadata:
-  name: authenticationsessions
-  namespace: keycloak
-spec:
-  clusterName: infinispan
-  name: authenticationSessions
-  template: |-
-    distributedCache:
-      mode: "SYNC"
-      owners: "2"
-      statistics: "true"
-      remoteTimeout: "5000"
-      encoding:
-        media-type: "application/x-protostream"
-      locking:
-        acquireTimeout: "4000"
-      transaction:
-        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
-        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
-      stateTransfer:
-        chunkSize: "16"
-      indexing:
-        enabled: true
-        indexed-entities:
-        - keycloak.RootAuthenticationSessionEntity
-      backups:
-        site-b: <i class="conum" data-value="3"></i><b>(3)</b>
-          backup:
-            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
-            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
-            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
-            stateTransfer:
-              chunkSize: "16"</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">Cache <code>loginFailures</code></div>
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
-kind: Cache
-metadata:
-  name: loginfailures
-  namespace: keycloak
-spec:
-  clusterName: infinispan
-  name: loginFailures
-  template: |-
-    distributedCache:
-      mode: "SYNC"
-      owners: "2"
-      statistics: "true"
-      remoteTimeout: "5000"
-      encoding:
-        media-type: "application/x-protostream"
-      locking:
-        acquireTimeout: "4000"
-      transaction:
-        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
-        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
-      stateTransfer:
-        chunkSize: "16"
-      indexing:
-        enabled: true
-        indexed-entities:
-        - keycloak.LoginFailureEntity
-      backups:
-        site-b: <i class="conum" data-value="3"></i><b>(3)</b>
-          backup:
-            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
-            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
-            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
-            stateTransfer:
-              chunkSize: "16"</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">Cache <code>work</code></div>
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
-kind: Cache
-metadata:
-  name: work
-  namespace: keycloak
-spec:
-  clusterName: infinispan
-  name: work
-  template: |-
-    distributedCache:
-      mode: "SYNC"
-      owners: "2"
-      statistics: "true"
-      remoteTimeout: "5000"
-      encoding:
-        media-type: "application/x-protostream"
-      locking:
-        acquireTimeout: "4000"
-      transaction:
-        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
-        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
-      stateTransfer:
-        chunkSize: "16"
-      backups:
-        site-b: <i class="conum" data-value="3"></i><b>(3)</b>
-          backup:
-            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
-            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
-            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
-            stateTransfer:
-              chunkSize: "16"</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The transaction mode.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>The locking mode used by the transaction.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The remote site name.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>The cross-site communication strategy, in this case, <code>SYNC</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>The cross-site replication timeout.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>The cross-site replication failure policy.</td>
-</tr>
-</table>
-</div>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>The example above is the recommended configuration to achieve the best data consistency.</p>
-</div>
-<div class="exampleblock">
-<div class="content">
-<div class="paragraph">
-<p><strong>Background information</strong></p>
-</div>
-<div class="paragraph">
-<p>Deadlocks may occur in an active-active setup as entries are modified concurrently in both sites.</p>
-</div>
-<div class="paragraph">
-<p>The <code>transaction.mode: NON_DURABLE_XA</code> ensures that the transaction is rolled back keeping the data consistent if this occurs.
-The setting <code>backup.failurePolicy: FAIL</code> is required in this case.
-It will throw an error that allows the transaction to be safely rolled back.
-When this occurs, Keycloak will attempt a retry.</p>
-</div>
-<div class="paragraph">
-<p>The <code>transaction.locking: PESSIMISTIC</code> is the only supported locking mode; <code>OPTIMISTIC</code> is not recommended due to its network costs.
-The same settings also prevent that one site is updated while the other site is unreachable.</p>
-</div>
-<div class="paragraph">
-<p>The <code>backup.strategy: SYNC</code> ensures the data is visible and stored in the other site when the Keycloak request is completed.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The <code>locking.acquireTimeout</code> can be reduced to fail fast in a deadlock scenario.
-The <code>backup.timeout</code> must always be higher than the <code>locking.acquireTimeout</code>.
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>For <code>Site-B</code>, the <code>Cache</code> CR is similar, except for the <code>backups.&lt;name&gt;</code> outlined in point 3 of the above diagram.</p>
-</div>
-<div class="listingblock">
-<div class="title">Example for <code>actionTokens</code> cache in <code>Site-B</code></div>
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
-kind: Cache
-metadata:
-  name: actiontokens
-  namespace: keycloak
-spec:
-  clusterName: infinispan
-  name: actionTokens
-  template: |-
-    distributedCache:
-      mode: "SYNC"
-      owners: "2"
-      statistics: "true"
-      remoteTimeout: "5000"
-      encoding:
-        media-type: "application/x-protostream"
-      locking:
-        acquireTimeout: "4000"
-      transaction:
-        mode: "NON_DURABLE_XA" <i class="conum" data-value="1"></i><b>(1)</b>
-        locking: "PESSIMISTIC" <i class="conum" data-value="2"></i><b>(2)</b>
-      stateTransfer:
-        chunkSize: "16"
-      backups:
-        site-a: <i class="conum" data-value="3"></i><b>(3)</b>
-          backup:
-            strategy: "SYNC" <i class="conum" data-value="4"></i><b>(4)</b>
-            timeout: "4500" <i class="conum" data-value="5"></i><b>(5)</b>
-            failurePolicy: "FAIL" <i class="conum" data-value="6"></i><b>(6)</b>
-            stateTransfer:
-              chunkSize: "16"</code></pre>
-</div>
+<p>Keycloak automatically creates the necessary caches on the first startup if they do not exist.
+To customize any default configuration, use the <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#creating-caches_creating-caches"><code>Cache</code> CR</a> to declare the full cache configuration.
+To take effect, the <code>Cache</code> CR must be deployed before any Keycloak Pod starts.</p>
 </div>
 </li>
 </ol>
@@ -917,7 +644,8 @@ spec:
       secret:
         name: remote-store-secret
         key: password
-    - name: db-driver</code></pre>
+    - name: cache-remote-backup-sites
+      value: "site-2" <i class="conum" data-value="5"></i><b>(5)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -929,7 +657,7 @@ spec:
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>The port of the remote Infinispan cluster.
-This is optional and it defaults to <code>11222</code>.</td>
+This is optional, and it defaults to <code>11222</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
@@ -938,6 +666,10 @@ This is optional and it defaults to <code>11222</code>.</td>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>The Secret <code>name</code> and <code>key</code> with the Infinispan password credential.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The name of the remote site.</td>
 </tr>
 </table>
 </div>
@@ -978,6 +710,26 @@ In other environments, add the necessary certificates to Keycloak&#8217;s trusts
 </tr>
 </thead>
 <tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-backup-sites</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Configures a list of backup sites names to where the external Infinispan cluster backups the Keycloak data.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-backup-sites</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_BACKUP_SITES</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>cache-remote-host</code></span></p>

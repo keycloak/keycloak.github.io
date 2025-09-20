@@ -346,6 +346,10 @@ It can be useful for instance if you redeployed custom providers or custom theme
 <li>
 <p>locales - Comma-separated list of supported locales</p>
 </li>
+<li>
+<p>contentHashPattern - Regex pattern of a file path in the theme where files have a content hash as part of their file name.
+A content hash is usually an abbreviated hash of the file&#8217;s contents. The hash will change when the contents of the file have changed, and is usually created using the bundling process of the JavaScript application bundling. When the preview feature <code>rolling-updates:v2</code> is enabled, this allows for a more seamless rolling upgrade.</p>
+</li>
 </ul>
 </div>
 <div class="paragraph">
@@ -785,6 +789,74 @@ Keycloak and restart the server if it is already running.</p>
 <p><a href="https://github.com/keycloak/keycloak-quickstarts">Keycloak Quickstarts Repository</a> - Directory <code>extension</code> of the quickstarts repository contains some theme examples, which can be also used as an inspiration.</p>
 </li>
 </ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_theme_spis"><a class="anchor" href="#_theme_spis"></a>Theme SPIs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following sections show how to achieve finer grained control over your themes.</p>
+</div>
+<div class="sect2">
+<h3 id="_theme_selector"><a class="anchor" href="#_theme_selector"></a>Theme selector</h3>
+<div class="paragraph">
+<p>By default the theme configured for the realm is used, with the exception of clients being able to override the login
+theme. This behavior can be changed through the Theme Selector SPI.</p>
+</div>
+<div class="paragraph">
+<p>This could be used to select different themes for desktop and mobile devices by looking at the user agent
+header, for example.</p>
+</div>
+<div class="paragraph">
+<p>To create a custom theme selector you need to implement <code>ThemeSelectorProviderFactory</code> and <code>ThemeSelectorProvider</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_theme_resources"><a class="anchor" href="#_theme_resources"></a>Theme resources</h3>
+<div class="paragraph">
+<p>When implementing custom providers there may often be a need to add additional templates, resources and messages bundles.</p>
+</div>
+<div class="paragraph">
+<p>An example use-case would be a <a href="https://www.keycloak.org/docs/latest/server_development/index.html#_auth_spi">custom authenticator</a> that requires additional templates and resources.</p>
+</div>
+<div class="paragraph">
+<p>The easiest way to load additional theme resources is to create a JAR with templates in <code>theme-resources/templates</code>
+resources in <code>theme-resources/resources</code> and messages bundles in <code>theme-resources/messages</code>.</p>
+</div>
+<div class="paragraph">
+<p>If you want a more flexible way to load templates and resources that can be achieved through the ThemeResourceSPI.
+By implementing <code>ThemeResourceProviderFactory</code> and <code>ThemeResourceProvider</code> you can decide exactly how to load templates
+and resources.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_locale_selector"><a class="anchor" href="#_locale_selector"></a>Locale selector</h3>
+<div class="paragraph">
+<p>By default, the locale is selected using the <code>DefaultLocaleSelectorProvider</code> which implements the <code>LocaleSelectorProvider</code> interface. English is the default language when internationalization is disabled.</p>
+</div>
+<div class="paragraph">
+<p>With internationalization enabled, the locale is resolved according to the logic described in the <a href="https://www.keycloak.org/docs/latest/server_admin/#_user_locale_selection">Server Administration documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p>This behavior can be changed through the <code>LocaleSelectorSPI</code> by implementing the <code>LocaleSelectorProvider</code> and <code>LocaleSelectorProviderFactory</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>LocaleSelectorProvider</code> interface has a single method, <code>resolveLocale</code>, which must return a locale given a <code>RealmModel</code> and a nullable <code>UserModel</code>. The actual request is available from the <code>KeycloakSession#getContext</code> method.</p>
+</div>
+<div class="paragraph">
+<p>Custom implementations can extend the <code>DefaultLocaleSelectorProvider</code> in order to reuse parts of the default behavior. For example to ignore the <code>Accept-Language</code> request header, a custom implementation could extend the default provider, override it&#8217;s <code>getAcceptLanguageHeaderLocale</code>, and return a null value. As a result the locale selection will fall back on the realm&#8217;s default language.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_additional_resources_for_locale_selector"><a class="anchor" href="#_additional_resources_for_locale_selector"></a>Additional resources for Locale selector</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>For more details on creating and deploying a custom provider, see <a href="https://www.keycloak.org/docs/latest/server_development/index.html#_providers">Service Provider Interfaces</a>.</p>
+</li>
+</ul>
+</div>
 </div>
 </div>
 </div>            </div>
