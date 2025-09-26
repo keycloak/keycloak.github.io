@@ -10,21 +10,21 @@ gtag('js', new Date());
 gtag('config', 'G-0J2P9316N6');
 </script>
 <meta charset="utf-8"/>
-<title>Troubleshooting using metrics - Keycloak</title>
+<title>Local caching metrics - Keycloak</title>
 <meta name="twitter:card" content="summary_large">
 <meta name="twitter:site" content="@keycloak">
 <meta property="og:site_name" content="Keycloak">
-<meta property="og:title" content="Troubleshooting using metrics">
+<meta property="og:title" content="Local caching metrics">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Use metrics for troubleshooting errors and performance issues.">
+<meta name="description" property="og:description" content="Use metrics to monitor health for local caching.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <meta name="robots" content="noindex">
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting">
-<meta property="og:url" content="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting">
+<link rel="canonical" href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-cache">
+<meta property="og:url" content="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-cache">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -70,7 +70,7 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#observability">Observability</a></li>
-                    <li class="breadcrumb-item active">Troubleshooting using metrics</li>
+                    <li class="breadcrumb-item active">Local caching metrics</li>
                 </ol>
             </nav>
 
@@ -81,8 +81,8 @@ gtag('config', 'G-0J2P9316N6');
                 </div>
 
             <div class="mb-4">
-                <h1>Troubleshooting using metrics</h1>
-                    <span class="text-muted">Use metrics for troubleshooting errors and performance issues.</span>
+                <h1>Local caching metrics</h1>
+                    <span class="text-muted">Use metrics to monitor health for local caching.</span>
             </div>
 
 
@@ -90,138 +90,134 @@ gtag('config', 'G-0J2P9316N6');
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="paragraph">
-<p>For a running Keycloak deployment it is important to understand how the system performs and whether it meets your service level objectives (SLOs).
-For more details on SLOs, proceed to the <a href="https://www.keycloak.org/nightly/observability/keycloak-service-level-indicators">Monitoring performance with Service Level Indicators</a> guide.</p>
-</div>
-<div class="paragraph">
-<p>This guide will provide directions to answer the question: &#8220;What can I do when my SLOs are not met?&#8221;</p>
-</div>
-<div class="paragraph">
-<p>Keycloak consists of several components where an issue or misconfiguration of one of them can move your service level indicators to undesirable numbers.</p>
-</div>
-<div class="paragraph">
-<p>A guidance provided by this guide is illustrated in the following example:</p>
-</div>
 <div class="exampleblock">
 <div class="content">
 <div class="paragraph">
-<p><strong>Observation:</strong> Latency service level objective is not met.</p>
+<p><strong>Global tags</strong></p>
 </div>
-<div class="paragraph">
-<p><strong>Metrics that indicate a problem</strong>:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Keycloak&#8217;s database connection pool is often exhausted, and there are threads queuing for a connection to be retrieved from the pool.</p>
-</li>
-<li>
-<p>Keycloak&#8217;s <code>users</code> cache hit ratio is at a low percentage, around 5%. This means only 1 out of 20 user searches is able to obtain user data from the cache and the rest needs to load it from the database.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p><strong>Possible mitigations suggested:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Increasing the <code>users</code> cache size to a higher number which would decrease the number of reads from the database.</p>
-</li>
-<li>
-<p>Increasing the number of connections in the connection pool. This would need to be checked with metrics for your database and tuning it for a higher load, for example, by increasing the number of available processors.</p>
-</li>
-</ul>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>cache=&lt;name&gt;</code></dt>
+<dd>
+<p>The cache name.</p>
+</dd>
+</dl>
 </div>
 </div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="ulist">
-<ul>
-<li>
-<p>This guide focuses on Keycloak metrics.
-Troubleshooting the database itself is out of scope.</p>
-</li>
-<li>
-<p>This guide provides general guidance.
-You should always confirm the configuration change by conducting a performance test comparing the metrics in question for the old and the new configuration.</p>
-</li>
-</ul>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Grafana dashboards for the metrics below can be found in <a href="https://www.keycloak.org/nightly/observability/grafana-dashboards">Visualizing activities in dashboards</a> guide.</p>
-</div>
-</td>
-</tr>
-</table>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_list_of_keycloak_key_metrics"><a class="anchor" href="#_list_of_keycloak_key_metrics"></a>List of Keycloak key metrics</h2>
+<h2 id="_size"><a class="anchor" href="#_size"></a>Size</h2>
 <div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p><a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-keycloak">Self-provided metrics</a></p>
-</li>
-<li>
-<p><a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-jvm">JVM metrics</a></p>
-</li>
-<li>
-<p><a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-database">Database Metrics</a></p>
-</li>
-<li>
-<p><a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-http">HTTP metrics</a></p>
-</li>
-<li>
-<p><a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-cache">Local caching metrics</a></p>
-</li>
-<li>
-<p><a href="https://www.keycloak.org/nightly/high-availability/single-cluster/introduction">Single-cluster deployments</a> metrics</p>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-clustering-and-network">Clustering metrics</a></p>
-</li>
-<li>
-<p><a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-embedded-caches">Embedded Infinispan metrics for single-cluster deployments</a></p>
-</li>
-</ul>
+<div class="paragraph">
+<p>Monitor the number of entries in your local cache.</p>
 </div>
-</li>
-<li>
-<p><a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/introduction">Multi-cluster deployments</a> metrics</p>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-embedded-caches-multi-cluster">Embedded Infinispan metrics for multi-cluster deployments</a></p>
-</li>
-<li>
-<p><a href="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-external-infinispan-multi-cluster">External Infinispan metrics</a></p>
-</li>
-</ul>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache_size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of cached entries.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
-</li>
-</ul>
+</div>
+<div class="sect1">
+<h2 id="_data_access"><a class="anchor" href="#_data_access"></a>Data Access</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following metrics monitor the cache accesses, such as lookup and evictions.</p>
+</div>
+<div class="sect2">
+<h3 id="_reads"><a class="anchor" href="#_reads"></a>Reads</h3>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Tags</strong></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>result=hit|miss</code></dt>
+<dd>
+<p>The result of the read/lookup operation.
+If the value is <code>hit</code>, the entry was found in the cache.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The read requests can be monitored using a single metric.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache_gets_total</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of cache lookups.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Hit Ratio for read operation</strong></p>
+</div>
+<div class="paragraph">
+<p>An expression can be used to compute the hit ratio for a cache in systems such as Prometheus.
+For example, the hit ratio for read operations can be expressed as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>cache_gets_total{result="hit"} / cache_gets_total</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_evictions"><a class="anchor" href="#_evictions"></a>Evictions</h3>
+<div class="paragraph">
+<p>When a cache is limited, eviction is the process of removing the least used entries to make space available for new entries to be cached.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache_evictions_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of times the cache was evicted.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>            </div>
@@ -232,7 +228,7 @@ You should always confirm the configuration change by conducting a performance t
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/metrics-for-troubleshooting.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/metrics-for-troubleshooting-cache.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>
