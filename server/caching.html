@@ -118,14 +118,11 @@ The <code>local</code> cache mode is intended only for development and testing p
 <h2 id="_configuring_caches"><a class="anchor" href="#_configuring_caches"></a>Configuring caches</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak provides a cache configuration file with sensible defaults located at <code>conf/cache-ispn.xml</code>.</p>
+<p>Keycloak provides a regular <a href="https://infinispan.org/docs/stable/titles/configuring/configuring.html">Infinispan configuration file</a> located at <code>conf/cache-ispn.xml</code>.
+This file contains the default configuration used for the cache-container and JGroups transport.</p>
 </div>
 <div class="paragraph">
-<p>The cache configuration is a regular <a href="https://infinispan.org/docs/stable/titles/configuring/configuring.html">Infinispan configuration file</a>.</p>
-</div>
-<div class="paragraph">
-<p>The following table gives an overview of the specific caches Keycloak uses.
-You configure these caches in <code>conf/cache-ispn.xml</code>:</p>
+<p>The following table gives an overview of the specific caches Keycloak uses:</p>
 </div>
 <table class="tableblock frame-all grid-all fit-content">
 <colgroup>
@@ -330,6 +327,18 @@ This cache is needed for the Brute Force Protection feature to work in a multi-n
 <p>Action tokens are used for scenarios when a user needs to confirm an action asynchronously, for example in the emails sent by the forgot password flow.
 The <code>actionTokens</code> distributed cache is used to track metadata about action tokens.</p>
 </div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+You can see the applied Infinispan configuration in the logs by configuring <code>--log-level=info,org.keycloak.connections.infinispan:debug</code>.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_volatile_user_sessions"><a class="anchor" href="#_volatile_user_sessions"></a>Volatile user sessions</h3>
@@ -353,21 +362,6 @@ It is possible to configure Keycloak to store regular user sessions in the cache
 <div class="paragraph">
 <p>When using volatile user sessions, the cache is the source of truth for user and client sessions.
 Keycloak automatically adjusts the number of entries that can be stored in memory, and increases the number of copies to prevent data loss.</p>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>It is not recommended to use volatile user sessions when using offline sessions extensively due to potentially high memory usage.
-For volatile sessions, the time offline sessions are cached in memory can be limited with the SPI options <code>spi-user-sessions--infinispan--offline-client-session-cache-entry-lifespan-override</code> and <code>spi-user-sessions--infinispan--offline-session-cache-entry-lifespan-override</code>.</p>
-</div>
-</td>
-</tr>
-</table>
 </div>
 <div class="paragraph">
 <p>Follow these steps to enable this setup:</p>
@@ -428,6 +422,36 @@ apply the upper bound to. For example, to apply an upper-bound of <code>1000</co
 </div>
 </div>
 <div class="sect2">
+<h3 id="_modifying_cache_configuration_defaults"><a class="anchor" href="#_modifying_cache_configuration_defaults"></a>Modifying cache configuration defaults</h3>
+<div class="paragraph">
+<p>Keycloak automatically creates all required caches with the expected configurations. You can add additional caches or override the default cache configurations in <code>conf/cache-ispn.xml</code> or in your own file provided via <code>--cache-config-file</code>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>While overriding the default cache configurations via XML is technically possible, it is not supported.
+This is only recommended for advanced use-cases where the default cache configurations are proven to be problematic.
+The only supported way to change the default cache configurations is via the <code>cache-...</code> options.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In order to prevent a warning being logged when a modified default cache configuration is detected, add the following option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --cache-config-mutate=true</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_cli_options_for_remote_server"><a class="anchor" href="#_cli_options_for_remote_server"></a>CLI options for remote server</h3>
 <div class="paragraph">
 <p>For configuration of Keycloak server for high availability and multi-node clustered setup there was introduced following CLI options <code>cache-remote-host</code>, <code>cache-remote-port</code>, <code>cache-remote-username</code> and <code>cache-remote-password</code> simplifying configuration within the XML file.
@@ -457,6 +481,89 @@ Keycloak will fail to start if the Infinispan server is configured to accept onl
 If the Infinispan server has authentication enabled, Keycloak will fail to start.</p>
 </div>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="cache-topology"><a class="anchor" href="#cache-topology"></a>Topology aware data distribution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Configuring Keycloak to be aware of your network topology, increases data availability in the presence of hardware failures, as Infinispan is able to ensure that data is distributed correctly.
+For example, if <code>num_owners=2</code> is configured for a cache, it will ensure that the two owners are not stored on the same node when possible.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>By default, user and client sessions are safely stored in the database, and they are not affected by these settings.
+The remaining distributed caches are affected by this configuration.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following topology information is available to configure:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Site name</dt>
+<dd>
+<p>If your Keycloak cluster is deployed between different datacenters, use this option to ensure the data replicas are stored in a different datacenter.
+It prevents data loss if a datacenter goes offline or fails.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;site-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__SITE_NAME</code>).
+The value itself is not important, but each datacenter must have a unique value.</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;site-name=site-1</code></p>
+</div>
+</dd>
+<dt class="hdlist1">Rack name</dt>
+<dd>
+<p>If your Keycloak cluster is running in different racks on your datacenter, set this option to ensure the data replicas are stored in a different physical rack.
+It prevents data loss if a rack is suddenly disconnected or fails.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;rack-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__RACK_NAME</code>).
+The value itself is not important, but each rack must have a unique value.</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;rack-name=rack-1</code></p>
+</div>
+</dd>
+<dt class="hdlist1">Machine name</dt>
+<dd>
+<p>If you have multiple Keycloak instances running on the same physical machine (using virtual machines or containers for example), use this option to ensure the data replicas are stored in different physical machines.
+It prevents data loss against a physical machine failure.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;machine-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__MACHINE_NAME</code>).
+The value itself is not important, but each machine must have a unique value.</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded&#8212;&#8203;default&#8212;&#8203;machine-name=machine-1</code></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The Keycloak Operator automatically configure the machine name based on the Kubernetes node.
+It ensures that if multiple pods are scheduled on the same node, data replicas are still replicated across distinct nodes when possible.
+We recommend to set up anti-affinity rules and/or topology spread constraints to prevent multiple Pods from being scheduled on the same node, further reducing the risk of a single node failure causing data loss.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</dd>
+</dl>
 </div>
 </div>
 </div>
@@ -718,13 +825,15 @@ The table below shows the TCP ports that need to be open for the <code>jdbc-ping
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
-<col style="width: 33.3333%;">
-<col style="width: 33.3333%;">
-<col style="width: 33.3334%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Option</th>
 <th class="tableblock halign-left valign-top">Property</th>
 <th class="tableblock halign-left valign-top">Description</th>
 </tr>
@@ -732,15 +841,17 @@ The table below shows the TCP ports that need to be open for the <code>jdbc-ping
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>7800</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache-embedded-network-bind-port</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.bind.port</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Unicast data transmission.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>57800</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.fd.port-offset</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Failure detection by protocol <code>FD_SOCK2</code>.
 It listens to the abrupt closing of a socket to suspect a Keycloak server failure.
-The <code>jgroups.fd.port-offset</code> property defines the offset from the <code>jgroups.bind.port</code>.
+The <code>jgroups.fd.port-offset</code> property defines the offset from the <code>cache-embedded-network-bind-port</code> option or <code>jgroups.bind.port</code> property.
 By default, the offset is set to 50000, making the failure detection port 57800.</p></td>
 </tr>
 </tbody>
@@ -752,7 +863,8 @@ By default, the offset is set to 50000, making the failure detection port 57800.
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Use <code>-D&lt;property&gt;=&lt;value&gt;</code> to modify the ports above in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
+If an option is not available for the port you require, configure it using a system property <code>-D&lt;property&gt;=&lt;value&gt;</code>
+in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
 </td>
 </tr>
 </table>
@@ -769,22 +881,10 @@ Use <code>-D&lt;property&gt;=&lt;value&gt;</code> to modify the ports above in y
 <p>By default, it picks a site local (non-routable) IP address, for example, from the 192.168.0.0/16 or 10.0.0.0/8 address range.</p>
 </div>
 <div class="paragraph">
-<p>To override the address, set the <code>jgroups.bind.address</code> property.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Use <code>-Djgroups.bind.address=&lt;IP&gt;</code> to modify the bind address in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
-</td>
-</tr>
-</table>
+<p>To override the address, set the option <code>cache-embedded-network-bind-address=&lt;IP&gt;</code>.</p>
 </div>
 <div class="paragraph">
-<p>The following special values are also recognized for <code>jgroups.bind.address</code>:</p>
+<p>The following special values are also recognized:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -858,7 +958,7 @@ For example, <code>match-host:linux.\*</code>.</p></td>
 In such a case, set up a port forwarding rule (sometimes called &#8220;virtual server&#8221;) to their local IP address.</p>
 </div>
 <div class="paragraph">
-<p>When using port forwarding, use the following properties so each node correctly advertises its external address to the other nodes:</p>
+<p>When using port forwarding, use the following options so each node correctly advertises its external address to the other nodes:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -867,32 +967,79 @@ In such a case, set up a port forwarding rule (sometimes called &#8220;virtual s
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Option</th>
 <th class="tableblock halign-left valign-top">Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.external_port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache-embedded-network-external-port</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Port that other instances in the Keycloak cluster should use to contact this node.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.external_addr</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache-embedded-network-external-address</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">IP address that other instances in the Keycloak should use to contact this node.</p></td>
 </tr>
 </tbody>
 </table>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Use <code>-D&lt;property&gt;=&lt;value&gt;</code> set this in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
-</td>
-</tr>
-</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verify_cluster_and_network_health"><a class="anchor" href="#_verify_cluster_and_network_health"></a>Verify cluster and network health</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section provides methods to verify that your Keycloak cluster has formed correctly and that network communication between instances is functioning as expected.
+It is crucial to perform these checks after deployment to ensure high availability and data consistency.</p>
+</div>
+<div class="paragraph">
+<p>To verify if the cluster is formed properly, check one of these locations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Admin UI</p>
+<div class="paragraph">
+<p>Access the Keycloak Web UI, typically available at <code>https://&lt;your-host&gt;/admin/master/console/#/master/providers</code>.
+Under the <strong>Provider Info</strong> section, locate the <strong>connectionsInfinispan</strong> entry.
+Click on <strong>Show more</strong> to expand its details.
+You should find information about the cluster status and the health of individual caches.</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="https://www.keycloak.org/resources/images/guides/server/infinispan_info.png" alt="Infinispan Cluster Information in Web UI"></span></p>
+</div>
+</li>
+<li>
+<p>Logs</p>
+<div class="paragraph">
+<p>Infinispan logs a cluster view every time a new instance joins or leaves the cluster.
+Search for log entries with the ID <code>ISPN000094</code>.</p>
+</div>
+<div class="paragraph">
+<p>A healthy cluster view will show all expected nodes.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-text" data-lang="text">ISPN000094: Received new cluster view for channel ISPN: [node1-26186|1] (2) [node1-26186, node2-37007]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This log entry indicates that the cluster named "ISPN" currently has 2 nodes: <code>node1-26186</code> and <code>node2-37007</code>.
+The <code>(2)</code> confirms the total number of nodes in the cluster.</p>
+</div>
+</li>
+<li>
+<p>Metrics</p>
+<div class="paragraph">
+<p>Keycloak exposes Infinispan metrics via a Prometheus endpoint, which can be visualized in tools like Grafana.
+The metric <code>vendor_cluster_size</code> shows the current number of instances in the cluster.
+You should verify that this metric matches the expected number of running instances configured in your cluster.</p>
+</div>
+<div class="paragraph">
+<p>Refer to <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting-clustering-and-network#_cluster_size">Clustering metrics</a> for more information.</p>
+</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -970,6 +1117,26 @@ While these metrics provide more insights into the latency distribution, collect
 </div>
 </div></div></td>
 <td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-config-mutate</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Determines whether changes to the default cache configurations are allowed.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">This is only recommended for advanced use-cases where the default cache configurations are proven to be problematic. The only supported way to change the default cache configurations is via the other <code>cache-&#8230;&#8203;</code> options.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-config-mutate</code><br>
+<strong>Env:</strong> <code>KC_CACHE_CONFIG_MUTATE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1236,6 +1403,98 @@ While these metrics provide more insights into the latency distribution, collect
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-bind-address</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">IP address used by clustering transport.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">By default, SITE_LOCAL is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-bind-address</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_BIND_ADDRESS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-bind-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The Port the clustering transport will bind to.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">By default, port 7800 is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-bind-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_BIND_PORT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-external-address</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">IP address that other instances in the cluster should use to contact this node.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Set only if it is different to cache-embedded-network-bind-address, for example when this instance is behind a firewall.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-external-address</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_EXTERNAL_ADDRESS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-external-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Port that other instances in the cluster should use to contact this node.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Set only if it is different to cache-embedded-network-bind-port, for example when this instance is behind a firewall</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-external-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_EXTERNAL_PORT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>cache-embedded-offline-client-sessions-max-count</code></span></p>
 </div>
 <div class="paragraph">
@@ -1345,6 +1604,26 @@ While these metrics provide more insights into the latency distribution, collect
 </tr>
 </thead>
 <tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-backup-sites</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Configures a list of backup sites names to where the external Infinispan cluster backups the Keycloak data.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-backup-sites</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_BACKUP_SITES</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>cache-remote-host</code></span></p>

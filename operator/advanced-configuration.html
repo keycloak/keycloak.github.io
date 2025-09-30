@@ -198,12 +198,53 @@ The name format of options defined in this way is identical to the key format of
 </tr>
 </table>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you configure mTLS with <code>https-client-auth</code> set to <code>required</code>, this configuration is inherited by the management interface.
+If you have not otherwise configured the usage of HTTP for the health endpoints, you will likely want to also set the additionalOption <code>https-management-client-auth</code> to <code>request</code> or <code>none</code> so that a valid client certificate is not required for probe requests.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_custom_environment_variables"><a class="anchor" href="#_custom_environment_variables"></a>Custom environment variables</h4>
+<div class="paragraph">
+<p>You may find a need to set custom environment variables - such as for theme properties or <code>kc.[sh|bat]</code> script variables.
+The <code>spec.env</code> field of the Keycloak CR allows you to directly set any environment variable.
+Logic in the operator based upon looking for value of a particular setting does not consult <code>spec.env</code>,
+therefore do not use <code>spec.env</code> for anything that has a first-class configuration in the CR or may be specified as an <code>additionalOption</code>.</p>
+</div>
+<div class="paragraph">
+<p>Here&#8217;s an example setting JAVA_OPTS_APPEND:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  ...
+  env:
+    - name: JAVA_OPTS_APPEND
+      value: -Djava.net.preferIPv6Addresses=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Similar to <code>additionalOptions</code> you may specify either a value or reference a Secret.</p>
+</div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_secret_references"><a class="anchor" href="#_secret_references"></a>Secret References</h3>
 <div class="paragraph">
-<p>Secret References are used by some dedicated options in the Keycloak CR, such as <code>tlsSecret</code>, or as a value in <code>additionalOptions</code>.</p>
+<p>Secret References are used by some dedicated options in the Keycloak CR, such as a <code>tlsSecret</code>, or as a value in <code>additionalOptions</code>.</p>
 </div>
 <div class="paragraph">
 <p>Similarly ConfigMap References are used by options such as the <code>configMapFile</code>.</p>
@@ -392,7 +433,29 @@ spec:
 <p>Please see <a href="https://kubernetes.io/docs/concepts/scheduling-eviction">the kubernetes docs</a> for more on scheduling concepts.</p>
 </div>
 <div class="paragraph">
-<p>If you do not specify a custom affinity, your Pods will have an affinity for the same zone and an anti-affinity for the same node to improve availability. Scheduling to the same zone if possible helps prevent stretch clusters where cross zone cache cluster traffic may have too high of a latency.</p>
+<p>If you do not specify a custom topology spread constraint, your Pods will have a spread constraint across zones and nodes to improve availability. These defaults do not affect import and update Jobs, only server Pods.</p>
+</div>
+<div class="sect3">
+<h4 id="_job_scheduling"><a class="anchor" href="#_job_scheduling"></a>Job Scheduling</h4>
+<div class="paragraph">
+<p>Realm import and update Jobs inherit the scheduling of the server Pods if it is specified in the Keycloak CR <code>spec.scheduling</code> field. If your server Pod scheduling is highly restrictive this may result in the
+Job Pods being unschedulable. In this situation you may override the Job scheduling using the Keycloak CR <code>spec.update.scheduling</code> and <code>spec.import.scheduling</code> fields.</p>
+</div>
+<div class="paragraph">
+<p>For example the following will remove the use of any server Pod scheduling for the update Job:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  update:
+    scheduling: {}
+  ...</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -426,7 +489,7 @@ spec:
 </td>
 <td class="content">
 If you are using a custom image, the Operator is <strong>unaware</strong> of any configuration options that might&#8217;ve been specified there.
-For instance, it may cause that the management interface uses the <code>https</code> schema, but the Operator accesses it via <code>http</code> when the TLS settings is specified in the custom image.
+For instance, the management interface may use <code>https</code>, but the Operator accesses it via <code>http</code> when the TLS settings are specified in the custom image.
 To ensure proper TLS configuration, use the <code>tlsSecret</code> and <code>truststores</code> fields in the Keycloak CR so that the Operator can reflect that.
 </td>
 </tr>
@@ -442,7 +505,7 @@ To ensure proper TLS configuration, use the <code>tlsSecret</code> and <code>tru
 <p>If you need to provide trusted certificates, the Keycloak CR provides a top level feature for configuring the server&#8217;s truststore as discussed in <a href="https://www.keycloak.org/server/keycloak-truststore">Configuring trusted certificates</a>.</p>
 </div>
 <div class="paragraph">
-<p>Use the truststores stanza of the Keycloak spec to specify Secrets containing PEM encoded files, or PKCS12 files with extension <code>.p12</code>, <code>.pfx</code>, or <code>.pkcs12</code>, for example:</p>
+<p>Use the truststores stanza of the Keycloak spec to specify Secrets or ConfigMaps containing PEM encoded files, or PKCS12 files with extension <code>.p12</code>, <code>.pfx</code>, or <code>.pkcs12</code>, for example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -684,6 +747,105 @@ spec:
     annotations:
       annotation1: annotation-value1
       annotation2: annotation-value2</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_servicemonitor"><a class="anchor" href="#_servicemonitor"></a>ServiceMonitor</h3>
+<div class="paragraph">
+<p>A <code>ServiceMonitor</code> resource is used to define how a service&#8217;s metrics are discovered and scraped by Prometheus.
+The Keycloak Operator automatically generates a <code>ServiceMonitor</code> resource for your deployment. In order for the
+<code>ServiceMonitor</code> resource to be created, the <code>monitoring.coreos.com/v1:ServiceMonitor</code> Custom Resource Definition (CRD)
+must be installed on your Kubernetes cluster.</p>
+</div>
+<div class="paragraph">
+<p>The Operator generates a <code>ServiceMonitor</code> with the following spec:</p>
+</div>
+<div class="listingblock">
+<div class="title">Default ServiceMonitor</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: example-kc <i class="conum" data-value="1"></i><b>(1)</b>
+  namespace: example-namespace <i class="conum" data-value="2"></i><b>(2)</b>
+spec:
+  endpoints:
+  - interval: 30s
+    path: /metrics <i class="conum" data-value="3"></i><b>(3)</b>
+    port: management
+    scheme: https <i class="conum" data-value="4"></i><b>(4)</b>
+    scrapeTimeout: 10s
+    tlsConfig:
+      insecureSkipVerify: true
+  namespaceSelector:
+    matchNames:
+    - example-namespace <i class="conum" data-value="2"></i><b>(2)</b>
+  selector:
+    matchLabels:
+      app: keycloak
+      app.kubernetes.io/instance: example-kc <i class="conum" data-value="2"></i><b>(2)</b>
+      app.kubernetes.io/managed-by: keycloak-operator
+  scrapeProtocols:
+    - OpenMetricsText1.0.0</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>ServiceMonitor</code> is created with the same name as the Keycloak CR.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The <code>ServiceMonitor</code> is always deployed to the same namespace as the Keycloak CR and will only match a Service
+in that namespace.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The configured path defaults to <code>/metrics</code>, but respects the <code>http-management-relative-path</code> value if configured.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The configured scheme is changed automatically depending on whether TLS is enabled or not.</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_modify_servicemonitor_configuration"><a class="anchor" href="#_modify_servicemonitor_configuration"></a>Modify ServiceMonitor configuration</h4>
+<div class="paragraph">
+<p>You can configure the <code>interval</code> and <code>scrapeTimeout</code> fields of the generated <code>ServiceMonitor</code> by modifying the Keycloak CR spec.</p>
+</div>
+<div class="listingblock">
+<div class="title">Modified ServiceMonitor</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  serviceMonitor:
+    interval: 10s
+    scrapeTimeout: 5s</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_disable_servicemonitor_creation"><a class="anchor" href="#_disable_servicemonitor_creation"></a>Disable ServiceMonitor creation</h4>
+<div class="paragraph">
+<p>You can prevent the Operator from creating a ServiceMonitor by configuring the Keycloak CR as follows:</p>
+</div>
+<div class="listingblock">
+<div class="title">Disabled ServiceMonitor</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  serviceMonitor:
+    enabled: false</code></pre>
+</div>
 </div>
 </div>
 </div>

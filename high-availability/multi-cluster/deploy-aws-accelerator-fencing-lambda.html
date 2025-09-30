@@ -16,14 +16,14 @@ gtag('config', 'G-0J2P9316N6');
 <meta property="og:site_name" content="Keycloak">
 <meta property="og:title" content="Deploying an AWS Lambda to disable a non-responding site">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Deploy an AWS Lambda as part of the load-balancer building block in a multi-site deployment.">
+<meta name="description" property="og:description" content="Deploy an AWS Lambda as part of the load-balancer building block in a multi-cluster deployment.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/high-availability/deploy-aws-accelerator-fencing-lambda">
-<meta property="og:url" content="https://www.keycloak.org/high-availability/deploy-aws-accelerator-fencing-lambda">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/multi-cluster/deploy-aws-accelerator-fencing-lambda">
+<meta property="og:url" content="https://www.keycloak.org/high-availability/multi-cluster/deploy-aws-accelerator-fencing-lambda">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -69,6 +69,7 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/high-availability/multi-cluster/introduction">Multi cluster</a></li>
                     <li class="breadcrumb-item active">Deploying an AWS Lambda to disable a non-responding site</li>
                 </ol>
             </nav>
@@ -76,7 +77,7 @@ gtag('config', 'G-0J2P9316N6');
 
             <div class="mb-4">
                 <h1>Deploying an AWS Lambda to disable a non-responding site</h1>
-                    <span class="text-muted">Deploy an AWS Lambda as part of the load-balancer building block in a multi-site deployment.</span>
+                    <span class="text-muted">Deploy an AWS Lambda as part of the load-balancer building block in a multi-cluster deployment.</span>
             </div>
 
 
@@ -85,12 +86,12 @@ gtag('config', 'G-0J2P9316N6');
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide explains how to resolve split-brain scenarios between two sites in a multi-site deployment.
+<p>This guide explains how to resolve split-brain scenarios between two sites in a multi-cluster deployment.
 It also disables replication if one site fails, so the other site can continue to serve requests.</p>
 </div>
 <div class="paragraph">
-<p>This deployment is intended to be used with the setup described in the <a href="https://www.keycloak.org/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.
-Use this deployment with the other building blocks outlined in the <a href="https://www.keycloak.org/high-availability/bblocks-multi-site">Building blocks multi-site deployments</a> guide.</p>
+<p>This deployment is intended to be used with the setup described in the <a href="https://www.keycloak.org/high-availability/multi-cluster/concepts">Concepts for multi-cluster deployments</a> guide.
+Use this deployment with the other building blocks outlined in the <a href="https://www.keycloak.org/high-availability/multi-cluster/building-blocks">Building blocks multi-cluster deployments</a> guide.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -111,12 +112,12 @@ You would still need to adapt it to your environment and your organization&#8217
 <h2 id="_architecture"><a class="anchor" href="#_architecture"></a>Architecture</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>In the event of a network communication failure between sites in a multi-site deployment, it is no longer possible for the two sites to continue to replicate the data between them.
+<p>In the event of a network communication failure between sites in a multi-cluster deployment, it is no longer possible for the two sites to continue to replicate the data between them.
 The Infinispan is configured with a <code>FAIL</code> failure policy, which ensures consistency over availability. Consequently, all user requests are served with an error message until the failure is resolved, either by restoring the network connection or by disabling cross-site replication.</p>
 </div>
 <div class="paragraph">
 <p>In such scenarios, a quorum is commonly used to determine which sites are marked as online or offline.
-However, as multi-site deployments only consist of two sites, this is not possible.
+However, as multi-cluster deployments only consist of two sites, this is not possible.
 Instead, we leverage &#8220;fencing&#8221; to ensure that when one of the sites is unable to connect to the other site, only one site remains in the load balancer configuration, and hence only this site is able to serve subsequent users requests.</p>
 </div>
 <div class="paragraph">
@@ -124,8 +125,8 @@ Instead, we leverage &#8220;fencing&#8221; to ensure that when one of the sites 
 As a result, the sites will be out-of-sync once the replication has been disabled.</p>
 </div>
 <div class="paragraph">
-<p>To recover from the out-of-sync state, a manual re-sync is necessary as described in <a href="https://www.keycloak.org/high-availability/operate-synchronize">Synchronizing sites</a>.
-This is why a site which is removed via fencing will not be re-added automatically when the network communication failure is resolved. The remove site should only be re-added once the two sites have been synchronized using the outlined procedure <a href="https://www.keycloak.org/high-availability/operate-site-online">Bringing a site online</a>.</p>
+<p>To recover from the out-of-sync state, a manual re-sync is necessary as described in <a href="https://www.keycloak.org/high-availability/multi-cluster/operate-synchronize">Synchronizing sites</a>.
+This is why a site which is removed via fencing will not be re-added automatically when the network communication failure is resolved. The remove site should only be re-added once the two sites have been synchronized using the outlined procedure <a href="https://www.keycloak.org/high-availability/multi-cluster/operate-site-online">Bringing a site online</a>.</p>
 </div>
 <div class="paragraph">
 <p>In this guide we describe how to implement fencing using a combination of <a href="https://prometheus.io/docs/alerting/latest/overview/">Prometheus Alerts</a>
@@ -146,7 +147,7 @@ The logic in the AWS Lambda ensures that always one site entry remains in the lo
 <div class="ulist">
 <ul>
 <li>
-<p>ROSA HCP based multi-site Keycloak deployment</p>
+<p>ROSA HCP based multi-cluster Keycloak deployment</p>
 </li>
 <li>
 <p>AWS CLI Installed</p>
@@ -167,7 +168,7 @@ The logic in the AWS Lambda ensures that always one site entry remains in the lo
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Enable Openshift user alert routing</p>
+<p>Enable OpenShift user alert routing</p>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
@@ -620,7 +621,7 @@ aws lambda update-function-configuration \
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The name of one of your Infinispan sites as defined in <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a></td>
+<td>The name of one of your Infinispan sites as defined in <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a></td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
@@ -812,7 +813,7 @@ kubectl -n ${NAMESPACE} rollout status -w deployment/infinispan-router</code></p
 </div>
 </li>
 <li>
-<p>Verify the <code>SiteOffline</code> event has been fired on a cluster by inspecting the <strong>Observe</strong> &#8594; <strong>Alerting</strong> menu in the Openshift
+<p>Verify the <code>SiteOffline</code> event has been fired on a cluster by inspecting the <strong>Observe</strong> &#8594; <strong>Alerting</strong> menu in the OpenShift
 console</p>
 </li>
 <li>
@@ -842,7 +843,7 @@ kubectl -n ${NAMESPACE} rollout status -w deployment/infinispan-router</code></p
 <p>Inspect the <code>vendor_jgroups_site_view_status</code> metric in each site. A value of <code>1</code> indicates that the site is reachable.</p>
 </li>
 <li>
-<p>Update the Accelerator EndpointGroup to contain both Endpoints. See the <a href="https://www.keycloak.org/high-availability/operate-site-online">Bringing a site online</a> guide for details.</p>
+<p>Update the Accelerator EndpointGroup to contain both Endpoints. See the <a href="https://www.keycloak.org/high-availability/multi-cluster/operate-site-online">Bringing a site online</a> guide for details.</p>
 </li>
 </ol>
 </div>
@@ -854,10 +855,10 @@ kubectl -n ${NAMESPACE} rollout status -w deployment/infinispan-router</code></p
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/operate-site-online">Bringing a site online</a></p>
+<p><a href="https://www.keycloak.org/high-availability/multi-cluster/operate-site-online">Bringing a site online</a></p>
 </li>
 <li>
-<p><a href="https://www.keycloak.org/high-availability/operate-site-offline">Taking a site offline</a></p>
+<p><a href="https://www.keycloak.org/high-availability/multi-cluster/operate-site-offline">Taking a site offline</a></p>
 </li>
 </ul>
 </div>
@@ -870,7 +871,7 @@ kubectl -n ${NAMESPACE} rollout status -w deployment/infinispan-router</code></p
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/deploy-aws-accelerator-fencing-lambda.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/multi-cluster/deploy-aws-accelerator-fencing-lambda.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

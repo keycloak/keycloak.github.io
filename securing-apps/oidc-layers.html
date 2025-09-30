@@ -106,8 +106,10 @@ interacting with Keycloak.</p>
 <div class="paragraph">
 <p>To obtain the full URL, add the base URL for Keycloak and replace <code>{realm-name}</code> with the name of your realm. For example:</p>
 </div>
-<div class="paragraph">
-<p>http://localhost:8080/realms/master/.well-known/openid-configuration</p>
+<div class="literalblock">
+<div class="content">
+<pre>http://localhost:8080/realms/{realm-name}/.well-known/openid-configuration</pre>
+</div>
 </div>
 <div class="paragraph">
 <p>Some RP libraries retrieve all required endpoints from this endpoint, but for others you might need to list the endpoints individually.</p>
@@ -166,10 +168,24 @@ The token endpoint is also used to obtain new access tokens when they expire.</p
 <p>The logout endpoint logs out the authenticated user.</p>
 </div>
 <div class="paragraph">
-<p>The user agent can be redirected to the endpoint, which causes the active user session to be logged out. The user agent is then redirected back to the application.</p>
+<p>The user agent can be redirected to the endpoint, which causes the active user session to be logged out. The user agent is then redirected back to the application.
+This is described in more details in the <a href="https://www.keycloak.org/docs/latest/server_admin/#rp-initiated-logout">RP-Initiated logout section of the Server administration guide</a>.</p>
 </div>
-<div class="paragraph">
-<p>The endpoint can also be invoked directly by the application. To invoke this endpoint directly, the refresh token needs to be included as well as the credentials required to authenticate the client.</p>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The endpoint can also be invoked directly by the application. To invoke this endpoint directly, the refresh token needs to be included as well as the credentials required to authenticate the client.
+However this is non-standard legacy format of the logout message supported only because of the legacy Keycloak OIDC Java adapters
+or <a href="https://docs.wildfly.org/37/WildFly_Elytron_Security.html#Keycloak_Integration">Elytron Wildfly OIDC adapter</a>. It is not recommended to use it directly from your applications.
+For logout users, it is recommended to use either OIDC/SAML protocol standard logout or <a href="https://www.keycloak.org/docs/latest/server_admin/#viewing-user-sessions">Keycloak Admin console</a> (or other way of admin REST API)
+or <a href="https://www.keycloak.org/docs/latest/server_admin/#_account-service">Keycloak Account console</a> (or other way of account REST API).
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect3">
@@ -499,10 +515,10 @@ the <a href="https://www.keycloak.org/docs/latest/server_admin/#_authentication-
 <p><a href="https://openid.net/specs/openid-financial-api-ciba-ID1.html">Financial-grade API: Client Initiated Backchannel Authentication Profile</a> (FAPI CIBA)</p>
 </li>
 <li>
-<p><a href="https://openid.bitbucket.io/fapi/fapi-2_0-security-profile.html">FAPI 2.0 Security Profile (Draft)</a></p>
+<p><a href="https://openid.net/specs/fapi-security-profile-2_0-final.html">FAPI 2.0 Security Profile (Final)</a></p>
 </li>
 <li>
-<p><a href="https://openid.bitbucket.io/fapi/fapi-2_0-message-signing.html">FAPI 2.0 Message Signing (Draft)</a></p>
+<p><a href="https://openid.net/specs/fapi-message-signing-2_0-final.html">FAPI 2.0 Message Signing (Final)</a></p>
 </li>
 </ul>
 </div>
@@ -516,7 +532,7 @@ side may need to be still done manually or through some other third-party soluti
 <div class="paragraph">
 <p>To make sure that your clients are FAPI compliant, you can configure Client Policies in your realm as described in the <a href="https://www.keycloak.org/docs/latest/server_admin/#_client_policies">Server Administration Guide</a>
 and link them to the global client profiles for FAPI support, which are automatically available in each realm. You can use either <code>fapi-1-baseline</code> or <code>fapi-1-advanced</code> profile based on which FAPI
-profile you need your clients to conform with. You can use also profiles <code>fapi-2-security-profile</code> or <code>fapi-2-message-signing</code> for the compliance with FAPI 2 Draft specifications.</p>
+profile you need your clients to conform with. You can use also profiles <code>fapi-2-security-profile</code>, <code>fapi-2-dpop-security-profile</code>, <code>fapi-2-message-signing</code> and <code>fapi-2-dpop-message-signing</code> for the compliance with FAPI 2.0 specifications.</p>
 </div>
 <div class="paragraph">
 <p>In case you want to use <a href="https://www.keycloak.org/docs/latest/server_admin/#_oidc_clients">Pushed Authorization Request (PAR)</a>, it is recommended that your client use

@@ -231,8 +231,49 @@ It is also possible to tailor log levels for each particular log handler.</p>
 </li>
 </ul>
 </div>
-<div class="sect3">
-<h4 id="_configuring_levels_as_individual_options"><a class="anchor" href="#_configuring_levels_as_individual_options"></a>Configuring levels as individual options</h4>
+</div>
+<div class="sect2">
+<h3 id="_adding_context_for_log_messages"><a class="anchor" href="#_adding_context_for_log_messages"></a>Adding context for log messages</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Log messages with Mapped Diagnostic Context (MDC) is
+<strong>Preview</strong>
+and is not fully supported. This feature is disabled by default.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>You can enable additional context information for each log line like the current realm and client that is executing the request.</p>
+</div>
+<div class="paragraph">
+<p>Use the option <code>log-mdc-enabled</code> to enable it.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example configuration</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --features=log-mdc --log-mdc-enabled=true</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example output</div>
+<div class="content">
+<pre>2025-06-20 14:13:01,772 {kc.clientId=security-admin-console, kc.realmName=master} INFO ...</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Specify which keys to be added by setting the configuration option <code>log-mdc-keys</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_levels_as_individual_options"><a class="anchor" href="#_configuring_levels_as_individual_options"></a>Configuring levels as individual options</h3>
 <div class="paragraph">
 <p>When configuring category-specific log levels, you can also set the log levels as individual <code>log-level-&lt;category&gt;</code> options instead of using the <code>log-level</code> option for that.
 This is useful when you want to set the log levels for selected categories without overwriting the previously set <code>log-level</code> option.</p>
@@ -260,7 +301,6 @@ When using other config sources, the category name must be specified "as is", fo
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-level="INFO,org.hibernate:debug" --log-level-org.keycloak=trace</code></pre>
-</div>
 </div>
 </div>
 </div>
@@ -548,6 +588,83 @@ The default size is <strong>512</strong> log records in the queue.</p>
 </div>
 <div class="paragraph">
 <p>These properties are available only when asynchronous logging is enabled for these specific log handlers.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_http_access_logging"><a class="anchor" href="#_http_access_logging"></a>HTTP Access Logging</h3>
+<div class="paragraph">
+<p>Keycloak supports HTTP access logging to record details of incoming HTTP requests.
+While access logs are often used for debugging and traffic analysis, they are also important for security auditing and compliance monitoring, helping administrators track access patterns, identify suspicious activity, and maintain audit trails.</p>
+</div>
+<div class="paragraph">
+<p>These logs are written at the <code>INFO</code> level, so make sure your logging configuration includes this level — either globally (e.g. <code>log-level=info</code>) or specifically for the access log category (e.g. <code>log-level=org.keycloak.http.access-log:info</code>).
+When HTTP access logs are enabled, they are shown by default, as <code>INFO</code> level is the default log level for Keycloak.</p>
+</div>
+<div class="sect3">
+<h4 id="_how_to_enable"><a class="anchor" href="#_how_to_enable"></a>How to enable</h4>
+<div class="paragraph">
+<p>You can enable HTTP access logging by using <code>http-access-log-enabled</code> property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --http-access-log-enabled=true</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_change_log_formatpattern"><a class="anchor" href="#_change_log_formatpattern"></a>Change log format/pattern</h4>
+<div class="paragraph">
+<p>You can change format/pattern of the access log records by using <code>http-access-log-pattern</code> property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --http-access-log-pattern=combined</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Predefined named patterns:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>common</code> (default) - prints basic information about the request</p>
+</li>
+<li>
+<p><code>combined</code> - prints basic information about the request + information about referer and user agent</p>
+</li>
+<li>
+<p><code>long</code> - prints comprehensive information about the request with all its headers</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You can even specify your own pattern with your required data to be logged, such as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --http-access-log-pattern='%A %{METHOD} %{REQUEST_URL} %{i,User-Agent}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Consult the <a href="https://quarkus.io/guides/http-reference#configuring-http-access-logs">Quarkus documentation</a> for the full list of variables that can be used.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_exclude_specific_url_paths"><a class="anchor" href="#_exclude_specific_url_paths"></a>Exclude specific URL paths</h4>
+<div class="paragraph">
+<p>It is possible to exclude specific URL paths from the HTTP access logging, so they will not be recorded.</p>
+</div>
+<div class="paragraph">
+<p>You can use regular expressions to exclude them, such as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --http-access-log-exclude='/realms/my-internal-realm/.*'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, all calls to the <code>/realms/my-internal-realm/</code> and subsequent paths will be excluded from the HTTP Access log.</p>
 </div>
 </div>
 </div>
@@ -1155,6 +1272,69 @@ To use structured JSON log output instead, enter the following command:</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>[info]</code></span> (default)</p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-level-&lt;category&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The log level of a category.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Takes precedence over the <code>log-level</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-level-&lt;category&gt;</code><br>
+<strong>Env:</strong> <code>KC_LOG_LEVEL_&lt;CATEGORY&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>off</code>, <code>fatal</code>, <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code>, <code>all</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-mdc-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Indicates whether to add information about the realm and other information to the mapped diagnostic context.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">All elements will be prefixed with <code>kc.</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-mdc-enabled</code><br>
+<strong>Env:</strong> <code>KC_LOG_MDC_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when log-mdc preview feature is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-mdc-keys</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Defines which information should be added to the mapped diagnostic context as a comma-separated list.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-mdc-keys</code><br>
+<strong>Env:</strong> <code>KC_LOG_MDC_KEYS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when MDC logging is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>realmName</code>, <code>clientId</code>, <code>userId</code>, <code>ipAddress</code>, <code>org</code>, <code>sessionId</code>, <code>authenticationSessionId</code>, <code>authenticationTabId</code></p></td>
+</tr>
 </tbody>
 </table>
 <div class="sect2">
@@ -1256,6 +1436,29 @@ To use structured JSON log output instead, enter the following command:</p>
 <p>Available only when Console log handler is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-include-mdc</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include mdc information in the console log.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-console-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-include-mdc</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_INCLUDE_MDC</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler and MDC logging are activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1442,6 +1645,29 @@ To use structured JSON log output instead, enter the following command:</p>
 <p>Available only when File log handler is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></span> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-include-mdc</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include MDC information in the file log.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-file-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-include-mdc</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_INCLUDE_MDC</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler and MDC logging are activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1674,6 +1900,29 @@ To use structured JSON log output instead, enter the following command:</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-include-mdc</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include MDC information in the Syslog.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-syslog-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-include-mdc</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_INCLUDE_MDC</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog handler and MDC logging are activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>log-syslog-include-trace</code></span></p>
 </div>
 <div class="paragraph">
@@ -1820,6 +2069,89 @@ To use structured JSON log output instead, enter the following command:</p>
 <p>Available only when Syslog is activated</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>rfc5424</code> (default), <code>rfc3164</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_http_access_log"><a class="anchor" href="#_http_access_log"></a>HTTP Access log</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-access-log-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If HTTP access logging is enabled.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">By default this will log records in console.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-access-log-enabled</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ACCESS_LOG_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-access-log-exclude</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">A regular expression that can be used to exclude some paths from logging.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">For instance, <code>/realms/my-realm/.*</code> will exclude all subsequent endpoints for realm <code>my-realm</code> from the log.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-access-log-exclude</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ACCESS_LOG_EXCLUDE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when HTTP Access log is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-access-log-pattern</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The HTTP access log pattern.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">You can use the available named formats, or use custom format described in Quarkus documentation.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-access-log-pattern</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ACCESS_LOG_PATTERN</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when HTTP Access log is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>common</code> (default), <code>combined</code>, <code>long</code>, or any</p></td>
 </tr>
 </tbody>
 </table>

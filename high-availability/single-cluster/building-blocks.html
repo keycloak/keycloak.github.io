@@ -10,20 +10,20 @@ gtag('js', new Date());
 gtag('config', 'G-0J2P9316N6');
 </script>
 <meta charset="utf-8"/>
-<title>Building blocks multi-site deployments - Keycloak</title>
+<title>Building blocks single-cluster deployments - Keycloak</title>
 <meta name="twitter:card" content="summary_large">
 <meta name="twitter:site" content="@keycloak">
 <meta property="og:site_name" content="Keycloak">
-<meta property="og:title" content="Building blocks multi-site deployments">
+<meta property="og:title" content="Building blocks single-cluster deployments">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Learn about building blocks and suggested setups for multi-site deployments.">
+<meta name="description" property="og:description" content="Learn about building blocks and suggested setups for single-cluster deployments.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/high-availability/bblocks-multi-site">
-<meta property="og:url" content="https://www.keycloak.org/high-availability/bblocks-multi-site">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/single-cluster/building-blocks">
+<meta property="og:url" content="https://www.keycloak.org/high-availability/single-cluster/building-blocks">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -69,14 +69,15 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
-                    <li class="breadcrumb-item active">Building blocks multi-site deployments</li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/high-availability/single-cluster/introduction">Single cluster</a></li>
+                    <li class="breadcrumb-item active">Building blocks single-cluster deployments</li>
                 </ol>
             </nav>
 
 
             <div class="mb-4">
-                <h1>Building blocks multi-site deployments</h1>
-                    <span class="text-muted">Learn about building blocks and suggested setups for multi-site deployments.</span>
+                <h1>Building blocks single-cluster deployments</h1>
+                    <span class="text-muted">Learn about building blocks and suggested setups for single-cluster deployments.</span>
             </div>
 
 
@@ -85,7 +86,7 @@ gtag('config', 'G-0J2P9316N6');
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>The following building blocks are needed to set up a multi-site deployment with synchronous replication.</p>
+<p>The following building blocks are needed to set up a single-cluster deployment.</p>
 </div>
 <div class="paragraph">
 <p>The building blocks link to a blueprint with an example configuration.
@@ -107,91 +108,58 @@ You would still need to adapt it to your environment and your organization&#8217
 </div>
 </div>
 <div class="sect1">
-<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<h2 id="single-cluster-blocks-prerequisites"><a class="anchor" href="#single-cluster-blocks-prerequisites"></a>Prerequisites</h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p>Understanding the concepts laid out in the <a href="https://www.keycloak.org/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.</p>
+<p>Understanding the concepts laid out in the <a href="https://www.keycloak.org/high-availability/single-cluster/concepts">Concepts for single-cluster deployments</a> guide.</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_two_sites_with_low_latency_connection"><a class="anchor" href="#_two_sites_with_low_latency_connection"></a>Two sites with low-latency connection</h2>
+<h2 id="single-cluster-blocks-low-latency"><a class="anchor" href="#single-cluster-blocks-low-latency"></a>Multiple availability-zones with low-latency connection</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Ensures that synchronous replication is available for both the database and the external Infinispan.</p>
+<p>Keycloak requires a low latency network connection for the synchronous replication of data by the database and Keycloak clustering.</p>
 </div>
 <div class="paragraph">
-<p><strong>Suggested setup:</strong> Two AWS Availability Zones within the same AWS Region.</p>
+<p>A round-trip latency of less than 5 ms is suggested and below 10 ms is required, together with a reliable network between the zones to avoid unexpected problems with latency, throughput or connectivity.</p>
 </div>
 <div class="paragraph">
-<p><strong>Not considered:</strong> Two regions on the same or different continents, as it would increase the latency and the likelihood of network failures.
+<p>Network latency and latency spikes amplify in the response time of the service and can lead to queued requests, timeouts, and failed requests.
+Networking problems can cause downtimes until the failure detection isolates problematic nodes.</p>
+</div>
+<div class="paragraph">
+<p><strong>Suggested setup:</strong> Kubernetes cluster consisting of two or more AWS Availability Zones within the same AWS Region.</p>
+</div>
+<div class="paragraph">
+<p><strong>Not considered:</strong> Kubernetes clusters spread across multiple regions on the same or different continents, as it would increase the latency and the likelihood of network failures.
 Synchronous replication of databases as services with Aurora Regional Deployments on AWS is only available within the same region.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_environment_for_keycloak_and_infinispan"><a class="anchor" href="#_environment_for_keycloak_and_infinispan"></a>Environment for Keycloak and Infinispan</h2>
+<h2 id="single-cluster-blocks-database"><a class="anchor" href="#single-cluster-blocks-database"></a>Database</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Ensures that the instances are deployed and restarted as needed.</p>
+<p>A synchronously replicated database available across all availability-zones.</p>
 </div>
 <div class="paragraph">
-<p><strong>Suggested setup:</strong> Red Hat OpenShift Service on AWS (ROSA) deployed in each availability zone.</p>
-</div>
-<div class="paragraph">
-<p><strong>Not considered:</strong> A stretched ROSA cluster which spans multiple availability zones, as this could be a single point of failure if misconfigured.</p>
+<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/single-cluster/deploy-aurora">Deploying AWS Aurora in multiple availability zones</a>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_database"><a class="anchor" href="#_database"></a>Database</h2>
+<h2 id="single-cluster-blocks-keycloak"><a class="anchor" href="#single-cluster-blocks-keycloak"></a>Keycloak</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A synchronously replicated database across two sites.</p>
+<p>A clustered deployment of Keycloak with pods distributed across availability-zones.</p>
 </div>
 <div class="paragraph">
-<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/deploy-aurora-multi-az">Deploying AWS Aurora in multiple availability zones</a>.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_infinispan"><a class="anchor" href="#_infinispan"></a>Infinispan</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>A deployment of Infinispan that leverages the Infinispan&#8217;s Cross-DC functionality.</p>
-</div>
-<div class="paragraph">
-<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a> using the Infinispan Operator, and connect the two sites using Infinispan&#8217;s Gossip Router.</p>
-</div>
-<div class="paragraph">
-<p><strong>Not considered:</strong> Direct interconnections between the Kubernetes clusters on the network layer.
-It might be considered in the future.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_keycloak"><a class="anchor" href="#_keycloak"></a>Keycloak</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>A clustered deployment of Keycloak in each site, connected to an external Infinispan.</p>
-</div>
-<div class="paragraph">
-<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> that includes connecting to the Aurora database and the Infinispan server.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_load_balancer"><a class="anchor" href="#_load_balancer"></a>Load balancer</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>A load balancer which checks the <code>/lb-check</code> URL of the Keycloak deployment in each site, plus an automation to detect Infinispan connectivity problems between the two sites.</p>
-</div>
-<div class="paragraph">
-<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/deploy-aws-accelerator-loadbalancer">Deploying an AWS Global Accelerator load balancer</a> together with  <a href="https://www.keycloak.org/high-availability/deploy-aws-accelerator-fencing-lambda">Deploying an AWS Lambda to disable a non-responding site</a>.</p>
+<p><strong>Blueprint:</strong> <a href="https://www.keycloak.org/high-availability/single-cluster/deploy-keycloak">Deploying Keycloak across multiple availability-zones with the Operator</a>.</p>
 </div>
 </div>
 </div>            </div>
@@ -202,7 +170,7 @@ It might be considered in the future.</p>
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/bblocks-multi-site.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/single-cluster/building-blocks.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

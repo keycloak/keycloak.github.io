@@ -177,10 +177,10 @@ When this option is <code>false</code> you should block unwanted external traffi
 <h2 id="_using_the_health_checks"><a class="anchor" href="#_using_the_health_checks"></a>Using the health checks</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>It is recommended that the health endpoints be monitored by external HTTP requests. Due to security measures that remove <code>curl</code> and other packages from the Keycloak container image, local command-based monitoring will not function easily.</p>
+<p>Due to security measures that remove <code>curl</code> and other packages from the Keycloak container image, you are not able to run checks against HTTPS endpoints from within the container.</p>
 </div>
 <div class="paragraph">
-<p>If you are not using Keycloak in a container, use whatever you want to access the health check endpoints.</p>
+<p>If you are not using Keycloak in a container, or if you are running the health checks outside of the container, use any tool to access the health check endpoints.</p>
 </div>
 <div class="sect2">
 <h3 id="_curl"><a class="anchor" href="#_curl"></a>curl</h3>
@@ -188,7 +188,7 @@ When this option is <code>false</code> you should block unwanted external traffi
 <p>You may use a simple HTTP HEAD request to determine the <code>live</code> or <code>ready</code> state of Keycloak. <code>curl</code> is a good HTTP client for this purpose.</p>
 </div>
 <div class="paragraph">
-<p>If Keycloak is deployed in a container, you must run this command from outside it due to the previously mentioned security measures. For example:</p>
+<p>If Keycloak is deployed in a container, you must use a custom image or run this command from outside it due to the previously mentioned security measures. For example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -220,7 +220,28 @@ If you configure mTLS with <code>https-client-auth</code> set to <code>required<
 <div class="sect2">
 <h3 id="_healthcheck"><a class="anchor" href="#_healthcheck"></a>HEALTHCHECK</h3>
 <div class="paragraph">
-<p>The Containerfile <code>HEALTHCHECK</code> instruction defines a command that will be periodically executed inside the container as it runs. The Keycloak container does not have any CLI HTTP clients installed. Consider installing <code>curl</code> as an additional RPM, as detailed by the <a href="https://www.keycloak.org/nightly/server/containers">Running Keycloak in a container</a> guide. Note that your container may be less secure because of this.</p>
+<p>The Containerfile <a href="https://docs.docker.com/reference/dockerfile/#healthcheck"><code>HEALTHCHECK</code></a> instruction defines a command that will be periodically executed inside the container as it runs. While the Keycloak container does not have any CLI HTTP clients installed, it is possible to leverage BASH support for redirects to TCP sockets and craft a simple HTTP request to the healthcheck endpoint:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">{ printf 'HEAD /health/ready HTTP/1.0\r\n\r\n' &gt;&amp;0; grep 'HTTP/1.0 200'; } 0&lt;&gt;/dev/tcp/localhost/9000</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The above code depends on the values of the Keycloak options such as <code>http-relative-path</code> (<code>http-management-relative-path</code>) and <code>http-management-port</code>. In case those are changed the code needs to be modified accordingly.</p>
+</div>
+<div class="paragraph">
+<p>If you enable TLS as shown in <a href="https://www.keycloak.org/nightly/server/enabletls">Configuring TLS</a>, the management interface will also use TLS. Depending upon how the management interface endpoints are intended to be used you can still have plain HTTP health checks if:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the management interface uses HTTP, not HTTPS, by setting <code>http-management-scheme</code> to <code>http</code>.</p>
+</li>
+<li>
+<p>or the health checks are enabled for the main interface by setting <code>http-management-health-enabled</code> to <code>false</code> and accessible via HTTP with setting <code>http-enabled</code> to <code>true</code>. In this scenario external traffic to the HTTP port (defaults to 8080) or to the health endpoints (defaults to /health) should not be allowed by your proxy.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>

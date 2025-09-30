@@ -88,6 +88,10 @@ gtag('config', 'G-0J2P9316N6');
 <p>Keycloak has built in support for health checks. This guide describes how to enable and use the Keycloak health checks.
 The Keycloak health checks are exposed on the management port <code>9000</code> by default. For more details, see <a href="https://www.keycloak.org/server/management-interface">Configuring the Management Interface</a></p>
 </div>
+<div class="paragraph">
+<p>When the <code>http-management-health-enabled</code> option is <code>false</code> the health endpoints will remain on the main HTTP(S) ports, rather than being exposed on the management port.
+When this option is <code>false</code> you should block unwanted external traffic to <code>/health</code> at your proxy.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -134,7 +138,11 @@ The Keycloak health checks are exposed on the management port <code>9000</code> 
     "status": "UP",
     "checks": [
         {
-            "name": "Keycloak database connections health check",
+            "name": "Keycloak cluster health check",
+            "status": "UP"
+        },
+        {
+            "name": "Keycloak database connections async health check",
             "status": "UP"
         }
     ]
@@ -163,10 +171,10 @@ The Keycloak health checks are exposed on the management port <code>9000</code> 
 <h2 id="_using_the_health_checks"><a class="anchor" href="#_using_the_health_checks"></a>Using the health checks</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>It is recommended that the health endpoints be monitored by external HTTP requests. Due to security measures that remove <code>curl</code> and other packages from the Keycloak container image, local command-based monitoring will not function easily.</p>
+<p>Due to security measures that remove <code>curl</code> and other packages from the Keycloak container image, you are not able to run checks against HTTPS endpoints from within the container.</p>
 </div>
 <div class="paragraph">
-<p>If you are not using Keycloak in a container, use whatever you want to access the health check endpoints.</p>
+<p>If you are not using Keycloak in a container, or if you are running the health checks outside of the container, use any tool to access the health check endpoints.</p>
 </div>
 <div class="sect2">
 <h3 id="_curl"><a class="anchor" href="#_curl"></a>curl</h3>
@@ -174,7 +182,7 @@ The Keycloak health checks are exposed on the management port <code>9000</code> 
 <p>You may use a simple HTTP HEAD request to determine the <code>live</code> or <code>ready</code> state of Keycloak. <code>curl</code> is a good HTTP client for this purpose.</p>
 </div>
 <div class="paragraph">
-<p>If Keycloak is deployed in a container, you must run this command from outside it due to the previously mentioned security measures. For example:</p>
+<p>If Keycloak is deployed in a container, you must use a custom image or run this command from outside it due to the previously mentioned security measures. For example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -190,11 +198,44 @@ The Keycloak health checks are exposed on the management port <code>9000</code> 
 <div class="paragraph">
 <p>Define a <a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#http-probes">HTTP Probe</a> so that Kubernetes may externally monitor the health endpoints. Do not use a liveness command.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you configure mTLS with <code>https-client-auth</code> set to <code>required</code>, this configuration is inherited by the management interface. If you have not otherwise configured the usage of HTTP for the health endpoints, you will likely want to set <code>https-management-client-auth</code> to <code>request</code> or <code>none</code> so that a valid client certificate is not required for probe requests.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_healthcheck"><a class="anchor" href="#_healthcheck"></a>HEALTHCHECK</h3>
 <div class="paragraph">
-<p>The Containerfile <code>HEALTHCHECK</code> instruction defines a command that will be periodically executed inside the container as it runs. The Keycloak container does not have any CLI HTTP clients installed. Consider installing <code>curl</code> as an additional RPM, as detailed by the <a href="https://www.keycloak.org/server/containers">Running Keycloak in a container</a> guide. Note that your container may be less secure because of this.</p>
+<p>The Containerfile <a href="https://docs.docker.com/reference/dockerfile/#healthcheck"><code>HEALTHCHECK</code></a> instruction defines a command that will be periodically executed inside the container as it runs. While the Keycloak container does not have any CLI HTTP clients installed, it is possible to leverage BASH support for redirects to TCP sockets and craft a simple HTTP request to the healthcheck endpoint:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">{ printf 'HEAD /health/ready HTTP/1.0\r\n\r\n' &gt;&amp;0; grep 'HTTP/1.0 200'; } 0&lt;&gt;/dev/tcp/localhost/9000</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The above code depends on the values of the Keycloak options such as <code>http-relative-path</code> (<code>http-management-relative-path</code>) and <code>http-management-port</code>. In case those are changed the code needs to be modified accordingly.</p>
+</div>
+<div class="paragraph">
+<p>If you enable TLS as shown in <a href="https://www.keycloak.org/server/enabletls">Configuring TLS</a>, the management interface will also use TLS. Depending upon how the management interface endpoints are intended to be used you can still have plain HTTP health checks if:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the management interface uses HTTP, not HTTPS, by setting <code>http-management-scheme</code> to <code>http</code>.</p>
+</li>
+<li>
+<p>or the health checks are enabled for the main interface by setting <code>http-management-health-enabled</code> to <code>false</code> and accessible via HTTP with setting <code>http-enabled</code> to <code>true</code>. In this scenario external traffic to the HTTP port (defaults to 8080) or to the health endpoints (defaults to /health) should not be allowed by your proxy.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -224,6 +265,11 @@ The Keycloak health checks are exposed on the management port <code>9000</code> 
 <td class="tableblock halign-left valign-top"><p class="tableblock">Returns the status of the database connection pool.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Returns the status of the cluster (network partitions).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
 </tbody>
 </table>
 <div class="paragraph">
@@ -234,6 +280,9 @@ use the <code>metrics-enabled</code> option as follows:</p>
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] build --health-enabled=true --metrics-enabled=true</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>The cluster health check is only available for clustered setups when the cache transport stacks <code>jdbc-ping</code> or <code>jdbc-ping-udp</code> are used.</p>
 </div>
 </div>
 </div>

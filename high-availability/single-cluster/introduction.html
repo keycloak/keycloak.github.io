@@ -1,0 +1,387 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Single-cluster deployments - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Single-cluster deployments">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Deploy a single Keycloak cluster, optionally across multiple availability-zones">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/single-cluster/introduction">
+<meta property="og:url" content="https://www.keycloak.org/high-availability/single-cluster/introduction">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/high-availability/single-cluster/introduction">Single cluster</a></li>
+                    <li class="breadcrumb-item active">Single-cluster deployments</li>
+                </ol>
+            </nav>
+
+
+            <div class="mb-4">
+                <h1>Single-cluster deployments</h1>
+                    <span class="text-muted">Deploy a single Keycloak cluster, optionally across multiple availability-zones</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div class="sect1">
+<h2 id="_when_to_use_a_single_cluster_setup"><a class="anchor" href="#_when_to_use_a_single_cluster_setup"></a>When to use a single-cluster setup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak single-cluster setup is targeted at use cases that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Deploy to an infrastructure with transparent networking, like for example a single Kubernetes cluster.</p>
+</li>
+<li>
+<p>Desire all healthy Keycloak instances to handle user requests.</p>
+</li>
+<li>
+<p>Are constrained to a single
+AWS Region or an equivalent low-latency setup.</p>
+</li>
+<li>
+<p>Permit planned outages for maintenance.</p>
+</li>
+<li>
+<p>Fit within a defined user and request count.</p>
+</li>
+<li>
+<p>Can accept the impact of periodic outages.</p>
+</li>
+<li>
+<p>Deployed in data centers with the required network latency and database configuration</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="single-cluster-tested-configuration"><a class="anchor" href="#single-cluster-tested-configuration"></a>Tested Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We regularly test Keycloak with the following configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An OpenShift cluster deployed across three AWS availability zones in the same region.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Provisioned with <a href="https://www.redhat.com/en/technologies/cloud-computing/openshift/aws">Red Hat OpenShift Service on AWS</a> (ROSA),
+using ROSA HCP.</p>
+</li>
+<li>
+<p>At least one worker node for each availability-zone</p>
+</li>
+<li>
+<p>OpenShift version 4.17.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Amazon Aurora PostgreSQL database</p>
+<div class="ulist">
+<ul>
+<li>
+<p>High availability with a primary DB instance in one availability zone, and synchronously replicated readers in the other availability zones</p>
+</li>
+<li>
+<p>Version 17.5</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="single-cluster-configuration"><a class="anchor" href="#single-cluster-configuration"></a>Configuration</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Keycloak deployed on a Kubernetes cluster</p>
+<div class="ulist">
+<ul>
+<li>
+<p>For cloud setups, Pods can be scheduled across multiple availability zones within the same region
+if Keycloak&#8217;s latency requirements are met.</p>
+</li>
+<li>
+<p>For on-premise setups, Pods can be scheduled across multiple datacenters
+if Keycloak&#8217;s latency requirements are met.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Keycloak deployed on virtual machines or bare metal</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Instances can be scheduled across multiple availability zones within the same cloud-provider region or multiple datacenters if Keycloak&#8217;s latency requirements are met.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Deployments require a round-trip latency of less than 10 ms between Keycloak instances.</p>
+</li>
+<li>
+<p>Database</p>
+<div class="ulist">
+<ul>
+<li>
+<p>For a list of supported databases, see <a href="https://www.keycloak.org/server/db">Configuring the database</a>.</p>
+</li>
+<li>
+<p>Deployments spanning multiple availability zones must utilize a database that can tolerate zone failures
+and synchronously replicates data between replicas.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>While equivalent setups should work, you will need to verify the performance and failure behavior of your environment.
+We provide functional tests, failure tests and load tests in the <a href="https://github.com/keycloak/keycloak-benchmark">Keycloak Benchmark Project</a>.</p>
+</div>
+<div class="paragraph">
+<p>Read more on each item in the <a href="https://www.keycloak.org/high-availability/single-cluster/building-blocks">Building blocks single-cluster deployments</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="single-cluster-load"><a class="anchor" href="#single-cluster-load"></a>Tested load</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We regularly test Keycloak with the following load:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>100,000 users</p>
+</li>
+<li>
+<p>300 requests per second</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>We have successfully scaled to the following load:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>100,000 users</p>
+</li>
+<li>
+<p>1,000 logins, with 20,000 token refreshes per second.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>We used the following setup for this:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Single-cluster setup consisting of 6 Pods, spread across 3 availability zones in a single AWS region.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Each Pod with limits of 40 vCPU and 8 GB memory</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Amazon Aurora PostgreSQL multi-az database deployed in two availability zones</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Instance type: <code>db.r8g.16xlarge</code> for both reader and writer instance</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>As the load increased, the CPU usage increased linearly.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/high-availability/single-cluster/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> guide for more information.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="single-cluster-limitations"><a class="anchor" href="#single-cluster-limitations"></a>Limitations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Even with the additional redundancy of three availability-zones, downtime can still occur when:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Simultaneous node failures occur</p>
+</li>
+<li>
+<p>Rolling out Keycloak upgrades</p>
+</li>
+<li>
+<p>Infrastructure fails, for example the Kubernetes cluster</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more details on limitations see the <a href="https://www.keycloak.org/high-availability/single-cluster/concepts">Concepts for single-cluster deployments</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The different guides introduce the necessary concepts and building blocks.
+For each building block, a blueprint shows how to deploy a fully functional example.
+Additional performance tuning and security hardening are still recommended when preparing a production setup.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_concept_and_building_block_overview"><a class="anchor" href="#_concept_and_building_block_overview"></a>Concept and building block overview</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/concepts">Concepts for single-cluster deployments</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/building-blocks">Building blocks single-cluster deployments</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/concepts-database-connections">Concepts for database connection pools</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/concepts-threads">Concepts for configuring thread pools</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_blueprints_for_building_blocks"><a class="anchor" href="#_blueprints_for_building_blocks"></a>Blueprints for building blocks</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/deploy-aurora">Deploying AWS Aurora in multiple availability zones</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/deploy-keycloak">Deploying Keycloak across multiple availability-zones with the Operator</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/single-cluster/introduction.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

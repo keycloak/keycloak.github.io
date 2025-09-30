@@ -10,11 +10,11 @@ gtag('js', new Date());
 gtag('config', 'G-0J2P9316N6');
 </script>
 <meta charset="utf-8"/>
-<title>Concepts for database connection pools - Keycloak</title>
+<title>Concepts for configuring thread pools - Keycloak</title>
 <meta name="twitter:card" content="summary_large">
 <meta name="twitter:site" content="@keycloak">
 <meta property="og:site_name" content="Keycloak">
-<meta property="og:title" content="Concepts for database connection pools">
+<meta property="og:title" content="Concepts for configuring thread pools">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" property="og:description" content="Understand concepts for avoiding resource exhaustion and congestion.">
 <meta name="author" content="Keycloak Team">
@@ -22,8 +22,8 @@ gtag('config', 'G-0J2P9316N6');
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/high-availability/concepts-database-connections">
-<meta property="og:url" content="https://www.keycloak.org/high-availability/concepts-database-connections">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/multi-cluster/concepts-threads">
+<meta property="og:url" content="https://www.keycloak.org/high-availability/multi-cluster/concepts-threads">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -69,13 +69,14 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
-                    <li class="breadcrumb-item active">Concepts for database connection pools</li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/high-availability/multi-cluster/introduction">Multi cluster</a></li>
+                    <li class="breadcrumb-item active">Concepts for configuring thread pools</li>
                 </ol>
             </nav>
 
 
             <div class="mb-4">
-                <h1>Concepts for database connection pools</h1>
+                <h1>Concepts for configuring thread pools</h1>
                     <span class="text-muted">Understand concepts for avoiding resource exhaustion and congestion.</span>
             </div>
 
@@ -85,30 +86,56 @@ gtag('config', 'G-0J2P9316N6');
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This section is intended when you want to understand considerations and best practices on how to configure database connection pools for Keycloak.
-For a configuration where this is applied, visit <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a>.</p>
+<p>This section is intended when you want to understand the considerations and best practices on how to configure thread pools connection pools for Keycloak.
+For a configuration where this is applied, visit <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_concepts"><a class="anchor" href="#_concepts"></a>Concepts</h2>
+<h2 id="multi-cluster-threads-concept"><a class="anchor" href="#multi-cluster-threads-concept"></a>Concepts</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="multi-cluster-quarkus-executor-pool"><a class="anchor" href="#multi-cluster-quarkus-executor-pool"></a>Quarkus executor pool</h3>
 <div class="paragraph">
-<p>Creating new database connections is expensive as it takes time.
-Creating them when a request arrives will delay the response, so it is good to have them created before the request arrives.
-It can also contribute to a <a href="https://en.wikipedia.org/wiki/Cache_stampede">stampede effect</a> where creating a lot of connections in a short time makes things worse as it slows down the system and blocks threads.
-Closing a connection also invalidates all server side statements caching for that connection.</p>
+<p>Keycloak requests, as well as blocking probes, are handled by an executor pool.
+It has a default maximum size of 50 or more threads depending on the available CPU cores.
+Threads are created as needed, and will end when no longer needed, so the system will scale up and down automatically.
+Keycloak allows configuring the maximum thread pool size by the <a href="https://www.keycloak.org/server/all-config?q=http-pool-max-threads"><code>http-pool-max-threads</code></a> configuration option.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="multi-cluster-load-shedding"><a class="anchor" href="#multi-cluster-load-shedding"></a>Load Shedding</h3>
+<div class="paragraph">
+<p>By default, Keycloak will queue all incoming requests infinitely, even if the request processing stalls.
+This will use additional memory in the Pod, can exhaust resources in the load balancers, and the requests will eventually time out on the client side without the client knowing if the request has been processed.
+To limit the number of queued requests in Keycloak, set an additional Quarkus configuration option.</p>
 </div>
 <div class="paragraph">
-<p>For the best performance, the values for the initial, minimal and maximum database connection pool size should all be equal.
-This avoids creating new database connections when a new request comes in which is costly.</p>
+<p>Configure <code>http-max-queued-requests</code> to specify a maximum queue length to allow for effective load shedding once this queue size is exceeded.
+Assuming a Keycloak Pod processes around 200 requests per second, a queue of 1000 would lead to maximum waiting times of around 5 seconds.</p>
 </div>
 <div class="paragraph">
-<p>Keeping the database connection open for as long as possible allows for server side statement caching bound to a connection.
-In the case of PostgreSQL, to use a server-side prepared statement, <a href="https://jdbc.postgresql.org/documentation/server-prepare/#activation">a query needs to be executed (by default) at least five times</a>.</p>
+<p>When this setting is active, requests that exceed the number of queued requests will return with an HTTP 503 error.
+Keycloak logs the error message in its log.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="multi-cluster-probes"><a class="anchor" href="#multi-cluster-probes"></a>Probes</h3>
+<div class="paragraph">
+<p>Keycloak&#8217;s liveness probe is non-blocking to avoid a restart of a Pod under a high load.</p>
 </div>
 <div class="paragraph">
-<p>See the <a href="https://www.postgresql.org/docs/current/sql-prepare.html">PostgreSQL docs on prepared statements</a> for more information.</p>
+<p>The overall health probe and the readiness probe can in some cases block to check the connection to the database, so they might fail under a high load.
+Due to this, a Pod can become non-ready under a high load.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="multi-cluster-os-resources"><a class="anchor" href="#multi-cluster-os-resources"></a>OS Resources</h3>
+<div class="paragraph">
+<p>In order for Java to create threads, when running on Linux it needs to have file handles available.
+Therefore, the number of open files (as retrieved as <code>ulimit -n</code> on Linux) need to provide head-space for Keycloak to increase the number of threads needed.
+Each thread will also consume memory, and the container memory limits need to be set to a value that allows for this or the Pod will be killed by Kubernetes.</p>
+</div>
 </div>
 </div>
 </div>            </div>
@@ -119,7 +146,7 @@ In the case of PostgreSQL, to use a server-side prepared statement, <a href="htt
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/concepts-database-connections.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/multi-cluster/concepts-threads.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>

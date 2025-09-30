@@ -1,0 +1,324 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Deploying Keycloak for HA with the Operator - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Deploying Keycloak for HA with the Operator">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Deploy Keycloak for high availability with the Keycloak Operator as a building block.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/multi-cluster/deploy-keycloak-kubernetes">
+<meta property="og:url" content="https://www.keycloak.org/high-availability/multi-cluster/deploy-keycloak-kubernetes">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/high-availability/multi-cluster/introduction">Multi cluster</a></li>
+                    <li class="breadcrumb-item active">Deploying Keycloak for HA with the Operator</li>
+                </ol>
+            </nav>
+
+
+            <div class="mb-4">
+                <h1>Deploying Keycloak for HA with the Operator</h1>
+                    <span class="text-muted">Deploy Keycloak for high availability with the Keycloak Operator as a building block.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide describes advanced Keycloak configurations for Kubernetes which are load tested and will recover from single Pod failures.</p>
+</div>
+<div class="paragraph">
+<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/high-availability/multi-cluster/concepts">Concepts for multi-cluster deployments</a> guide.
+Use it together with the other building blocks outlined in the <a href="https://www.keycloak.org/high-availability/multi-cluster/building-blocks">Building blocks multi-cluster deployments</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Kubernetes cluster running.</p>
+</li>
+<li>
+<p>Understanding of a <a href="https://www.keycloak.org/operator/basic-deployment">Basic Keycloak deployment</a> of Keycloak with the Keycloak Operator.</p>
+</li>
+<li>
+<p>AWS Aurora database deployed using the <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-aurora">Deploying AWS Aurora in multiple availability zones</a> guide.</p>
+</li>
+<li>
+<p>Infinispan server deployed using the <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc">Deploying Infinispan for HA with the Infinispan Operator</a> guide.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Determine the sizing of the deployment using the <a href="https://www.keycloak.org/high-availability/multi-cluster/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> guide.</p>
+</li>
+<li>
+<p>Install the Keycloak Operator as described in the <a href="https://www.keycloak.org/operator/installation">Keycloak Operator Installation</a> guide.</p>
+</li>
+<li>
+<p>Notice the configuration file below contains options relevant for connecting to the Aurora database from <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-aurora#multi-cluster-aurora-connecting">Deploying AWS Aurora in multiple availability zones</a></p>
+</li>
+<li>
+<p>Notice the configuration file below options relevant for connecting to the Infinispan server from <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc#connecting-infinispan-to-keycloak">Deploying Infinispan for HA with the Infinispan Operator</a></p>
+</li>
+<li>
+<p>Build a custom Keycloak image which is <a href="https://www.keycloak.org/server/db#preparing-keycloak-for-amazon-aurora-postgresql">prepared for usage with the Amazon Aurora PostgreSQL database</a>.</p>
+</li>
+<li>
+<p>Deploy the Keycloak CR with the following values with the resource requests and limits calculated in the first step:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  labels:
+    app: keycloak
+  name: keycloak
+  namespace: keycloak
+spec:
+  hostname:
+    hostname: &lt;KEYCLOAK_URL_HERE&gt;
+  resources:
+    requests:
+      cpu: "2"
+      memory: "1250M"
+    limits:
+      cpu: "6"
+      memory: "2250M"
+  db:
+    vendor: postgres
+    url: jdbc:aws-wrapper:postgresql://&lt;AWS_AURORA_URL_HERE&gt;:5432/keycloak
+    poolMinSize: 30 <i class="conum" data-value="1"></i><b>(1)</b>
+    poolInitialSize: 30
+    poolMaxSize: 30
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+  image: &lt;KEYCLOAK_IMAGE_HERE&gt; <i class="conum" data-value="2"></i><b>(2)</b>
+  startOptimized: false <i class="conum" data-value="2"></i><b>(2)</b>
+  features:
+    enabled:
+      - multi-site <i class="conum" data-value="3"></i><b>(3)</b>
+  additionalOptions:
+    - name: log-console-output
+      value: json
+    - name: metrics-enabled <i class="conum" data-value="4"></i><b>(4)</b>
+      value: 'true'
+    - name: event-metrics-user-enabled
+      value: 'true'
+    - name: cache-remote-host
+      value: "infinispan.keycloak.svc"
+    - name: cache-remote-port
+      value: "11222"
+    - name: cache-remote-username
+      secret:
+        name: remote-store-secret
+        key: username
+    - name: cache-remote-password
+      secret:
+        name: remote-store-secret
+        key: password
+    - name: db-driver
+      value: software.amazon.jdbc.Driver
+  http:
+    tlsSecret: keycloak-tls-secret
+  instances: 3</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The database connection pool initial, max and min size should be identical to allow statement caching for the database.
+Adjust this number to meet the needs of your system.
+As most requests will not touch the database due to the Keycloak embedded cache, this change can serve several hundreds of requests per second.
+See the <a href="https://www.keycloak.org/high-availability/multi-cluster/concepts-database-connections">Concepts for database connection pools</a> guide for details.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Specify the URL to your custom Keycloak image. If your image is optimized, set the <code>startOptimized</code> flag to <code>true</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Enable additional features for multi-cluster support like the loadbalancer probe <code>/lb-check</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>To be able to analyze the system under load, enable the metrics endpoint.</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="multi-cluster-verify-deployment"><a class="anchor" href="#multi-cluster-verify-deployment"></a>Verifying the deployment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Confirm that the Keycloak deployment is ready.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl wait --for=condition=Ready keycloaks.k8s.keycloak.org/keycloak
+kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keycloak</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="multi-cluster-load-shedding"><a class="anchor" href="#multi-cluster-load-shedding"></a>Optional: Load shedding</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To enable load shedding, limit the number of queued requests.</p>
+</div>
+<div class="listingblock">
+<div class="title">Load shedding with max queued http requests</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">spec:
+  additionalOptions:
+    - name: http-max-queued-requests
+      value: "1000"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>All exceeding requests are served with an HTTP 503.</p>
+</div>
+<div class="paragraph">
+<p>You might consider limiting the value for <code>http-pool-max-threads</code> further because multiple concurrent threads will lead to throttling by Kubernetes once the requested CPU limit is reached.</p>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/high-availability/multi-cluster/concepts-threads#multi-cluster-load-shedding">Concepts for configuring thread pools</a> guide about load shedding for details.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="multi-cluster-sticky-sessions"><a class="anchor" href="#multi-cluster-sticky-sessions"></a>Optional: Disable sticky sessions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When running on OpenShift and the default passthrough Ingress setup as provided by the Keycloak Operator, the load balancing done by HAProxy is done by using sticky sessions based on the IP address of the source.
+When running load tests, or when having a reverse proxy in front of HAProxy, you might want to disable this setup to avoid receiving all requests on a single Keycloak Pod.</p>
+</div>
+<div class="paragraph">
+<p>Add the following supplementary configuration under the <code>spec</code> in the Keycloak Custom Resource to disable sticky sessions.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">spec:
+  ingress:
+    enabled: true
+    annotations:
+      # When running load tests, disable sticky sessions on the OpenShift HAProxy router
+      # to avoid receiving all requests on a single Keycloak Pod.
+      haproxy.router.openshift.io/balance: roundrobin
+      haproxy.router.openshift.io/disable_cookies: 'true'</code></pre>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/multi-cluster/deploy-keycloak-kubernetes.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

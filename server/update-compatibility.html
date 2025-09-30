@@ -172,18 +172,7 @@ If you do not use <code>--optimized</code> keep in mind that an <code>update</co
 </td>
 <td class="content">
 <div class="paragraph">
-<p>The <code>check</code> command currently offers only a limited functionality. At the moment, it takes into consideration only the version of Keycloak and the embedded Infinispan to determine if a rolling update is possible.
-If those are unchanged, it reports that a rolling update is possible.</p>
-</div>
-<div class="paragraph">
-<p>The current version does not yet verify configuration changes and assumes all configuration changes are eligible for a rolling update.
-The same applies to changes to custom extensions and themes.</p>
-</div>
-<div class="paragraph">
-<p>A good use case when to use this is, for example, when you want to do a rolling update when you change the Keycloak theme or your custom extensions, and only want run recreate update when the version of Keycloak changes which does not yet allow a rolling update.</p>
-</div>
-<div class="paragraph">
-<p>While consumers of these commands should know the limitations that exist today, they should not rely on the internal behavior or the structure of the metadata file.
+<p>Consumers of these commands should not rely on the internal behavior or the structure of the metadata file.
 Instead, they should rely only on the exit code of the <code>check</code> command to benefit from future enhancements on the internal logic to determine when a rolling update is possible.</p>
 </div>
 </td>
@@ -349,6 +338,189 @@ The feature <code>rolling-updates</code> is disabled.</p></td>
 </div>
 </div>
 <div class="sect1">
+<h2 id="_rolling_incompatible_changes"><a class="anchor" href="#_rolling_incompatible_changes"></a>Rolling incompatible changes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following configuration changes return a "Rolling Update is not possible" result code.</p>
+</div>
+<div class="sect2">
+<h3 id="_features"><a class="anchor" href="#_features"></a>Features</h3>
+<div class="sect3">
+<h4 id="_recreate_always"><a class="anchor" href="#_recreate_always"></a>Recreate always</h4>
+<div class="paragraph">
+<p>The enabling or disabling of the following features requires a recreate update:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name">multi-site:v1</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">Multi-site support</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name">persistent-user-sessions:v1</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">Persistent online user sessions across restarts and upgrades</span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_recreate_on_feature_version_change"><a class="anchor" href="#_recreate_on_feature_version_change"></a>Recreate on feature version change</h4>
+<div class="paragraph">
+<p>Changing the following features versions triggers a recreate update:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name">login:v1</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">Legacy Login Theme</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name">login:v2</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">New Login Theme</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name">passkeys-conditional-ui-authenticator:v1</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">Passkeys conditional UI authenticator</span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_options"><a class="anchor" href="#_configuration_options"></a>Configuration options</h3>
+<div class="paragraph">
+<p>Changing the value of one of the following CLI options triggers a recreate update:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Cache</caption>
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>ispn</code> and <code>local</code> configurations are mutually exclusive, changing from one to another will lead to data loss.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-config-file</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Changing the configuration file could result in incompatible cache or transport configurations, resulting in clusters not forming as expected.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-stack</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Changing stack will result in the cluster not forming during rolling update and will lead to data loss.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-embedded-mtls-enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enabling/Disabling TLS will result in the cluster not forming during rolling update and will lead to data loss.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-remote-host</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Connecting to a new remote cache will cause previously cached data to be lost.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-remote-port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Connecting to a new remote cache will cause previously cached data to be lost.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Keycloak does not verify changes to the content of the cache configuration file provided via <code>--cache-config-file</code>.
+If you change this file, you need to review and test your changes to ensure that nodes using the new configuration can form a cluster with the nodes running the old configuration.
+If a cluster cannot be formed, you should shut down Keycloak running the old configuration first before migrating to the new configuration.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Database</caption>
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration to a new database vendor should be applied to all cluster members to ensure data consistency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db-schema</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration to a new database schema should be applied to all cluster members to ensure data consistency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db-url-database</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration to a new database name should be applied to all cluster members to ensure data consistency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db-url-host</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All cluster members should be connecting to the same database to ensure data consistency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db-url-port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All cluster members should be connecting to the same database to ensure data consistency.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Keycloak allows changes to the <code>--db-url</code> option to be rolled out in order to facilitate changes to JDBC properties.
+Great care should be taken when updating this value as changes to the host, port or database name could lead to distinct
+cluster members connecting to a different database, resulting in data consistency issues.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="rolling-updates-for-patch-releases"><a class="anchor" href="#rolling-updates-for-patch-releases"></a>Rolling updates for patch releases</h2>
 <div class="sectionbody">
 <div class="admonitionblock warning">
@@ -421,6 +593,59 @@ This behavior is currently in preview mode, and it is not recommended for use in
 <div class="paragraph">
 <p>The Keycloak Operator uses the functionality described above to determine if a rolling update is possible. See the <a href="https://www.keycloak.org/operator/rolling-updates">Avoiding downtime with rolling updates</a> guide and the <code>Auto</code> strategy for more information.</p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>features</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables a set of one or more features.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--features</code><br>
+<strong>Env:</strong> <code>KC_FEATURES</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>account-api[:v1]</code>, <code>account[:v3]</code>, <code>admin-api[:v1]</code>, <code>admin-fine-grained-authz[:v1,v2]</code>, <code>admin[:v2]</code>, <code>authorization[:v1]</code>, <code>ciba[:v1]</code>, <code>client-auth-federated[:v1]</code>, <code>client-policies[:v1]</code>, <code>client-secret-rotation[:v1]</code>, <code>client-types[:v1]</code>, <code>clusterless[:v1]</code>, <code>db-tidb[:v1]</code>, <code>declarative-ui[:v1]</code>, <code>device-flow[:v1]</code>, <code>docker[:v1]</code>, <code>dpop[:v1]</code>, <code>dynamic-scopes[:v1]</code>, <code>fips[:v1]</code>, <code>hostname[:v2]</code>, <code>impersonation[:v1]</code>, <code>instagram-broker[:v1]</code>, <code>ipa-tuura-federation[:v1]</code>, <code>kerberos[:v1]</code>, <code>kubernetes-service-accounts[:v1]</code>, <code>log-mdc[:v1]</code>, <code>login[:v2,v1]</code>, <code>logout-all-sessions[:v1]</code>, <code>multi-site[:v1]</code>, <code>oid4vc-vci[:v1]</code>, <code>opentelemetry[:v1]</code>, <code>organization[:v1]</code>, <code>par[:v1]</code>, <code>passkeys-conditional-ui-authenticator[:v1]</code>, <code>passkeys[:v1]</code>, <code>persistent-user-sessions[:v1]</code>, <code>preview</code>, <code>quick-theme[:v1]</code>, <code>recovery-codes[:v1]</code>, <code>rolling-updates[:v1,v2]</code>, <code>scripts[:v1]</code>, <code>spiffe[:v1]</code>, <code>step-up-authentication[:v1]</code>, <code>token-exchange-external-internal[:v2]</code>, <code>token-exchange-standard[:v2]</code>, <code>token-exchange[:v1]</code>, <code>transient-users[:v1]</code>, <code>update-email[:v1]</code>, <code>user-event-metrics[:v1]</code>, <code>web-authn[:v1]</code>, <code>workflows[:v1]</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>features-disabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Disables a set of one or more features.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--features-disabled</code><br>
+<strong>Env:</strong> <code>KC_FEATURES_DISABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>account</code>, <code>account-api</code>, <code>admin</code>, <code>admin-api</code>, <code>admin-fine-grained-authz</code>, <code>authorization</code>, <code>ciba</code>, <code>client-auth-federated</code>, <code>client-policies</code>, <code>client-secret-rotation</code>, <code>client-types</code>, <code>clusterless</code>, <code>db-tidb</code>, <code>declarative-ui</code>, <code>device-flow</code>, <code>docker</code>, <code>dpop</code>, <code>dynamic-scopes</code>, <code>fips</code>, <code>impersonation</code>, <code>instagram-broker</code>, <code>ipa-tuura-federation</code>, <code>kerberos</code>, <code>kubernetes-service-accounts</code>, <code>log-mdc</code>, <code>login</code>, <code>logout-all-sessions</code>, <code>multi-site</code>, <code>oid4vc-vci</code>, <code>opentelemetry</code>, <code>organization</code>, <code>par</code>, <code>passkeys</code>, <code>passkeys-conditional-ui-authenticator</code>, <code>persistent-user-sessions</code>, <code>preview</code>, <code>quick-theme</code>, <code>recovery-codes</code>, <code>rolling-updates</code>, <code>scripts</code>, <code>spiffe</code>, <code>step-up-authentication</code>, <code>token-exchange</code>, <code>token-exchange-external-internal</code>, <code>token-exchange-standard</code>, <code>transient-users</code>, <code>update-email</code>, <code>user-event-metrics</code>, <code>web-authn</code>, <code>workflows</code></p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>            </div>
         </div>

@@ -22,8 +22,8 @@ gtag('config', 'G-0J2P9316N6');
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">
-<meta property="og:url" content="https://www.keycloak.org/high-availability/deploy-infinispan-kubernetes-crossdc">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc">
+<meta property="og:url" content="https://www.keycloak.org/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc">
 <link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg"></head>
 <body>
 
@@ -69,6 +69,7 @@ gtag('config', 'G-0J2P9316N6');
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
                     <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/high-availability/multi-cluster/introduction">Multi cluster</a></li>
                     <li class="breadcrumb-item active">Deploying Infinispan for HA with the Infinispan Operator</li>
                 </ol>
             </nav>
@@ -85,15 +86,15 @@ gtag('config', 'G-0J2P9316N6');
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide describes the procedures required to deploy Infinispan in a multiple-cluster environment (cross-site).
+<p>This guide describes the procedures required to deploy Infinispan in a multi-cluster environment (cross-site).
 For simplicity, this topic uses the minimum configuration possible that allows Keycloak to be used with an external Infinispan.</p>
 </div>
 <div class="paragraph">
 <p>This guide assumes two OpenShift clusters named <code>Site-A</code> and <code>Site-B</code>.</p>
 </div>
 <div class="paragraph">
-<p>This is a building block following the concepts described in the <a href="https://www.keycloak.org/high-availability/concepts-multi-site">Concepts for multi-site deployments</a> guide.
-See the <a href="https://www.keycloak.org/high-availability/introduction">Multi-site deployments</a> guide for an overview.</p>
+<p>This is a building block following the concepts described in the <a href="https://www.keycloak.org/high-availability/multi-cluster/concepts">Concepts for multi-cluster deployments</a> guide.
+See the <a href="https://www.keycloak.org/high-availability/multi-cluster/introduction">Multi-cluster deployments</a> guide for an overview.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -134,7 +135,7 @@ An example of this scenario could be two availability zones in one AWS region.</
 <div class="ulist">
 <ul>
 <li>
-<p>OpenShift or Kubernetes cluster running</p>
+<p>Kubernetes cluster running</p>
 </li>
 <li>
 <p>Understanding of the <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html">Infinispan Operator</a></p>
@@ -474,7 +475,7 @@ spec:
 </tr>
 <tr>
 <td><i class="conum" data-value="11"></i><b>11</b></td>
-<td>The remote site&#8217;s name, in this case  <code>Site-B</code>.</td>
+<td>The remote site&#8217;s name, in this case  <code>Site-B</code>. You may use this value in Keycloak option <code>cache-remote-backup-sites</code> for the automatic cache creation.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="12"></i><b>12</b></td>
@@ -544,13 +545,28 @@ spec:
 <li>
 <p>Creating the caches for Keycloak.</p>
 <div class="paragraph">
-<p>Keycloak requires the following caches to be present: <code>actionTokens</code>, <code>authenticationSessions</code>, <code>loginFailures</code>, and <code>work</code>.</p>
+<p>Keycloak automatically creates the necessary caches on the first startup if they do not exist.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It requires Keycloak to be deployed in both clusters because the Keycloak does not start until all caches are present in both clusters.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>The Infinispan <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#creating-caches">Cache CR</a> allows deploying the caches in the Infinispan cluster.
-Cross-site needs to be enabled per cache as documented by <a href="https://infinispan.org/docs/stable/titles/xsite/xsite.html">Cross Site Documentation</a>.
-The documentation contains more details about the options used by this guide.
-The following example shows the <code>Cache</code> CR for <code>Site-A</code>.</p>
+<p>To <a href="https://infinispan.org/docs/infinispan-operator/main/operator.html#creating-caches_creating-caches"><code>Cache</code> CR</a> is the recommend way to proceed in Kubernetes.
+To take effect, the <code>Cache</code> CR must be deployed before any Keycloak Pod starts.</p>
+</div>
+<div class="paragraph">
+<p>The following example shows the <code>Cache</code> CR for <code>Site-A</code>.</p>
 </div>
 <div class="openblock">
 <div class="content">
@@ -821,14 +837,12 @@ spec:
               chunkSize: "16"</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>== Verifying the deployment</p>
+</div>
 </li>
 </ol>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_verifying_the_deployment"><a class="anchor" href="#_verifying_the_deployment"></a>Verifying the deployment</h2>
-<div class="sectionbody">
 <div class="paragraph">
 <p>Confirm that the Infinispan cluster is formed, and the cross-site connection is established between the OpenShift clusters.</p>
 </div>
@@ -850,7 +864,7 @@ spec:
 <h2 id="connecting-infinispan-to-keycloak"><a class="anchor" href="#connecting-infinispan-to-keycloak"></a>Connecting Infinispan with Keycloak</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now that the Infinispan server is running, here are the relevant Keycloak CR changes necessary to connect it to Keycloak. These changes will be required in the <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide.</p>
+<p>Now that the Infinispan server is running, here are the relevant Keycloak CR changes necessary to connect it to Keycloak. These changes will be required in the <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide.</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -880,7 +894,7 @@ data:
 </td>
 <td class="content">
 <div class="paragraph">
-<p>All the memory, resource and database configurations are skipped from the CR below as they have been described in the <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide already.
+<p>All the memory, resource and database configurations are skipped from the CR below as they have been described in the <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide already.
 Administrators should leave those configurations untouched.</p>
 </div>
 </td>
@@ -910,7 +924,8 @@ spec:
       secret:
         name: remote-store-secret
         key: password
-    - name: db-driver</code></pre>
+    - name: cache-remote-backup-sites
+      value: "site-2" <i class="conum" data-value="5"></i><b>(5)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -922,7 +937,7 @@ spec:
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>The port of the remote Infinispan cluster.
-This is optional and it defaults to <code>11222</code>.</td>
+This is optional, and it defaults to <code>11222</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
@@ -931,6 +946,25 @@ This is optional and it defaults to <code>11222</code>.</td>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>The Secret <code>name</code> and <code>key</code> with the Infinispan password credential.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Optionally, the name of the remote site. The caches are only created if they do not already exist.</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Using the option <code>cache-remote-backup-sites</code> only creates the caches in the local site.
+You must deploy the <code>KeycloakCR</code> in the other cluster too, to create the caches there, otherwise Keycloak fails to start until they exist.</p>
+</div>
+</td>
 </tr>
 </table>
 </div>
@@ -952,7 +986,7 @@ In other environments, add the necessary certificates to Keycloak&#8217;s trusts
 <h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>After the Aurora AWS database and Infinispan are deployed and running, use the procedure in the <a href="https://www.keycloak.org/high-availability/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide to deploy Keycloak and connect it to all previously created building blocks.</p>
+<p>After the AWS Aurora database and Infinispan are deployed and running, use the procedure in the <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide to deploy Keycloak and connect it to all previously created building blocks.</p>
 </div>
 </div>
 </div>
@@ -971,6 +1005,26 @@ In other environments, add the necessary certificates to Keycloak&#8217;s trusts
 </tr>
 </thead>
 <tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-backup-sites</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Configures a list of backup sites names to where the external Infinispan cluster backups the Keycloak data.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-backup-sites</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_BACKUP_SITES</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>cache-remote-host</code></span></p>
@@ -1091,7 +1145,7 @@ In other environments, add the necessary certificates to Keycloak&#8217;s trusts
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/deploy-infinispan-kubernetes-crossdc.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>
