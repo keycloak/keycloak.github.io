@@ -1,0 +1,417 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Keycloak Performance Benchmarks: A Deep Dive into Scaling and Sizing (26.4) - Keycloak</title>
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:image" content="https://www.keycloak.org/preview/blog/2025/10/keycloak-performance-benchmarks-preview.jpg">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Keycloak Performance Benchmarks: A Deep Dive into Scaling and Sizing (26.4)">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Keycloak demonstrates near-linear vertical scaling, performs well in low-latency environments, and effectively offloads database usage with caching.">
+<meta name="author" content="Pedro Ruivo">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2025/10/keycloak-benchmark">
+<meta property="og:url" content="https://www.keycloak.org/2025/10/keycloak-benchmark">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2025/10/keycloak-benchmark","headline":"Keycloak Performance Benchmarks: A Deep Dive into Scaling and Sizing (26.4)","name":"Keycloak Performance Benchmarks: A Deep Dive into Scaling and Sizing (26.4)","datePublished":"2025-10-01T08:00:00Z","inLanguage":"en","abstract":"Keycloak demonstrates near-linear vertical scaling, performs well in low-latency environments, and effectively offloads database usage with caching.","url":"https://www.keycloak.org/2025/10/keycloak-benchmark","image":"https://www.keycloak.org/preview/blog/2025/10/keycloak-performance-benchmarks-preview.jpg","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Pedro Ruivo"}]}
+</script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <h1>Keycloak Performance Benchmarks: A Deep Dive into Scaling and Sizing (26.4)</h1>
+    <p class="blog-date text-muted">October 01 2025 by Pedro Ruivo</p>
+
+
+<div class="paragraph">
+<p>When deploying a mission-critical component like Keycloak, performance is a top concern.
+Questions about resource requirements, high availability, and network latency are crucial for a successful and stable production environment.
+To provide a clear, data-driven perspective on these topics, we conducted a series of benchmarks on the latest Keycloak version 26.4.
+In this post, we&#8217;ll share our findings on how Keycloak scales with increasing load, performs under artificial network latency, and leverages caching to optimize database usage.</p>
+</div>
+<div class="paragraph">
+<p>Share your feedback about this blog post <a href="https://github.com/keycloak/keycloak/discussions/43133">in our forum</a>!</p>
+</div>
+<div class="sect1">
+<h2 id="_environment">Environment</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.17 deployed across three availability zones in <code>eu-west-1</code>.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Provisioned using <a href="https://www.redhat.com/en/technologies/cloud-computing/openshift/aws">Red Hat OpenShift Service on AWS</a> (ROSA), with ROSA HCP.</p>
+</li>
+<li>
+<p>At least one worker node in each availability zone.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Amazon Aurora PostgreSQL 17.5 database.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Configured for high availability, with a primary DB instance in one availability zone and synchronously replicated readers in the other availability zones.</p>
+</li>
+<li>
+<p>Database populated with 100,000 users.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="https://github.com/keycloak/keycloak-benchmark">Keycloak Benchmark</a> as the load generator.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The benchmark ran on 20 to 50 <code>t4g.small</code> AWS instances in the same region.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scaling_keycloak">Scaling Keycloak</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>One of the most common questions when deploying Keycloak is: <strong>how many resources do I need?</strong>
+The answer, as you may have guessed, is that it depends on your specific use case.</p>
+</div>
+<div class="paragraph">
+<p>For this test, we scaled only the login and refresh token requests.
+Based on Keycloak&#8217;s <a href="https://www.keycloak.org/high-availability/single-cluster/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> documentation, we determined that you need <strong>1 vCPU to handle 15 logins per second</strong> and an additional <strong>1 vCPU to handle 120 refresh token requests per second</strong>.</p>
+</div>
+<div class="paragraph">
+<p>After computing the total number of vCPUs required, we divided the value by the desired number of Pods, which was three in this case (one for each availability zone).
+We allocated slightly more vCPU to each Pod than the calculated value to account for JVM background tasks like compilations and garbage collection.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Because our test used a constant load, we did not allocate as much CPU as we typically recommend.
+We <strong>strongly recommend</strong> leaving <strong>150% extra headroom</strong> for CPU usage to handle spikes in load, as mentioned in our documentation.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Memory was increased when we observed high CPU usage by the garbage collector (GC).
+It is difficult to formulate a precise memory requirement because it depends not only on the Keycloak data but also on the number of concurrent requests.</p>
+</div>
+<div class="paragraph">
+<p>The database instance type was chosen based on observation.
+If we observed failing requests or a 99th percentile response time above 100ms with database CPU usage exceeding 80%, we repeated the test using the next larger database instance type.</p>
+</div>
+<div class="paragraph">
+<p>A summary of the results can be observed in the table below.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<caption class="title">Table 1. Keycloak performance with load</caption>
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">OCP Instance Type</th>
+<th class="tableblock halign-left valign-top">DB Instance Type</th>
+<th class="tableblock halign-left valign-top">Pod CPU limit</th>
+<th class="tableblock halign-left valign-top">Pod Memory Limit (GB)</th>
+<th class="tableblock halign-left valign-top"># Pods</th>
+<th class="tableblock halign-left valign-top">Logins/sec</th>
+<th class="tableblock halign-left valign-top">Refreshes Token/sec</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>c8g.8xlarge</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>db.r8g.2xlarge</code></p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">24</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">500</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">2500</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>c8g.8xlarge</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>db.r8g.4xlarge</code></p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">40</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">1000</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">5000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>c8g.24xlarge</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>db.r8g.16xlarge</code></p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">74</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">2000</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">10000</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Based on the overall results, we can confirm that Keycloak scales vertically almost linearly in the tested range.</p>
+</div>
+<div class="paragraph">
+<p>Except the last test, we used the default Keycloak configuration.
+For the final test, we had to increase the number of threads (using the <code>http-pool-max-threads</code> option) to 330 for the scenario with the 2,000 logins and 10,000 token refreshes.</p>
+</div>
+<div class="paragraph">
+<p>We scaled up the OpenShift Ingress Routers because we were observing connection errors on the load generator.</p>
+</div>
+<div class="paragraph">
+<p>The following images illustrate how the requests correlated with the configured CPU and memory limits.</p>
+</div>
+<div class="paragraph">
+<div class="title">CPU limits</div>
+<p><span class="image"><img src="https://www.keycloak.org/resources/images/blog/kc_perf_2025/kc_perf_1.png" alt="requests vs cpu"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">Memory limits</div>
+<p><span class="image"><img src="https://www.keycloak.org/resources/images/blog/kc_perf_2025/kc_perf_4.png" alt="requests vs memory"></span></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_latency">Latency</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now that we have an understanding of the resources needed, our focus shifts to achieving high availability.
+A key aspect of this is <strong>deploying Keycloak across different availability zones</strong>, which, by its nature, introduces additional latency between Keycloak&#8217;s Pods.
+This leads us to a crucial question: <strong>how does Keycloak behave under these conditions?</strong></p>
+</div>
+<div class="paragraph">
+<p>To find out, we used <a href="https://chaos-mesh.org/">Chaos Mesh</a> to introduce an artificial delay to all outgoing network packets.
+The table below specifies the round-trip delay increase, corresponding to the first column.
+Since Keycloak 26.4 includes performance improvements for high availability deployments across different availability zones, we compare the results with the previous release, Keycloak 26.3.5.
+For Keycloak 26.3, we set <code>spi-user-sessions&#8212;&#8203;infinispan&#8212;&#8203;use-batches</code> to <code>false</code> to achieve a better response time (this option is disabled by default in Keycloak 26.4).</p>
+</div>
+<div class="paragraph">
+<p>For this test, we used the 500 logins/second and 2,500 token refreshes/second setup.
+The table below summarizes the gathered data, where the 99th percentile of the response time is taken from the Gatling report.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<caption class="title">Table 2. Network latency - Response Time (ms, 99th pct)</caption>
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Round-Trip Delay (ms)</th>
+<th class="tableblock halign-left valign-top">Keycloak 26.3</th>
+<th class="tableblock halign-left valign-top">Keycloak 26.4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">51</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">47</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">10</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">116</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">84</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">20</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">1076</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">130</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>As anticipated, Keycloak&#8217;s performance degrades under high-latency network conditions.
+Round-trip delays of <strong>10ms</strong> already push response times into the three-digit millisecond range.</p>
+</div>
+<div class="paragraph">
+<p>For multi-availability zone deployments, Keycloak performs well because most cloud providers offer very low latency networks within the same region.
+However, we <strong>do not recommend deploying Keycloak across different regions</strong> as the increased latency and potential for network instability can significantly degrade performance and reliability.</p>
+</div>
+<div class="paragraph">
+<p>A visual representation of these results can be found below.</p>
+</div>
+<div class="paragraph">
+<div class="title">Latency impact on response time</div>
+<p><span class="image"><img src="https://www.keycloak.org/resources/images/blog/kc_perf_2025/kc_perf_2.png" alt="delay vs latency"></span></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_caching">Caching</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Finally, let&#8217;s look at the impact of caching.</p>
+</div>
+<div class="paragraph">
+<p>Have you ever wondered how large your Keycloak cache should be?
+While we don&#8217;t have a clear answer on that, we can tell you that increasing the cache size did not lead to any visible improvements in request response times during our tests.</p>
+</div>
+<div class="paragraph">
+<p>However, it had a significant impact on something that is not directly visible to users: the <strong>Aurora Database peak CPU usage</strong>.
+The table below illustrates how the database&#8217;s peak CPU usage changed as we varied the Keycloak cache size.</p>
+</div>
+<div class="paragraph">
+<p>For this benchmark, we used the 500 logins/second and 2,500 token refreshes/second setup.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<caption class="title">Table 3. Cache size impact in DB usage</caption>
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Cache Size</th>
+<th class="tableblock halign-left valign-top">Aurora CPU usage (%, peak)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">10000</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">77.77</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">20000</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">76.92</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">50000</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">75.13</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">100000</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">66.12</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-right valign-top"><p class="tableblock">200000</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">63.77</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Our tests show that increasing the Keycloak cache size significantly reduces the Aurora Database&#8217;s peak CPU usage, which dropped from <strong>77% to 63%</strong>.</p>
+</div>
+<div class="paragraph">
+<p>While this change had a minimal impact on overall memory usage, increasing it from 1.30 GB to 1.45 GB, we did observe an expected rise in average Garbage Collection (GC) pauses, from 3.99ms to 4.91ms.
+Both of these behaviors are expected, as a larger cache naturally requires more memory, leading to slightly longer GC pauses.</p>
+</div>
+<div class="paragraph">
+<p>A visual representation of these results can be found in the chart below.</p>
+</div>
+<div class="paragraph">
+<div class="title">Cache size and Aurora peak CPU usage</div>
+<p><span class="image"><img src="https://www.keycloak.org/resources/images/blog/kc_perf_2025/kc_perf_3.png" alt="cache size vs db cpu"></span></p>
+</div>
+<div class="paragraph">
+<p>To monitor the number of entries in the caches and how often entries are evicted to make space for new entries, see our <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting-embedded-caches">metrics guide for embedded caches</a>. This information is also visualized in our <a href="https://www.keycloak.org/observability/grafana-dashboards">Grafana dashboard</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_conclusion">Conclusion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Our benchmark results confirm that Keycloak is a robust and highly scalable identity and access management solution.
+We have shown that with careful planning and proper resource allocation, Keycloak can handle significant loads while scaling almost linearly to 12,000 requests per second.</p>
+</div>
+<div class="paragraph">
+<p>The data also underscores the importance of a low-latency network for multi-zone deployments and the significant role of caching in reducing database strain.
+By taking these factors into account, you can deploy and operate Keycloak with more confidence.</p>
+</div>
+<div class="paragraph">
+<p>The tools and scripts we used for this are available in the <a href="https://github.com/keycloak/keycloak-benchmark">Keycloak Benchmark GitHub repository</a>, so you can use them to test your specific loads in your own environment.</p>
+</div>
+<div class="paragraph">
+<p>Share your feedback about this blog post <a href="https://github.com/keycloak/keycloak/discussions/43133">in our forum</a>!</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
