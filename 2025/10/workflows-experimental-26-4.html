@@ -1,0 +1,460 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Automating Administrative Tasks with Workflows in Keycloak 26.4 (experimental) - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Automating Administrative Tasks with Workflows in Keycloak 26.4 (experimental)">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Keycloak 26.4 introduces Workflows, an experimental feature that automates administrative tasks based on events, enhancing identity governance and reducing administrative costs.">
+<meta name="author" content="Stefan Guilhen">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2025/10/workflows-experimental-26-4">
+<meta property="og:url" content="https://www.keycloak.org/2025/10/workflows-experimental-26-4">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2025/10/workflows-experimental-26-4","headline":"Automating Administrative Tasks with Workflows in Keycloak 26.4 (experimental)","name":"Automating Administrative Tasks with Workflows in Keycloak 26.4 (experimental)","datePublished":"2025-10-01T08:00:00Z","inLanguage":"en","abstract":"Keycloak 26.4 introduces Workflows, an experimental feature that automates administrative tasks based on events, enhancing identity governance and reducing administrative costs.","url":"https://www.keycloak.org/2025/10/workflows-experimental-26-4","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Stefan Guilhen"}]}
+</script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article kc-asciidoc">
+    <h1>Automating Administrative Tasks with Workflows in Keycloak 26.4 (experimental)</h1>
+    <p class="blog-date text-muted">October 01 2025 by Stefan Guilhen</p>
+
+
+<div class="sect1">
+<h2 id="_what_are_workflows_and_what_problems_do_they_solve"><a class="anchor" href="#_what_are_workflows_and_what_problems_do_they_solve"></a>What are Workflows and What Problems Do They Solve?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At its core, the Workflows feature is an automation engine for administrative tasks. It empowers Keycloak administrators to define
+a series of steps that run automatically in response to specific events. The primary motivation behind this feature is to build a
+robust identity governance model within Keycloak while reducing manual, repetitive work.</p>
+</div>
+<div class="paragraph">
+<p>In any organization, managing the lifecycle of users and other resources is a critical but often time-consuming task. For example,
+failing to disable or remove inactive user accounts can create significant security vulnerabilities. Similarly, manually onboarding
+new users to specific roles or groups is inefficient and prone to error. Workflows aim to solve these problems by providing a flexible
+framework to automate these essential processes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_workflows_and_identity_governance_and_administration_iga"><a class="anchor" href="#_workflows_and_identity_governance_and_administration_iga"></a>Workflows and Identity Governance and Administration (IGA)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The introduction of Workflows is a significant step forward for Keycloak in the realm of Identity Governance and Administration (IGA).
+IGA is a policy-based approach to identity management and access control that helps organizations strengthen security, meet compliance
+requirements, and improve operational efficiency.</p>
+</div>
+<div class="paragraph">
+<p>By allowing administrators to define automated processes for managing the user lifecycle, Workflows directly address key IGA principles.
+This automation not only enhances security by addressing inactive accounts but also reduces the administrative burden on processes that
+can be fully automated, like onboarding and offboarding users.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_core_capabilities"><a class="anchor" href="#_core_capabilities"></a>Core Capabilities</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In its initial experimental release, the Workflows feature focuses on the following core capabilities:</p>
+</div>
+<div class="paragraph">
+<p><strong>User-Centric Automation</strong>: In this first iteration, the feature is primarily targeted at automating tasks related to the management of user
+resources. However, the concept is designed to be extensible and could be enhanced in the future to manage other realm components like clients,
+organizations, or identity providers.</p>
+</div>
+<div class="paragraph">
+<p><strong>Event-Driven Triggers</strong>: Workflows are triggered by events within the realm. This includes not only user-triggered events, such as logins,
+but also administrative events, such as a user being added to a group or being assigned a role.</p>
+</div>
+<div class="paragraph">
+<p><strong>Configurable Steps and Conditions</strong>: A workflow consists of one or more steps that are executed in sequence if the conditions are satisfied.
+The conditions are evaluated in addition to the event trigger, allowing for the definition of workflows for resources that match
+specific set of conditions (e.g. users not in the 'admin' role or users from a specific identity provider).</p>
+</div>
+<div class="paragraph">
+<p><strong>Schedulable Steps</strong>: Steps can be configured to run immediately or after a specified delay. This is particularly useful for scenarios
+like notifying users of impending account deactivation after a period of inactivity.</p>
+</div>
+<div class="paragraph">
+<p>The steps and conditions have their own SPIs, allowing for custom implementations to be plugged in if the built-in options do not meet your
+requirements. Implementations are referenced by their <code>providerId</code> in the respective <code>uses</code> property in the workflow definition - more on that in the
+example below.</p>
+</div>
+<div class="paragraph">
+<p>For the first iteration, the goal was to provide a set of capabilities to allow administrators to detect and act on inactive accounts. To achieve
+that, the following built-in steps can be configured within a workflow:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>notify-user</strong>: Sends automated email notifications to users to inform their accounts can be disabled/deleted.</p>
+</li>
+<li>
+<p><strong>disable-user</strong>: Disables the user account.</p>
+</li>
+<li>
+<p><strong>remove user</strong>: Automatically removes an account from the system.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Future release will introduce other built-in steps to aid in onboarding and offboarding users, such as join/leave groups,
+assign/unassign roles, add/remove user attributes, join/leave organizations, etc.</p>
+</div>
+<div class="paragraph">
+<p>As for the events that can trigger a workflow, the following are supported in this first release:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>USER_LOGIN</strong>: Triggered when a user successfully logs in</p>
+</li>
+<li>
+<p><strong>USER_ADD</strong>: Triggered when a user is created or registered</p>
+</li>
+<li>
+<p><strong>USER_GROUP_MEMBERSHIP_ADD</strong>: Triggered when a user is added to a group</p>
+</li>
+<li>
+<p><strong>USER_ROLE_ADD</strong>: Triggered when a user is assigned a role</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The conditions that can be used to filter the resources that will be affected by a workflow include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>is-member-of</strong>(group): Checks if a user is a member of a specific group</p>
+</li>
+<li>
+<p><strong>has-role</strong>(role): Checks if a user has a specific role</p>
+</li>
+<li>
+<p><strong>has-user-attribute</strong>(key, value): Checks if a user has a specific attribute with a given value</p>
+</li>
+<li>
+<p><strong>has-identity-provider-link</strong>(identity-provider): Checks if a user is linked to a specific identity provider</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_in_action"><a class="anchor" href="#_example_in_action"></a>Example in Action 🚀</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let&#8217;s walk through a practical example of how to use the feature by setting up a workflow that notifies and disables users who are not
+admins after some period of inactivity. For the purposes of this demonstration, we will use short timespans, but in a real-world
+scenario, you would likely use longer periods (e.g., 60 days, 90 days, etc).</p>
+</div>
+<div class="sect2">
+<h3 id="_enable_workflows"><a class="anchor" href="#_enable_workflows"></a>Enable Workflows:</h3>
+<div class="paragraph">
+<p>The first step is to enable the feature when starting Keycloak:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>./kc.sh start-dev --features=workflows --spi-events-listener--workflow-event-listener--step-runner-task-interval=1000 --log-level="INFO,org.keycloak.models.workflow:DEBUG"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>step-runner-task-interval</code> configuration is optional and is used to change the interval at which the background task that executes
+the scheduled steps runs. By default, it is set to 12 hours, but for demonstration purposes we are setting it to run every second.</p>
+</div>
+<div class="paragraph">
+<p>The <code>log-level</code> was also adjusted so we can see what is happening during the execution of the workflow.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_a_workflow"><a class="anchor" href="#_create_a_workflow"></a>Create a Workflow:</h3>
+<div class="paragraph">
+<p>As this is an experimental feature, it is recommended that you test it using a new realm in a non-production environment.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Access the Admin Console, then create a new realm and add two users to it:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>User 1: <code>alice</code> (no special roles)</p>
+</li>
+<li>
+<p>User 2: <code>bob</code> (assign the <code>realm-management/realm-admin</code> role to this user)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Make sure to set up the email settings for the realm so the notification step can send emails.</p>
+</li>
+<li>
+<p>In the new realm, navigate to the <strong>Workflows</strong> section under the <strong>Configure</strong> menu:</p>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+</style>
+<img src="https://www.keycloak.org/resources/images/blog/workflows/initial-screen.png" alt="Workflows initial screen" style="width: 100%; height: 100%; object-fit: contain; object-position: 0 0">
+</div>
+</div>
+</div>
+</li>
+<li>
+<p>Click on <strong>Create Workflow</strong> to define a new workflow. At this moment the UI is very simple and takes a <code>JSON</code> representation of the workflow as input.</p>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+</style>
+<img src="https://www.keycloak.org/resources/images/blog/workflows/create-workflow.png" alt="Creating a workflow" style="width: 100%; height: 100%; object-fit: contain; object-position: 0 0">
+</div>
+</div>
+</div>
+</li>
+<li>
+<p>Paste the following <code>JSON</code> into the editor to create the test workflow:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-JSON" data-lang="JSON">{
+  "name": "disable inactive users",
+  "uses": "event-based-workflow",
+  "on": "USER_LOGIN",
+  "reset-on": "USER_LOGIN",
+  "if": [
+    {
+      "uses":"expression",
+      "with": {
+        "expression": "!has-role(\"realm-management/realm-admin\")"
+      }
+    }
+  ],
+  "steps":[
+    {
+      "uses":"notify-user",
+      "after": "30000",
+      "with":{
+        "custom_message": "Your account can be disabled due to inactivity!"
+      }
+    },
+    {
+      "uses":"disable-user",
+      "after":"30000"
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Click on <strong>Save</strong> to save the workflow.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Most of the workflow definition is self-explanatory, but it is worth highlighting a few points:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>reset-on</code> property is also set to <code>USER_LOGIN</code>, which means that if the user logs in again before the workflow completes, it will be reset and started over.
+This is important when we track inactive users, as we want to reset the workflow if they become active again.</p>
+</li>
+<li>
+<p>As mentioned before, the <code>uses</code> property references the <code>providerId</code> of the step or condition implementation to be used.</p>
+</li>
+<li>
+<p>The condition is using an expression to check if the user does not have the <code>realm-admin</code> role. The expression can be used to
+combine multiple conditions using the logical operators AND, OR, !(NOT) and parentheses. So it is possible to do something like
+<code>!has-role("admin") AND has-user-attribute("department","engineering")</code>.</p>
+</li>
+<li>
+<p>The steps can have an <code>after</code> property that defines when the step should run. The value is always relative to the previous step,
+so in the example above, the <code>disable-user</code> step will run 30 seconds after the <code>notify-user</code> step completes.</p>
+</li>
+<li>
+<p>Additional properties of steps can be specified in the <code>with</code> section. In the example above, we are customizing the notification email message.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_test_the_workflow"><a class="anchor" href="#_test_the_workflow"></a>Test the Workflow</h3>
+<div class="paragraph">
+<p>Go to the account console (<code>realms/{your-realm}/account</code>) and log in as <code>alice</code>. You should see the following in the server logs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>2025-10-01 12:33:46,320 DEBUG [org.keycloak.models.workflow.WorkflowExecutionContext] (executor-thread-37) Started workflow 'disable inactive users' for resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)
+2025-10-01 12:33:46,320 DEBUG [org.keycloak.models.workflow.WorkflowsManager] (executor-thread-37) Scheduling step notify-user to run in 30000 ms for resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This indicates the workflow was activated for alice when they logged in as they do not have the <code>realm-admin</code> role.</p>
+</div>
+<div class="paragraph">
+<p>If you wait 30 seconds, the notification email should be sent, and you should see the following in the logs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>2025-10-01 12:34:16,425 DEBUG [org.keycloak.models.workflow.WorkflowsManager] (Timer-0) Running step notify-user on resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)
+2025-10-01 12:34:16,433 DEBUG [org.keycloak.models.workflow.NotifyUserStepProvider] (Timer-0) Notification email sent to user alice (alice@keycloak.org)
+2025-10-01 12:34:16,433 DEBUG [org.keycloak.models.workflow.WorkflowExecutionContext] (Timer-0) Step notify-user completed successfully (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)
+2025-10-01 12:34:16,433 DEBUG [org.keycloak.models.workflow.WorkflowsManager] (Timer-0) Scheduling step disable-user to run in 30000 ms for resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this point, the notification step was executed, and the disable step was scheduled to run in another 30 seconds. To simulate <code>alice</code>
+reacting to the e-mail, we will reload the account page to force a new login, which should reset the workflow as seen in the logs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>2025-10-01 12:34:46,997 DEBUG [org.keycloak.models.workflow.WorkflowExecutionContext] (executor-thread-39) Restarted workflow 'disable inactive users' for resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)
+2025-10-01 12:34:46,997 DEBUG [org.keycloak.models.workflow.WorkflowsManager] (executor-thread-39) Scheduling step notify-user to run in 30000 ms for resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As can be seen, once <code>alice</code> became active again, the workflow was restarted, and the steps were rescheduled.</p>
+</div>
+<div class="paragraph">
+<p>If we now wait for a whole minute, we should see the entire workflow executing:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>2025-10-01 12:35:17,430 DEBUG [org.keycloak.models.workflow.WorkflowsManager] (Timer-0) Running step notify-user on resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)
+2025-10-01 12:35:17,441 DEBUG [org.keycloak.models.workflow.WorkflowExecutionContext] (Timer-0) Step notify-user completed successfully (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)
+2025-10-01 12:35:17,442 DEBUG [org.keycloak.models.workflow.WorkflowsManager] (Timer-0) Scheduling step disable-user to run in 30000 ms for resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)
+2025-10-01 12:35:48,435 DEBUG [org.keycloak.models.workflow.WorkflowsManager] (Timer-0) Running step disable-user on resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)
+2025-10-01 12:35:48,436 DEBUG [org.keycloak.models.workflow.WorkflowExecutionContext] (Timer-0) Step disable-user completed successfully (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)
+2025-10-01 12:35:48,436 DEBUG [org.keycloak.models.workflow.WorkflowExecutionContext] (Timer-0) Workflow 'disable inactive users' completed for resource 8bddd017-5e0d-493d-a8d5-a657721299e4 (execution id: ea42006c-b7e1-421a-b6dc-44ece45f4011)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this point, the workflow has completed, and `alice&#8217;s account has been disabled.</p>
+</div>
+<div class="paragraph">
+<p>Repeating the steps with user <code>bob</code> should show that the workflow is not activated for this user, as they have the <code>realm-admin</code> role.
+So nothing should be printed in the logs when <code>bob</code> logs in.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_roadmap_and_future_features"><a class="anchor" href="#_roadmap_and_future_features"></a>Roadmap and Future Features</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The roadmap for the Workflows feature is to get it to supported status in Keycloak 26.5. It is under active development, so it is possible
+that some details shown in this blog post change before it becomes supported. Among the planned improvements are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Additional built-in steps to cover more use cases, particularly around onboarding and offboarding users.</p>
+</li>
+<li>
+<p>Additional events that can trigger workflows, such as USER_UPDATED, USER_GROUP_MEMBERSHIP_REMOVE, USER_ROLE_REMOVE, USER_ORGANIZATION_ADD/REMOVE, etc.</p>
+</li>
+<li>
+<p>Support for workflow templates to simplify the creation of common workflows.</p>
+</li>
+<li>
+<p>Support for workflows in YAML format in addition to JSON.</p>
+</li>
+<li>
+<p>Allow admins to assign workflows to existing resources, not only have them triggered by events.</p>
+</li>
+<li>
+<p>Improvements to the UI.</p>
+</li>
+<li>
+<p>Quality of life improvements - e.g., ability to use <code>30d</code> or <code>12h</code> instead of the time in milliseconds, along with other simplifications
+to the workflow definition.</p>
+</li>
+<li>
+<p>Allow better control over the background task that runs the scheduled steps, going beyond just the time interval and allowing
+configuration of the exact time of day it runs, etc.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You can follow the progress of the feature on GitHub: <a href="https://github.com/keycloak/keycloak/issues/39888" class="bare">https://github.com/keycloak/keycloak/issues/39888</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_join_the_discussion_and_development"><a class="anchor" href="#_join_the_discussion_and_development"></a>Join the discussion and development</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We highly encourage our users to try out the feature and provide feedback. We&#8217;ve opened a <a href="https://github.com/keycloak/keycloak/discussions/43171">dedicated discussion thread in Github</a>,
+so feel free to comment/discuss the features there or even in the Epic linked above. As usual, contributions and feedback are more than welcome!
+Let&#8217;s together make Keycloak even better with Workflows!</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
