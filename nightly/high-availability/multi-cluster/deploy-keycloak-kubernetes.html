@@ -142,6 +142,15 @@ Use it together with the other building blocks outlined in the <a href="https://
 <p>Build a custom Keycloak image which is <a href="https://www.keycloak.org/nightly/server/db#preparing-keycloak-for-amazon-aurora-postgresql">prepared for usage with the Amazon Aurora PostgreSQL database</a>.</p>
 </li>
 <li>
+<p>Secure the Amazon Aurora PostgreSQL database connection by downloading the <a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html">certificate bundles</a>.
+Create a <code>ConfigMap</code> with the certificate bundle using:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak create configmap keycloak-aurora-rootcert --from-file aurora.pem=/path/to/bundle.pem</code></pre>
+</div>
+</div>
+</li>
+<li>
 <p>Deploy the Keycloak CR with the following values with the resource requests and limits calculated in the first step:</p>
 <div class="listingblock">
 <div class="content">
@@ -164,8 +173,8 @@ spec:
       memory: "2250M"
   db:
     vendor: postgres
-    url: jdbc:aws-wrapper:postgresql://&lt;AWS_AURORA_URL_HERE&gt;:5432/keycloak
-    poolMinSize: 30 <i class="conum" data-value="1"></i><b>(1)</b>
+    url: jdbc:aws-wrapper:postgresql://&lt;AWS_AURORA_URL_HERE&gt;:5432/keycloak?sslmode=verify-full&amp;sslrootcert=/opt/keycloak/conf/truststores/configmap-keycloak-aurora-rootcert/aurora.pem <i class="conum" data-value="1"></i><b>(1)</b>
+    poolMinSize: 30 <i class="conum" data-value="2"></i><b>(2)</b>
     poolInitialSize: 30
     poolMaxSize: 30
     usernameSecret:
@@ -174,15 +183,15 @@ spec:
     passwordSecret:
       name: keycloak-db-secret
       key: password
-  image: &lt;KEYCLOAK_IMAGE_HERE&gt; <i class="conum" data-value="2"></i><b>(2)</b>
-  startOptimized: false <i class="conum" data-value="2"></i><b>(2)</b>
+  image: &lt;KEYCLOAK_IMAGE_HERE&gt; <i class="conum" data-value="3"></i><b>(3)</b>
+  startOptimized: false <i class="conum" data-value="3"></i><b>(3)</b>
   features:
     enabled:
-      - multi-site <i class="conum" data-value="3"></i><b>(3)</b>
+      - multi-site <i class="conum" data-value="4"></i><b>(4)</b>
   additionalOptions:
     - name: log-console-output
       value: json
-    - name: metrics-enabled <i class="conum" data-value="4"></i><b>(4)</b>
+    - name: metrics-enabled <i class="conum" data-value="5"></i><b>(5)</b>
       value: 'true'
     - name: event-metrics-user-enabled
       value: 'true'
@@ -202,29 +211,42 @@ spec:
       value: software.amazon.jdbc.Driver
   http:
     tlsSecret: keycloak-tls-secret
-  instances: 3</code></pre>
+  instances: 3
+  truststores:
+    aurora:
+      configMap:
+        name: keycloak-aurora-rootcert <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Secure the database connection with the <code>sslmode=verify-full</code> and <code>sslrootcert</code> properties.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>The database connection pool initial, max and min size should be identical to allow statement caching for the database.
 Adjust this number to meet the needs of your system.
 As most requests will not touch the database due to the Keycloak embedded cache, this change can serve several hundreds of requests per second.
 See the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/concepts-database-connections">Concepts for database connection pools</a> guide for details.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Specify the URL to your custom Keycloak image. If your image is optimized, set the <code>startOptimized</code> flag to <code>true</code>.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>Enable additional features for multi-cluster support like the loadbalancer probe <code>/lb-check</code>.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>To be able to analyze the system under load, enable the metrics endpoint.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Specify the <code>ConfigMap</code> name that contains the Amazon Aurora PostgreSQL database certificate bundle.
+The Operator will automatic mount the file in directory <code>/opt/keycloak/conf/truststores/configmap-&lt;config map name&gt;/&lt;file-name&gt;</code></td>
 </tr>
 </table>
 </div>
