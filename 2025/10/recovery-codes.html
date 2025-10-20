@@ -1,0 +1,219 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Recovery Authentication Codes - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Recovery Authentication Codes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="How to configure and use Recovery Authentication Codes as 2FA method.">
+<meta name="author" content="Ricardo Martin Camarero">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2025/10/recovery-codes">
+<meta property="og:url" content="https://www.keycloak.org/2025/10/recovery-codes">
+<link rel="shortcut icon" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2025/10/recovery-codes","headline":"Recovery Authentication Codes","name":"Recovery Authentication Codes","datePublished":"2025-10-20T08:00:00Z","inLanguage":"en","abstract":"How to configure and use Recovery Authentication Codes as 2FA method.","url":"https://www.keycloak.org/2025/10/recovery-codes","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Ricardo Martin Camarero"}]}
+</script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article kc-asciidoc">
+    <h1>Recovery Authentication Codes</h1>
+    <p class="blog-date text-muted">October 20 2025 by Ricardo Martin Camarero</p>
+
+
+<div class="paragraph">
+<p><a href="https://www.keycloak.org/docs/latest/server_admin/index.html#_recovery-codes">Recovery Codes</a> are a supported authentication method in Keycloak since version 26.3.0. At that time, the new feature was not properly presented in this blog, but this new entry tries to address that oversight.</p>
+</div>
+<div class="paragraph">
+<p>If you prefer watching a video instead of reading this blog, Niko Köbler published <a href="https://www.youtube.com/watch?v=fLzrgwAIR7g">Keycloak Recovery Authentication Codes</a> in youtube. Although the video is two years old, when the feature was in preview, it still stands for almost everything and it is very recommendable. This entry updates the recovery codes status when the feature is finally supported.</p>
+</div>
+<div class="sect1">
+<h2 id="_what_are_recovery_authentication_codes"><a class="anchor" href="#_what_are_recovery_authentication_codes"></a>What are Recovery authentication codes?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Recovery codes are a Second Factor Authentication (2FA) method which can be used as a backup option to avoid losing access to your account. Therefore, they can be configured or enabled in the authentication flow to give another chance to login in case the OTP or WebAuthn device is unavailable (for example your phone or yubikey are broken or lost).</p>
+</div>
+<div class="paragraph">
+<p>Technically the recovery codes are twelve sequential one-time passwords auto-generated by Keycloak. The authentication process asks the user for the next generated code in order. When that code is introduced, it is removed and the following code will be required in the subsequent login.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_recovery_codes_for_authentication"><a class="anchor" href="#_enable_recovery_codes_for_authentication"></a>Enable recovery codes for authentication</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The default <strong>browser</strong> flow already contains recovery codes as a 2FA sub-step, but the authenticator is disabled by default. You just need to enable it to make it available for the login. In the administration console, <strong>Authentication &rarr; Flows</strong>, select the <strong>browser</strong> flow. Under the step <strong>Browser - Conditional 2FA</strong>, <strong>OTP Form</strong> is set to <strong>Alternative</strong>, but <strong>Recovery Authentication Code Form</strong> is <strong>Disabled</strong>. Change the latter to <strong>Alternative</strong> too.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/recovery-codes/browser-flow.png" alt="Set Recovery Authentication Code Form to Alternative in the browser flow" style="border:none;display:block;margin:auto;max-width:100%;height:auto;margin-top:2em;margin-bottom:3em;">
+</div>
+</div>
+<div class="paragraph">
+<p>With this configuration, both alternative methods are available to login. Recovery codes can be integrated in more complex authentication flows if needed.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setup_recovery_codes_for_the_final_user"><a class="anchor" href="#_setup_recovery_codes_for_the_final_user"></a>Setup recovery codes for the final user</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The administrator can force any account to setup the recovery codes credentials assigning the <strong>Recovery Authentication Codes</strong> required action to that specific user. The administrator can also enforce the action to all new users setting the action as a default action (<strong>Authentication &rarr; Required Actions &rarr; Recovery Authentication Codes</strong>). In this regard, the recovery codes are just another required action that can be used normally inside Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>Via required action or just manually clicking this credential type in the account console, the user can setup and store the codes. The twelve passwords should be saved in a secure place.</p>
+</div>
+<div class="paragraph">
+<p>In the account console, <strong>Account Security &rarr; Signing in</strong>, the <strong>Recovery authentication codes</strong> section will appear as soon as the step is enabled in the authentication flow. Click the <strong>Set up Recovery authentication codes</strong> link to start the setup.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/recovery-codes/recovery-codes-setup.png" alt="Click Set up Recovery authentication codes" style="border:none;display:block;margin:auto;max-width:100%;height:auto;margin-top:2em;margin-bottom:3em;">
+</div>
+</div>
+<div class="paragraph">
+<p>Keycloak generates and presents the codes. The list of passwords needs to be copied or saved by the final user. To ensure this step is done, a checkbox is displayed: <strong>I have saved these codes somewhere safe</strong>. It needs to be acknowledged to complete the setup.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/recovery-codes/recovery-codes-setup-2.png" alt="Set up Recovery authentication codes page" style="border:none;display:block;margin:auto;max-width:100%;height:auto;margin-top:2em;margin-bottom:3em;">
+</div>
+</div>
+<div class="paragraph">
+<p>Now the recovery codes are configured in the account and can be used as 2FA to login.</p>
+</div>
+<div class="paragraph">
+<p>The list of codes can be re-generated in the account console at any time.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_login"><a class="anchor" href="#_login"></a>Login</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With the previous steps completed, the user can access the Keycloak login page. The username and password form is presented.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/recovery-codes/login-username-password.png" alt="Login page for username and password" style="border:none;display:block;margin:auto;max-width:100%;height:auto;margin-top:2em;margin-bottom:3em;">
+</div>
+</div>
+<div class="paragraph">
+<p>If OTP is also configured for the account, the OTP form is displayed for the 2FA step. But this time, the OTP application is not available, because my phone is out of battery for example. The user clicks the <strong>Try Another Way</strong> button.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/recovery-codes/login-otp.png" alt="Login page OTP" style="border:none;display:block;margin:auto;max-width:100%;height:auto;margin-top:2em;margin-bottom:3em;">
+</div>
+</div>
+<div class="paragraph">
+<p>The <strong>Recovery Authentication Code</strong> option is selected.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/recovery-codes/login-try-another-way.png" alt="Login page OTP" style="border:none;display:block;margin:auto;max-width:100%;height:auto;margin-top:2em;margin-bottom:3em;">
+</div>
+</div>
+<div class="paragraph">
+<p>Code #1 is requested because recovery codes are used for the first time. Remember they are requested and consumed in order.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/recovery-codes/login-recovery-codes.png" alt="Login page OTP" style="border:none;display:block;margin:auto;max-width:100%;height:auto;margin-top:2em;margin-bottom:3em;">
+</div>
+</div>
+<div class="paragraph">
+<p>The user enters the code, clicks <strong>Sign in</strong>, and the login will be completed successfully.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_extra_information"><a class="anchor" href="#_extra_information"></a>Extra information</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The account console warns you when the recovery codes are running out. The default warning threshold is four (less than four codes remaining), but this value can be modified in the required action configuration.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/recovery-codes/recovery-codes-warning.png" alt="Login page OTP" style="border:none;display:block;margin:auto;max-width:100%;height:auto;margin-top:2em;margin-bottom:3em;">
+</div>
+</div>
+<div class="paragraph">
+<p>Recovery Codes and OTP can be configured by the user at the same time. The <strong>Configure OTP</strong> required action has a switch to enable this feature (<strong>Authentication &rarr; Required actions</strong>). When activated, the setup for OTP enforces the user to also configure recovery codes if the account has not configure them before.</p>
+</div>
+<div class="openblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/recovery-codes/configure-otp.png" alt="Login page OTP" style="border:none;display:block;margin:auto;max-width:100%;height:auto;margin-top:2em;margin-bottom:3em;">
+</div>
+</div>
+<div class="paragraph">
+<p>As a final comment, the setup for recovery codes is also presented when the last code is used to login. This way, the list is re-generated again when all the passwords are consumed.</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
