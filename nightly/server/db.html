@@ -513,6 +513,8 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 <div class="sect1">
 <h2 id="_preparing_for_postgresql"><a class="anchor" href="#_preparing_for_postgresql"></a>Preparing for PostgreSQL</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_writer_and_reader_instances"><a class="anchor" href="#_writer_and_reader_instances"></a>Writer and reader instances</h3>
 <div class="paragraph">
 <p>When running PostgreSQL reader and writer instances, Keycloak needs to always connect to the writer instance to do its work.
 When using the original PostgreSQL driver, Keycloak sets the <code>targetServerType</code> property of the PostgreSQL JDBC driver to <code>primary</code> to ensure that it always connects to a writable primary instance and never connects to a secondary reader instance in failover or switchover scenarios.</p>
@@ -534,14 +536,19 @@ When using the original PostgreSQL driver, Keycloak sets the <code>targetServerT
 </tr>
 </table>
 </div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-<div class="title">Secure Your PostgreSQL Connection</div>
+</div>
+<div class="sect2">
+<h3 id="_permissions_of_the_database_user"><a class="anchor" href="#_permissions_of_the_database_user"></a>Permissions of the database user</h3>
+<div class="paragraph">
+<p>Ensure that the database user has <code>SELECT</code> permissions to the following tables to ensure an efficient upgrade: <code>pg_class</code>, <code>pg_namespace</code>.</p>
+</div>
+<div class="paragraph">
+<p>This is used during upgrades of Keycloak to determine an estimated number of rows in a table.
+If Keycloak does not have permissions to access these tables, it will log a warning and proceed with the less efficient <code>SELECT COUNT(*) ...</code> operation during the upgrade to determine the number of rows in tables affected by schema changes.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_secure_your_connection"><a class="anchor" href="#_secure_your_connection"></a>Secure your connection</h3>
 <div class="paragraph">
 <p>To secure your database connection, configure your PostgreSQL server to use TLS and perform full server certificate verification on the client side.</p>
 </div>
@@ -568,9 +575,6 @@ Secure the connection by adding the following properties to your connection URL:
 </li>
 </ul>
 </div>
-</td>
-</tr>
-</table>
 </div>
 </div>
 </div>
