@@ -172,7 +172,7 @@ export default class Keycloak {
    * @param {KeycloakInitOptions} initOptions
    * @returns {Promise<boolean>}
    */
-  async init (initOptions = {}) {
+  init = async (initOptions = {}) => {
     if (this.didInitialize) {
       throw new Error("A 'Keycloak' instance can only be initialized once.")
     }
@@ -802,8 +802,8 @@ export default class Keycloak {
   async #processInit (initOptions) {
     const callback = this.#parseCallback(window.location.href)
 
-    if (callback?.redirectUri) {
-      window.history.replaceState(window.history.state, '', callback.redirectUri)
+    if (callback?.newUrl) {
+      window.history.replaceState(window.history.state, '', callback.newUrl)
     }
 
     if (callback && callback.valid) {
@@ -1050,28 +1050,28 @@ export default class Keycloak {
     supportedParams.push('error_uri')
 
     const url = new URL(urlString)
-    let redirectUri = ''
+    let newUrl = ''
     let parsed
 
     if (this.responseMode === 'query' && url.searchParams.size > 0) {
       parsed = this.#parseCallbackParams(url.search, supportedParams)
       url.search = parsed.paramsString
-      redirectUri = url.toString()
+      newUrl = url.toString()
     } else if (this.responseMode === 'fragment' && url.hash.length > 0) {
       parsed = this.#parseCallbackParams(url.hash.substring(1), supportedParams)
-      url.hash = ''
-      redirectUri = url.toString()
+      url.hash = parsed.paramsString
+      newUrl = url.toString()
     }
 
     if (parsed?.oauthParams) {
       if (this.flow === 'standard' || this.flow === 'hybrid') {
         if ((parsed.oauthParams.code || parsed.oauthParams.error) && parsed.oauthParams.state) {
-          parsed.oauthParams.redirectUri = redirectUri
+          parsed.oauthParams.newUrl = newUrl
           return parsed.oauthParams
         }
       } else if (this.flow === 'implicit') {
         if ((parsed.oauthParams.access_token || parsed.oauthParams.error) && parsed.oauthParams.state) {
-          parsed.oauthParams.redirectUri = redirectUri
+          parsed.oauthParams.newUrl = newUrl
           return parsed.oauthParams
         }
       }
@@ -1180,7 +1180,7 @@ export default class Keycloak {
    * @param {KeycloakLoginOptions} [options]
    * @returns {Promise<void>}
    */
-  login (options) {
+  login = (options) => {
     return this.#adapter.login(options)
   }
 
@@ -1188,7 +1188,7 @@ export default class Keycloak {
    * @param {KeycloakLoginOptions} [options]
    * @returns {Promise<string>}
    */
-  async createLoginUrl (options) {
+  createLoginUrl = async (options) => {
     const state = createUUID()
     const nonce = createUUID()
     const redirectUri = this.#adapter.redirectUri(options)
@@ -1220,9 +1220,7 @@ export default class Keycloak {
 
     const params = new URLSearchParams([
       ['client_id', /** @type {string} */ (this.clientId)],
-      // The endpoint URI MUST NOT include a fragment component.
-      // https://datatracker.ietf.org/doc/html/rfc6749#section-3.1.2
-      ['redirect_uri', stripHash(redirectUri)],
+      ['redirect_uri', redirectUri],
       ['state', state],
       ['response_mode', this.responseMode],
       ['response_type', this.responseType],
@@ -1288,7 +1286,7 @@ export default class Keycloak {
    * @param {KeycloakLogoutOptions} [options]
    * @returns {Promise<void>}
    */
-  logout (options) {
+  logout = (options) => {
     return this.#adapter.logout(options)
   }
 
@@ -1296,7 +1294,7 @@ export default class Keycloak {
    * @param {KeycloakLogoutOptions} [options]
    * @returns {string}
    */
-  createLogoutUrl (options) {
+  createLogoutUrl = (options) => {
     const logoutMethod = options?.logoutMethod ?? this.logoutMethod
     const url = this.endpoints.logout()
 
@@ -1320,7 +1318,7 @@ export default class Keycloak {
    * @param {KeycloakRegisterOptions} [options]
    * @returns {Promise<void>}
    */
-  register (options) {
+  register = (options) => {
     return this.#adapter.register(options)
   }
 
@@ -1328,7 +1326,7 @@ export default class Keycloak {
    * @param {KeycloakRegisterOptions} [options]
    * @returns {Promise<string>}
    */
-  createRegisterUrl (options) {
+  createRegisterUrl = (options) => {
     return this.createLoginUrl({ ...options, action: 'register' })
   }
 
@@ -1336,7 +1334,7 @@ export default class Keycloak {
    * @param {KeycloakAccountOptions} [options]
    * @returns {string}
    */
-  createAccountUrl (options) {
+  createAccountUrl = (options) => {
     const url = this.#getRealmUrl()
 
     if (!url) {
@@ -1354,7 +1352,7 @@ export default class Keycloak {
   /**
    * @returns {Promise<void>}
    */
-  accountManagement () {
+  accountManagement = () => {
     return this.#adapter.accountManagement()
   }
 
@@ -1362,7 +1360,7 @@ export default class Keycloak {
    * @param {string} role
    * @returns {boolean}
    */
-  hasRealmRole (role) {
+  hasRealmRole = (role) => {
     const access = this.realmAccess
     return !!access && access.roles.indexOf(role) >= 0
   }
@@ -1372,7 +1370,7 @@ export default class Keycloak {
    * @param {string} [resource]
    * @returns {boolean}
    */
-  hasResourceRole (role, resource) {
+  hasResourceRole = (role, resource) => {
     if (!this.resourceAccess) {
       return false
     }
@@ -1384,7 +1382,7 @@ export default class Keycloak {
   /**
    * @returns {Promise<KeycloakProfile>}
    */
-  async loadUserProfile () {
+  loadUserProfile = async () => {
     const realmUrl = this.#getRealmUrl()
 
     if (!realmUrl) {
@@ -1403,7 +1401,7 @@ export default class Keycloak {
   /**
    * @returns {Promise<{}>}
    */
-  async loadUserInfo () {
+  loadUserInfo = async () => {
     const url = this.endpoints.userinfo()
     /** @type {{}} */
     const userInfo = await fetchJSON(url, {
@@ -1417,7 +1415,7 @@ export default class Keycloak {
    * @param {number} [minValidity]
    * @returns {boolean}
    */
-  isTokenExpired (minValidity) {
+  isTokenExpired = (minValidity) => {
     if (!this.tokenParsed || (!this.refreshToken && this.flow !== 'implicit')) {
       throw new Error('Not authenticated')
     }
@@ -1445,7 +1443,7 @@ export default class Keycloak {
    * @param {number} minValidity
    * @returns {Promise<boolean>}
    */
-  async updateToken (minValidity) {
+  updateToken = async (minValidity) => {
     if (!this.refreshToken) {
       throw new Error('Unable to update token, no refresh token available.')
     }
@@ -1508,7 +1506,7 @@ export default class Keycloak {
     return await promise
   }
 
-  clearToken () {
+  clearToken = () => {
     if (this.token) {
       this.#setToken()
       this.onAuthLogout?.()
@@ -2067,7 +2065,7 @@ async function fetchAccessToken (url, code, clientId, redirectUri, pkceCodeVerif
     ['code', code],
     ['grant_type', 'authorization_code'],
     ['client_id', clientId],
-    ['redirect_uri', stripHash(redirectUri)]
+    ['redirect_uri', redirectUri]
   ])
 
   if (pkceCodeVerifier) {
@@ -2153,16 +2151,6 @@ function buildAuthorizationHeader (token) {
  */
 function stripTrailingSlash (url) {
   return url.endsWith('/') ? url.slice(0, -1) : url
-}
-
-/**
- * @param {string} url
- * @returns {string}
- */
-function stripHash (url) {
-  const parsedUrl = new URL(url)
-  parsedUrl.hash = ''
-  return parsedUrl.toString()
 }
 
 /**
