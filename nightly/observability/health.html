@@ -111,21 +111,18 @@ When this option is <code>false</code> you should block unwanted external traffi
 <div class="ulist">
 <ul>
 <li>
-<p><code>/health/live</code></p>
+<p><code>/health/started</code> - Startup probe used for initial startup of Keycloak before the liveness probe takes over.</p>
 </li>
 <li>
-<p><code>/health/ready</code></p>
+<p><code>/health/live</code> - Check if Keycloak is running. If this fails the application should be discarded (terminated, shutdown) and started again.</p>
 </li>
 <li>
-<p><code>/health/started</code></p>
+<p><code>/health/ready</code> - Checks if Keycloak is ready to process requests or not. Only direct traffic to a newly started instance once the readiness probe succeeds. If this procedure fails, the application is temporarily unavailable to serve new requests, and traffic should be directed elsewhere.</p>
 </li>
 <li>
-<p><code>/health</code></p>
+<p><code>/health</code> - accumulates all health check procedures in the application.</p>
 </li>
 </ul>
-</div>
-<div class="paragraph">
-<p>See the <a href="https://quarkus.io/guides/smallrye-health#running-the-health-check">Quarkus SmallRye Health docs</a> for information on the meaning of each endpoint.</p>
 </div>
 <div class="paragraph">
 <p>These endpoints respond with HTTP status <code>200 OK</code> on success or <code>503 Service Unavailable</code> on failure, and a JSON object like the following:</p>
@@ -156,6 +153,9 @@ When this option is <code>false</code> you should block unwanted external traffi
     ]
 }</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://github.com/microprofile/microprofile-health/blob/main/spec/src/main/asciidoc/protocol-wireformat.asciidoc">wire format</a> for a more detailed description.</p>
 </div>
 </div>
 </div>
@@ -231,6 +231,18 @@ If you configure mTLS with <code>https-client-auth</code> set to <code>required<
 </div>
 <div class="paragraph">
 <p>The above code depends on the values of the Keycloak options such as <code>http-relative-path</code> (<code>http-management-relative-path</code>) and <code>http-management-port</code>. In case those are changed the code needs to be modified accordingly.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+the <code>HEALTHCHECK</code> shown is based upon the ready endpoint. This is appropriate for informational purposes or to determine if the container should receive requests. It should not be used to determine if the container needs restarted.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>If you enable TLS as shown in <a href="https://www.keycloak.org/nightly/server/enabletls">Configuring TLS</a>, the management interface will also use TLS. Depending upon how the management interface endpoints are intended to be used you can still have plain HTTP health checks if:</p>

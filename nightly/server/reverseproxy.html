@@ -479,6 +479,10 @@ when a forged client certificate can be used for authentication.</p>
 </tbody>
 </table>
 <div class="paragraph">
+<p>Besides the providers for particular proxies from the table above, there is also an implementation for proxies that are compliant to <a href="https://datatracker.ietf.org/doc/rfc9440/">RFC 9440</a>.
+Please refer to the provider by the name <code>rfc9440</code>.</p>
+</div>
+<div class="paragraph">
 <p>To configure how client certificates are retrieved from the requests you need to:</p>
 </div>
 <div class="listingblock">
@@ -504,35 +508,48 @@ forwarded by the proxy with the client certificate information.</p>
 <colgroup>
 <col>
 <col>
+<col>
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Option</th>
 <th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Supporting Providers</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ssl-client-cert</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The name of the header holding the client certificate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">all</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain-prefix</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The prefix of the headers holding additional certificates in the chain and used to retrieve individual
 certificates accordingly to the length of the chain. For instance, a value <code>CERT_CHAIN</code> will tell the server
 to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>CERT_CHAIN_9</code> if <code>certificate-chain-length</code> is set to <code>10</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">all but <code>rfc9440</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the header holding additional certificates in the chain. This is not a prefix but the full name of the header
+  because RFC 9440 mandates that the chain certificates are contained in one header.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rfc9440</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">certificate-chain-length</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The maximum length of the certificate chain.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">all</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">trust-proxy-verification</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Enable trusting NGINX proxy certificate verification, instead of forwarding the certificate to Keycloak and verifying it in Keycloak.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>nginx</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">cert-is-url-encoded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Whether the forwarded certificate is url-encoded or not. In NGINX, this corresponds to the <code>$ssl_client_cert</code> and <code>$ssl_client_escaped_cert</code> variables. This can also be used for the Traefik PassTlsClientCert middleware, as it sends the client certficate unencoded.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>nginx</code></p></td>
 </tr>
 </tbody>
 </table>
@@ -699,6 +716,43 @@ to configure a Keycloak Truststore.</p>
 </tr>
 </tbody>
 </table>
+<div class="sect2">
+<h3 id="_configuring_the_rfc9440_provider"><a class="anchor" href="#_configuring_the_rfc9440_provider"></a>Configuring the rfc9440 provider</h3>
+<div class="paragraph">
+<p>If you stick to the header names mentioned in RFC 9440, you do not need to configure any additional options after selecting the <code>rfc9440</code> provider.
+The default values of the options are as follows:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-client-cert</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client-Cert</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client-Cert-Chain</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">certificate-chain-length</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>If your certificate chain is longer than the given default, you must define the option with an appropriate number.
+Otherwise, the provider will discard the request.</p>
+</div>
+</div>
 </div>
 </div>            </div>
         </div>

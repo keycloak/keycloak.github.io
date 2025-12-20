@@ -1,0 +1,378 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Run Keycloak as a Windows Service - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Run Keycloak as a Windows Service">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Install and run Keycloak as a Windows service using Apache Commons Daemon.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/server/windows-service">
+<meta property="og:url" content="https://www.keycloak.org/nightly/server/windows-service">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#server">Server</a></li>
+                    <li class="breadcrumb-item active">Run Keycloak as a Windows Service</li>
+                </ol>
+            </nav>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/guides">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <h1>Run Keycloak as a Windows Service</h1>
+                    <span class="text-muted">Install and run Keycloak as a Windows service using Apache Commons Daemon.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide explains how to install and run Keycloak as a Windows service using Apache Commons Daemon. The service runs <code>kc.bat</code> in "exe" mode so behavior matches running <code>kc.bat start</code> manually. The service runs in "exe" mode, where Procrun executes <code>kc.bat start</code> as an external process. Environment variables, such as <code>KC_*</code>, along with <code>conf/keycloak.conf</code>, are respected. The <code>kc.bat</code> script handles augmentation and build logic, ensuring the service behaves exactly like a manual start.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_apache_commons_daemon_setup"><a class="anchor" href="#_apache_commons_daemon_setup"></a>Apache Commons Daemon Setup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To run Keycloak as a Windows service, you need the Apache Commons Daemon Procrun binary (<code>prunsrv.exe</code>). Download it for your platform: <a href="https://downloads.apache.org/commons/daemon/binaries/windows/" class="bare">https://downloads.apache.org/commons/daemon/binaries/windows/</a></p>
+</div>
+<div class="paragraph">
+<p>Then place <code>prunsrv.exe</code> into the Keycloak <code>bin</code> folder.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">copy "path\to\prunsrv.exe" "%KEYCLOAK_HOME%\bin\prunsrv.exe"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use the amd64 binary for 64-bit and x86 for 32-bit systems.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_optional_pre_build"><a class="anchor" href="#_optional_pre_build"></a>Optional: Pre-build</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Pre-building is optional. If you do not pre-build, Keycloak will build automatically on first start, which takes longer.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.bat build --db=postgres</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_installing_the_service"><a class="anchor" href="#_installing_the_service"></a>Installing the Service</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak includes a <code>tools windows-service</code> subcommand to simplify service installation and uninstallation.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin\kc.bat tools windows-service install --help</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin\kc.bat tools windows-service uninstall --help</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_examples"><a class="anchor" href="#_examples"></a>Examples</h3>
+<div class="paragraph">
+<p>Install a basic service (runs as Local System by default):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin\kc.bat tools windows-service install --name keycloak</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Manual startup and longer stop timeout:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin\kc.bat tools windows-service install --startup=manual --stop-timeout=60</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Delayed auto-start:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin\kc.bat tools windows-service install --startup=delayed</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Custom display name:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin\kc.bat tools windows-service install --name=my-keycloak --display-name="My Keycloak Server"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use <code>--depends-on</code> to ensure required Windows services start before Keycloak (for example, a local database). By default Apache Commons Daemon may add <code>Tcpip</code> and <code>Afd</code> network dependencies.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin\kc.bat tools windows-service install --depends-on="postgresql-x64-15;Tcpip;Afd"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The default is to run the service as the Local System account - <code>--service-user</code> and <code>--service-password</code> can be omitted (recommended). To run as a specific user, the account must have the "Log on as a service" right.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin\kc.bat tools windows-service install --service-user="DOMAIN\Username" --service-password="password"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can supply the service password securely via an environment variable, which is recommended:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">set KC_SERVICE_PASSWORD=s3cret
+bin\kc.bat tools windows-service install --service-user="DOMAIN\Username"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Start the service:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">net start keycloak</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Stop the service:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">net stop keycloak</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Uninstall the service:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin\kc.bat tools windows-service uninstall --name keycloak</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check status using the Windows Services console (<code>services.msc</code>).</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_logging"><a class="anchor" href="#_logging"></a>Logging</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When Keycloak runs as a service, it is recommended to enable file logging - see <a href="https://www.keycloak.org/nightly/server/logging">Configuring logging</a>.</p>
+</div>
+<div class="paragraph">
+<p>The service wrapper logs (e.g. <code>commons-daemon.YYYY-MM-DD.log</code>) respects the <code>log-path</code> option value during service creation.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuration_changes"><a class="anchor" href="#_configuration_changes"></a>Configuration Changes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To change runtime configuration:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Stop the service: <code>net stop keycloak</code>.</p>
+</li>
+<li>
+<p>Update environment variables or <code>conf/keycloak.conf</code>.</p>
+</li>
+<li>
+<p>Optionally re-run build: <code>bin\kc.bat build [new-options]</code>.</p>
+</li>
+<li>
+<p>Start the service: <code>net start keycloak</code>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_access_denied_errors"><a class="anchor" href="#_access_denied_errors"></a>Access Denied errors</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Ensure the service runs as Local System (default) or that the specified account has "Log on as a service".</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_options_defined_as_environment_variables_are_ignored"><a class="anchor" href="#_options_defined_as_environment_variables_are_ignored"></a>Options defined as environment variables are ignored</h3>
+<div class="paragraph">
+<p>Windows Services run in a separate session (usually as the LocalSystem account) and do not inherit the environment variables of the user who created the service. Define the required <code>KC_*</code> environment variables as system-wide environment variables, so they are available to the service.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_forcefully_terminate_the_service"><a class="anchor" href="#_forcefully_terminate_the_service"></a>Forcefully terminate the service</h3>
+<div class="paragraph">
+<p>If the Apache Commons Daemon wrapper becomes unresponsive:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">taskkill /f /im prunsrv.exe</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use caution — this will affect all Procrun-managed services on the host.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_apache_commons_daemon_configuration_under_the_hood"><a class="anchor" href="#_apache_commons_daemon_configuration_under_the_hood"></a>Apache Commons Daemon configuration under the hood</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When you create the service, the following Apache Commons Daemon Procrun settings are applied:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>StartMode: <code>exe</code> (runs <code>kc.bat</code> as an external process)</p>
+</li>
+<li>
+<p>StartImage: <code>&lt;KEYCLOAK_HOME&gt;\bin\kc.bat</code></p>
+</li>
+<li>
+<p>StartParams: <code>start</code></p>
+</li>
+<li>
+<p>StopMode: <code>exe</code></p>
+</li>
+<li>
+<p>StopImage: <code>&lt;KEYCLOAK_HOME&gt;\bin\kc.bat</code></p>
+</li>
+<li>
+<p>StopParams: <code>stop</code></p>
+</li>
+<li>
+<p>StopTimeout: configurable (default: 30 seconds)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Service configuration is stored in the Windows Registry under:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Apache Software Foundation\ProcRun 2.0\&lt;ServiceName&gt;</pre>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/server/windows-service.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
