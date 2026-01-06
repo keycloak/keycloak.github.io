@@ -1,0 +1,878 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Centralize your observability stack with OpenTelemetry - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Centralize your observability stack with OpenTelemetry">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Learn about OpenTelemetry integration for centralized observability and telemetry data.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/observability/telemetry">
+<meta property="og:url" content="https://www.keycloak.org/observability/telemetry">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#observability">Observability</a></li>
+                    <li class="breadcrumb-item active">Centralize your observability stack with OpenTelemetry</li>
+                </ol>
+            </nav>
+
+
+            <div class="mb-4">
+                <h1>Centralize your observability stack with OpenTelemetry</h1>
+                    <span class="text-muted">Learn about OpenTelemetry integration for centralized observability and telemetry data.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://opentelemetry.io/docs/what-is-opentelemetry/">OpenTelemetry</a> (OTel) is an open-source observability framework designed to provide consistent and reliable ways to collect telemetry data across distributed systems.
+It is a project under the <a href="https://www.cncf.io/projects/opentelemetry/">Cloud Native Computing Foundation (CNCF)</a> as an incubating project.
+Its goal is to provide a unified standard and toolset for instrumenting, generating, and exporting telemetry data from modern applications, making it easier to monitor, debug, and understand complex services.</p>
+</div>
+<div class="paragraph">
+<p>The goal of Keycloak is to support OpenTelemetry Logs, Metrics, and Traces to create a centralized observability stack without any additional deployment overhead.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_general_options"><a class="anchor" href="#_general_options"></a>General options</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides support for global settings of telemetry data export.
+It means that you can configure connection parameters to a single <a href="https://opentelemetry.io/docs/collector/">OpenTelemetry collector</a> that will be used for all supported components.</p>
+</div>
+<div class="paragraph">
+<p>In order to have OpenTelemetry enabled, at least one component needs to be turned on, for example <a href="#traces">Traces</a>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The OpenTelemetry feature is <em>enabled</em> by default. Disable the feature in order to disable OpenTelemetry components.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_endpoint"><a class="anchor" href="#_endpoint"></a>Endpoint</h3>
+<div class="paragraph">
+<p>You can configure the OpenTelemetry collector&#8217;s global endpoint that is shared across all components by using the <code>telemetry-endpoint</code> option.
+The default value is <code>http://localhost:4317</code>.</p>
+</div>
+<div class="paragraph">
+<p>You can change the endpoint via CLI as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --telemetry-endpoint=http://my-otel-endpoint:4317</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_service_name"><a class="anchor" href="#_service_name"></a>Service name</h3>
+<div class="paragraph">
+<p>You can configure the global OpenTelemetry service name used for identifying the exporter of the telemetry data.
+The default service name is <code>keycloak</code>, specified via the <code>telemetry-service-name</code> property, which takes precedence over <code>service.name</code> defined in the <code>telemetry-resource-attributes</code> property.</p>
+</div>
+<div class="paragraph">
+<p>You can change the service name via CLI as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --telemetry-service-name=my-keycloak-iam</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_protocol"><a class="anchor" href="#_protocol"></a>Protocol</h3>
+<div class="paragraph">
+<p>You can configure the global OpenTelemetry transport protocol used as a communication channel between Keycloak and the OpenTelemetry collector.
+The default value is <code>grpc</code>.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak supports these communication protocols:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>grpc</code>  (default)</p>
+</li>
+<li>
+<p><code>http/protobuf</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You can change the protocol via CLI as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --telemetry-protocol=http/protobuf</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_traces"><a class="anchor" href="#_traces"></a>Traces</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/observability/tracing">Root cause analysis with tracing guide</a>.</p>
+</div>
+<div class="paragraph">
+<p>You can override the global OpenTelemetry settings via the Tracing options if you want to export traces to a different OpenTelemetry collector.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_logs"><a class="anchor" href="#_logs"></a>Logs</h2>
+<div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>OpenTelemetry Logs support is
+<strong>Preview</strong>
+and is not fully supported. This feature is disabled by default.</p>
+</div>
+<div class="paragraph">
+<p>To enable start the server with <code>--features=preview</code> or <code>--features=opentelemetry-logs</code></p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The OpenTelemetry feature (<code>opentelemetry</code>) needs to be turned on (by default).
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>It is possible to export Keycloak&#8217;s logs to the OpenTelemetry collector and be managed by various logging backends that support OpenTelemetry.</p>
+</div>
+<div class="sect2">
+<h3 id="_enable_logs"><a class="anchor" href="#_enable_logs"></a>Enable Logs</h3>
+<div class="paragraph">
+<p>You can enable OpenTelemetry Logs via CLI as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --features=opentelemetry-logs --telemetry-logs-enabled=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information on how to set up logging, see the <a href="https://www.keycloak.org/server/logging">Configuring Logging guide</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_log_level"><a class="anchor" href="#_log_level"></a>Log level</h3>
+<div class="paragraph">
+<p>By default, all log levels are exported by Keycloak.
+You can optionally configure the most verbose log level to be exported via the <code>telemetry-logs-level</code> option.</p>
+</div>
+<div class="paragraph">
+<p>For example, if you want only to export <code>WARN</code> and <code>ERROR</code> logs, you can change the log level via the CLI as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --telemetry-logs-level=WARN</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_metrics"><a class="anchor" href="#_metrics"></a>Metrics</h2>
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The OpenTelemetry Metrics feature is currently experimental, and it is not recommended for use in production.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In order for the Metrics feature to function, the OpenTelemetry feature <code>opentelemetry</code> cannot be disabled.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For integrating OpenTelemetry Metrics, Keycloak uses the <a href="https://quarkus.io/guides/telemetry-micrometer-to-opentelemetry">Micrometer-to-OpenTelemetry bridge</a>,
+which provides the functionality to export metrics created by Micrometer to the OpenTelemetry Collector.
+This means that all metrics created via Micrometer or OpenTelemetry metrics will be exported to the OpenTelemetry.</p>
+</div>
+<div class="paragraph">
+<p>There are some <a href="https://quarkus.io/guides/telemetry-micrometer-to-opentelemetry#metric-differences-between-micrometer-and-opentelemetry">API, and Semantic convention differences</a> for Micrometer vs OTel Metrics, so you should check if all required metrics are exported.</p>
+</div>
+<div class="sect2">
+<h3 id="_enable_metrics"><a class="anchor" href="#_enable_metrics"></a>Enable Metrics</h3>
+<div class="paragraph">
+<p>You can enable the OpenTelemetry Metrics via CLI as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --features=opentelemetry-metrics --telemetry-metrics-enabled=true --metrics-enabled=true</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Metrics (<code>metrics-enabled</code>) needs to be enabled as well
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For more information on how to set up metrics, see the configuration options below or visit the <a href="https://www.keycloak.org/observability/configuration-metrics">Gaining insights with metrics guide</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_development_setup"><a class="anchor" href="#_development_setup"></a>Development setup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For development purposes, you can use the <a href="https://github.com/grafana/docker-otel-lgtm">Grafana OTel-LGTM service</a>, containing OpenTelemetry Collector and backends for logs (Loki), metrics (Prometheus), and traces (Tempo).</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/observability/grafana-otel-lgtm.png" alt="grafana otel lgtm">
+</div>
+<div class="title">Figure 1. Service architecture</div>
+</div>
+<div class="paragraph">
+<p>You can start the service by using Docker/Podman as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-shell" data-lang="shell">docker run -p 3000:3000 -p 4317:4317 -p 4318:4318 --rm -ti grafana/otel-lgtm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then, you can navigate to Grafana UI by accessing <code>localhost:3000</code> and then you can explore all the data sent to OpenTelemetry Collector.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-endpoint</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry endpoint to connect to.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-endpoint</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_ENDPOINT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when any of available OpenTelemetry components (Logs, Metrics, Traces) is turned on</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http://localhost:4317</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-protocol</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry protocol used for the communication between server and OpenTelemetry collector.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-protocol</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_PROTOCOL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when any of available OpenTelemetry components (Logs, Metrics, Traces) is turned on</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grpc</code>, <code>http/protobuf</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grpc</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-resource-attributes</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry resource attributes characterize the telemetry producer.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Values in format <code>key1=val1,key2=val2</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-resource-attributes</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_RESOURCE_ATTRIBUTES</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when any of available OpenTelemetry components (Logs, Metrics, Traces) is turned on</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>List</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-service-name</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry service name.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Takes precedence over <code>service.name</code> defined in the <code>telemetry-resource-attributes</code> property.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-service-name</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_SERVICE_NAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when any of available OpenTelemetry components (Logs, Metrics, Traces) is turned on</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>keycloak</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_traces_2"><a class="anchor" href="#_traces_2"></a>Traces</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables the OpenTelemetry tracing.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-enabled</code><br>
+<strong>Env:</strong> <code>KC_TRACING_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when 'opentelemetry' feature is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-endpoint</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry endpoint to connect to for traces.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from the <code>telemetry-endpoint</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-endpoint</code><br>
+<strong>Env:</strong> <code>KC_TRACING_ENDPOINT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http://localhost:4317</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-protocol</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry protocol used for the telemetry data.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from the <code>telemetry-protocol</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-protocol</code><br>
+<strong>Env:</strong> <code>KC_TRACING_PROTOCOL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grpc</code>, <code>http/protobuf</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grpc</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-resource-attributes</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry resource attributes present in the exported trace to characterize the telemetry producer.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Values in format <code>key1=val1,key2=val2</code>. If not given, the value is inherited from the <code>telemetry-resource-attributes</code> option. For more information, check the Tracing guide.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-resource-attributes</code><br>
+<strong>Env:</strong> <code>KC_TRACING_RESOURCE_ATTRIBUTES</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div>
+<div class="paragraph">
+<p><strong>DEPRECATED.</strong>
+Resource attributes are not directly related to Tracing and you should use the Telemetry option which takes precedence. Use: <code>telemetry-resource-attributes</code>.</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>List</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-service-name</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry service name.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Takes precedence over <code>service.name</code> defined in the <code>tracing-resource-attributes</code> property. If not given, the value is inherited from the <code>telemetry-service-name</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-service-name</code><br>
+<strong>Env:</strong> <code>KC_TRACING_SERVICE_NAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div>
+<div class="paragraph">
+<p><strong>DEPRECATED.</strong>
+Service name is not directly related to Tracing and you should use the Telemetry option which takes precedence. Use: <code>telemetry-service-name</code>.</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>keycloak</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_logs_2"><a class="anchor" href="#_logs_2"></a>Logs</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-logs-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables exporting logs to a destination handling OpenTelemetry logs.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-logs-enabled</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_LOGS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when feature 'opentelemetry-logs:v1' is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-logs-endpoint</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry endpoint to export logs to.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from the <code>telemetry-endpoint</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-logs-endpoint</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_LOGS_ENDPOINT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Telemetry Logs functionality ('telemetry-logs-enabled') is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-logs-level</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The most verbose log level exported to the telemetry endpoint.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">For more information, check the Telemetry guide.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-logs-level</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_LOGS_LEVEL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Telemetry Logs functionality ('telemetry-logs-enabled') is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>off</code>, <code>fatal</code>, <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code>, <code>all</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>all</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-logs-protocol</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry protocol used for exporting logs.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from the <code>telemetry-protocol</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-logs-protocol</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_LOGS_PROTOCOL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Telemetry Logs functionality ('telemetry-logs-enabled') is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grpc</code>, <code>http/protobuf</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_metrics_2"><a class="anchor" href="#_metrics_2"></a>Metrics</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>metrics-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose metrics.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If enabled, metrics are available at the <code>/metrics</code> endpoint.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--metrics-enabled</code><br>
+<strong>Env:</strong> <code>KC_METRICS_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-metrics-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables exporting metrics to a destination handling OpenTelemetry metrics.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-metrics-enabled</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_METRICS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics and feature 'opentelemetry-metrics:v1' are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-metrics-endpoint</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry endpoint to connect to for Metrics.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from the <code>telemetry-endpoint</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-metrics-endpoint</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_METRICS_ENDPOINT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics ('metrics-enabled') and Telemetry Metrics functionality ('telemetry-metrics-enabled') are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-metrics-interval</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The interval between the start of two metric export attempts to the destination handling OpenTelemetry metrics data.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It accepts simplified format for time units as java.time.Duration (like 5000ms, 30s, 5m, 1h). If the value is only a number, it represents time in seconds.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-metrics-interval</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_METRICS_INTERVAL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics ('metrics-enabled') and Telemetry Metrics functionality ('telemetry-metrics-enabled') are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>60s</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-metrics-protocol</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry protocol used for the metrics telemetry data.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from the <code>telemetry-protocol</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-metrics-protocol</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_METRICS_PROTOCOL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics ('metrics-enabled') and Telemetry Metrics functionality ('telemetry-metrics-enabled') are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grpc</code>, <code>http/protobuf</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/telemetry.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

@@ -120,6 +120,10 @@ to configure a Keycloak Truststore so that Keycloak is able to perform outgoing 
 <dd>
 <p>Maximum time in milliseconds until establishing a connection times out. Default: Not set.</p>
 </dd>
+<dt class="hdlist1"><strong>connection-request-timeout-millis</strong></dt>
+<dd>
+<p>Maximum time in milliseconds to obtain a connection for a request. Default: 5000ms</p>
+</dd>
 <dt class="hdlist1"><strong>socket-timeout-millis</strong></dt>
 <dd>
 <p>Maximum time of inactivity between two data packets until a socket connection times out, in milliseconds. Default: 5000ms</p>
@@ -165,6 +169,92 @@ to configure a Keycloak Truststore so that Keycloak is able to perform outgoing 
 <p>If an outgoing request requires HTTPS and this configuration option is set to true, you do not have to specify a truststore. This setting should be used only during development and <strong>never in production</strong> because it will disable verification of SSL certificates. Default: false.</p>
 </dd>
 </dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_retry_behavior_for_outgoing_http_requests"><a class="anchor" href="#_configuring_retry_behavior_for_outgoing_http_requests"></a>Configuring retry behavior for outgoing HTTP requests</h2>
+<div class="sectionbody">
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Do not let outgoing retry duration exceed the caller’s timeout. Otherwise, the caller may time out and see an error while Keycloak continues retrying in the background.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Keycloak can automatically retry failed outgoing HTTP requests. This is useful for handling transient network errors or temporary service unavailability. Retry behavior is disabled by default and must be explicitly enabled.</p>
+</div>
+<div class="paragraph">
+<p>The following are the retry configuration options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>max-retries</strong></dt>
+<dd>
+<p>Maximum number of retry attempts for failed HTTP requests. Set to 0 to disable retries. Default: 0.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Retries for requests that have already been sent (for common methods such as GET and POST) are always enabled. Use <code>max-retries</code> to control whether retries are performed.
+</td>
+</tr>
+</table>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>initial-backoff-millis</strong></dt>
+<dd>
+<p>Initial backoff time in milliseconds before the first retry attempt. Default: 1000.</p>
+</dd>
+<dt class="hdlist1"><strong>backoff-multiplier</strong></dt>
+<dd>
+<p>Multiplier for exponential backoff between retry attempts. For example, with an initial backoff of 1000ms and a multiplier of 2.0, the retry delays would be: 1000ms, 2000ms, 4000ms, etc. Default: 2.0.</p>
+</dd>
+<dt class="hdlist1"><strong>use-jitter</strong></dt>
+<dd>
+<p>Whether to apply jitter to backoff times to prevent synchronized retry storms when multiple clients are retrying at the same time. Default: true.</p>
+</dd>
+<dt class="hdlist1"><strong>jitter-factor</strong></dt>
+<dd>
+<p>Jitter factor to apply to backoff times. A value of 0.5 means the actual backoff time will be between 50% and 150% of the calculated exponential backoff time. Default: 0.5.</p>
+</dd>
+</dl>
+</div>
+<div class="listingblock">
+<div class="title">Example of enabling retry behavior</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-connections-http-client-default-max-retries=3 \
+  --spi-connections-http-client-default-initial-backoff-millis=1000 \
+  --spi-connections-http-client-default-backoff-multiplier=2.0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, Keycloak will retry failed HTTP requests up to 3 times with exponential backoff starting at 1000ms and doubling with each retry attempt.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Retry behavior applies to all outgoing HTTP requests made by Keycloak, including OCSP validation, identity provider communication, and other external service calls.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -292,12 +382,14 @@ NO_PROXY=google.com,login.facebook.com</code></pre>
 <table class="tableblock frame-all grid-all stretch options">
 <colgroup>
 <col style="width: 75%;">
-<col style="width: 25%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">Value</th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
 </tr>
 </thead>
 <tbody>
@@ -316,6 +408,7 @@ NO_PROXY=google.com,login.facebook.com</code></pre>
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>List</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 </tbody>

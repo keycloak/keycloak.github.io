@@ -540,7 +540,9 @@ stringData:
 </div>
 <div class="paragraph">
 <p>When running on a Kubernetes or OpenShift environment well-known locations of trusted certificates are included automatically.
-This includes <code>/var/run/secrets/kubernetes.io/serviceaccount/ca.crt</code> and the <code>/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt</code> when present.</p>
+This includes <code>/var/run/secrets/kubernetes.io/serviceaccount/ca.crt</code> and the <code>/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt</code> when present.
+In order to not include <code>/var/run/secrets/kubernetes.io/serviceaccount/ca.crt</code> in Keycloak pods, set the <code>automountServiceAccountToken</code> field in the spec to <code>false</code>
+This is useful if some security policies require that the service account token is not mounted in the pod, but it cannot be <code>false</code> if you plan to use an external infinispan cluster, or if plan to use the Kubernetes service accounts identity provider, or if you have some custom provider logic which expects to implicitly use the Kubernetes API.</p>
 </div>
 </div>
 <div class="sect2">
@@ -579,7 +581,13 @@ spec:
       some.attribute: something
   additionalOptions:
     - name: tracing-jdbc-enabled
-      value: false                            # default 'true'</code></pre>
+      value: false                            # default 'true'
+    - name: tracing-header-My-Custom-header
+      value: keycloak-custom-header
+    - name: tracing-header-Authorization
+      secret:
+        name: tracing-secret
+        key: token</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -759,6 +767,22 @@ spec:
 The Keycloak Operator automatically generates a <code>ServiceMonitor</code> resource for your deployment. In order for the
 <code>ServiceMonitor</code> resource to be created, the <code>monitoring.coreos.com/v1:ServiceMonitor</code> Custom Resource Definition (CRD)
 must be installed on your Kubernetes cluster.</p>
+</div>
+<div class="paragraph">
+<p>A ServiceMonitor is only created if the <code>metrics-enabled</code> option is set.</p>
+</div>
+<div class="listingblock">
+<div class="title">Enable Keycloak metrics</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  additionalOptions:
+    - name: metrics-enabled
+      value: "true"</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>The Operator generates a <code>ServiceMonitor</code> with the following spec:</p>

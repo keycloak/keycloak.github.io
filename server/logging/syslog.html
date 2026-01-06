@@ -1,0 +1,731 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Syslog logging - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Syslog logging">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Send logs to a remote Syslog server">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/server/logging/syslog">
+<meta property="og:url" content="https://www.keycloak.org/server/logging/syslog">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                      <li class="breadcrumb-item"><a href="https://www.keycloak.org/server/logging/introduction">Logging</a></li>
+                    <li class="breadcrumb-item active">Syslog logging</li>
+                </ol>
+            </nav>
+
+
+            <div class="mb-4">
+                <h1>Syslog logging</h1>
+                    <span class="text-muted">Send logs to a remote Syslog server</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides the ability to send logs to a remote Syslog server.
+It uses the protocol defined in <a href="https://datatracker.ietf.org/doc/html/rfc5424">RFC 5424</a>.
+The more specific Syslog handler configuration mentioned below will only take effect when the Syslog logging is enabled.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_the_syslog_handler"><a class="anchor" href="#_enable_the_syslog_handler"></a>Enable the Syslog handler</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To enable logging using Syslog, add it to the list of activated log handlers as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog"</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_application_name"><a class="anchor" href="#_configuring_the_application_name"></a>Configuring the Application Name</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To set a different application name, add the <code>--log-syslog-app-name</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog" --log-syslog-app-name=kc-p-itadmins</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If not set, the application name defaults to <code>keycloak</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_endpoint"><a class="anchor" href="#_configuring_the_endpoint"></a>Configuring the endpoint</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To configure the endpoint(<em>host:port</em>) of your centralized logging system, enter the following command and substitute the values with your specific values:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog" --log-syslog-endpoint=myhost:12345</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the Syslog handler is enabled, the host is using <code>localhost</code> as host value.
+The Default port is <code>514</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_log_level"><a class="anchor" href="#_configuring_the_log_level"></a>Configuring the log level</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Log level for Syslog log handler can be specified by <code>--log-syslog-level</code> property as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-level=warn</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="#Specify log level for each handler">[Specify log level for each handler]</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_protocol"><a class="anchor" href="#_configuring_the_protocol"></a>Configuring the protocol</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Syslog uses TCP as the default protocol for communication.
+To use UDP instead of TCP, add the <code>--log-syslog-protocol</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log="console,syslog" --log-syslog-protocol=udp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The available protocols are: <code>tpc</code>, <code>udp</code>, and <code>ssl-tcp</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_counting_framing"><a class="anchor" href="#_configuring_the_counting_framing"></a>Configuring the counting framing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, Syslog messages sent over TCP or SSL-TCP are prefixed with the message size, as required by certain Syslog receivers.
+This behavior is controlled by the <code>--log-syslog-counting-framing</code> option.</p>
+</div>
+<div class="paragraph">
+<p>To explicitly enable or disable this feature, use the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-counting-framing=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can set the value to one of the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>protocol-dependent</code> (default) – Enable counting framing only when the <code>log-syslog-protocol</code> is <code>tcp</code> or <code>ssl-tcp</code>.</p>
+</li>
+<li>
+<p><code>true</code> – Always enable counting framing by prefixing messages with their size.</p>
+</li>
+<li>
+<p><code>false</code> – Never use counting framing.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Note that using <code>protocol-dependent</code> ensures compatibility with most Syslog servers by enabling the prefix only when required by the protocol.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_log_format"><a class="anchor" href="#_configuring_the_log_format"></a>Configuring the log format</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To set the logging format for a logged line, perform these steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Build your desired format template using the preceding table.</p>
+</li>
+<li>
+<p>Enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-format="'&lt;format&gt;'"</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Note that you need to escape characters when invoking commands containing special shell characters such as <code>;</code> using the CLI. Therefore, consider setting it in the configuration file instead.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Abbreviate the fully qualified category name</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-format="'%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n'"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This example abbreviates the category name to three characters by setting <code>[%c{3.}]</code> in the template instead of the default <code>[%c]</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_syslog_type"><a class="anchor" href="#_configuring_the_syslog_type"></a>Configuring the Syslog type</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Syslog uses different message formats based on particular RFC specifications.
+To change the Syslog type with a different message format, use the <code>--log-syslog-type</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-type=rfc3164</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Possible values for the <code>--log-syslog-type</code> option are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>rfc5424</code>  (default)</p>
+</li>
+<li>
+<p><code>rfc3164</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The preferred Syslog type is <a href="https://datatracker.ietf.org/doc/html/rfc5424">RFC 5424</a>, which obsoletes <a href="https://datatracker.ietf.org/doc/html/rfc3164">RFC 3164</a>, known as BSD Syslog protocol.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_maximum_message_length"><a class="anchor" href="#_configuring_the_maximum_message_length"></a>Configuring the maximum message length</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To set the maximum length of the message allowed to be sent (in bytes), use the <code>--log-syslog-max-length</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-max-length=1536</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The length can be specified in memory size format with the appropriate suffix, like <code>1k</code> or <code>1K</code>.
+The length includes the header and the message.</p>
+</div>
+<div class="paragraph">
+<p>If the length is not explicitly set, the default values are set based on the <code>--log-syslog-type</code> option as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>2048B</code> - for RFC 5424</p>
+</li>
+<li>
+<p><code>1024B</code> - for RFC 3164</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_structured_output"><a class="anchor" href="#_configuring_the_structured_output"></a>Configuring the structured output</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the Syslog log handler sends plain unstructured data to the Syslog server.
+To use structured JSON log output instead, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-output=json</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example Log Message</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">2024-04-05T12:32:20.616+02:00 host keycloak 2788276 io.quarkus - {"timestamp":"2024-04-05T12:32:20.616208533+02:00","sequence":9948,"loggerClassName":"org.jboss.logging.Logger","loggerName":"io.quarkus","level":"INFO","message":"Profile prod activated. ","threadName":"main","threadId":1,"mdc":{},"ndc":"","hostName":"host","processName":"QuarkusEntryPoint","processId":2788276}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When using JSON output, colors are disabled and the format settings set by <code>--log-syslog-format</code> does not apply.</p>
+</div>
+<div class="paragraph">
+<p>To use unstructured logging, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-syslog-output=default</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example Log Message</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">2024-04-05T12:31:38.473+02:00 host keycloak 2787568 io.quarkus - 2024-04-05 12:31:38,473 INFO  [io.quarkus] (main) Profile prod activated.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As you can see, the timestamp is present twice, so you can amend it correspondingly by the <code>--log-syslog-format</code> property.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-app-name</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the app name used when formatting the message in RFC5424 format.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-app-name</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_APP_NAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>keycloak</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-counting-framing</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If <code>true</code>, the message being sent is prefixed with the size of the message.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If <code>protocol-dependent</code>, the default value is <code>true</code> when <code>log-syslog-protocol</code> is <code>tcp</code> or <code>ssl-tcp</code>, otherwise <code>false</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-counting-framing</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_COUNTING_FRAMING</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code>, <code>protocol-dependent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>protocol-dependent</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-endpoint</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the IP address and port of the Syslog server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-endpoint</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_ENDPOINT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>localhost:514</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-format</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set a format specific to Syslog entries.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-format</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_FORMAT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-include-mdc</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include MDC information in the Syslog.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-syslog-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-include-mdc</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_INCLUDE_MDC</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog handler and MDC logging are activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-include-trace</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include tracing information in the Syslog.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-syslog-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-include-trace</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_INCLUDE_TRACE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog handler and Tracing is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-json-format</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the format of the produced JSON.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-json-format</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_JSON_FORMAT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated and output is set to 'json'</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code>, <code>ecs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-level</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the log level for the Syslog handler.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It specifies the most verbose log level for logs shown in the output. It respects levels specified in the <code>log-level</code> option, which represents the maximal verbosity for the whole logging system. For more information, check the Logging guide.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-level</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_LEVEL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>off</code>, <code>fatal</code>, <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code>, <code>all</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>all</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-max-length</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the maximum length, in bytes, of the message allowed to be sent.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The length includes the header and the message. If not set, the default value is 2048 when <code>log-syslog-type</code> is rfc5424 (default) and 1024 when <code>log-syslog-type</code> is rfc3164.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-max-length</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_MAX_LENGTH</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-output</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the Syslog output to JSON or default (plain) unstructured logging.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-output</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_OUTPUT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code>, <code>json</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-protocol</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the protocol used to connect to the Syslog server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-protocol</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_PROTOCOL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code>, <code>udp</code>, <code>ssl-tcp</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-type</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the Syslog type used to format the sent message.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-type</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_TYPE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rfc5424</code>, <code>rfc3164</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>rfc5424</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_asynchronous"><a class="anchor" href="#_asynchronous"></a>Asynchronous</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-async</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Indicates whether to log asynchronously to Syslog.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not set, value from the parent property <code>log-async</code> is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-async</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_ASYNC</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-async-queue-length</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The queue length to use before flushing writing when logging to Syslog.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-async-queue-length</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_ASYNC_QUEUE_LENGTH</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog is activated and asynchronous logging is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>512</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/server/logging/syslog.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

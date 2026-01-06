@@ -1,0 +1,556 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>JWT Authorization Grant - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="JWT Authorization Grant">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Guide for the JWT Authorization Grant specification RFC 7521 / 7523.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/securing-apps/jwt-authorization-grant">
+<meta property="og:url" content="https://www.keycloak.org/securing-apps/jwt-authorization-grant">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                    <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#securing-apps">Securing applications</a></li>
+                    <li class="breadcrumb-item active">JWT Authorization Grant</li>
+                </ol>
+            </nav>
+
+
+            <div class="mb-4">
+                <h1>JWT Authorization Grant</h1>
+                    <span class="text-muted">Guide for the JWT Authorization Grant specification RFC 7521 / 7523.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>JWT Profile for Oauth 2.0 Authorization Grant is
+<strong>Preview</strong>
+and is not fully supported. This feature is disabled by default.</p>
+</div>
+<div class="paragraph">
+<p>To enable start the server with <code>--features=preview</code> or <code>--features=jwt-authorization-grant</code></p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This guide defines how a JWT Bearer Token can be used in Keycloak as an authorization grant. This feature allows clients to send a JWT assertion to request an access token when the client wants to use an existing trust relationship without a direct user-approval step at the authorization server. The assertion is validated solely through the semantics of the JWT (its claims and signature). The trust relationship usually refers to another Identity Provider server (another OIDC server), and allows to obtain a cross-domain or cross-realm access token. In this sense, it is similar to the external to internal request in token exchange V1 (see <a href="https://www.keycloak.org/securing-apps/token-exchange#_external-token-to-internal-token-exchange">Configuring and using token exchange</a> for more information).</p>
+</div>
+<div class="paragraph">
+<p>The JWT Authorization grant is specified by two different RFCs.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Assertion Framework for OAuth 2.0 Client Authentication and Authorization Grants (<a href="https://datatracker.ietf.org/doc/html/rfc7521">RFC 7521</a>). General framework for using assertions as grants.</p>
+</li>
+<li>
+<p>JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants (<a href="https://datatracker.ietf.org/doc/html/rfc7523">RFC 7523</a>). Specifics for JWT assertions.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In short, the JWT Authorization is an OAuth extension grant as defined by OAuth 2.0 <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-4.5">RFC 6749</a> that is sent to the token endpoint. The <strong>grant_type</strong> request parameter must be <code>urn:ietf:params:oauth:grant-type:jwt-bearer</code>. The <strong>assertion</strong> must be a single JWT with some claims that will be validated by the server. The parameter <strong>scope</strong> is optional and maintains the same meaning described by Oauth 2.0 and managed by Keycloak for other grants. If the assertion token is valid for authorization, an access token is returned to the client without any interaction to the authorization endpoint.</p>
+</div>
+<div class="paragraph">
+<p>The trust relationship in Keycloak is defined by an <a href="https://www.keycloak.org/docs/latest/server_admin/#_identity_broker">Identity Provider</a>. Currently two Identity Provider types can manage JWT authorization grants:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>OpenID Connect v1.0 / Keycloak OpenID Connect</p>
+</li>
+<li>
+<p>JWT Authorization Grant</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>OpenID Connect v1.0</strong> (also the <strong>Keycloak OpenID Connect</strong> which is just an extension of the previous type) can be used to define a trust relationship with an external OpenID Provider or OP (an OAuth 2.0 Authentication Servers implementing the OpenID Connect specification). This is the common choice. The received assertion will be processed using the provider configuration to validate the JWT token in terms of claims and signature.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>JWT Authorization Grant</strong> is a new type of Identity Provider in Keycloak to represent a generic trust relationship. Similar to the previous type, its configuration allows to validate the assertion and obtain an access token using the JWT authorization grant.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak requires the <code>sub</code> claim in the assertion to be the user identifier in the external provider. The Keycloak user should be previously linked to the Identity Provider. This way there is a link between the external and the internal user ID.</p>
+</div>
+<div class="paragraph">
+<p>The exact processing that Keycloak performs over the assertion is the following (check the mentioned RFCs for more details about what requirements are needed in the assertion JWT):</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The requester client should be configured to allow JWT authorization grants.</p>
+</li>
+<li>
+<p>The claim <code>iss</code> (issuer) should identify the the Identity Provider (<strong>issuer</strong> configuration option).</p>
+</li>
+<li>
+<p>The Identity Provider should be configured to allow JWT authorization grants and the client should be configured to allow exchanging grants with this IdP.</p>
+</li>
+<li>
+<p>The claim <code>sub</code> (subject) should identify the user in Keycloak. As commented, the <code>sub</code> claim needs to be the ID of the user in the external provider. The user in Keycloak should be linked to the Identity Provider. The linking information will finally locate the user in Keycloak.</p>
+</li>
+<li>
+<p>The claim <code>aud</code> (audience) should identify the Keycloak server (issuer or token endpoint URL).</p>
+</li>
+<li>
+<p>The claim <code>exp</code> (expiration) should be present and validated.</p>
+</li>
+<li>
+<p>Other claims like <code>nbf</code> (not before), <code>iat</code> (issued at) and <code>jti</code> (JWT ID) can be present and should be validated in that case.</p>
+</li>
+<li>
+<p>The JWT should be signed and its signature should be verified with the keys associated to the identity provider in Keycloak.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuration"><a class="anchor" href="#_configuration"></a>Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Only confidential clients can request a JWT authorization grant. In order to allow a client to send such a grant, the client should be configured accordingly. Using the admin console, <strong>clients</strong> &#8594; select your client &#8594; <strong>Settings</strong> tab &#8594; <strong>Capability config</strong> section.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Enable the <strong>JWT Authorization Grant</strong> capability.</p>
+</li>
+<li>
+<p>In the option <strong>Allowed Identity Providers for JWT Authorization Grant</strong>, select all the Identity Providers that this client can use for authorizing grants.</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/jwt-authorization-grant-client-config.png" alt="Client configuration for JWT Authorization Grant">
+</div>
+<div class="title">Figure 1. Client configuration for JWT Authorization Grant</div>
+</div>
+<div class="paragraph">
+<p>The Identity Provider (both types commented in the introduction) needs to also be configured to establish the relationship that will validate the assertion. In <strong>Identity providers</strong> &#8594; select your OIDC or JWT provider &#8594; <strong>Settings</strong> tab &#8594; <strong>Authorization Grant Settings</strong> section.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Enable the option <strong>JWT Authorization Grant</strong> switch.</p>
+</li>
+<li>
+<p>Configure the rest of options as desired.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Allow assertion reuse</strong>: By default Keycloak only allows one-time assertions (re-using is not permitted) and the the <code>jti</code> claim should be present in the JWT (unique identifier of the token).</p>
+</li>
+<li>
+<p><strong>Max allowed assertion expiration</strong>: The maximum expiration the server will allow in the assertion. Default 5 minutes.</p>
+</li>
+<li>
+<p><strong>Assertion signature algorithm</strong>: The signature algorithm that is valid for assertions. If not specified any signature is valid.</p>
+</li>
+<li>
+<p><strong>Allowed clock skew</strong>: Clock skew in seconds that is tolerated when validating identity provider tokens. Default value is zero.</p>
+</li>
+<li>
+<p><strong>Limit access token expiration</strong>: If enabled the access token lifespan will be limited to the expiration of the JWT assertion but only if the JWT assertion expiration is less than the calculated access token expiration.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/jwt-authorization-grant-oidc-provider-config.png" alt="Identity Provider configuration for JWT Authorization Grant">
+</div>
+<div class="title">Figure 2. OIDC Identity Provider configuration for JWT Authorization Grant</div>
+</div>
+<div class="paragraph">
+<p>Besides the previous specific options, both identity provider types need some basic configuration related to assertion and signature validation.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Issuer</strong>: Issuer for the assertion. Required.</p>
+</li>
+<li>
+<p><strong>Use JWKS URL</strong>: Whether a JWKS endpoint URL is used to obtain the keys that will validate the assertion signature. If disabled, the keys should be provider manually by the administrator. The recommended value is On.</p>
+</li>
+<li>
+<p><strong>JWKS URL</strong>: The URL for downloading the signing keys. Required if <strong>Use JWKS URL</strong> is enabled.</p>
+</li>
+<li>
+<p><strong>Validating public key id</strong>: Fixed <code>kid</code> for validating assertion signatures. This option can be left empty to just validate the signature with the configured public key. This option can only be specified if <strong>Use JWKS URL</strong> is disabled and the validating key is defined as a fixed key in PEM format.</p>
+</li>
+<li>
+<p><strong>Validating public key</strong>: The public key in PEM or JWKS format that must be used to verify external IdP signatures. Required if <strong>Use JWKS URL</strong> is disabled.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+When JWT Authorization Grant is configured with the OIDC Identity provider, the signatures on the JWT tokens sent to the token endpoint are always validated. The OIDC identity provider option <strong>Validate Signatures</strong> is ignored for the JWT Authorization Grant as it is used just for validation of the signatures on the tokens retrieved from the OIDC identity provider during authentication of the users with this OIDC identity provider.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_examples"><a class="anchor" href="#_examples"></a>Examples</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is an example request for the JWT Authorization grant that is sent to the token endpoint. The client ID is <code>test-client</code>, it uses a secret to authenticate, and it is configured to allow JWT Authorization Grant to an Identity Provider whose issuer is <code><a href="https://jwt-idp.example.com" class="bare">https://jwt-idp.example.com</a></code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">POST /realms/demo/protocol/openid-connect/token HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+client_id=test-client&amp;
+client_secret=XXXXX&amp;
+grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&amp;
+assertion=eyJhbGci[...redacted...].eyJpc3Mi[...redacted...].J9l-ZhwP[...redacted...]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The important parameter is the <strong>assertion</strong>. Below is an example JSON object that can be encoded to produce the JWT Claims Set used inside the assertion.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "jti":"abcd1234-5678-efgh-ijkl-9012mnopqrst",
+  "iss":"https://jwt-idp.example.com",
+  "sub":"b3588c7e-14cb-46a9-9387-28adfd82f7a4",
+  "aud":"https://keycloak.server/realms/demo",
+  "iat":1764839065,
+  "exp":1764839365,
+  "other-claim":true
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the claims should contain <code>iss</code> that identifies the Identity Provider, <code>sub</code> that contains the user ID in the external system that will locate the Keycloak user using the link to the provider, <code>aud</code> should be Keycloak&#8217;s issuer or token endpoint, <code>jti</code> guarantees one-time use, and <code>exp</code> is mandatory. Other claims can be added to the token.</p>
+</div>
+<div class="paragraph">
+<p>The previous JSON example should be signed and the JWT header should specify the algorithm and the key identifier used to sign it. That key needs to be correctly configured in the Identity Provider (via JWKS URL or manually) to validate the signature.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{"alg":"ES256", "kid":"2AOACLJmd5dQ8HPrDxwpkS-83yBhrzaLWSny9wmnYcY"}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keycloak will validate the request and assertion. If everything is correct, the response will contain an access token ready to be used.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "access_token":"eyJhbG[...redacted...].eyJleH[...redacted...].RFnNEv[...redacted...]",
+  "expires_in":300,
+  "refresh_expires_in":0,
+  "token_type":"Bearer",
+  "not-before-policy":0,
+  "scope":"email profile"
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Following the spec recommendation, the JWT Authorization Grant never issues a refresh token and a <a href="https://www.keycloak.org/docs/latest/server_admin/#_transient-session">transient session</a> is always created. The access token can be used normally in Keycloak through the introspection, user-info or any other endpoint. It will be valid until expired or explicitly revoked by the revocation endpoint.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_to_get_a_valid_token_for_jwt_authorization_grant"><a class="anchor" href="#_how_to_get_a_valid_token_for_jwt_authorization_grant"></a>How to get a valid token for JWT Authorization Grant</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The JWT Authorization Grant feature needs a previous JWT assertion in order to be exchanged for an access token. We can call the external OpenID Connect Provider (OP) <code>domaina</code>, the one that is represented in Keycloak via the Identity Provider. And we can call the Keycloak server that receives the JWT authorization grant <code>domainb</code>. The <code>domaina</code> should somehow issue a JWT that is a valid assertion for <code>domainb</code>.</p>
+</div>
+<div class="paragraph">
+<p>If <code>domaina</code> is a server different to Keycloak, we don&#8217;t know how that initial JWT is obtained. But note that the specification enforces some processing of the assertion to be valid and return the access token. The way the client gets or generates such a JWT assertion in <code>domaina</code> depends completely on <code>domaina</code> server and client.</p>
+</div>
+<div class="paragraph">
+<p>In case the external identity provider is another Keycloak server or realm, Standard Token Exchange can be used to obtain such a token (see <a href="https://www.keycloak.org/securing-apps/token-exchange#_standard-token-exchange">Configuring and using token exchange</a> for more information). When both sides are Keycloak realms, the idea can be summarized in two basic points:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>For <code>domaina</code>, <code>domainb</code> is an audience that can be restricted via token exchange.</p>
+</li>
+<li>
+<p>For <code>domainb</code>, <code>domaina</code> is an Identity Provider that is used to validate the assertion. The user in <code>domainb</code> is also a valid user previously linked to <code>domaina</code> via the identity provider.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>For example, if <code>domaina</code> is a Keycloak realm, the following configuration is available to use Token Exchange to obtain the JWT assertion:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a client that represents <code>domainb</code>. This client can be the same client configured in <code>domainb</code> for the identity provider access.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Client ID</strong>: <a href="http://localhost:8080/realms/domainb" class="bare">http://localhost:8080/realms/domainb</a> (issuer for <code>domainb</code>).</p>
+</li>
+<li>
+<p><strong>Name</strong>: domainb</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/jwt-authorization-grant-oidc-client-domaina.png" alt="Client that represents domainb in domaina">
+</div>
+<div class="title">Figure 3. Client that represents domainb in domaina</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Create a client scope <code>access-domainb</code> to include the correct audience for the token when this scope is requested. An audience mapper for <code>domainb</code> will be added.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Name</strong>: access-domainb</p>
+</li>
+<li>
+<p><strong>Type</strong>: None</p>
+</li>
+<li>
+<p>Only enable <strong>Include in token scope</strong>.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/jwt-authorization-grant-oidc-client-scope-domaina.png" alt="Client scope to include domainb as audience">
+</div>
+<div class="title">Figure 4. Client scope to include domainb as audience</div>
+</div>
+</li>
+<li>
+<p>In the client scope add a mapper:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Type</strong>: Audience</p>
+</li>
+<li>
+<p><strong>Name</strong>: domainb-audience</p>
+</li>
+<li>
+<p><strong>Included Client Audience</strong>:  <a href="http://localhost:8080/realms/domainb" class="bare">http://localhost:8080/realms/domainb</a></p>
+</li>
+<li>
+<p><strong>Add to access token</strong>: On</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/jwt-authorization-grant-oidc-client-scope-mapper.png" alt="Client scope mapper for domainb audience">
+</div>
+<div class="title">Figure 5. Client scope mapper for domainb audience</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>In the client used to do the token exchange assign the previous <code>access-domainb</code> client scope as optional.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This example allows any user to request that client scope. Roles can be used to restrict the scope of the client scope. This way only users with a specific role would be allowed to add the <code>domainb</code> audience.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>With the previous configuration, the client in <code>domaina</code> can request a token exchange including scope <code>access-domainb</code> and restricting the audience to <code><a href="http://localhost:8080/realms/domainb" class="bare">http://localhost:8080/realms/domainb</a></code> (issuer of <code>domainb</code>).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">POST /realms/domaina/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+client_id=clienta&amp;
+client_secret=XXXXX&amp;
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange&amp;
+subject_token_type=urn:ietf:params:oauth:token-type:access_token&amp;
+requested_token_type=urn:ietf:params:oauth:token-type:access_token&amp;
+scope=access-domainb&amp;
+audience=http://localhost:8080/realms/domainb&amp;
+subject_token=$SUBJECT_TOKEN</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The resulting token will be a valid token for JWT Authorization Grant in <code>domainb</code>. So another client defined for <code>domainb</code> can send a JWT Authorization Grant with that assertion.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">POST /realms/domainb/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+client_id=clientb&amp;
+client_secret=YYYYYY&amp;
+grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&amp;
+scope=scope1 scope2
+assertion=$ASSERTION_TOKEN</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_client_policies_and_jwt_authorization_grant"><a class="anchor" href="#_client_policies_and_jwt_authorization_grant"></a>Client policies and JWT Authorization Grant</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>New conditions and executions related to JWT Authorization Grant have been added to <a href="https://www.keycloak.org/docs/latest/server_admin/#_client_policies">clients policies</a> in Keycloak.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Condition <strong>identity-provider-alias</strong>. This condition allows to select requests that involve a specific identity provider alias. A list of aliases can be defined, and the condition evaluates to <code>true</code> if one of the Identity Provider in the list is present. For the moment the condition only manages the JWT Authorization Grant but can be extended for future operations that involve Identity Providers.</p>
+</li>
+<li>
+<p>Executor <strong>downscope-assertion-grant-enforcer</strong>. The executor enforces requested scopes to not exceed the scopes included in the assertion token (claim <code>scope</code> in the JWT). If a scope is requested that is not already present in the assertion, an error is returned. This executor should be used to prevent getting more privileges (scopes or audiences) than the ones granted in the initial assertion JWT (only downscoping is permitted).</p>
+<div class="paragraph">
+<p>The enforcer can be used for any request that uses an assertion parameter. Currently it is used for <code>assertion</code> in the JWT Authorization Grant and <code>subject_token</code> in Standard Token Exchange.</p>
+</div>
+</li>
+<li>
+<p>Executor <strong>jwt-claim-enforcer</strong>. This executor allows to configure extra requirements for claims in the JWT assertion token. For example, if we want the assertion to contain an <code>iat</code> claim or a custom claim with a specific value. The configuration allows us to set any claim name and any claim value (using a java regex). If the claim in the JWT assertion does not match the regex, the request does not proceed and an error is returned.</p>
+<div class="paragraph">
+<p>As the previous executor, for the moment this enforcer can be used for JWT Authorization Grant and the Standard Token exchange.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/securing-apps/jwt-authorization-grant.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

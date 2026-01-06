@@ -140,14 +140,14 @@ gtag('config', 'G-0J2P9316N6');
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">17</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">17.x, 16.x, 15.x, 14.x, 13.x</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">18</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">18.x, 17.x, 16.x, 15.x, 14.x</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">EnterpriseDB Advanced</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">17</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">17</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">18</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">18.x, 17.x</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Amazon Aurora PostgreSQL</p></td>
@@ -457,9 +457,14 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_configuring_unicode_support_for_a_mysql_database"><a class="anchor" href="#_configuring_unicode_support_for_a_mysql_database"></a>Configuring Unicode support for a MySQL database</h3>
+<h3 id="_configuring_unicode_support_for_a_mysqlmariadb_database"><a class="anchor" href="#_configuring_unicode_support_for_a_mysqlmariadb_database"></a>Configuring Unicode support for a MySQL/MariaDB database</h3>
 <div class="paragraph">
-<p>Unicode characters are supported in a MySQL database if the database was created with Unicode support in the VARCHAR and CHAR fields when using the CREATE DATABASE command.</p>
+<p>Unicode characters are supported in a MySQL/MariaDB database if the database was created with Unicode support in the VARCHAR and CHAR fields when using the following SQL statement.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">create database keycloak character set utf8mb3;</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>Note that the utf8mb4 character set is not supported due to different storage requirements for the utf8 character set. See MySQL documentation for details. In that situation, the length restriction on non-special fields does not apply because columns are created to accommodate the number of characters, not bytes.  If the database default character set does not allow Unicode storage, only the special fields allow storing Unicode values.</p>
@@ -467,7 +472,7 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Start MySQL Server.</p>
+<p>Start MySQL/MariaDB Server.</p>
 </li>
 <li>
 <p>Under JDBC driver settings, locate the <strong>JDBC connection settings</strong>.</p>
@@ -509,6 +514,8 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 <div class="sect1">
 <h2 id="_preparing_for_postgresql"><a class="anchor" href="#_preparing_for_postgresql"></a>Preparing for PostgreSQL</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_writer_and_reader_instances"><a class="anchor" href="#_writer_and_reader_instances"></a>Writer and reader instances</h3>
 <div class="paragraph">
 <p>When running PostgreSQL reader and writer instances, Keycloak needs to always connect to the writer instance to do its work.
 When using the original PostgreSQL driver, Keycloak sets the <code>targetServerType</code> property of the PostgreSQL JDBC driver to <code>primary</code> to ensure that it always connects to a writable primary instance and never connects to a secondary reader instance in failover or switchover scenarios.</p>
@@ -529,6 +536,46 @@ When using the original PostgreSQL driver, Keycloak sets the <code>targetServerT
 </td>
 </tr>
 </table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_permissions_of_the_database_user"><a class="anchor" href="#_permissions_of_the_database_user"></a>Permissions of the database user</h3>
+<div class="paragraph">
+<p>Ensure that the database user has <code>SELECT</code> permissions to the following tables to ensure an efficient upgrade: <code>pg_class</code>, <code>pg_namespace</code>.</p>
+</div>
+<div class="paragraph">
+<p>This is used during upgrades of Keycloak to determine an estimated number of rows in a table.
+If Keycloak does not have permissions to access these tables, it will log a warning and proceed with the less efficient <code>SELECT COUNT(*) ...</code> operation during the upgrade to determine the number of rows in tables affected by schema changes.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_secure_your_connection"><a class="anchor" href="#_secure_your_connection"></a>Secure your connection</h3>
+<div class="paragraph">
+<p>To secure your database connection, configure your PostgreSQL server to use TLS and perform full server certificate verification on the client side.</p>
+</div>
+<div class="paragraph">
+<p><strong>Server-side Configuration (Prerequisites):</strong>
+Before using the properties below, ensure your PostgreSQL server is configured for TLS.</p>
+</div>
+<div class="paragraph">
+<p><strong>Client-side Configuration:</strong>
+Secure the connection by adding the following properties to your connection URL:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>db-url=jdbc:postgresql://...?sslmode=verify-full&amp;sslrootcert=/path/to/certificate</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>sslmode=verify-full</code>: Forces TLS and verifies the server&#8217;s identity against the trusted certificate.</p>
+</li>
+<li>
+<p><code>sslrootcert=/path/to/certificate</code>: The path to the server&#8217;s public certificate file on the client machine.</p>
+</li>
+</ul>
+</div>
 </div>
 </div>
 </div>
@@ -591,6 +638,43 @@ When overriding the <code>wrapperPlugins</code> option of the AWS JDBC Driver, a
 </tr>
 </table>
 </div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="title">Secure Your Aurora PostgreSQL Connection</div>
+<div class="paragraph">
+<p>Amazon Aurora PostgreSQL 17.0 or later requires TLS connections by default.</p>
+</div>
+<div class="paragraph">
+<p>While this encrypts the connection, you must still perform a full server certificate verification.
+To do this download the <a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html">certificate bundle</a> for your AWS region.</p>
+</div>
+<div class="paragraph">
+<p>Secure the connection by adding the <code>sslmode=verify-full</code> and <code>sslrootcert=/path/to/certificate</code> properties to your connection URL:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>db-url=jdbc:aws-wrapper:postgresql://...?sslmode=verify-full&amp;sslrootcert=/path/to/certificate</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>sslmode=verify-full</code>: Forces TLS and verifies the server&#8217;s identity against the trusted certificate.</p>
+</li>
+<li>
+<p><code>sslrootcert=/path/to/certificate</code>: The path to the downloaded certificate bundle.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -600,6 +684,22 @@ When overriding the <code>wrapperPlugins</code> option of the AWS JDBC Driver, a
 <p>Beginning with MySQL 8.0.30, MySQL supports generated invisible primary keys for any InnoDB table that is created without an explicit primary key (more information <a href="https://dev.mysql.com/doc/refman/8.0/en/create-table-gipks.html">here</a>).
 If this feature is enabled, the database schema initialization and also migrations will fail with the error message <code>Multiple primary key defined (1068)</code>.
 You then need to disable it by setting the parameter <code>sql_generate_invisible_primary_key</code> to <code>OFF</code> in your MySQL server configuration before installing or upgrading Keycloak.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_preparing_for_ms_sql_server"><a class="anchor" href="#_preparing_for_ms_sql_server"></a>Preparing for MS SQL server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>On MS SQL Server, the default transaction isolation level is <code>READ_COMMITTED</code>, which can lead to deadlocks during high load. Therefore, the recommended isolation level for Keycloak is <code>READ_COMMITTED_SNAPSHOT</code>. This isolation level is used by default on Azure SQL.</p>
+</div>
+<div class="paragraph">
+<p>However, on MS SQL Server, the database isolation level needs to be modified by executing the following command on your database:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">ALTER DATABASE &lt;your-database-name&gt; SET READ_COMMITTED_SNAPSHOT ON;</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -721,7 +821,7 @@ Keycloak logging a warning on startup.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configure_multiple_datasources"><a class="anchor" href="#_configure_multiple_datasources"></a>Configure multiple datasources</h2>
+<h2 id="multiple-datasources"><a class="anchor" href="#multiple-datasources"></a>Configure multiple datasources</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Keycloak allows you to specify additional datasources in case you need to access another database from your extensions. This is useful when using the main Keycloak datasource is not a viable option for storing custom data, like users.</p>
@@ -901,12 +1001,14 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 <table class="tableblock frame-all grid-all stretch options">
 <colgroup>
 <col style="width: 75%;">
-<col style="width: 25%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">Value</th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
 </tr>
 </thead>
 <tbody>
@@ -931,7 +1033,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code> (default), <code>dev-mem</code>, <code>mariadb</code>, <code>mssql</code>, <code>mysql</code>, <code>oracle</code>, <code>postgres</code>, <code>tidb</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code>, <code>dev-mem</code>, <code>mariadb</code>, <code>mssql</code>, <code>mysql</code>, <code>oracle</code>, <code>postgres</code>, <code>tidb</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -951,7 +1054,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -974,6 +1078,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -997,7 +1102,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>10000</code></span> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10000</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1017,6 +1123,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1037,6 +1144,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1057,6 +1165,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1077,7 +1186,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>100</code></span> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>100</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1097,6 +1207,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1117,6 +1228,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1140,6 +1252,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1163,6 +1276,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1186,6 +1300,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1209,6 +1324,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1232,6 +1348,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1252,6 +1369,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1272,7 +1390,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1281,12 +1400,14 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 <table class="tableblock frame-all grid-all stretch options">
 <colgroup>
 <col style="width: 75%;">
-<col style="width: 25%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">Value</th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
 </tr>
 </thead>
 <tbody>
@@ -1308,7 +1429,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1328,6 +1450,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1345,7 +1468,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1366,6 +1490,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code>, <code>dev-mem</code>, <code>mariadb</code>, <code>mssql</code>, <code>mysql</code>, <code>oracle</code>, <code>postgres</code>, <code>tidb</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1385,7 +1510,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>10000</code></span> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10000</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1405,6 +1531,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1425,6 +1552,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1445,7 +1573,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="options-default"><code>100</code></span> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>100</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1465,6 +1594,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1485,6 +1615,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1505,6 +1636,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1525,6 +1657,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1545,6 +1678,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1565,6 +1699,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1585,6 +1720,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1605,6 +1741,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
@@ -1622,7 +1759,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div>
 </div>
 </div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code> (default), <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
 </tr>
 </tbody>
 </table>
