@@ -9,6 +9,659 @@
   <language>en-us</language>
   <category>Keycloak/SSO/Identity and Access Management</category>
       <item>
+        <title>Setting Up Keycloak as a Credential Issuer with OpenID4VCI</title>
+        <link>https://www.keycloak.org/2026/01/issue-credentials-over-openid4vci</link>
+        <description>&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Before configuring Keycloak, it is helpful to understand its role in decentralized identity ecosystems. As a verifiable credential issuer, Keycloak can issue digitally signed credentials using the &lt;a href=&quot;https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html&quot;&gt;OpenID for Verifiable Credential Issuance&lt;/a&gt; (OpenID4VCI) protocol, allowing relying parties (also known as verifiers) to independently verify them without contacting the issuer.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Keycloak implements OpenID4VCI, enabling the issuance of verifiable credentials (VCs) as digital proofs of identity or attributes. Configuring this functionality requires consistent setup across the realm, clients, and issuable credentials (client scopes).&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For example, consider the following scenario: The &lt;a href=&quot;https://github.com/keycloak/keycloak-oauth-sig&quot;&gt;Keycloak OAuth SIG team&lt;/a&gt; wants to issue verifiable membership credentials to its members, including their name and email, which can later be presented at onsite or virtual events as proof of active membership.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;admonitionblock note&quot;&gt;
+&lt;table&gt;
+&lt;tr&gt;
+&lt;td class=&quot;icon&quot;&gt;
+&lt;i class=&quot;fa icon-note&quot; title=&quot;Note&quot;&gt;&lt;/i&gt;
+&lt;/td&gt;
+&lt;td class=&quot;content&quot;&gt;
+At the time of writing this blog, Keycloak&amp;#8217;s support for OpenID4VCI is still experimental. This guide uses the &lt;a href=&quot;https://www.keycloak.org/downloads.html&quot;&gt;&lt;strong&gt;Keycloak 26.5.0 release&lt;/strong&gt;&lt;/a&gt;. The feature is under active development and is expected to be promoted to preview in the future.
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_introduction_to_openid4vci_openid4vp&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_introduction_to_openid4vci_openid4vp&quot;&gt;&lt;/a&gt;Introduction to OpenID4VCI &amp;amp; OpenID4VP&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;OpenID4VCI is a protocol developed by the OpenID Foundation that extends the OAuth 2.0 framework to support the secure and interoperable issuance of Verifiable Credentials (VCs). VCs are digital, tamper-evident representations of information, such as identity attributes or qualifications, which can be cryptographically verified without needing to contact the issuer at verification time.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;While this guide primarily focuses on &lt;strong&gt;OpenID for Verifiable Credential Issuance (OpenID4VCI)&lt;/strong&gt;, the overall trust architecture also includes &lt;strong&gt;OpenID for Verifiable Presentations (OpenID4VP)&lt;/strong&gt;, which governs how holders present credentials to verifiers. Together, these protocols enable decentralized identity ecosystems in which users (holders) retain control of their data and can share it selectively with verifiers.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/triangle-of-trust.png&quot; alt=&quot;Triangle of trust or Issuer-Holder-Verifier model&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 1. Triangle of trust or Issuer-Holder-Verifier model&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In this model:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Issuer ↔ Holder&lt;/strong&gt; interactions are governed by &lt;strong&gt;OpenID4VCI&lt;/strong&gt;, covering credential issuance.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Holder ↔ Verifier&lt;/strong&gt; interactions are governed by &lt;strong&gt;OpenID4VP&lt;/strong&gt;, covering credential presentation and verification.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;From a privacy perspective, this separation of concerns is fundamental. By decoupling &lt;strong&gt;credential issuance&lt;/strong&gt; from &lt;strong&gt;credential presentation&lt;/strong&gt;, issuers are unable to track where, when, or how a holder uses their credentials. This architecture prevents correlation and profiling, and ensures that users remain in control of how their data is shared.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_why_use_openid4vci&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_why_use_openid4vci&quot;&gt;&lt;/a&gt;Why Use OpenID4VCI&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The primary motivations for adopting OpenID4VCI include:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Interoperability&lt;/strong&gt;: Builds on established OpenID Connect (OIDC) standards, simplifying integration with existing identity providers.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Privacy and Security&lt;/strong&gt;: Supports selective disclosure (e.g., proving age without revealing birthdate) and offline verification.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Compliance&lt;/strong&gt;: Aligned with regulations like eIDAS 2.0.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Efficiency&lt;/strong&gt;: Leverages OIDC mechanisms to streamline issuance while maintaining trust in the &quot;triangle of trust&quot; model (Issuer-Holder-Verifier).&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_verifiable_credential_formats&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_verifiable_credential_formats&quot;&gt;&lt;/a&gt;Verifiable Credential Formats&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;OpenID4VCI supports multiple credential formats, which define how verifiable credentials are encoded and issued.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-13.html&quot;&gt;SD-JWT VC&lt;/a&gt; – Selective Disclosure JSON Web Token Verifiable Credential&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href=&quot;https://identity.foundation/jwt-vc-presentation-profile/&quot;&gt;JWT VC&lt;/a&gt; – JSON Web Token Verifiable Credential&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.iso.org/standard/69084.html&quot;&gt;mDL/mdoc&lt;/a&gt; – Mobile driver’s license / mobile document format&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;These formats allow issuers to provide portable, verifiable digital proofs that support selective disclosure and offline verification in decentralized identity ecosystems.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;&lt;strong&gt;Keycloak currently supports both SD-JWT VC and JWT VC for issuance&lt;/strong&gt;. mDL/mdoc, which is part of the OpenID4VCI specification, is expected to be supported in the future.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_concrete_use_cases_enabled_by_openid4vci&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_concrete_use_cases_enabled_by_openid4vci&quot;&gt;&lt;/a&gt;Concrete Use-Cases Enabled by OpenID4VCI&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Verifiable credentials open a variety of real-world applications. Examples include:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Governments or non-government organisations issuing digital identity cards or driver’s licenses that citizens can present when booking hotels, opening bank accounts, or accessing public services, while revealing only the information necessary for the transaction (e.g., age or residency) without exposing full personal details.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;City councils issuing verifiable birth certificates that universities and hospitals can validate without a central lookup.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Universities issuing digital diplomas that employers can instantly verify for authenticity.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Companies issuing employee badges as verifiable credentials for office access or remote authentication.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Event organizers issuing verifiable tickets that can be validated offline.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Professional associations issuing membership credentials such as in our OAuth SIG example for verifying access to gated resources or conference venues.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Digital movie or event tickets that are tamper-evident and can be verified offline.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;These examples illustrate the variety of situations where verifiable credentials remove the need for direct communication between verifier and issuer while preserving trust.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_key_flows_in_openid4vci&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_key_flows_in_openid4vci&quot;&gt;&lt;/a&gt;Key Flows in OpenID4VCI&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;OpenID4VCI defines two primary flows for credential issuance: the &lt;strong&gt;Authorization Code Flow&lt;/strong&gt; and the &lt;strong&gt;Pre-Authorized Code Flow&lt;/strong&gt;. These flows determine how a wallet (holder’s application) obtains an access token to request a VC from the issuer.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect3&quot;&gt;
+&lt;h4 id=&quot;_authorization_code_flow&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_authorization_code_flow&quot;&gt;&lt;/a&gt;Authorization Code Flow&lt;/h4&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The Authorization Code Flow is &lt;strong&gt;interactive&lt;/strong&gt; and requires the holder to authenticate and consent at the issuer’s authorization endpoint. It is ideal for scenarios where explicit user approval is required, or additional claims must be collected.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;&lt;strong&gt;Steps:&lt;/strong&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;olist arabic&quot;&gt;
+&lt;ol class=&quot;arabic&quot;&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Wallet&lt;/strong&gt; sends an Authorization Request to the &lt;strong&gt;Issuer’s Authorization Endpoint&lt;/strong&gt;, requesting credentials.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Issuer&lt;/strong&gt; authenticates the &lt;strong&gt;User&lt;/strong&gt; and requests consent for the issuance.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;User&lt;/strong&gt; provides credentials and grants consent.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Issuer&lt;/strong&gt; returns an &lt;strong&gt;Authorization Code&lt;/strong&gt; to the Wallet.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Wallet&lt;/strong&gt; exchanges the code at the &lt;strong&gt;Issuer Token Endpoint&lt;/strong&gt; for an &lt;strong&gt;Access Token&lt;/strong&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Issuer&lt;/strong&gt; returns the &lt;strong&gt;Access Token&lt;/strong&gt; to the Wallet.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Wallet&lt;/strong&gt; requests the &lt;strong&gt;Verifiable Credential&lt;/strong&gt; from the &lt;strong&gt;Issuer Credential Endpoint&lt;/strong&gt; using the Access Token.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Issuer&lt;/strong&gt; returns the &lt;strong&gt;VC&lt;/strong&gt; to the Wallet.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/authorization-code-flow.png&quot; alt=&quot;Credential issuance via Authorization Code Flow&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 2. Credential issuance via Authorization Code Flow&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect3&quot;&gt;
+&lt;h4 id=&quot;_pre_authorized_code_flow&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_pre_authorized_code_flow&quot;&gt;&lt;/a&gt;Pre-Authorized Code Flow&lt;/h4&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The Pre-Authorized Code Flow is &lt;strong&gt;non-interactive&lt;/strong&gt;. The issuer pre-authenticates and authorizes the user, providing a &lt;strong&gt;pre-authorized code&lt;/strong&gt; (often via QR code). It is faster and suitable for pre-approved credential issuance.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;&lt;strong&gt;Steps:&lt;/strong&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;olist arabic&quot;&gt;
+&lt;ol class=&quot;arabic&quot;&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Issuer&lt;/strong&gt; provides a &lt;strong&gt;Pre-Authorized Code&lt;/strong&gt; to the &lt;strong&gt;Wallet&lt;/strong&gt; (e.g., via QR code or link).&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Wallet&lt;/strong&gt; exchanges the code at the &lt;strong&gt;Issuer Token Endpoint&lt;/strong&gt; for an &lt;strong&gt;Access Token&lt;/strong&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Issuer&lt;/strong&gt; returns the &lt;strong&gt;Access Token&lt;/strong&gt; to the Wallet.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Wallet&lt;/strong&gt; requests the &lt;strong&gt;Verifiable Credential&lt;/strong&gt; from the &lt;strong&gt;Issuer Credential Endpoint&lt;/strong&gt; using the Access Token.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;strong&gt;Issuer&lt;/strong&gt; returns the &lt;strong&gt;VC&lt;/strong&gt; to the Wallet.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/pre-authorized-code-flow.png&quot; alt=&quot;Credential issuance via Pre-Authorized Code Flow&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 3. Credential issuance via Pre-Authorized Code Flow&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Now that we have covered the technical flows, the rest of this guide walks through configuring Keycloak to issue verifiable credentials using the &lt;strong&gt;Pre-Authorized Code Flow&lt;/strong&gt;, including realm, client scope, and client-level setup.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_configuring_keycloak_for_openid4vci&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_configuring_keycloak_for_openid4vci&quot;&gt;&lt;/a&gt;Configuring Keycloak for OpenID4VCI&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;OpenID4VCI in Keycloak is offered via the feature flag &lt;code&gt;oid4vc-vci&lt;/code&gt;, which consequently needs to be enabled at startup.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;--features=oid4vc-vci&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;That said, we now assume that you have a running Keycloak instance with the &lt;code&gt;oid4vc-vci&lt;/code&gt; feature flag enabled.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Beyond enabling the feature flag, the following configuration steps need to be taken consistently, in accordance with your use case:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Configure OpenID4VCI at the realm level&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Configure an issuable verifiable credential (as a dedicated client scope)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Enable and configure OpenID4VCI at the client level&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Because some configurations are not yet supported via the Keycloak Admin Console, we may often use the Admin REST API to communicate required configurations.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_configuring_openid4vci_at_the_realm_level&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_configuring_openid4vci_at_the_realm_level&quot;&gt;&lt;/a&gt;Configuring OpenID4VCI at the realm level&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Let&amp;#8217;s assume you have already created a realm named &lt;code&gt;oauth-sig-realm&lt;/code&gt; to represent the OAuth SIG group, and that a couple of users have also been created in this realm, each with a password assigned, to represent members of the group.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In addition, any user who is intended to create credential offers must be granted the built-in &lt;code&gt;credential-offer-create&lt;/code&gt; role. This role is provided by the OpenID4VCI extension and does not need to be created manually. Assigning it ensures that only authorized users can generate credential offers, maintaining the security of the issuance process.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/screenshot-realm-and-users.png&quot; alt=&quot;Screenshot: Realm and Users&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 4. Screenshot: Realm and Users&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The behavior of OpenID4VCI across the entire realm can be modulated via realm attributes.
+On the Admin Console, find the &lt;strong&gt;OID4VCI Attributes&lt;/strong&gt; section under the &lt;strong&gt;Realm Settings &amp;gt; Tokens&lt;/strong&gt; tab.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/screenshot-realm-config-oid4vci-attributes.png&quot; alt=&quot;Screenshot: OID4VCI Attributes&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 5. Screenshot: OID4VCI Attributes&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Sensible defaults apply out of the box, but for the sake of this demo, we would want, for instance, to increase the value of &lt;strong&gt;Pre-Authorized Code Lifespan&lt;/strong&gt; to 3 minutes so that the issuance flow expires less quickly.
+To learn more about the &lt;strong&gt;Nonce Lifetime&lt;/strong&gt; and other realm attributes for OpenID4VCI, please refer to the main &lt;a href=&quot;https://www.keycloak.org/docs/26.5.0/server_admin/index.html#_oid4vci&quot;&gt;Keycloak documentation&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Lastly, because EC cryptography is highly encouraged in the OpenID4VC ecosystem, we also invite you to add a &lt;strong&gt;P-256 Elliptic Curve key pair&lt;/strong&gt; to the realm&amp;#8217;s set of keys under &lt;strong&gt;Realm Settings &amp;gt; Keys &amp;gt; Providers&lt;/strong&gt;.
+This will later enable configuring the signing of issued VCs with algorithm &lt;code&gt;ES256&lt;/code&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/screenshot-realm-ecdsa-generated-provider.png&quot; alt=&quot;Screenshot: Adding ECDSA Key Provider&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 6. Screenshot: Adding ECDSA Key Provider&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_configuring_an_issuable_verifiable_credential_as_a_dedicated_client_scope&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_configuring_an_issuable_verifiable_credential_as_a_dedicated_client_scope&quot;&gt;&lt;/a&gt;Configuring an issuable verifiable credential (as a dedicated client scope)&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Different credential types can be configured for issuance depending on what data the credential should embed, what format it should have, or other criteria.
+Each credential type is configured as a dedicated client scope of protocol type &quot;OpenID for Verifiable Credentials&quot;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;We will configure our membership credential to be issued as an SD-JWT credential carrying a user&amp;#8217;s first name, last name, and email.
+Each claim to be added to the credential requires a corresponding protocol mapper from the User Model to the credential.
+Other fields such as the time of issuance or a unique identifier for the credential are supported via other types of protocol mappers.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Since we will be using the Admin REST API to configure the client scope, we first need to obtain a valid Admin Token from the &lt;code&gt;master&lt;/code&gt; realm to authorize our requests.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;ADMIN_TOKEN=$(curl -s -X POST &quot;http://&amp;lt;keycloak.instance&amp;gt;/realms/master/protocol/openid-connect/token&quot; \
+  -H &quot;Content-Type: application/x-www-form-urlencoded&quot; \
+  -d &quot;username=&amp;lt;admin-username&amp;gt;&quot; \
+  -d &quot;password=&amp;lt;admin-password&amp;gt;&quot; \
+  -d &quot;grant_type=password&quot; \
+  -d &quot;client_id=admin-cli&quot; | jq -r &#39;.access_token&#39; )
+echo &quot;Admin Token obtained: $ADMIN_TOKEN&quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Now, let&amp;#8217;s proceed with adding the membership credential type as a dedicated client scope using the Admin REST API.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;curl -X POST &quot;http://&amp;lt;keycloak.instance&amp;gt;/admin/realms/oauth-sig-realm/client-scopes&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer $ADMIN_TOKEN&quot; \
+  -d &#39;{
+    &quot;name&quot;: &quot;membership-credential&quot;,
+    &quot;protocol&quot;: &quot;oid4vc&quot;,
+    &quot;attributes&quot;: {
+      &quot;include.in.token.scope&quot;: &quot;true&quot;,
+      &quot;vc.format&quot;: &quot;dc+sd-jwt&quot;,
+      &quot;vc.verifiable_credential_type&quot;: &quot;https://credentials.example.com/oauth-sig-membership&quot;,
+      &quot;vc.credential_signing_alg&quot;: &quot;ES256&quot;,
+      &quot;vc.display&quot;: &quot;[{\&quot;name\&quot;: \&quot;OAuth SIG Membership\&quot;, \&quot;locale\&quot;:\&quot;en\&quot;}]&quot;,
+      &quot;vc.credential_build_config.token_jws_type&quot;: &quot;dc+sd-jwt&quot;
+    },
+    &quot;protocolMappers&quot;: [
+      {
+        &quot;name&quot;: &quot;given_name-mapper&quot;,
+        &quot;protocol&quot;: &quot;oid4vc&quot;,
+        &quot;protocolMapper&quot;: &quot;oid4vc-user-attribute-mapper&quot;,
+        &quot;config&quot;: {
+          &quot;claim.name&quot;: &quot;given_name&quot;,
+          &quot;userAttribute&quot;: &quot;firstName&quot;,
+          &quot;vc.display&quot;: &quot;[{\&quot;name\&quot;:\&quot;Given Name\&quot;,\&quot;locale\&quot;:\&quot;en\&quot;}]&quot;
+        }
+      },
+      {
+        &quot;name&quot;: &quot;family_name-mapper&quot;,
+        &quot;protocol&quot;: &quot;oid4vc&quot;,
+        &quot;protocolMapper&quot;: &quot;oid4vc-user-attribute-mapper&quot;,
+        &quot;config&quot;: {
+          &quot;claim.name&quot;: &quot;family_name&quot;,
+          &quot;userAttribute&quot;: &quot;lastName&quot;,
+          &quot;vc.display&quot;: &quot;[{\&quot;name\&quot;:\&quot;Family Name\&quot;,\&quot;locale\&quot;:\&quot;en\&quot;}]&quot;
+        }
+      },
+      {
+        &quot;name&quot;: &quot;email-mapper&quot;,
+        &quot;protocol&quot;: &quot;oid4vc&quot;,
+        &quot;protocolMapper&quot;: &quot;oid4vc-user-attribute-mapper&quot;,
+        &quot;config&quot;: {
+          &quot;claim.name&quot;: &quot;email&quot;,
+          &quot;userAttribute&quot;: &quot;email&quot;,
+          &quot;vc.display&quot;: &quot;[{\&quot;name\&quot;:\&quot;Email\&quot;,\&quot;locale\&quot;:\&quot;en\&quot;}]&quot;
+        }
+      },
+      {
+        &quot;name&quot;: &quot;iat-mapper&quot;,
+        &quot;protocol&quot;: &quot;oid4vc&quot;,
+        &quot;protocolMapper&quot;: &quot;oid4vc-issued-at-time-claim-mapper&quot;,
+        &quot;config&quot;: {
+          &quot;claim.name&quot;: &quot;iat&quot;,
+          &quot;truncateToTimeUnit&quot;: &quot;HOURS&quot;,
+          &quot;valueSource&quot;: &quot;COMPUTE&quot;
+        }
+      }
+    ]
+  }&#39;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Commenting on the above configuration:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;code&gt;vc.format&lt;/code&gt; attribute defines the credential format (e.g. &lt;code&gt;dc+sd-jwt&lt;/code&gt;).&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;code&gt;vc.verifiable_credential_type&lt;/code&gt; attribute defines the value of the &lt;code&gt;vct&lt;/code&gt; claim inside the credential.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;code&gt;vc.credential_signing_alg&lt;/code&gt; attribute specifies the cryptographic algorithm used to sign the credential.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;All &lt;code&gt;vc.display&lt;/code&gt; entries are intended to be used by a wallet to display intelligible descriptions.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;To learn more about other used or available configuration attributes, please refer to the main &lt;a href=&quot;https://github.com/keycloak/keycloak/blob/main/docs/documentation/server_admin/topics/oid4vci/vc-issuer-configuration.adoc#create-client-scopes-with-mappers&quot;&gt;Keycloak documentation&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Verify that the client scope was created successfully by checking the Admin Console under &lt;strong&gt;Client Scopes&lt;/strong&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Additionally, check the Credential Issuer Metadata Endpoint by navigating to &lt;strong&gt;Realm Settings&lt;/strong&gt;, toggling the &lt;strong&gt;Verifiable Credentials&lt;/strong&gt; option, and saving the changes. Once done, the endpoint will be listed, allowing you to verify that the newly created credential type appears among the issuable credentials, as shown below.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/screenshot-realm-verifiable-credentials.png&quot; alt=&quot;Enable Verifiable Credentials in Realm Settings&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 7. Screenshot: Enable Verifiable Credentials in Realm Settings&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The credential type should appear in the metadata like the following:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-json5&quot; data-lang=&quot;json5&quot;&gt;{
+  // ...
+  &quot;credential_configurations_supported&quot;: {
+    &quot;membership-credential&quot;: {
+      &quot;id&quot;: &quot;membership-credential&quot;,
+      &quot;format&quot;: &quot;dc+sd-jwt&quot;,
+      &quot;scope&quot;: &quot;membership-credential&quot;,
+      &quot;cryptographic_binding_methods_supported&quot;: [
+        &quot;jwk&quot;
+      ],
+      &quot;credential_signing_alg_values_supported&quot;: [
+        &quot;ES256&quot;
+      ],
+      &quot;vct&quot;: &quot;https://credentials.example.com/oauth-sig-membership&quot;,
+      // ...
+    }
+  }
+  // ...
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_enabling_openid4vci_at_the_client_level&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_enabling_openid4vci_at_the_client_level&quot;&gt;&lt;/a&gt;Enabling OpenID4VCI at the client level&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Next, let&amp;#8217;s create a new client in the &lt;code&gt;oauth-sig-realm&lt;/code&gt; realm to represent an application that members of the OAuth SIG will use to request and receive their membership credentials.
+We will name this client &lt;code&gt;oauth-sig-client&lt;/code&gt; and configure it as a standard OpenID Connect client.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;During client creation, make sure to check the &lt;strong&gt;Direct Access Grants&lt;/strong&gt; box, as we will use the &lt;strong&gt;Resource Owner Password Credentials&lt;/strong&gt; flow to obtain a user access token in a later step. All other fields are left unchanged.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/screenshot-client-creation.png&quot; alt=&quot;Screenshot: Client Creation&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 8. Screenshot: Client Creation&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;One important point to note is that clients must explicitly enable OpenID4VCI to be able to use it.
+Navigate to the &lt;strong&gt;Advanced&lt;/strong&gt; tab of the &lt;code&gt;oauth-sig-client&lt;/code&gt; client and toggle the &lt;strong&gt;Enable OID4VCI&lt;/strong&gt; switch under the &lt;strong&gt;OpenID for Verifiable Credentials&lt;/strong&gt; section.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/screenshot-client-enable-oid4vci.png&quot; alt=&quot;Screenshot: Enable OID4VCI on Client&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 9. Screenshot: Enable OID4VCI on Client&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Finally, we need to assign the previously created &lt;code&gt;membership-credential&lt;/code&gt; client scope to the &lt;code&gt;oauth-sig-client&lt;/code&gt; client. To do this, navigate to the &lt;strong&gt;Client Scopes&lt;/strong&gt; tab of the &lt;code&gt;oauth-sig-client&lt;/code&gt; client and add &lt;code&gt;membership-credential&lt;/code&gt; as an &lt;strong&gt;Optional Client Scope&lt;/strong&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/screenshot-assign-credential-type-to-client.png&quot; alt=&quot;Assigning membership-credential client scope to the client&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 10. Screenshot: Assigning membership-credential client scope to the client&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_obtaining_a_user_access_token&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_obtaining_a_user_access_token&quot;&gt;&lt;/a&gt;Obtaining a User Access Token&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Before obtaining the user access token, ensure that the user has the &lt;code&gt;credential-offer-create&lt;/code&gt; role, as only users with this role can create credential offers.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;With the client configured and the user&amp;#8217;s password set, we can now request a &lt;strong&gt;user access token&lt;/strong&gt;. This token will later be used to authorize the credential offer request.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;USER_TOKEN=$(curl -s -X POST &quot;http://&amp;lt;keycloak.instance&amp;gt;/realms/oauth-sig-realm/protocol/openid-connect/token&quot; \
+  -H &quot;Content-Type: application/x-www-form-urlencoded&quot; \
+  -d &quot;username=&amp;lt;user-username&amp;gt;&quot; \
+  -d &quot;password=&amp;lt;user-password&amp;gt;&quot; \
+  -d &quot;grant_type=password&quot; \
+  -d &quot;client_id=oauth-sig-client&quot; | jq -r &#39;.access_token&#39; )
+echo &quot;User Access Token obtained: $USER_TOKEN&quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Now that we have a &lt;strong&gt;user access token&lt;/strong&gt; issued to the user with the &lt;code&gt;credential-offer-create&lt;/code&gt; role, we can use it to request a credential offer from the issuer in the next step.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_retrieving_a_credential_offer_to_start_the_issuance_flow&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_retrieving_a_credential_offer_to_start_the_issuance_flow&quot;&gt;&lt;/a&gt;Retrieving a credential offer to start the issuance flow&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For Pre-Authorized Code flows, OpenID4VCI issuance can be initiated by retrieving a credential offer from Keycloak at the Credential Offer Endpoint. The endpoint requires a valid user access token and the username of the target user for whom the pre-authorized offer will be generated.
+In our case, we will be using the same user for both credential offer creation and retrieval.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-sh&quot; data-lang=&quot;sh&quot;&gt;curl -X GET &quot;http://&amp;lt;keycloak.instance&amp;gt;/realms/oauth-sig-realm/protocol/oid4vc/credential-offer-uri?credential_configuration_id=membership-credential&amp;amp;type=qr-code&amp;amp;username=&amp;lt;username&amp;gt;&quot; \
+  -H &quot;Authorization: Bearer $USER_TOKEN&quot; \
+  --output credential-offer-qr.png&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;admonitionblock note&quot;&gt;
+&lt;table&gt;
+&lt;tr&gt;
+&lt;td class=&quot;icon&quot;&gt;
+&lt;i class=&quot;fa icon-note&quot; title=&quot;Note&quot;&gt;&lt;/i&gt;
+&lt;/td&gt;
+&lt;td class=&quot;content&quot;&gt;
+Replace &lt;code&gt;&amp;lt;username&amp;gt;&lt;/code&gt; with the user you created earlier.
+The QR code image is saved as &lt;code&gt;credential-offer-qr.png&lt;/code&gt;. Open this file and use your wallet to redeem the credential.
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;With the query parameter &lt;code&gt;type=qr-code&lt;/code&gt;, the endpoint returns a &lt;strong&gt;direct binary representation of the QR code image&lt;/strong&gt;. If omitted, the endpoint returns JSON, which requires extra steps to construct the QR code from the offer data.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/qrcode-generation-overview.png&quot; alt=&quot;QR Code Generation Overview&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 11. QR Code Generation Overview&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Upon scanning the QR code with a compatible wallet, a membership credential is issued to the requesting user.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_️_wallet_compatibility_notice&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_️_wallet_compatibility_notice&quot;&gt;&lt;/a&gt;⚠️ Wallet Compatibility Notice&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Keycloak implements the &lt;strong&gt;final OpenID4VCI specification&lt;/strong&gt; and includes a limited &lt;strong&gt;Draft-15 compatibility patch&lt;/strong&gt; with partial support.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Tested Draft-15 wallets that work with the compatibility patch:&lt;/p&gt;
+&lt;/div&gt;
+&lt;table class=&quot;tableblock frame-all grid-all stretch&quot;&gt;
+&lt;colgroup&gt;
+&lt;col style=&quot;width: 50%;&quot;&gt;
+&lt;col style=&quot;width: 50%;&quot;&gt;
+&lt;/colgroup&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th class=&quot;tableblock halign-left valign-top&quot;&gt;Wallet&lt;/th&gt;
+&lt;th class=&quot;tableblock halign-left valign-top&quot;&gt;Compatibility&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;strong&gt;Heidi Wallet&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;✅ Works via Draft-15 compatibility patch&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;strong&gt;Valera Wallet&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;✅ Works via Draft-15 compatibility patch&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;strong&gt;Lissi Wallet&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;✅ Works via Draft-15 compatibility patch&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class=&quot;admonitionblock note&quot;&gt;
+&lt;table&gt;
+&lt;tr&gt;
+&lt;td class=&quot;icon&quot;&gt;
+&lt;i class=&quot;fa icon-note&quot; title=&quot;Note&quot;&gt;&lt;/i&gt;
+&lt;/td&gt;
+&lt;td class=&quot;content&quot;&gt;
+Full support requires wallets providers to implement the final OpenID4VCI specification.
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/openid4vci/screenshot-wallet-steps.png&quot; alt=&quot;Screenshot: Lissi Wallet Test&quot; width=&quot;900&quot;&gt;
+&lt;/div&gt;
+&lt;div class=&quot;title&quot;&gt;Figure 12. Screenshot: Lissi Wallet Test&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_before_you_go&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_before_you_go&quot;&gt;&lt;/a&gt;Before You Go&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In this blog post, we have illustrated how to set up Keycloak for issuing verifiable credentials over OpenID4VCI, using a simple scenario of issuing membership credentials to members of the &lt;a href=&quot;https://github.com/keycloak/keycloak-oauth-sig&quot;&gt;Keycloak&amp;#8217;s OAuth SIG group&lt;/a&gt;.
+We covered the necessary configuration steps at the realm, client scope, and client levels, and demonstrated how to retrieve a credential offer to initiate the issuance flow.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;If you are looking into streamlining this configuration process for OpenID4VCI in Keycloak, take a look at our &lt;a href=&quot;https://github.com/keycloak/keycloak-oauth-sig/tree/main/oid4vci-deployment#readme&quot;&gt;OID4VCI Deployment&lt;/a&gt; project, which provides solid examples for both the pre-authorization and authorization code flows.
+You may also find the &lt;a href=&quot;https://github.com/keycloak/keycloak-playground/blob/main/fapi-playground/README.md#oid4vci-demo&quot;&gt;Keycloak Playground OID4VCI demo&lt;/a&gt; useful as a hands-on demo.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_feedback_discussion&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_feedback_discussion&quot;&gt;&lt;/a&gt;Feedback &amp;amp; Discussion&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;We’d love to hear your thoughts on this guide! You can provide feedback or ask questions through:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Slack: Join the &lt;a href=&quot;https://slack.cncf.io/&quot;&gt;Cloud Native Computing Foundation (CNCF) Slack&lt;/a&gt; and discuss with us in the channel &lt;a href=&quot;https://cloud-native.slack.com/channels/keycloak-oauth-sig&quot;&gt;#keycloak-oauth-sig&lt;/a&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;GitHub: Inspect and participate in recent &lt;a href=&quot;https://github.com/keycloak/keycloak/discussions?discussions_q=is%3Aopen+oid4vci&quot;&gt;OpenID4VCI-related GitHub discussions&lt;/a&gt;.
+Review existing &lt;a href=&quot;https://github.com/keycloak/keycloak/issues?q=is%3Aissue%20state%3Aopen%20label%3Aarea%2Foid4vc&quot;&gt;OpenID4VCI-related GitHub issues&lt;/a&gt; and feel free to comment on or upvote them, or create a new issue if you have ideas for enhancements or discover a bug.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Your input will help us to improve the OpenID4VCI experience in Keycloak.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_important_note_on_openid4vci_development_status&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_important_note_on_openid4vci_development_status&quot;&gt;&lt;/a&gt;Important Note on OpenID4VCI Development Status&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;OpenID4VCI support in Keycloak is still under active development. The instructions and configuration options described in this blog post are based on &lt;strong&gt;Keycloak 26.5.0&lt;/strong&gt; and may change in future Keycloak versions as the feature evolves.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;If you want to explore the latest updates to the OID4VCI feature, you can use the latest &lt;a href=&quot;https://www.keycloak.org/nightly/&quot;&gt;Keycloak nightly release&lt;/a&gt;. However, be aware that the instructions in this blog post may not work with that version.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description>
+        <guid>https://www.keycloak.org/2026/01/issue-credentials-over-openid4vci</guid>
+        <pubDate>Fri, 16 Jan 2026 00:00:00 GMT</pubDate>
+        
+        <author>Rodrick Awambeng, Forkim Enjeckayang, Ingrid Kamga, Bertrand Ogen</author>
+      </item>
+      <item>
         <title>Keycloak 26.5.1 released</title>
         <link>https://www.keycloak.org/2026/01/keycloak-2651-released</link>
         <description>&lt;p&gt;To download the release go to &lt;a href=&quot;https://www.keycloak.org/downloads.html&quot;&gt;Keycloak downloads&lt;/a&gt;.&lt;/p&gt;
