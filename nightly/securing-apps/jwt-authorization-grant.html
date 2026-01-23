@@ -380,7 +380,7 @@ Following the spec recommendation, the JWT Authorization Grant never issues a re
 <h2 id="_how_to_get_a_valid_token_for_jwt_authorization_grant"><a class="anchor" href="#_how_to_get_a_valid_token_for_jwt_authorization_grant"></a>How to get a valid token for JWT Authorization Grant</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The JWT Authorization Grant feature needs a previous JWT assertion in order to be exchanged for an access token. We can call the external OpenID Connect Provider (OP) <code>domaina</code>, the one that is represented in Keycloak via the Identity Provider. And we can call the Keycloak server that receives the JWT authorization grant <code>domainb</code>. The <code>domaina</code> should somehow issue a JWT that is a valid assertion for <code>domainb</code>.</p>
+<p>The JWT Authorization Grant feature needs a previous JWT assertion in order to be exchanged for an access token. We can name the external OpenID Connect Provider (OP) <code>domaina</code>, the one that is represented in Keycloak via the Identity Provider. And we can name the Keycloak server that receives the JWT authorization grant <code>domainb</code>. The <code>domaina</code> should somehow issue a JWT that is a valid assertion for <code>domainb</code>.</p>
 </div>
 <div class="paragraph">
 <p>If <code>domaina</code> is a server different to Keycloak, we don&#8217;t know how that initial JWT is obtained. But note that the specification enforces some processing of the assertion to be valid and return the access token. The way the client gets or generates such a JWT assertion in <code>domaina</code> depends completely on <code>domaina</code> server and client.</p>
@@ -399,127 +399,7 @@ Following the spec recommendation, the JWT Authorization Grant never issues a re
 </ol>
 </div>
 <div class="paragraph">
-<p>For example, if <code>domaina</code> is a Keycloak realm, the following configuration is available to use Token Exchange to obtain the JWT assertion:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Create a client that represents <code>domainb</code>. This client can be the same client configured in <code>domainb</code> for the identity provider access.</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Client ID</strong>: <a href="http://localhost:8080/realms/domainb" class="bare">http://localhost:8080/realms/domainb</a> (issuer for <code>domainb</code>).</p>
-</li>
-<li>
-<p><strong>Name</strong>: domainb</p>
-<div class="imageblock">
-<div class="content">
-<img src="https://www.keycloak.org/resources/images/guides/nightly/jwt-authorization-grant-oidc-client-domaina.png" alt="Client that represents domainb in domaina">
-</div>
-<div class="title">Figure 3. Client that represents domainb in domaina</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Create a client scope <code>access-domainb</code> to include the correct audience for the token when this scope is requested. An audience mapper for <code>domainb</code> will be added.</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Name</strong>: access-domainb</p>
-</li>
-<li>
-<p><strong>Type</strong>: None</p>
-</li>
-<li>
-<p>Only enable <strong>Include in token scope</strong>.</p>
-<div class="imageblock">
-<div class="content">
-<img src="https://www.keycloak.org/resources/images/guides/nightly/jwt-authorization-grant-oidc-client-scope-domaina.png" alt="Client scope to include domainb as audience">
-</div>
-<div class="title">Figure 4. Client scope to include domainb as audience</div>
-</div>
-</li>
-<li>
-<p>In the client scope add a mapper:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Type</strong>: Audience</p>
-</li>
-<li>
-<p><strong>Name</strong>: domainb-audience</p>
-</li>
-<li>
-<p><strong>Included Client Audience</strong>:  <a href="http://localhost:8080/realms/domainb" class="bare">http://localhost:8080/realms/domainb</a></p>
-</li>
-<li>
-<p><strong>Add to access token</strong>: On</p>
-<div class="imageblock">
-<div class="content">
-<img src="https://www.keycloak.org/resources/images/guides/nightly/jwt-authorization-grant-oidc-client-scope-mapper.png" alt="Client scope mapper for domainb audience">
-</div>
-<div class="title">Figure 5. Client scope mapper for domainb audience</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>In the client used to do the token exchange assign the previous <code>access-domainb</code> client scope as optional.</p>
-</li>
-</ol>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This example allows any user to request that client scope. Roles can be used to restrict the scope of the client scope. This way only users with a specific role would be allowed to add the <code>domainb</code> audience.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>With the previous configuration, the client in <code>domaina</code> can request a token exchange including scope <code>access-domainb</code> and restricting the audience to <code><a href="http://localhost:8080/realms/domainb" class="bare">http://localhost:8080/realms/domainb</a></code> (issuer of <code>domainb</code>).</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">POST /realms/domaina/protocol/openid-connect/token
-Content-Type: application/x-www-form-urlencoded
-Accept: application/json
-
-client_id=clienta&amp;
-client_secret=XXXXX&amp;
-grant_type=urn:ietf:params:oauth:grant-type:token-exchange&amp;
-subject_token_type=urn:ietf:params:oauth:token-type:access_token&amp;
-requested_token_type=urn:ietf:params:oauth:token-type:access_token&amp;
-scope=access-domainb&amp;
-audience=http://localhost:8080/realms/domainb&amp;
-subject_token=$SUBJECT_TOKEN</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The resulting token will be a valid token for JWT Authorization Grant in <code>domainb</code>. So another client defined for <code>domainb</code> can send a JWT Authorization Grant with that assertion.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">POST /realms/domainb/protocol/openid-connect/token
-Content-Type: application/x-www-form-urlencoded
-Accept: application/json
-
-client_id=clientb&amp;
-client_secret=YYYYYY&amp;
-grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&amp;
-scope=scope1 scope2
-assertion=$ASSERTION_TOKEN</code></pre>
-</div>
+<p>See <a href="https://www.keycloak.org/nightly/securing-apps/oauth-identity-authorization-chaining-across-domains">OAuth Identity and Authorization Chaining Across Domains</a> for a detailed configuration to perform authorization chaining across two Keycloak realms.</p>
 </div>
 </div>
 </div>
