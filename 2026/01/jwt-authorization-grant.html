@@ -1,0 +1,264 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>JWT Authorization Grant and Identity Chaining in Keycloak 26.5 - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="JWT Authorization Grant and Identity Chaining in Keycloak 26.5">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Keycloak 26.5 introduces new preview feature: JWT Authorization Grant (RFC 7523), enabling the upcoming OAuth Identity Chaining specification">
+<meta name="author" content="Giuseppe Graziano">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2026/01/jwt-authorization-grant">
+<meta property="og:url" content="https://www.keycloak.org/2026/01/jwt-authorization-grant">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2026/01/jwt-authorization-grant","headline":"JWT Authorization Grant and Identity Chaining in Keycloak 26.5","name":"JWT Authorization Grant and Identity Chaining in Keycloak 26.5","datePublished":"2026-01-23T08:00:00Z","inLanguage":"en","abstract":"Keycloak 26.5 introduces new preview feature: JWT Authorization Grant (RFC 7523), enabling the upcoming OAuth Identity Chaining specification","url":"https://www.keycloak.org/2026/01/jwt-authorization-grant","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Giuseppe Graziano"}]}
+</script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article kc-asciidoc">
+    <h1>JWT Authorization Grant and Identity Chaining in Keycloak 26.5</h1>
+    <p class="blog-date text-muted">January 23 2026 by Giuseppe Graziano</p>
+
+
+<div class="paragraph">
+<p>Modern applications and AI agents increasingly operate across distributed trust domains, where each domain is protected by its own OAuth 2.0 Authorization Server. A single request may also traverse multiple resource servers to complete a task.</p>
+</div>
+<div class="paragraph">
+<p>This raises an important challenge: every protected resource must understand <strong>who initiated the request</strong>, which <strong>authorization</strong> was granted, and optionally which other resources were accessed before making an authorization decision. Preserving this information across domains is critical.</p>
+</div>
+<div class="paragraph">
+<p><strong>Keycloak 26.5</strong> introduces <strong>preview</strong> support for the new feature <strong>JWT Authorization Grant</strong>, implementing <a href="https://datatracker.ietf.org/doc/html/rfc7523">RFC 7523</a>. This feature allows a client to present a signed JWT from an external issuer and obtain a Keycloak access token, providing a <strong>standard and secure way to authorize requests based on external assertions</strong>.</p>
+</div>
+<div class="paragraph">
+<p>However, exchanging a token alone does not fully solve the problem of propagating identity and authorization context across multiple trust domains.</p>
+</div>
+<div class="paragraph">
+<p>The IETF draft <strong>OAuth Identity and Authorization Chaining Across Domains</strong> defines a standardized flow that combines <strong>JWT Authorization Grant (RFC 7523)</strong> with <strong>OAuth 2.0 Token Exchange (RFC 8693)</strong>, <strong>which Keycloak already supports</strong>, to preserve the original user’s identity, claims, and authorization throughout the chain.</p>
+</div>
+<div class="sect1">
+<h2 id="_jwt_authorization_grant"><a class="anchor" href="#_jwt_authorization_grant"></a>JWT Authorization Grant</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The JWT Authorization Grant feature allows a client to present a signed JWT assertion to the token endpoint and obtain an access token without an interactive authorization step. To initiate this flow, the client sends a request to the <strong>token endpoint</strong> with the <code>grant_type</code> set to <strong><code>urn:ietf:params:oauth:grant-type:jwt-bearer</code></strong> and the external token passed in the <strong><code>assertion</code></strong> parameter.</p>
+</div>
+<div class="paragraph">
+<p>It provides a standard and secure alternative to the preview feature External-to-Internal Token Exchange V1 which will be deprecated.</p>
+</div>
+<div class="paragraph">
+<p>Trust relationships in Keycloak are defined through Identity Providers. The JWT Authorization Grant can be enabled and configured in a dedicated section of the existing OpenID Connect v1.0 Identity Provider, or via a new dedicated JWT Authorization Grant Identity Provider.</p>
+</div>
+<div class="paragraph">
+<p>A confidential client can request a JWT Authorization Grant by enabling the dedicated option in the client settings and selecting the allowed identity providers.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The JWT Authorization Grant is a preview feature. Full configuration details are available in a dedicated guide:
+<a href="https://www.keycloak.org/securing-apps/jwt-authorization-grant">JWT Authorization Grant</a>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_oauth_identity_and_authorization_chaining_across_domains"><a class="anchor" href="#_oauth_identity_and_authorization_chaining_across_domains"></a>OAuth Identity and Authorization Chaining Across Domains</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Although the JWT Authorization Grant allows a client to obtain a Keycloak access token based on an external JWT, it does not by itself solve the broader problem of propagating identity and authorization context across multiple trust domains.</p>
+</div>
+<div class="paragraph">
+<p>To propagate identity across multiple trust domains, the <a href="https://www.keycloak.org/securing-apps/jwt-authorization-grant"><strong>JWT Authorization Grant</strong></a> (RFC 7523) is combined with <a href="https://www.keycloak.org/securing-apps/token-exchange#_standard-token-exchange"><strong>Standard Token Exchange</strong></a> (RFC 8693), already supported by Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>This integration implements the flow defined in the IETF draft <a href="https://datatracker.ietf.org/doc/draft-ietf-oauth-identity-chaining"><strong>OAuth Identity and Authorization Chaining Across Domains</strong></a>.</p>
+</div>
+<div class="paragraph">
+<p>A typical scenario involves <strong>Domain A</strong> (an external IdP or Keycloak realm) and <strong>Domain B</strong> (an internal Keycloak realm). The goal is to allow a client in Domain A to access resources in Domain B while preserving the original user&#8217;s identity.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_token_exchange_in_domain_a"><a class="anchor" href="#_step_1_token_exchange_in_domain_a"></a>Step 1: Token Exchange in Domain A</h3>
+<div class="paragraph">
+<p>In this first step, the client requests a token for Domain B using a Token Exchange request.</p>
+</div>
+<div class="paragraph">
+<p>The client in Domain A must be configured to allow the target audience, typically by assigning a <strong>Client Scope</strong> with an <strong>Audience Mapper</strong> if you are using Keycloak for Domain A. The <code>audience</code> parameter in the request is then used to <strong>restrict</strong> the resulting token to that specific target, ensuring it contains the correct <code>aud</code> claim for Domain B.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Request to Domain A
+POST /realms/domain-a/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+&amp;subject_token=$ORIGINAL_ACCESS_TOKEN
+&amp;audience=http://localhost:8080/realms/domain-b</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Domain A issues a new JWT access token, which acts as the assertion for Domain B.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_jwt_authorization_grant_in_domain_b"><a class="anchor" href="#_step_2_jwt_authorization_grant_in_domain_b"></a>Step 2: JWT Authorization Grant in Domain B</h3>
+<div class="paragraph">
+<p>The client uses this token to authenticate with Domain B using the <strong>JWT Authorization Grant</strong>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Request to Domain B
+POST /realms/domain-b/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer
+&amp;assertion=$TOKEN_FROM_STEP_1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Domain B validates the token and issues a local access token. Identity and authorization context are now securely propagated from Domain A to Domain B.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This flow can be fully configured with Keycloak. For more configuration details check the dedicated guide:
+<a href="https://www.keycloak.org/nightly/securing-apps/oauth-identity-authorization-chaining-across-domains">OAuth Identity and Authorization Chaining Across Domains</a>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_why_this_new_feature"><a class="anchor" href="#_why_this_new_feature"></a>Why this new feature?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The JWT Authorization Grant solves an important problem in cross-domain OAuth flows. It lets an Authorization Server issue tokens based on a <strong>signed JWT assertion</strong>, making authorization decisions explicit and verifiable. Combined with Identity Chaining, it allows each domain to check and extend authorization context in a standards-based way.</p>
+</div>
+<div class="paragraph">
+<p>JWT Authorization Grant brings several advantages:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Preserves user identity</strong>. Cross-domain access often relies on generic service accounts to call APIs. With a signed JWT assertion, a service can request tokens on behalf of a user, keeping identity and intent clear when moving across domains.</p>
+</li>
+<li>
+<p><strong>Standards-based cross-domain support</strong>. The JWT Authorization Grant with the support of the RFC 7523 is part of ongoing OAuth work on cross-domain identity and authorization chaining, including
+<a href="https://datatracker.ietf.org/doc/draft-ietf-oauth-identity-chaining">OAuth Identity and Authorization Chaining Across Domains</a> and
+<a href="https://datatracker.ietf.org/doc/draft-ietf-oauth-identity-assertion-authz-grant">Identity Assertion Authorization Grant</a>.
+This allows workflows that are traceable, constrained, and aligned with least-privilege principles, ideal for distributed systems and AI agents.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Promote JWT Authorization Grant from preview to a fully supported feature in the next Keycloak release</p>
+</li>
+<li>
+<p>Deprecate Token Exchange version 1</p>
+</li>
+<li>
+<p>Enable JWT Authorization Grant for social Identity Providers (e.g., Google)</p>
+</li>
+<li>
+<p>Monitor and follow the evolution of the Identity Chaining draft to ensure full compliance</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_try_it_out"><a class="anchor" href="#_try_it_out"></a>Try It Out</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As the <strong>JWT Authorization Grant</strong> is currently in <strong>preview</strong>, your feedback is helpful to help to refine the feature before it reaches full support.</p>
+</div>
+<div class="paragraph">
+<p>We encourage you to test this new feature and share your experience. Feedback and contributions from the community are always welcome.</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2025. &copy; 2025 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
