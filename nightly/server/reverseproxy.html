@@ -148,7 +148,7 @@ gtag('config', 'G-0J2P9316N6');
 <p><code>forwarded</code> enables parsing of the <code>Forwarded</code> header as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC 7239</a>.</p>
 </li>
 <li>
-<p><code>xforwarded</code> enables parsing of non-standard <code>X-Forwarded-*</code> headers, such as <code>X-Forwarded-For</code>, <code>X-Forwarded-Proto</code>, <code>X-Forwarded-Host</code>, and <code>X-Forwarded-Port</code>.</p>
+<p><code>xforwarded</code> enables parsing of non-standard <code>X-Forwarded-*</code> headers, such as <code>X-Forwarded-For</code>, <code>X-Forwarded-Proto</code>, <code>X-Forwarded-Host</code>, <code>X-Forwarded-Port</code>, and <code>X-Forwarded-Prefix</code>.</p>
 </li>
 </ul>
 </div>
@@ -215,17 +215,16 @@ If the TLS connection is terminated at the reverse proxy (edge termination), ena
 </div>
 </div>
 <div class="sect1">
-<h2 id="_different_context_path_on_reverse_proxy"><a class="anchor" href="#_different_context_path_on_reverse_proxy"></a>Different context-path on reverse proxy</h2>
+<h2 id="_different_context_path_on_reverse_proxy"><a class="anchor" href="#_different_context_path_on_reverse_proxy"></a>Different context path on reverse proxy</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak assumes it is exposed through the reverse proxy under the same context path as Keycloak is configured for. By default Keycloak is exposed through the root (<code>/</code>), which means it expects to be exposed through the reverse proxy on <code>/</code> as well.
-You can use a full URL for the <code>hostname</code> option in these cases, for example using <code>--hostname=https://my.keycloak.org/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>.</p>
+<p>By default Keycloak is exposed through the root context path (<code>/</code>). If the proxy is using a different context path than Keycloak, one of the following must be done:
+- Use a simple hostname for the <code>hostname</code> option, <code>xforwarded</code> for the <code>proxy-headers</code> option, and have the proxy set the <code>X-Forwarded-Prefix</code> header.
+- Use a full URL for the <code>hostname</code> option including the proxy context path, for example using <code>--hostname=https://my.keycloak.org/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>.
+- Change the context path of Keycloak itself to match the context path for the reverse proxy using the <code>http-relative-path</code> option.</p>
 </div>
 <div class="paragraph">
-<p>For more details on exposing Keycloak on different hostname or context-path incl. Administration REST API and Console, see <a href="https://www.keycloak.org/nightly/server/hostname">Configuring the hostname (v2)</a>.</p>
-</div>
-<div class="paragraph">
-<p>Alternatively you can also change the context path of Keycloak itself to match the context path for the reverse proxy using the <code>http-relative-path</code> option, which will change the context-path of Keycloak itself to match the context path used by the reverse proxy.</p>
+<p>For more details on exposing Keycloak on different hostname or context path incl. Administration REST API and Console, see <a href="https://www.keycloak.org/nightly/server/hostname">Configuring the hostname (v2)</a>.</p>
 </div>
 </div>
 </div>
@@ -367,7 +366,7 @@ If not, prefix the path with your desired one.</p>
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-If you configured a <code>http-relative-path</code> on the server, proceed as follows to use discovery wih RFC 8414: Configure a reverse proxy to map the <code>/.well-known/</code> path without the prefix to the path with the prefix on the server.
+If you configured a <code>http-relative-path</code> on the server, proceed as follows to use discovery with RFC 8414: Configure a reverse proxy to map the <code>/.well-known/</code> path without the prefix to the path with the prefix on the server.
 </td>
 </tr>
 </table>
