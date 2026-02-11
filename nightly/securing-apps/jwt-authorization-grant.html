@@ -192,6 +192,18 @@ and is not fully supported. This feature is disabled by default.</p>
 </li>
 </ol>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Brute force protection is not applied to the JWT Authorization Grant for temporarily locked users, since this grant type does not perform user credential-based authentication but relies on an assertion issued by an external identity provider, and therefore cannot be compromised by brute force attacks on credentials of Keycloak user.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -442,6 +454,100 @@ The <strong>jwt-authorization-grant-audience</strong> executor changes the valid
 </div>
 </li>
 </ul>
+</div>
+<div class="sect2">
+<h3 id="_jwt_authorization_grant_for_google_identity_provider"><a class="anchor" href="#_jwt_authorization_grant_for_google_identity_provider"></a>JWT Authorization Grant for Google Identity Provider</h3>
+<div class="paragraph">
+<p>Google Identity Provider supports the JWT Authorization Grant, allowing the use of a Google ID Token as an assertion.
+According to RFC 7523, the assertion MUST be a JWT. Since Google issues JWTs only for ID Tokens (and not for access tokens), only the ID Token can be used for this authorization grant.</p>
+</div>
+<div class="paragraph">
+<p>To enable this feature, the <strong>JWT Authorization Grant</strong> switch must be turned on in the Google Identity Provider configuration.</p>
+</div>
+<div class="listingblock">
+<div class="title">Google ID Token Payload Example</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "iss": "https://accounts.google.com", <i class="conum" data-value="1"></i><b>(1)</b>
+    "azp": "XXXX.apps.googleusercontent.com",
+    "aud": "XXXX.apps.googleusercontent.com", <i class="conum" data-value="2"></i><b>(2)</b>
+    "sub": "100209199795938692365", <i class="conum" data-value="3"></i><b>(3)</b>
+    "at_hash": "AAos4eSIx4b5uQ8N-OAPYg",
+    "iat": 1769503848,
+    "exp": 1769507448 <i class="conum" data-value="4"></i><b>(4)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Google Issuer.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Client ID that must be the same configured on the Google Identity Provider.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Subject that must be linked to the Keycloak user.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Expires 1 hour after <code>iat</code>.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The specifications described in this guide also apply to Google, with the following exceptions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Audience Validation</strong>: Google does not allow adding custom audiences to the ID Token. Therefore, the ID Token cannot contain the Token Endpoint URL or the Keycloak Issuer URL. The <code>aud</code> (audience) claim must simply match the Client ID configured for the Google Identity Provider. <strong>This is the only deviation from RFC 7523.</strong></p>
+</li>
+<li>
+<p><strong>Replay Check</strong>: It is not possible to perform a replay check because the <code>jti</code> claim is missing from the Google ID Token. Consequently, the same Google ID Token can be used multiple times.</p>
+</li>
+<li>
+<p><strong>Google ID Token Expiration</strong>: The duration of a Google ID Token is fixed at 1 hour and cannot be modified. To limit the validity window, a dedicated property in the configuration allows you to set a maximum time limit for the token. The default value is 1 hour (matching the Google ID Token lifespan).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In a scenario where a mobile application already supports login with Google without involving Keycloak, there may be an issue when integrating Keycloak later. For example, Keycloak might be configured with a Google Identity Provider that uses a different Google client than the one used by the mobile app.</p>
+</div>
+<div class="paragraph">
+<p>In this case, the Google ID token cannot be used with the JWT Authorization Grant because the <code>aud</code> claim in the ID Token does not match the client id configured in the Google Identity Provider.</p>
+</div>
+<div class="paragraph">
+<p>To address this issue, you can use <a href="https://www.keycloak.org/docs/latest/server_admin/#_client_policies">Client Policies</a> with the <code>jwt-authorization-grant-audience</code> executor to explicitly set the Google ID Token audience as the trusted audience, replacing the default audience validation configured for the Identity Provider.</p>
+</div>
+<div class="paragraph">
+<p><strong>Example setup:</strong></p>
+</div>
+<div class="paragraph">
+<p>Assume you have an OIDC client named <code>foo</code>, which is a mobile application receiving a Google ID token with the audience <code>my-mobile-app.apps.googleusercontent.com</code>, and you have an already configured Google Identity Provider with a different client-id.</p>
+</div>
+<div class="paragraph">
+<p>Follow these steps to configure the validation of the audience:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create a Client Policy Profile:</strong> Create a profile and add the <code>jwt-authorization-grant-audience</code> executor. Configure the allowed audience in the executor to <code>my-mobile-app.apps.googleusercontent.com</code>.</p>
+</li>
+<li>
+<p><strong>Create a Client Policy:</strong> Create a policy that uses this profile. For the condition, you can use the <strong>client-role</strong> condition and specify a role, for example, <code>foo-role</code>.</p>
+</li>
+<li>
+<p><strong>Configure the Client:</strong> Navigate to the client <code>foo</code> settings. Open the <strong>Roles</strong> tab and create a new role named <code>foo-role</code>. This role acts effectively as a "marker" to ensure the client policy is triggered. You should create this same role in any other client that requires this specific audience validation.</p>
+</li>
+<li>
+<p><strong>Validate:</strong> When you send the JWT authorization grant request with your Google ID token from client <code>foo</code>, the request will now be accepted, provided that <code>my-mobile-app.apps.googleusercontent.com</code> is present as a valid audience in the token.</p>
+</li>
+</ol>
+</div>
 </div>
 </div>
 </div>            </div>
