@@ -571,6 +571,292 @@ to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>
 to configure a Keycloak Truststore.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_configuring_the_rfc9440_provider"><a class="anchor" href="#_configuring_the_rfc9440_provider"></a>Configuring the rfc9440 provider</h3>
+<div class="paragraph">
+<p>If you stick to the header names mentioned in RFC 9440, you do not need to configure any additional options after selecting the <code>rfc9440</code> provider.
+The default values of the options are as follows:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-client-cert</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client-Cert</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client-Cert-Chain</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">certificate-chain-length</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>If your certificate chain is longer than the given default, you must define the option with an appropriate number.
+Otherwise, the provider will discard the request.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="graceful-http-shutdown"><a class="anchor" href="#graceful-http-shutdown"></a>Graceful HTTP shutdown</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When running Keycloak behind a reverse proxy or load balancer, graceful shutdown ensures that in-flight requests complete successfully during server termination, preventing connection errors for clients.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak enables graceful HTTP shutdown by default with configurable timeouts.</p>
+</div>
+<div class="sect2">
+<h3 id="_understanding_shutdown_phases"><a class="anchor" href="#_understanding_shutdown_phases"></a>Understanding shutdown phases</h3>
+<div class="paragraph">
+<p>The shutdown process consists of two phases:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>Pre-shutdown delay</strong></dt>
+<dd>
+<p>During this phase, Keycloak signals to load balancers and proxies that it is preparing to shut down.
+The server&#8217;s readiness endpoint returns a "not ready" status, allowing the load balancer to stop routing new requests to this instance.
+Existing TLS and HTTP keepalive connections are allowed to drain naturally.
+The server continues to process existing requests.</p>
+</dd>
+<dt class="hdlist1"><strong>Shutdown timeout</strong></dt>
+<dd>
+<p>After the pre-shutdown delay, Keycloak stops accepting new requests and waits for in-flight HTTP requests to complete.
+If requests are still running after the timeout expires, the server shuts down regardless.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_default_behavior"><a class="anchor" href="#_default_behavior"></a>Default behavior</h3>
+<div class="paragraph">
+<p>By default, Keycloak is configured with a 1-second pre-shutdown delay and a 1-second shutdown timeout.
+These defaults work well for most standard deployments where:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The load balancer reconfigures quickly (within 1 second)</p>
+</li>
+<li>
+<p>Most requests complete within 1 second</p>
+</li>
+<li>
+<p>The reverse proxy uses edge termination or re-encryption (not TLS passthrough)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_shutdown_timeouts"><a class="anchor" href="#_configuring_shutdown_timeouts"></a>Configuring shutdown timeouts</h3>
+<div class="paragraph">
+<p>Advanced users can adjust the shutdown timeouts using CLI options based on their deployment characteristics.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.sh start --shutdown-delay=&lt;duration&gt; --shutdown-timeout=&lt;duration&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Available options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--shutdown-delay</code></dt>
+<dd>
+<p>Length of the pre-shutdown phase during which the server prepares for shutdown.
+This period allows for load balancer reconfiguration and draining of TLS/HTTP keepalive connections.
+Default: <code>1s</code></p>
+</dd>
+<dt class="hdlist1"><code>--shutdown-timeout</code></dt>
+<dd>
+<p>The shutdown period waiting for currently running HTTP requests to finish.
+Default: <code>1s</code></p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Both values accept duration formats: <code>1s</code> (seconds), <code>500ms</code> (milliseconds), <code>2m</code> (minutes), etc.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_adjust_shutdown_timeouts"><a class="anchor" href="#_when_to_adjust_shutdown_timeouts"></a>When to adjust shutdown timeouts</h3>
+<div class="paragraph">
+<p>Consider adjusting these values based on your deployment configuration with the following example Scenarios:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Scenario</th>
+<th class="tableblock halign-right valign-top">Delay</th>
+<th class="tableblock halign-right valign-top">Timeout</th>
+<th class="tableblock halign-left valign-top">Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Load balancer polls readiness probe</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">16s</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Assumptions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>5s poll interval and a load balancer reconfiguring after two successive failed probes.</p>
+</li>
+<li>
+<p>1s for reconfiguring the proxy.</p>
+</li>
+<li>
+<p>Proxy using TLS re-encrypt or edge termination.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Calculation:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Allow three poll cycles for the load balancer to detect shutdown and the extra time for the load balancer to perform the reconfiguration:</p>
+<div class="paragraph">
+<p><code>shutdown delay = 3 * 5s + 1s</code></p>
+</div>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TLS passthrough configuration</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">10‑30s</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Longer delay allows keepalive connections to drain naturally and receive connection close signals.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Long-running admin API requests</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">10‑30s</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Admin operations may take longer than typical user requests.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Test environments / quick restarts</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">0s</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">500ms</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Minimize shutdown time when graceful draining is not needed.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment orchestration reconfigures the proxy and drains connections before Pod termination</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">0s</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>No pre-shutdown delay needed if proxy is already reconfigured</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Combined: TLS passthrough plus polled readiness</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">26‑56s</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Delays add up: time for load balancer detection + connection draining</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="_example_configurations"><a class="anchor" href="#_example_configurations"></a>Example configurations</h4>
+<div class="paragraph">
+<p>For production with TLS passthrough:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">[source,bash]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>bin/kc.[sh|bat] start --shutdown-delay=30s --shutdown-timeout=1s</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For load balancers that poll readiness:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">[source,bash]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>bin/kc.[sh|bat] start --shutdown-delay=16s --shutdown-timeout=1s</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For test environments:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">[source,bash]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>bin/kc.[sh|bat] start --shutdown-delay=0s --shutdown-timeout=500ms</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The shutdown delay affects the minimum time required for a complete server restart.
+In Kubernetes environments, ensure your <code>terminationGracePeriodSeconds</code> is longer than the sum of <code>shutdown-delay</code> and <code>shutdown-timeout</code> to prevent forced termination.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -661,6 +947,48 @@ to configure a Keycloak Truststore.</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>shutdown-delay</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Length of the pre-shutdown phase during which the server prepares for shutdown.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d]. This period allows for loadbalancer reconfiguration and draining of TLS/HTTP keepalive connections.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--shutdown-delay</code><br>
+<strong>Env:</strong> <code>KC_SHUTDOWN_DELAY</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1s</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>shutdown-timeout</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The shutdown period waiting for currently running HTTP requests to finish.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--shutdown-timeout</code><br>
+<strong>Env:</strong> <code>KC_SHUTDOWN_TIMEOUT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1s</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>proxy-headers</code></span></p>
 </div>
 <div class="paragraph">
@@ -724,43 +1052,6 @@ to configure a Keycloak Truststore.</p>
 </tr>
 </tbody>
 </table>
-<div class="sect2">
-<h3 id="_configuring_the_rfc9440_provider"><a class="anchor" href="#_configuring_the_rfc9440_provider"></a>Configuring the rfc9440 provider</h3>
-<div class="paragraph">
-<p>If you stick to the header names mentioned in RFC 9440, you do not need to configure any additional options after selecting the <code>rfc9440</code> provider.
-The default values of the options are as follows:</p>
-</div>
-<table class="tableblock frame-all grid-all fit-content">
-<colgroup>
-<col>
-<col>
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Option</th>
-<th class="tableblock halign-left valign-top">Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-client-cert</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Client-Cert</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Client-Cert-Chain</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">certificate-chain-length</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>If your certificate chain is longer than the given default, you must define the option with an appropriate number.
-Otherwise, the provider will discard the request.</p>
-</div>
-</div>
 </div>
 </div>            </div>
         </div>
