@@ -426,79 +426,76 @@ bin/kc.[sh|bat] bootstrap-admin --help</pre>
 </ul>
 </div>
 <div class="paragraph">
-<p>Otherwise, characters are limited to those contained in database encoding, which is often 8-bit. However, for some database systems, you can enable UTF-8 encoding of Unicode characters and use the full Unicode character set in all text fields. For a given database, this choice might result in a shorter maximum string length than the maximum string length supported by 8-bit encodings.</p>
-</div>
-<div class="sect2">
-<h3 id="_configuring_unicode_support_for_an_oracle_database"><a class="anchor" href="#_configuring_unicode_support_for_an_oracle_database"></a>Configuring Unicode support for an Oracle database</h3>
-<div class="paragraph">
-<p>Unicode characters are supported in an Oracle database if the database was created with Unicode support in the VARCHAR and CHAR fields. For example, you configured AL32UTF8 as the database character set. In this case, the JDBC driver requires no special settings.</p>
+<p>Otherwise, characters are limited to those contained in database encoding, which is often 8-bit.
+However, for some database systems, you can enable UTF-8 encoding of Unicode characters and use the full Unicode character set in all text fields.
+For a given database, this choice might result in a shorter maximum string length than the maximum string length supported by 8-bit encodings.</p>
 </div>
 <div class="paragraph">
-<p>If the database was not created with Unicode support, you need to configure the JDBC driver to support Unicode characters in the special fields. You configure two properties. Note that you can configure these properties as system properties or as connection properties.</p>
+<p>The recommended character set to use is summarized in the table below, as most recent versions of these databases already use it by default.</p>
 </div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Set <code>oracle.jdbc.defaultNChar</code> to <code>true</code>.</p>
-</li>
-<li>
-<p>Optionally, set <code>oracle.jdbc.convertNcharLiterals</code> to <code>true</code>.</p>
-<div class="admonitionblock note">
-<table>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
 <tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>For details on these properties and any performance implications, see the Oracle JDBC driver configuration documentation.</p>
-</div>
-</td>
+<th class="tableblock halign-left valign-top">Vendor</th>
+<th class="tableblock halign-left valign-top">Recommended Character Set</th>
+<th class="tableblock halign-left valign-top">Example Database Creation</th>
 </tr>
-</table>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_unicode_support_for_a_microsoft_sql_server_database"><a class="anchor" href="#_unicode_support_for_a_microsoft_sql_server_database"></a>Unicode support for a Microsoft SQL Server database</h3>
-<div class="paragraph">
-<p>Unicode characters are supported only for the special fields for a Microsoft SQL Server database. The database requires no special settings.</p>
-</div>
-<div class="paragraph">
-<p>The <code>sendStringParametersAsUnicode</code> property of JDBC driver should be set to <code>false</code> to significantly improve performance. Without this parameter,
-the Microsoft SQL Server might be unable to use indexes.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_configuring_unicode_support_for_a_mysqlmariadb_database"><a class="anchor" href="#_configuring_unicode_support_for_a_mysqlmariadb_database"></a>Configuring Unicode support for a MySQL/MariaDB database</h3>
-<div class="paragraph">
-<p>Unicode characters are supported in a MySQL/MariaDB database if the database was created with Unicode support in the VARCHAR and CHAR fields when using the following SQL statement.</p>
-</div>
-<div class="listingblock">
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oracle</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>AL32UTF8</code></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-sql" data-lang="sql">create database keycloak character set utf8mb3;</code></pre>
+<pre class="highlight"><code class="language-sql" data-lang="sql">CREATE DATABASE keycloak
+  CHARACTER SET AL32UTF8
+  NATIONAL CHARACTER SET AL16UTF16;</code></pre>
 </div>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Microsoft SQL Server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UTF-8 collation<br>
+(ending with <code>_UTF8</code>)</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">CREATE DATABASE keycloak
+  COLLATE Latin1_General_100_CI_AS_SC_UTF8;</code></pre>
 </div>
-<div class="paragraph">
-<p>Note that the utf8mb4 character set is not supported due to different storage requirements for the utf8 character set. See MySQL documentation for details. In that situation, the length restriction on non-special fields does not apply because columns are created to accommodate the number of characters, not bytes.  If the database default character set does not allow Unicode storage, only the special fields allow storing Unicode values.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MySQL/MariaDB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>utf8mb4</code></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">CREATE DATABASE keycloak
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;</code></pre>
 </div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Start MySQL/MariaDB Server.</p>
-</li>
-<li>
-<p>Under JDBC driver settings, locate the <strong>JDBC connection settings</strong>.</p>
-</li>
-<li>
-<p>Add this connection property: <code>characterEncoding=UTF-8</code></p>
-</li>
-</ol>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UTF8</code></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">CREATE DATABASE keycloak
+  ENCODING 'UTF8'
+  LC_COLLATE 'en_US.utf8'
+  LC_CTYPE 'en_US.utf8';</code></pre>
 </div>
-<div class="sect3">
-<h4 id="_database_default_charset_and_collation_considerations"><a class="anchor" href="#_database_default_charset_and_collation_considerations"></a>Database default charset and collation considerations</h4>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_database_default_charset_and_collation_considerations_for_mysql_and_mariadb"><a class="anchor" href="#_database_default_charset_and_collation_considerations_for_mysql_and_mariadb"></a>Database default charset and collation considerations for MySQL and MariaDB</h3>
 <div class="paragraph">
 <p>Different MySQL and MariaDB versions may have different default settings for character sets and collations. Keycloak uses the database default charset and collation when creating new tables and columns. This design allows you to manage your own data lifecycle by defining the charset and collation that best fits your requirements.</p>
 </div>
@@ -534,33 +531,6 @@ the Microsoft SQL Server might be unable to use indexes.</p>
 </td>
 </tr>
 </table>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_configuring_unicode_support_for_a_postgresql_database"><a class="anchor" href="#_configuring_unicode_support_for_a_postgresql_database"></a>Configuring Unicode support for a PostgreSQL database</h3>
-<div class="paragraph">
-<p>Unicode is supported for a PostgreSQL database when the database character set is UTF8. Unicode characters can be used in any field with no reduction of field length for non-special fields. The JDBC driver requires no special settings. The character set is determined when the PostgreSQL database is created.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Check the default character set for a PostgreSQL cluster by entering the following SQL command.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>show server_encoding;</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>If the default character set is not UTF 8, create the database with the UTF8 as the default character set using a command such as:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>create database keycloak with encoding 'UTF8';</code></pre>
-</div>
-</div>
-</li>
-</ol>
 </div>
 </div>
 </div>
@@ -813,6 +783,63 @@ Certain vendors, such as Azure SQL and MariaDB Galera, do not support or rely on
 </td>
 <td class="content">
 Enabling XA transactions in a containerized environment does not fully support XA recovery unless stable storage is available at that path.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_transaction_timeouts"><a class="anchor" href="#_configuring_transaction_timeouts"></a>Configuring transaction timeouts</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides two CLI options to control transaction timeout behavior:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>transaction-default-timeout</code></dt>
+<dd>
+<p>Controls the transaction timeout for regular transactions.
+The default value is 5 minutes.</p>
+<div class="paragraph">
+<p>To configure a different timeout, for example 10 minutes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --transaction-default-timeout=10m</code></pre>
+</div>
+</div>
+</dd>
+<dt class="hdlist1"><code>transaction-migration-timeout</code></dt>
+<dd>
+<p>Controls the timeout for transactions responsible for migrating the database schema to a new version.
+The default value is 30 minutes, as schema migrations may take a while to complete for large tables.</p>
+<div class="paragraph">
+<p>To configure a different timeout, for example 1 hour:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --transaction-migration-timeout=1h</code></pre>
+</div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Both options accept values as an ISO 8601 duration, an integer number of seconds, or an integer followed by one of <code>ms</code> (milliseconds), <code>s</code> (seconds), <code>m</code> (minutes), <code>h</code> (hours), or <code>d</code> (days).
+These options can be configured via CLI, environment variables, or the <code>conf/keycloak.conf</code> configuration file.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>transaction-default-timeout</code> option takes precedence over the unsupported <code>quarkus.transaction-manager.default-transaction-timeout</code> Quarkus property.
+If you are using the Quarkus property, migrate to the supported <code>transaction-default-timeout</code> option and remove the Quarkus property from your configuration.</p>
+</div>
 </td>
 </tr>
 </table>
@@ -1425,6 +1452,48 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>transaction-default-timeout</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The default transaction timeout.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--transaction-default-timeout</code><br>
+<strong>Env:</strong> <code>KC_TRANSACTION_DEFAULT_TIMEOUT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>5m</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>transaction-migration-timeout</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The transaction timeout for database migration transaction.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--transaction-migration-timeout</code><br>
+<strong>Env:</strong> <code>KC_TRANSACTION_MIGRATION_TIMEOUT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>30m</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
