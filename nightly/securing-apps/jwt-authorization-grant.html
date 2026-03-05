@@ -228,6 +228,18 @@ Brute force protection is not applied to the JWT Authorization Grant for tempora
 </div>
 <div class="title">Figure 1. Client configuration for JWT Authorization Grant</div>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In the <strong>Advanced</strong> tab, section <strong>OpenID Connect Compatibility Modes</strong>, the configuration option <strong>Custom audience mapping</strong> allows to configure specific custom valid audiences for individual Identity Providers. The map key is the Identity Provider alias, and the value is the custom audience that will be accepted for that provider. Note this behavior is not covered by the standard and can have major security implications.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>The Identity Provider (both types commented in the introduction) needs to also be configured to establish the relationship that will validate the assertion. In <strong>Identity providers</strong> &#8594; select your OIDC or JWT provider &#8594; <strong>Settings</strong> tab &#8594; <strong>Authorization Grant Settings</strong> section.</p>
 </div>
@@ -438,25 +450,13 @@ Following the spec recommendation, the JWT Authorization Grant never issues a re
 <p>As the previous executor, for the moment this enforcer can be used for JWT Authorization Grant and the Standard Token exchange.</p>
 </div>
 </li>
-<li>
-<p>Executor <strong>jwt-authorization-grant-audience</strong>. The executor allows to configure different and exclusive valid audiences for the assertion. The JWT Authorization Grant processing ensures, by specification, that the audience of the assertion is the Keycloak issuer or token endpoint URL. You can also use the Client ID as valid audience (option <strong>Allows Client ID as audience for assertions</strong>) for the OpenID Connect identity providers. Using this executor, you can configure one or more valid audiences instead of the default ones for the requests processed by the client policy.</p>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-The <strong>jwt-authorization-grant-audience</strong> executor changes the validation of the assertion audience out of the standard compliance. This behavior can have major security implications.
-</td>
-</tr>
-</table>
-</div>
-</li>
 </ul>
 </div>
-<div class="sect2">
-<h3 id="_jwt_authorization_grant_for_google_identity_provider"><a class="anchor" href="#_jwt_authorization_grant_for_google_identity_provider"></a>JWT Authorization Grant for Google Identity Provider</h3>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_jwt_authorization_grant_for_google_identity_provider"><a class="anchor" href="#_jwt_authorization_grant_for_google_identity_provider"></a>JWT Authorization Grant for Google Identity Provider</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>Google Identity Provider supports the JWT Authorization Grant, allowing the use of a Google ID Token as an assertion.
 According to RFC 7523, the assertion MUST be a JWT. Since Google issues JWTs only for ID Tokens (and not for access tokens), only the ID Token can be used for this authorization grant.</p>
@@ -521,33 +521,13 @@ According to RFC 7523, the assertion MUST be a JWT. Since Google issues JWTs onl
 <p>In this case, the Google ID token cannot be used with the JWT Authorization Grant because the <code>aud</code> claim in the ID Token does not match the client id configured in the Google Identity Provider.</p>
 </div>
 <div class="paragraph">
-<p>To address this issue, you can use <a href="https://www.keycloak.org/docs/latest/server_admin/#_client_policies">Client Policies</a> with the <code>jwt-authorization-grant-audience</code> executor to explicitly set the Google ID Token audience as the trusted audience, replacing the default audience validation configured for the Identity Provider.</p>
+<p>To address this issue, you can use the <strong>Custom audience mapping</strong> configuration option commented in the client configuration section. For example, if the Identity Provider alias is <code>google</code>, the previous audience can be configured as valid with the following mapping.</p>
 </div>
-<div class="paragraph">
-<p><strong>Example setup:</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/nightly/jwt-authorization-grant-google-custom-audiences.png" alt="Custom audience mapping for the google provider">
 </div>
-<div class="paragraph">
-<p>Assume you have an OIDC client named <code>foo</code>, which is a mobile application receiving a Google ID token with the audience <code>my-mobile-app.apps.googleusercontent.com</code>, and you have an already configured Google Identity Provider with a different client-id.</p>
-</div>
-<div class="paragraph">
-<p>Follow these steps to configure the validation of the audience:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Create a Client Policy Profile:</strong> Create a profile and add the <code>jwt-authorization-grant-audience</code> executor. Configure the allowed audience in the executor to <code>my-mobile-app.apps.googleusercontent.com</code>.</p>
-</li>
-<li>
-<p><strong>Create a Client Policy:</strong> Create a policy that uses this profile. For the condition, you can use the <strong>client-role</strong> condition and specify a role, for example, <code>foo-role</code>.</p>
-</li>
-<li>
-<p><strong>Configure the Client:</strong> Navigate to the client <code>foo</code> settings. Open the <strong>Roles</strong> tab and create a new role named <code>foo-role</code>. This role acts effectively as a "marker" to ensure the client policy is triggered. You should create this same role in any other client that requires this specific audience validation.</p>
-</li>
-<li>
-<p><strong>Validate:</strong> When you send the JWT authorization grant request with your Google ID token from client <code>foo</code>, the request will now be accepted, provided that <code>my-mobile-app.apps.googleusercontent.com</code> is present as a valid audience in the token.</p>
-</li>
-</ol>
-</div>
+<div class="title">Figure 3. Custom audience mapping for the google provider</div>
 </div>
 </div>
 </div>            </div>

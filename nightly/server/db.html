@@ -533,6 +533,26 @@ For a given database, this choice might result in a shorter maximum string lengt
 </table>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_configuring_unicode_support_for_a_microsoft_sql_server_database"><a class="anchor" href="#_configuring_unicode_support_for_a_microsoft_sql_server_database"></a>Configuring Unicode support for a Microsoft SQL Server database</h3>
+<div class="paragraph">
+<p>Unicode characters are supported only for the special fields for a Microsoft SQL Server database.
+The database requires no special settings.</p>
+</div>
+<div class="paragraph">
+<p>By default, Keycloak sets the <code>sendStringParametersAsUnicode</code> JDBC driver property to <code>false</code> when using Microsoft SQL Server.
+This can improve performance and query plan efficiency, as Microsoft SQL Server may be unable to use indexes when string parameters are sent as Unicode.</p>
+</div>
+<div class="paragraph">
+<p>If you need to override this setting, set <code>sendStringParametersAsUnicode</code> explicitly in the JDBC URL (using <code>db-url</code>) or via <code>db-url-properties</code>.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db mssql --db-url-properties=';sendStringParametersAsUnicode=true'</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -728,22 +748,6 @@ You then need to disable it by setting the parameter <code>sql_generate_invisibl
 </div>
 </div>
 <div class="sect1">
-<h2 id="_changing_database_locking_timeout_in_a_cluster_configuration"><a class="anchor" href="#_changing_database_locking_timeout_in_a_cluster_configuration"></a>Changing database locking timeout in a cluster configuration</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Because cluster nodes can boot concurrently, they take extra time for database actions. For example, a booting server instance may perform some database migration, importing, or first time initializations. A database lock prevents start actions from conflicting with each other when cluster nodes boot up concurrently.</p>
-</div>
-<div class="paragraph">
-<p>The maximum timeout for this lock is 900 seconds. If a node waits on this lock for more than the timeout, the boot fails. The need to change the default value is unlikely, but you can change it by entering this command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-dblock--jpa--lock-wait-timeout 900</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
 <h2 id="_using_database_vendors_with_xa_transaction_support"><a class="anchor" href="#_using_database_vendors_with_xa_transaction_support"></a>Using Database Vendors with XA transaction support</h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -810,16 +814,16 @@ The default value is 5 minutes.</p>
 </div>
 </div>
 </dd>
-<dt class="hdlist1"><code>transaction-migration-timeout</code></dt>
+<dt class="hdlist1"><code>transaction-setup-timeout</code></dt>
 <dd>
-<p>Controls the timeout for transactions responsible for migrating the database schema to a new version.
-The default value is 30 minutes, as schema migrations may take a while to complete for large tables.</p>
+<p>Controls the timeout for transactions used by database schema migration, import, and export commands.
+The default value is 30 minutes, as these operations may take a while to complete for large datasets.</p>
 <div class="paragraph">
 <p>To configure a different timeout, for example 1 hour:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --transaction-migration-timeout=1h</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --transaction-setup-timeout=1h</code></pre>
 </div>
 </div>
 </dd>
@@ -1476,10 +1480,10 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>transaction-migration-timeout</code></span></p>
+<p><span class="options-key"><code>transaction-setup-timeout</code></span></p>
 </div>
 <div class="paragraph">
-<p><span class="options-description">The transaction timeout for database migration transaction.</span></p>
+<p><span class="options-description">The transaction timeout for database migration/import/export transactions.</span></p>
 </div>
 <div class="openblock options-extended">
 <div class="content">
@@ -1487,8 +1491,8 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 <p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
 </div>
 <div class="paragraph">
-<p><strong>CLI:</strong> <code>--transaction-migration-timeout</code><br>
-<strong>Env:</strong> <code>KC_TRANSACTION_MIGRATION_TIMEOUT</code></p>
+<p><strong>CLI:</strong> <code>--transaction-setup-timeout</code><br>
+<strong>Env:</strong> <code>KC_TRANSACTION_SETUP_TIMEOUT</code></p>
 </div>
 </div>
 </div></div></td>
