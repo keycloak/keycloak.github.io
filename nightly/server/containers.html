@@ -35,7 +35,7 @@ gtag('config', 'G-0J2P9316N6');
     <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
         <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
     </a>
-    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
       <span class="fa fa-bars fa-lg px-1 py-2"></span>
     </button>
@@ -59,7 +59,7 @@ gtag('config', 'G-0J2P9316N6');
       </ul>
     </div>
     <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
-        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 128/20" alt="GitHub stars"/></a>
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
     </div>
 </nav>
 </header>
@@ -274,6 +274,32 @@ Some packages have a large tree of dependencies. By installing new RPMs you may 
 </td>
 </tr>
 </table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_an_older_openjdk_version"><a class="anchor" href="#_using_an_older_openjdk_version"></a>Using an older OpenJDK version</h3>
+<div class="paragraph">
+<p>The Keycloak container image uses OpenJDK 25 by default, which is the recommended and tested version.
+If a custom extension does not support OpenJDK 25, you can use an older supported OpenJDK version by installing the appropriate OpenJDK RPM and updating the <code>PATH</code> and <code>JAVA_HOME</code> environment variables.</p>
+</div>
+<div class="paragraph">
+<p>Use the two-stage pattern from the previous section to install the OpenJDK RPM.
+The following example shows how to use OpenJDK 21:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">FROM registry.access.redhat.com/ubi9 AS ubi-micro-build
+RUN mkdir -p /mnt/rootfs
+RUN dnf install --installroot /mnt/rootfs java-21-openjdk-headless --releasever 9 --setopt install_weak_deps=false --nodocs -y &amp;&amp; \
+    dnf --installroot /mnt/rootfs clean all &amp;&amp; \
+    rpm --root /mnt/rootfs -e --nodeps setup
+
+FROM quay.io/keycloak/keycloak
+COPY --from=ubi-micro-build /mnt/rootfs /
+
+ENV PATH=/usr/lib/jvm/jre-21/bin:$PATH
+ENV JAVA_HOME=/usr/lib/jvm/jre-21</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
