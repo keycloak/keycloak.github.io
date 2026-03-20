@@ -191,6 +191,30 @@ Any request that exceeds this limit would return with an immediate <code>503 Ser
 </div>
 </div>
 <div class="sect1">
+<h2 id="_server_bootstrap_behavior"><a class="anchor" href="#_server_bootstrap_behavior"></a>Server bootstrap behavior</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Server initialization, such as database migrations, may take a significant amount of time to complete.
+By default, Keycloak opens its HTTP(S) and Management endpoints while initialization is still in progress in the background.
+This allows the startup and liveness probes to report UP early, preventing orchestrators like Kubernetes from killing the container during a long-running migration, while the readiness probe reports DOWN until initialization completes.</p>
+</div>
+<div class="paragraph">
+<p>If you run Keycloak behind a proxy or load balancer, configure an HTTP health check with the path <code>/health/ready</code> to ensure traffic is routed only to instances that have completed initialization.</p>
+</div>
+<div class="paragraph">
+<p>If an HTTP health check is not possible, or you prefer the server to accept connections only after initialization completes, start Keycloak with the following option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --server-async-bootstrap=false</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With this setting, Keycloak opens its endpoints only after the bootstrap is complete and the server is ready to handle requests.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_production_grade_database"><a class="anchor" href="#_production_grade_database"></a>Production grade database</h2>
 <div class="sectionbody">
 <div class="paragraph">

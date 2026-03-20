@@ -556,140 +556,20 @@ For example:</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_automatic_database_connection_timeout"><a class="anchor" href="#_automatic_database_connection_timeout"></a>Automatic database connection timeout</h2>
+<h2 id="_database_connection_and_login_timeout"><a class="anchor" href="#_database_connection_and_login_timeout"></a>Database connection and login timeout</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>When Keycloak connects to the database, network problems can occur, especially during failovers or switchovers.
-To improve resilience and ensure faster recovery, Keycloak automatically sets a default connection timeout of 10 seconds for selected database vendors when using the standard JDBC driver.</p>
+To improve failover behavior and startup resilience during network issues, Keycloak sets a default connection timeout of 10s for all supported database vendors when using the standard JDBC driver.</p>
 </div>
-<div class="paragraph">
-<p>The following table lists the affected vendors, the JDBC driver property used, and the default value applied by Keycloak:</p>
-</div>
-<table class="tableblock frame-all grid-all fit-content">
-<colgroup>
-<col>
-<col>
-<col>
-<col>
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Database</th>
-<th class="tableblock halign-left valign-top">JDBC driver property</th>
-<th class="tableblock halign-left valign-top">Default value</th>
-<th class="tableblock halign-left valign-top">Unit</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">MySQL</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>connectTimeout</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10000</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">milliseconds</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">MariaDB</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>connectTimeout</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10000</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">milliseconds</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>connectTimeout</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">seconds</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Oracle Database</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oracle.net.CONNECT_TIMEOUT</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10000</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">milliseconds</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Microsoft SQL Server</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>loginTimeout</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">seconds</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Keycloak applies these defaults automatically, but only when all of the following conditions are met:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>The database vendor is configured via <code>--db</code>.</p>
-</li>
-<li>
-<p>Keycloak is using the standard JDBC driver for that vendor.</p>
-</li>
-<li>
-<p>The timeout property has not already been set explicitly by the user in <code>db-url</code> or <code>db-url-properties</code>.</p>
-</li>
-</ul>
-</div>
-<div class="sect2">
-<h3 id="_overriding_the_default_connection_timeout"><a class="anchor" href="#_overriding_the_default_connection_timeout"></a>Overriding the default connection timeout</h3>
-<div class="paragraph">
-<p>To use a different connection timeout, set the relevant JDBC driver property explicitly via <code>db-url</code> or <code>db-url-properties</code>.</p>
-</div>
-<div class="paragraph">
-<p>For MySQL:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db mysql --db-url-properties='?connectTimeout=30000'</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For MariaDB:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db mariadb --db-url-properties='?connectTimeout=30000'</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For Microsoft SQL Server:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db mssql --db-url-properties=';loginTimeout=20'</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For PostgreSQL:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db postgres --db-url-properties='?connectTimeout=30'</code></pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>When using <code>db-url-properties</code>, prepend the correct delimiter for your vendor&#8217;s JDBC URL format:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>PostgreSQL, MySQL, and MariaDB: use <code>?</code> as the first property delimiter, or <code>&amp;</code> for subsequent properties.</p>
-</li>
-<li>
-<p>Microsoft SQL Server: use <code>;</code> as the property delimiter.</p>
-</li>
-</ul>
-</div>
-</td>
-</tr>
-</table>
-</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>db-connect-timeout</code></dt>
+<dd>
+<p>Sets the JDBC driver connection timeout and login timeout.
+Default: <code>10s</code>.</p>
+</dd>
+</dl>
 </div>
 </div>
 </div>
@@ -1336,6 +1216,27 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code>, <code>dev-mem</code>, <code>mariadb</code>, <code>mssql</code>, <code>mysql</code>, <code>oracle</code>, <code>postgres</code>, <code>tidb</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-connect-timeout</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the JDBC driver connection timeout and login timeout.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-connect-timeout</code><br>
+<strong>Env:</strong> <code>KC_DB_CONNECT_TIMEOUT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10s</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
