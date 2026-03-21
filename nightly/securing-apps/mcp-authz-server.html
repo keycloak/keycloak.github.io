@@ -208,10 +208,22 @@ gtag('config', 'G-0J2P9316N6');
 <td class="tableblock halign-left valign-top"><p class="tableblock">SHOULD</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Not supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
 </tr>
 </tbody>
 </table>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The OAuth Client ID Metadata Document support in Keycloak is an experimental feature. It may introduce breaking changes in future versions of Keycloak.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>The MCP specification adopts <a href="https://datatracker.ietf.org/doc/html/rfc9728">OAuth 2.0 Protected Resource Metadata (RFC 9728)</a>. The standard is for an MCP server and not for an authorization server like Keycloak. Therefore, it is not included in the above table.</p>
 </div>
@@ -248,7 +260,7 @@ gtag('config', 'G-0J2P9316N6');
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization">2025-11-25</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Partially Supported without Resource Indicators for OAuth 2.0 and OAuth Client ID Metadata Document</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Partially Supported without Resource Indicators for OAuth 2.0</p></td>
 </tr>
 </tbody>
 </table>
@@ -388,7 +400,266 @@ gtag('config', 'G-0J2P9316N6');
 </ul>
 </div>
 <div class="paragraph">
-<p>The Keycloak community is planning to support OAuth Client ID Metadata Document in the future. Until the support is completed, Keycloak can still accommodate an MCP client by pre-registration or Dynamic Client Registration.</p>
+<p>Keycloak supports OAuth Client ID Metadata Document. To use Client ID Metadata Documents, you need to enable the feature and set up a client policy so that Keycloak processes the <code>client_id</code> parameter formatted as a URL and fetches the client metadata from that URL.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The OAuth Client ID Metadata Document support is an experimental feature in Keycloak. As such, it may introduce breaking changes in future versions of Keycloak. To enable it, start Keycloak with <code>--features=cimd</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_setting_up_the_client_profile_for_oauth_client_id_metadata_document"><a class="anchor" href="#_setting_up_the_client_profile_for_oauth_client_id_metadata_document"></a>Setting up the client profile for OAuth Client ID Metadata Document</h5>
+<div class="paragraph">
+<p>To process an authorization request whose <code>client_id</code> metadata is a URL pointing to a Client ID Metadata Document, you need to create the profile including <code>client-id-metadata-document</code> executor.</p>
+</div>
+<div class="paragraph">
+<p>To configure the executor, create a client policy profile in the Keycloak Admin Console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Profiles</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client profile</strong>.</p>
+</li>
+<li>
+<p>Give the profile a name such as <code>cimd-profile</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add executor</strong> and select <code>client-id-metadata-document</code> from the list.</p>
+</li>
+<li>
+<p>Configure the executor with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Allow http scheme</strong>: If <code>ON</code>, allows <code>http</code> scheme for the Client ID URL and Client Metadata URLs (e.g., <code>client_uri</code>, <code>logo_uri</code>, <code>tos_uri</code>, <code>policy_uri</code>, <code>jwks_uri</code>). This should only be <code>ON</code> in a development environment and must be <code>OFF</code> in a production environment.</p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: A list of domain patterns (wildcard) that the executor accepts for the Client ID URL and Client Metadata URL properties. For example, use <code>*.example.org</code> to accept any subdomain of <code>example.org</code>. If empty, all domains are denied.</p>
+</li>
+<li>
+<p><strong>Restrict same domain</strong>: If <code>ON</code>, the executor verifies that the Client ID URL and Redirect URI in an authorization request, as well as URL-valued properties of the client metadata, are all under the same trusted domain.</p>
+</li>
+<li>
+<p><strong>Required properties</strong>: A list of client metadata properties that must be present in the Client ID Metadata Document. If the fetched document does not include all the listed properties, the request is rejected.</p>
+</li>
+<li>
+<p><strong>Only Allow Confidential Client</strong>: If <code>ON</code>, the executor only accepts a Client Metadata Document representing a confidential client. In this case, the client metadata must include either a <code>jwks</code> or <code>jwks_uri</code> property and must use <code>private_key_jwt</code> or <code>tls_client_auth</code> as the token endpoint authentication method.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_setting_up_the_client_policy_for_oauth_client_id_metadata_document"><a class="anchor" href="#_setting_up_the_client_policy_for_oauth_client_id_metadata_document"></a>Setting up the client policy for OAuth Client ID Metadata Document</h5>
+<div class="paragraph">
+<p>To trigger the profile created above when the <code>client_id</code> parameter in an authorization request is a URI matching a specified scheme (e.g., <code>https</code>), you need to create the policy including <code>client-id-uri</code> condition.</p>
+</div>
+<div class="paragraph">
+<p>To configure the condition, create a client policy in the Keycloak Admin Console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Policies</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client policy</strong>.</p>
+</li>
+<li>
+<p>Give the policy a name such as <code>cimd-policy</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Conditions</strong>, click <strong>Add condition</strong> and select <code>client-id-uri</code> from the list.</p>
+</li>
+<li>
+<p>Configure the condition with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>URI scheme</strong>: A list of URI schemes to match against the <code>client_id</code> parameter (e.g., <code>https</code>). In a production environment, only <code>https</code> should be used.</p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: A list of domain patterns (wildcard) that the condition accepts for the host part of the <code>client_id</code> URI. If domains are filled, the condition evaluates to true only when the host part of the <code>client_id</code> matches one of the domains. If not filled, the condition evaluates to false regardless. For example, use <code>*.example.org</code> to accept any subdomain of <code>example.org</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Associated client profiles</strong>, add the <code>cimd-profile</code> profile created in the previous step.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>With this configuration, when an MCP client sends an authorization request with a <code>client_id</code> value that is an <code>https</code> URL matching a trusted domain, Keycloak fetches the Client ID Metadata Document from that URL and uses the metadata to process the request.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_system_wide_settings_for_the_client_id_metadata_document_executor"><a class="anchor" href="#_system_wide_settings_for_the_client_id_metadata_document_executor"></a>System-wide settings for the Client ID Metadata Document executor</h5>
+<div class="paragraph">
+<p>The <code>client-id-metadata-document</code> executor has the following system-wide settings that control caching and metadata size limits. These settings cannot be configured through the Admin Console. Instead, they are configured as SPI options when starting Keycloak.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>min-cache-time</strong>: The minimum time (in seconds) that a fetched Client ID Metadata Document is cached. Default: <code>300</code> (5 minutes).</p>
+</li>
+<li>
+<p><strong>max-cache-time</strong>: The maximum time (in seconds) that a fetched Client ID Metadata Document is cached. Default: <code>259200</code> (3 days).</p>
+</li>
+<li>
+<p><strong>upper-limit-metadata-bytes</strong>: The maximum size (in bytes) of a Client ID Metadata Document that Keycloak accepts. Default: <code>5000</code> (5 KB).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To configure these settings, use the <code>--spi-client-policy-executor&#8212;&#8203;client-id-metadata-document--&lt;property&gt;=&lt;value&gt;</code> command-line option when starting Keycloak. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-client-policy-executor--client-id-metadata-document--min-cache-time=600 --spi-client-policy-executor--client-id-metadata-document--max-cache-time=86400 --spi-client-policy-executor--client-id-metadata-document--upper-limit-metadata-bytes=10000</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_visual_studio_code_desktop_integration"><a class="anchor" href="#_visual_studio_code_desktop_integration"></a>Visual Studio Code desktop integration</h3>
+<div class="paragraph">
+<p><a href="https://code.visualstudio.com/">Microsoft Visual Studio Code</a> (VS Code) desktop is an MCP client that supports OAuth Client ID Metadata Document. When VS Code desktop connects to an MCP server that requires authorization, it sends an authorization request with a <code>client_id</code> parameter that is an <code>https</code> URL hosted on <code>vscode.dev</code> (e.g., <code>https://vscode.dev/mcp-client</code>). Keycloak fetches the Client ID Metadata Document from this URL and uses the metadata to process the request.</p>
+</div>
+<div class="paragraph">
+<p>VS Code desktop uses localhost callbacks for the OAuth redirect. It starts a local HTTP server and uses a redirect URI such as <code>http://127.0.0.1:&lt;port&gt;/callback</code>. Because the redirect URI is on <code>127.0.0.1</code> rather than on the <code>vscode.dev</code> domain, the <strong>Restrict same domain</strong> option in the client profile executor must be set to <code>OFF</code>.</p>
+</div>
+<div class="paragraph">
+<p>To configure Keycloak for VS Code desktop&#8217;s MCP client, follow the steps below.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+VS Code desktop is a public client that uses PKCE (Proof Key for Code Exchange) for OAuth. It does not use a client secret.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_starting_keycloak_with_the_cimd_feature"><a class="anchor" href="#_starting_keycloak_with_the_cimd_feature"></a>Starting Keycloak with the CIMD feature</h4>
+<div class="paragraph">
+<p>Start Keycloak with the <code>cimd</code> feature flag enabled:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --features=cimd</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_setting_up_the_client_profile_for_vs_code_desktop"><a class="anchor" href="#_setting_up_the_client_profile_for_vs_code_desktop"></a>Setting up the client profile for VS Code desktop</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Profiles</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client profile</strong>.</p>
+</li>
+<li>
+<p>Give the profile a name such as <code>vscode-cimd-profile</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add executor</strong> and select <code>client-id-metadata-document</code> from the list.</p>
+</li>
+<li>
+<p>Configure the executor with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Allow http scheme</strong>: <code>OFF</code></p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: <code>vscode.dev</code>, <code>127.0.0.1</code></p>
+</li>
+<li>
+<p><strong>Restrict same domain</strong>: <code>OFF</code> (VS Code desktop uses a localhost redirect URI such as <code>http://127.0.0.1:&lt;port&gt;/callback</code>, which is not on the same domain as <code>vscode.dev</code>)</p>
+</li>
+<li>
+<p><strong>Only Allow Confidential Client</strong>: <code>OFF</code> (VS Code desktop is a public client)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_setting_up_the_client_policy_for_vs_code_desktop"><a class="anchor" href="#_setting_up_the_client_policy_for_vs_code_desktop"></a>Setting up the client policy for VS Code desktop</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Policies</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client policy</strong>.</p>
+</li>
+<li>
+<p>Give the policy a name such as <code>vscode-cimd-policy</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Conditions</strong>, click <strong>Add condition</strong> and select <code>client-id-uri</code> from the list.</p>
+</li>
+<li>
+<p>Configure the condition with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>URI scheme</strong>: <code>https</code></p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: <code>vscode.dev</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Associated client profiles</strong>, add the <code>vscode-cimd-profile</code> profile created in the previous step.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>With this configuration, when VS Code desktop sends an authorization request, Keycloak recognizes the <code>client_id</code> as a URL on <code>vscode.dev</code>, fetches the Client ID Metadata Document, and uses a localhost callback to complete the OAuth flow.</p>
 </div>
 </div>
 </div>
