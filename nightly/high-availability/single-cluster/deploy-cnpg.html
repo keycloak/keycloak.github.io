@@ -138,10 +138,10 @@ You would still need to adapt it to your environment and your organization&#8217
 </div>
 </div>
 <div class="sect1">
-<h2 id="_installing_cloudnativepg"><a class="anchor" href="#_installing_cloudnativepg"></a>Installing CloudNativePG</h2>
+<h2 id="_install_cloudnativepg"><a class="anchor" href="#_install_cloudnativepg"></a>Install CloudNativePG</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_installing_the_cloudnativepg_operator"><a class="anchor" href="#_installing_the_cloudnativepg_operator"></a>Installing the CloudNativePG Operator</h3>
+<h3 id="single-cluster-cnpg-install-operator"><a class="anchor" href="#single-cluster-cnpg-install-operator"></a>Install the CloudNativePG Operator</h3>
 <div class="paragraph">
 <p>Install the operator directly using the operator manifest:</p>
 </div>
@@ -173,7 +173,22 @@ You would still need to adapt it to your environment and your organization&#8217
 </div>
 </div>
 <div class="sect2">
-<h3 id="_installing_cloudnativepg_cluster"><a class="anchor" href="#_installing_cloudnativepg_cluster"></a>Installing CloudNativePG Cluster</h3>
+<h3 id="_install_cloudnativepg_cluster"><a class="anchor" href="#_install_cloudnativepg_cluster"></a>Install CloudNativePG Cluster</h3>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>We recommend enabling backups for the CloudNativePG cluster to protect against data loss.
+See <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-cnpg-with-backup">Deploying CloudNativePG with scheduled backups to S3</a> for instructions on configuring scheduled backups to AWS S3.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>Installation and configuration of CloudNativePG cluster is done via a <code>Cluster</code> resource.</p>
 </div>
@@ -186,12 +201,9 @@ You would still need to adapt it to your environment and your organization&#8217
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
-
 metadata:
   name: cnpg-keycloak
-
 spec:
-
   instances: 3 <i class="conum" data-value="1"></i><b>(1)</b>
 
   storage:
@@ -205,7 +217,6 @@ spec:
     synchronous: <i class="conum" data-value="4"></i><b>(4)</b>
       method: any
       number: 1
-      dataDurability: required
     parameters:
       max_connections: "100" <i class="conum" data-value="5"></i><b>(5)</b>
 
@@ -239,11 +250,11 @@ spec:
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Database connection limit. This value should be adjusted based on the expected total number of the JDBC connections from the Keycloak cluster.</td>
+<td>Maximum number of concurrent connections to the database server. This value needs to be adjusted based on the expected maximum number of connections from the Keycloak cluster. For example, if the Keycloak cluster has 3 instances with a maximum number of 30 JDBC connections each (see the Keycloak option <code>db-pool-max-size</code>), the value of <code>spec.postgresql.max_connections</code> needs to be at least <code>90</code> to account for the required connection capacity. See <a href="{links_high-availability_single-cluster-db-concepts_url}">{links_high-availability_single-cluster-db-concepts_name}</a> for more details.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Create a database <code>keycloak</code> owned by the user <code>keycloak</code>.</td>
+<td>Creates a database <code>keycloak</code> owned by the user <code>keycloak</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="7"></i><b>7</b></td>
@@ -307,11 +318,20 @@ cnpg-keycloak-3   1/1     Running   0          10m   replica</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_enable_monitoring_of_the_cloudnativepg_cluster"><a class="anchor" href="#_enable_monitoring_of_the_cloudnativepg_cluster"></a>Enable Monitoring of the CloudNativePG cluster</h3>
+<h3 id="_monitor_the_cloudnativepg_cluster"><a class="anchor" href="#_monitor_the_cloudnativepg_cluster"></a>Monitor the CloudNativePG cluster</h3>
+<div class="paragraph">
+<p>Monitoring of CloudNativePG clusters leverages <a href="https://prometheus.io/">Prometheus</a> and <a href="https://grafana.com/">Grafana</a>.</p>
+</div>
+<div class="paragraph">
+<p>Installation of the Prometheus stack is out of scope of this guide. Basic installation steps can be found in the <a href="https://cloudnative-pg.io/docs/1.28/quickstart">Quickstart section of the CloudNativePG documentation</a>. Additional details on how to customize the monitoring can be found in the <a href="https://cloudnative-pg.io/docs/1.28/monitoring#monitoring-instances">Monitoring section of the CloudNativePG documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p>Assuming Prometheus and Grafana are installed on the Kubernetes cluster the following steps can be used to enable monitoring for a particular CloudNativePG cluster:</p>
+</div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Create a PodMonitor resource.</p>
+<p>Enable collection of metrics by creating a PodMonitor resource:</p>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
@@ -319,11 +339,11 @@ cnpg-keycloak-3   1/1     Running   0          10m   replica</code></pre>
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-  name: cnpg-keycloak-pm <i class="conum" data-value="1"></i><b>(1)</b>
+  name: cnpg-keycloak-pod-monitor
 spec:
   selector:
     matchLabels:
-      cnpg.io/cluster: cnpg-keycloak
+      cnpg.io/cluster: cnpg-keycloak <i class="conum" data-value="1"></i><b>(1)</b>
   podMetricsEndpoints:
   - port: metrics
 EOF</code></pre>
@@ -333,74 +353,15 @@ EOF</code></pre>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The name of the pod monitor resource needs to be different from the name of the cluster.</td>
+<td>Name of the CloudNativePG cluster to be monitored.</td>
 </tr>
 </table>
 </div>
 </li>
 <li>
-<p>Add the <a href="https://raw.githubusercontent.com/cloudnative-pg/grafana-dashboards/refs/heads/main/charts/cluster/grafana-dashboard.json">CloudNativePG Grafana Dashboard</a> to your Grafana instance.</p>
+<p>Add the <a href="https://raw.githubusercontent.com/cloudnative-pg/grafana-dashboards/refs/heads/main/charts/cluster/grafana-dashboard.json">grafana-dashboard.json</a> from the <a href="https://github.com/cloudnative-pg/grafana-dashboards">cloudnative-pg/grafana-dashboards GitHub project</a> to your Grafana instance.</p>
 </li>
 </ol>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="single-cluster-cnpg-connecting"><a class="anchor" href="#single-cluster-cnpg-connecting"></a>Connecting Keycloak to CloudNativePG Cluster</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Now that a CloudNativePG cluster has been installed, here are the relevant Keycloak CR options to connect the Keycloak to the database service. These changes will be required in the <a href="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-keycloak">Deploying Keycloak across multiple availability-zones with the Operator</a> guide. The JDBC url is configured to use the CloudNativeDB database writer service.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Update <code>spec.db.url</code> to be <code>jdbc:postgresql://cnpg-keycloak-rw.cnpg-keycloak.svc.cluster.local:5432/keycloak</code>, the writer instance of the CloudNativePG cluster.</p>
-</li>
-<li>
-<p>Ensure that the Secrets referenced by <code>spec.db.usernameSecret</code> and <code>spec.db.passwordSecret</code> contain usernames and passwords for the CloudNativePG cluster.</p>
-</li>
-</ol>
-</div>
-<div class="sect2">
-<h3 id="_secure_the_jdbc_connection"><a class="anchor" href="#_secure_the_jdbc_connection"></a>Secure the JDBC connection</h3>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Export CloudNativePG CA secret to a file.</p>
-<div class="listingblock">
-<div class="title">Command:</div>
-<div class="content">
-<pre>kubectl --namespace cnpg-keycloak get secrets cnpg-keycloak-ca -ojson | jq -r '.data."ca.crt"' | base64 -d &gt; cnpg-keycloak-ca-cert.pem</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Create a ConfigMap resource <code>cnpg-keycloak-ca</code> in the <code>keycloak</code> namespace with the database CA secret.</p>
-<div class="listingblock">
-<div class="title">Command:</div>
-<div class="content">
-<pre>kubectl --namespace keycloak create configmap cnpg-keycloak-ca --from-file cert.pem=./cnpg-keycloak-ca-cert.pem</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_prepare_the_secret_for_accessing_the_database"><a class="anchor" href="#_prepare_the_secret_for_accessing_the_database"></a>Prepare the secret for accessing the database</h3>
-<div class="paragraph">
-<p>Create <code>keycloak-db-secret</code> in the <code>keycloak</code> namespace based on <code>cnpg-keycloak-app</code> secret from the <code>cnpg-keycloak</code> namespace by running the following script.</p>
-</div>
-<div class="listingblock">
-<div class="title">Script:</div>
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">secret=$(kubectl get --namespace cnpg-keycloak secret cnpg-keycloak-app -ojson)
-username=$(echo "$secret" | jq -r .data.username | base64 -d)
-password=$(echo "$secret" | jq -r .data.password | base64 -d)
-kubectl --namespace keycloak create secret generic keycloak-db-secret \
-  --from-literal="username=$username" --from-literal="password=$password"</code></pre>
-</div>
 </div>
 </div>
 </div>
