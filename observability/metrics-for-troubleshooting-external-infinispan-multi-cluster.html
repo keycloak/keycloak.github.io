@@ -82,7 +82,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-external-infinispan-multi-cluster" >Nightly</option>
-                        <option value="https://www.keycloak.org/observability/metrics-for-troubleshooting-external-infinispan-multi-cluster" selected="selected">26.5.7</option>
+                        <option value="https://www.keycloak.org/observability/metrics-for-troubleshooting-external-infinispan-multi-cluster" selected="selected">26.6.0</option>
                     </select>
                 </div>
 
@@ -107,8 +107,7 @@ gtag('config', 'G-0J2P9316N6');
 <h3 id="_enabled_infinispan_server_metrics"><a class="anchor" href="#_enabled_infinispan_server_metrics"></a>Enabled Infinispan server metrics</h3>
 <div class="paragraph">
 <p>Infinispan exposes metrics in the endpoint <code>/metrics</code>.
-By default, they are enabled.
-We recommend enabling the attribute <code>name-as-tags</code> as it makes the metrics name independent on the cache name.</p>
+By default, they are enabled.</p>
 </div>
 <div class="paragraph">
 <p>To configure metrics in the Infinispan server, just enabled as shown in the XML below.</p>
@@ -118,7 +117,7 @@ We recommend enabling the attribute <code>name-as-tags</code> as it makes the me
 <div class="content">
 <pre class="highlight"><code class="language-xml" data-lang="xml">&lt;infinispan&gt;
     &lt;cache-container statistics="true"&gt;
-        &lt;metrics gauges="true" histograms="false" name-as-tags="true" /&gt;
+        &lt;metrics gauges="true" histograms="false" /&gt;
     &lt;/cache-container&gt;
 &lt;/infinispan&gt;</code></pre>
 </div>
@@ -141,7 +140,8 @@ data:
         metrics:
           gauges: true
           namesAsTags: true
-          histograms: false</code></pre>
+          histograms: false
+          legacy: true</code></pre>
 </div>
 </div>
 <div class="listingblock">
@@ -380,7 +380,7 @@ In a healthy cluster, the thread pool should never be closer to its maximum size
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Thread pool metrics are not available with virtual threads. Virtual threads are enabled by default when running with OpenJDK 21.
+Thread pool metrics are not available with virtual threads. Virtual threads are enabled by default when running with OpenJDK 21 and later.
 </td>
 </tr>
 </table>
@@ -502,7 +502,9 @@ A healthy cluster shows a value of zero for all metrics.
 <div class="paragraph">
 <p>JGroups provides reliable delivery of messages.
 When a message is dropped on the network, or the receiver cannot handle the message, a retransmission is required.
-Retransmissions increase resource usage, and it is usually a signal of an overload system.</p>
+JGroups delays the acknowledgment of delivered messages, to reduce the amount of acknowledge messages in transit.
+This choice has a side effect: the sender may eagerly retransmit message(s) if the acknowledges are delayed for too long.
+An increase in the retransmission metric value does not immediately mean an unhealthy cluster.</p>
 </div>
 <div class="paragraph">
 <p>Random Early Drop (RED) monitors the sender queues.
@@ -516,7 +518,8 @@ It prevents threads from being blocked by a full sender queue.</p>
 <i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-A healthy cluster shows a value of zero for all metrics.
+A healthy cluster typically shows a value of zero or very low values for all metrics.
+Occasional retransmissions may occur due to timing issues between the sender and the receiver.
 </td>
 </tr>
 </table>

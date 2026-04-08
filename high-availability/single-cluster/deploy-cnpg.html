@@ -1,0 +1,401 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Deploying CloudNativePG in multiple availability zones - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Deploying CloudNativePG in multiple availability zones">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Deploy CloudNativePG as the database building block in a single-cluster deployment.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg">
+<meta property="og:url" content="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                          <li class="breadcrumb-item"><a href="https://www.keycloak.org/high-availability/single-cluster/introduction">Single cluster</a></li>
+                        <li class="breadcrumb-item active">Deploying CloudNativePG in multiple availability zones</li>
+                    </ol>
+                </nav>
+            </div>
+
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-cnpg" >Nightly</option>
+                        <option value="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg" selected="selected">26.6.0</option>
+                    </select>
+                </div>
+
+                <h1>Deploying CloudNativePG in multiple availability zones</h1>
+                    <span class="text-muted">Deploy CloudNativePG as the database building block in a single-cluster deployment.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This topic describes how to deploy a CloudNativePG cluster across multiple availability zones to tolerate one or more availability zone failures in a given AWS region.</p>
+</div>
+<div class="paragraph">
+<p>This deployment is intended to be used with the setup described in the <a href="https://www.keycloak.org/high-availability/single-cluster/concepts">Concepts for single-cluster deployments</a> guide.
+Use this deployment with the other building blocks outlined in the <a href="https://www.keycloak.org/high-availability/single-cluster/building-blocks">Building blocks single-cluster deployments</a> guide.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+We provide these blueprints to show a minimal functionally complete example with a good baseline performance for regular installations.
+You would still need to adapt it to your environment and your organization&#8217;s standards and security best practices.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_architecture"><a class="anchor" href="#_architecture"></a>Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>CloudNativePG is an opensource operator that manages PostgreSQL clusters on Kubernetes. It is designed to operate one primary writer instance and optional reader instances.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/high-availability/cnpg-multi-az.dio.svg" alt="cnpg multi az.dio">
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_install_cloudnativepg"><a class="anchor" href="#_install_cloudnativepg"></a>Install CloudNativePG</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="single-cluster-cnpg-install-operator"><a class="anchor" href="#single-cluster-cnpg-install-operator"></a>Install the CloudNativePG Operator</h3>
+<div class="paragraph">
+<p>Install the operator directly using the operator manifest:</p>
+</div>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply --server-side -f \
+  https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.28/releases/cnpg-1.28.1.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use the following command to verify the installation status:</p>
+</div>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl rollout status deployment \
+  -n cnpg-system cnpg-controller-manager</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">deployment "cnpg-controller-manager" successfully rolled out</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is possible to install the operator using other supported methods such as Helm Chart, OLM, or <code>cnpg</code> plugin for <code>kubectl</code>. See the <a href="https://cloudnative-pg.io/docs/1.28/installation_upgrade">CloudNativePG documentation</a> for details.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_install_cloudnativepg_cluster"><a class="anchor" href="#_install_cloudnativepg_cluster"></a>Install CloudNativePG Cluster</h3>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>We recommend enabling backups for the CloudNativePG cluster to protect against data loss.
+See <a href="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg-with-backup">Deploying CloudNativePG with scheduled backups to S3</a> for instructions on configuring scheduled backups to AWS S3.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Installation and configuration of CloudNativePG cluster is done via a <code>Cluster</code> resource.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a <code>cluster.yaml</code> file based on the following content:</p>
+<div class="listingblock">
+<div class="title">Cluster resource:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cnpg-keycloak
+spec:
+  instances: 3 <i class="conum" data-value="1"></i><b>(1)</b>
+
+  storage:
+    size: 8Gi <i class="conum" data-value="2"></i><b>(2)</b>
+
+  affinity: <i class="conum" data-value="3"></i><b>(3)</b>
+    podAntiAffinityType: required
+    topologyKey: topology.kubernetes.io/zone
+
+  postgresql:
+    synchronous: <i class="conum" data-value="4"></i><b>(4)</b>
+      method: any
+      number: 1
+    parameters:
+      max_connections: "100" <i class="conum" data-value="5"></i><b>(5)</b>
+
+  bootstrap:
+    initdb: <i class="conum" data-value="6"></i><b>(6)</b>
+      database: keycloak
+      owner: keycloak
+
+  managed:
+    services:
+      disabledDefaultServices: ["ro", "r"] <i class="conum" data-value="7"></i><b>(7)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Number of instances.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Pod storage size. This setting needs to take into account the expected size of the database and PostgreSQL WAL logs.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Pod affinity rules for Kubernetes scheduler. The <code>topology.kubernetes.io/zone</code> value ensures the scheduler will spread the pods across different availability zones.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Enable quorum-based synchronous replication with a single standby server. For more information about synchronous replication follow the <a href="https://cloudnative-pg.io/docs/1.28/replication/#synchronous-replication">CloudNativePG documentation</a>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Maximum number of concurrent connections to the database server. This value needs to be adjusted based on the expected maximum number of connections from the Keycloak cluster. For example, if the Keycloak cluster has 3 instances with a maximum number of 30 JDBC connections each (see the Keycloak option <code>db-pool-max-size</code>), the value of <code>spec.postgresql.max_connections</code> needs to be at least <code>90</code> to account for the required connection capacity. See <a href="{links_high-availability_single-cluster-db-concepts_url}">{links_high-availability_single-cluster-db-concepts_name}</a> for more details.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Creates a database <code>keycloak</code> owned by the user <code>keycloak</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>Disables the <code>-ro</code> and <code>-r</code> default services which are intended for read-only applications. Since Keycloak requires a read-write access it only connects to the <code>-rw</code> service.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Create the <code>cnpg-keycloak</code> namespace.</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create ns cnpg-keycloak</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the <code>cnpg-keycloak</code> cluster resource by applying the <code>cluster.yaml</code> file.</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak apply -f cluster.yaml</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Wait for the <code>cnpg-keycloak</code> cluster to get into the <code>Ready</code> state.</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak wait --for condition=Ready --timeout=300s cluster cnpg-keycloak</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">cluster.postgresql.cnpg.io/cnpg-keycloak condition met</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optionally, view the <code>cnpg-keycloak</code> cluster pods and their roles.</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak get pods -L role</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">NAME              READY   STATUS    RESTARTS   AGE   ROLE
+cnpg-keycloak-1   1/1     Running   0          10m   primary
+cnpg-keycloak-2   1/1     Running   0          10m   replica
+cnpg-keycloak-3   1/1     Running   0          10m   replica</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_monitor_the_cloudnativepg_cluster"><a class="anchor" href="#_monitor_the_cloudnativepg_cluster"></a>Monitor the CloudNativePG cluster</h3>
+<div class="paragraph">
+<p>Monitoring of CloudNativePG clusters leverages <a href="https://prometheus.io/">Prometheus</a> and <a href="https://grafana.com/">Grafana</a>.</p>
+</div>
+<div class="paragraph">
+<p>Installation of the Prometheus stack is out of scope of this guide. Basic installation steps can be found in the <a href="https://cloudnative-pg.io/docs/1.28/quickstart">Quickstart section of the CloudNativePG documentation</a>. Additional details on how to customize the monitoring can be found in the <a href="https://cloudnative-pg.io/docs/1.28/monitoring#monitoring-instances">Monitoring section of the CloudNativePG documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p>Assuming Prometheus and Grafana are installed on the Kubernetes cluster the following steps can be used to enable monitoring for a particular CloudNativePG cluster:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Enable collection of metrics by creating a PodMonitor resource:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">kubectl -n cnpg-keycloak apply -f - &lt;&lt;EOF
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cnpg-keycloak-pod-monitor
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: cnpg-keycloak <i class="conum" data-value="1"></i><b>(1)</b>
+  podMetricsEndpoints:
+  - port: metrics
+EOF</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Name of the CloudNativePG cluster to be monitored.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Add the <a href="https://raw.githubusercontent.com/cloudnative-pg/grafana-dashboards/refs/heads/main/charts/cluster/grafana-dashboard.json">grafana-dashboard.json</a> from the <a href="https://github.com/cloudnative-pg/grafana-dashboards">cloudnative-pg/grafana-dashboards GitHub project</a> to your Grafana instance.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After successful deployment of the CloudNativePG database continue with <a href="https://www.keycloak.org/high-availability/single-cluster/deploy-keycloak">Deploying Keycloak across multiple availability-zones with the Operator</a></p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/single-cluster/deploy-cnpg.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

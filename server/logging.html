@@ -82,7 +82,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/server/logging" >Nightly</option>
-                        <option value="https://www.keycloak.org/server/logging" selected="selected">26.5.7</option>
+                        <option value="https://www.keycloak.org/server/logging" selected="selected">26.6.0</option>
                     </select>
                 </div>
 
@@ -467,6 +467,36 @@ The ECS specification is being converged with <a href="https://opentelemetry.io/
 </ul>
 </div>
 <div class="sect2">
+<h3 id="customize-service-fields"><a class="anchor" href="#customize-service-fields"></a>Customize the service fields</h3>
+<div class="paragraph">
+<p>When using JSON log output, Keycloak includes <code>service.name</code> and potentially <code>service.environment</code> fields in the log entries.
+By default, <code>service.name</code> is set to <code>keycloak</code>, and <code>service.environment</code> is not set for the default JSON format.
+For the ECS format, the <code>service.environment</code> is set to the Quarkus profile (e.g. <code>prod</code>).</p>
+</div>
+<div class="paragraph">
+<p>You can customize these fields across all log handlers using the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>log-service-name</code> - Set the <code>service.name</code> field (default: <code>keycloak</code>)</p>
+</li>
+<li>
+<p><code>log-service-environment</code> - Set the <code>service.environment</code> field</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These options apply to all log handlers (<code>console</code>, <code>file</code>, and <code>syslog</code>) that have JSON output enabled.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --log-console-output=json --log-service-name=my-keycloak --log-service-environment=production</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_example"><a class="anchor" href="#_example"></a>Example</h3>
 <div class="paragraph">
 <p>If you want to have JSON logs in <strong>ECS</strong> (Elastic Common Schema) format for the console log handler, you can enter the following command:</p>
@@ -659,7 +689,7 @@ When HTTP access logs are enabled, they are shown by default, as <code>INFO</cod
 </td>
 <td class="content">
 HTTP Access logs may contain sensitive HTTP headers like <code>Authorization</code>, <code>Cookie</code>, or external API keys references.
-The <code>Authorization</code> header and selected sensitive cookies are automatically masked in the HTTP Access log. However, the list of masked items might not be complete. Be careful with using the <code>long</code> pattern or printing the headers by the custom format - you should use it only for development purposes.
+The <code>Authorization</code> header and selected sensitive cookies are automatically masked in the HTTP Access log. However, the list of masked items might not be complete. Be careful with using the <code>long</code> pattern or printing the headers by the custom format - you should use it only for development purposes. To extend the list of the masked items, see below.
 </td>
 </tr>
 </table>
@@ -669,7 +699,7 @@ The <code>Authorization</code> header and selected sensitive cookies are automat
 </div>
 </div>
 <div class="sect2">
-<h3 id="_masked_specific_http_headers_and_cookies"><a class="anchor" href="#_masked_specific_http_headers_and_cookies"></a>Masked specific HTTP headers and cookies</h3>
+<h3 id="_mask_specific_http_headers_and_cookies"><a class="anchor" href="#_mask_specific_http_headers_and_cookies"></a>Mask specific HTTP headers and cookies</h3>
 <div class="paragraph">
 <p>Selected sensitive HTTP headers and cookies are automatically masked in the HTTP Access log.</p>
 </div>
@@ -711,6 +741,14 @@ The <code>Authorization</code> header and selected sensitive cookies are automat
 </li>
 </ul>
 </div>
+<div class="paragraph">
+<p>In order to extend the list of the masked items (e.g. to accommodate for headers and cookies used by your custom extensions), configure the <code>http-access-log-masked-headers</code> and <code>http-access-log-masked-cookies</code> options.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --http-access-log-enabled=true --http-access-log-masked-headers=X-Custom,Y-Api-Token --http-access-log-masked-cookies=MY_COOKIE,MY_SECOND_COOKIE</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_exclude_specific_url_paths"><a class="anchor" href="#_exclude_specific_url_paths"></a>Exclude specific URL paths</h3>
@@ -727,6 +765,60 @@ The <code>Authorization</code> header and selected sensitive cookies are automat
 </div>
 <div class="paragraph">
 <p>In this case, all calls to the <code>/realms/my-internal-realm/</code> and subsequent paths will be excluded from the HTTP Access log.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_log_to_dedicated_file_with_rotation"><a class="anchor" href="#_log_to_dedicated_file_with_rotation"></a>Log to dedicated file with rotation</h3>
+<div class="paragraph">
+<p>Instead of keeping the HTTP access logs in the normal server log, you can write them to a dedicated log file.
+This helps you separate HTTP access logs from the server logs and maintain audit trails.
+When file logging is enabled, HTTP access logs are not written to the console.</p>
+</div>
+<div class="sect3">
+<h4 id="_enable_file_logging"><a class="anchor" href="#_enable_file_logging"></a>Enable file logging</h4>
+<div class="paragraph">
+<p>You can enable file logging as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --http-access-log-enabled=true --http-access-log-file-enabled=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This automatically creates a file called <code>keycloak-http-access.log</code> in the <code>/data/log</code> directory of your distribution.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_change_file_name_and_suffix"><a class="anchor" href="#_change_file_name_and_suffix"></a>Change file name and suffix</h4>
+<div class="paragraph">
+<p>You can change the name of the log file using the <code>http-access-log-file-name</code> property.
+To change the file suffix (<code>.log</code> is the default), use the <code>http-access-log-file-suffix</code> property.</p>
+</div>
+<div class="paragraph">
+<p>For example, to write HTTP access logs to the file <code>my-http-logs.txt</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --http-access-log-enabled=true --http-access-log-file-enabled=true --http-access-log-file-name=my-http-logs --http-access-log-file-suffix=txt</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_file_rotation"><a class="anchor" href="#_file_rotation"></a>File rotation</h4>
+<div class="paragraph">
+<p>By default, the HTTP access log file is rotated daily.</p>
+</div>
+<div class="paragraph">
+<p>When the daily rotation occurs, a date-based suffix '.{yyyy-MM-dd}' is added to the log file name from the previous day, keeping access logs separated by date (for example, <code>keycloak-http-access.2052-02-29.log</code>).</p>
+</div>
+<div class="paragraph">
+<p>To disable rotation, use the following configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --http-access-log-enabled=true --http-access-log-file-enabled=true --http-access-log-file-rotate=false</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -836,6 +928,48 @@ The <code>Authorization</code> header and selected sensitive cookies are automat
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>off</code>, <code>fatal</code>, <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, <code>trace</code>, <code>all</code></p></td>
 <td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-service-environment</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the `service.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">environment` field in JSON log entries for all log handlers. In ECS format, defaults to the Quarkus profile if not set.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-service-environment</code><br>
+<strong>Env:</strong> <code>KC_LOG_SERVICE_ENVIRONMENT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-service-name</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the `service.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">name` field in JSON log entries for all log handlers.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-service-name</code><br>
+<strong>Env:</strong> <code>KC_LOG_SERVICE_NAME</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>keycloak</code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1282,6 +1416,117 @@ The <code>Authorization</code> header and selected sensitive cookies are automat
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code>, <code>json</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>default</code></p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-rotation-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables log file rotation.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-rotation-enabled</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_ROTATION_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-rotation-file-suffix</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the log file handler rotation file suffix.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">When used, the file will be rotated based on its suffix. Example: <code>.yyyy-MM-dd</code> to rotate daily. Note: If the suffix ends with <code>.zip</code> or <code>.gz</code>, the rotation file will also be compressed.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-rotation-file-suffix</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_ROTATION_FILE_SUFFIX</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated and log file rotation is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-rotation-max-backup-index</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of backup log files to keep.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-rotation-max-backup-index</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_ROTATION_MAX_BACKUP_INDEX</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated and log file rotation is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>5</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-rotation-max-file-size</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum log file size, after which a rotation is executed.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Supports size suffixes (e.g. 10M, 1G).</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-rotation-max-file-size</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_ROTATION_MAX_FILE_SIZE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated and log file rotation is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10M</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-rotation-rotate-on-boot</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Indicates whether to rotate log files on server start.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-rotation-rotate-on-boot</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_ROTATION_ROTATE_ON_BOOT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler is activated and log file rotation is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -1679,6 +1924,144 @@ The <code>Authorization</code> header and selected sensitive cookies are automat
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-access-log-file-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If HTTP access logging should be done to a separate file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-access-log-file-enabled</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ACCESS_LOG_FILE_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when HTTP Access log is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-access-log-file-name</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The HTTP access log file base name, which will create a log file name concatenating base and suffix (e.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">g. <code>keycloak-http-access.log</code>). The file is located in the <code>/data/log</code> directory of the distribution.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-access-log-file-name</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ACCESS_LOG_FILE_NAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when HTTP Access logging to file is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>keycloak-http-access</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-access-log-file-rotate</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the HTTP Access log file should be rotated daily.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-access-log-file-rotate</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ACCESS_LOG_FILE_ROTATE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when HTTP Access logging to file is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-access-log-file-suffix</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The HTTP access log file suffix.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">When rotation is enabled, a date-based suffix <code>.{yyyy-MM-dd}</code> is added before the specified suffix. If multiple rotations occur on the same day, an incremental index is appended to the date.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-access-log-file-suffix</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ACCESS_LOG_FILE_SUFFIX</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when HTTP Access logging to file is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.log</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-access-log-masked-cookies</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set of HTTP Cookie headers whose values must be masked when the <code>long</code> pattern or <code>%{ALL_REQUEST_HEADERS}</code> format is enabled with the <code>http-access-log-pattern</code> option.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Selected security sensitive cookies are always masked.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-access-log-masked-cookies</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ACCESS_LOG_MASKED_COOKIES</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when HTTP Access log is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>List</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-access-log-masked-headers</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set of HTTP headers whose values must be masked when the <code>long</code> pattern or <code>%{ALL_REQUEST_HEADERS}</code> format is enabled with the <code>http-access-log-pattern</code> option.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Selected security sensitive headers are always masked.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-access-log-masked-headers</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ACCESS_LOG_MASKED_HEADERS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when HTTP Access log is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>List</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>http-access-log-pattern</code></span></p>
 </div>
 <div class="paragraph">
@@ -1820,6 +2203,30 @@ The <code>Authorization</code> header and selected sensitive cookies are automat
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--telemetry-logs-endpoint</code><br>
 <strong>Env:</strong> <code>KC_TELEMETRY_LOGS_ENDPOINT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Telemetry Logs functionality ('telemetry-logs-enabled') is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>telemetry-logs-header-&lt;header&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry header that will be part of the log exporter request (mainly useful for providing Authorization header).</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Check the documentation on how to set environment variables for headers containing special characters or custom case-sensitive headers.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--telemetry-logs-header-&lt;header&gt;</code><br>
+<strong>Env:</strong> <code>KC_TELEMETRY_LOGS_HEADER_&lt;HEADER&gt;</code></p>
 </div>
 </div>
 </div>

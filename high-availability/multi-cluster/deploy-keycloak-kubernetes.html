@@ -83,7 +83,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-keycloak-kubernetes" >Nightly</option>
-                        <option value="https://www.keycloak.org/high-availability/multi-cluster/deploy-keycloak-kubernetes" selected="selected">26.5.7</option>
+                        <option value="https://www.keycloak.org/high-availability/multi-cluster/deploy-keycloak-kubernetes" selected="selected">26.6.0</option>
                     </select>
                 </div>
 
@@ -138,10 +138,10 @@ Use it together with the other building blocks outlined in the <a href="https://
 <p>Install the Keycloak Operator as described in the <a href="https://www.keycloak.org/operator/installation">Keycloak Operator Installation</a> guide.</p>
 </li>
 <li>
-<p>Notice the configuration file below contains options relevant for connecting to the Aurora database from <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-aurora#multi-cluster-aurora-connecting">Deploying AWS Aurora in multiple availability zones</a></p>
+<p>Notice the configuration file below contains options relevant for connecting to the Aurora database from <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-aurora#multi-cluster-aurora-connect">Deploying AWS Aurora in multiple availability zones</a></p>
 </li>
 <li>
-<p>Notice the configuration file below options relevant for connecting to the Infinispan server from <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc#connecting-infinispan-to-keycloak">Deploying Infinispan for HA with the Infinispan Operator</a></p>
+<p>Notice the configuration file below options relevant for connecting to the Infinispan server from <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc#connect-infinispan-to-keycloak">Deploying Infinispan for HA with the Infinispan Operator</a></p>
 </li>
 <li>
 <p>Build a custom Keycloak image which is <a href="https://www.keycloak.org/server/db#preparing-keycloak-for-amazon-aurora-postgresql">prepared for usage with the Amazon Aurora PostgreSQL database</a>.</p>
@@ -159,7 +159,7 @@ Create a <code>ConfigMap</code> with the certificate bundle using:</p>
 <p>Deploy the Keycloak CR with the following values with the resource requests and limits calculated in the first step:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2beta1
 kind: Keycloak
 metadata:
   labels:
@@ -178,7 +178,7 @@ spec:
       memory: "2250M"
   db:
     vendor: postgres
-    url: jdbc:aws-wrapper:postgresql://&lt;AWS_AURORA_URL_HERE&gt;:5432/keycloak?sslmode=verify-full&amp;sslrootcert=/opt/keycloak/conf/truststores/configmap-keycloak-aurora-rootcert/aurora.pem <i class="conum" data-value="1"></i><b>(1)</b>
+    url: jdbc:aws-wrapper:postgresql://&lt;AWS_AURORA_URL_HERE&gt;:5432/keycloak <i class="conum" data-value="1"></i><b>(1)</b>
     poolMinSize: 30 <i class="conum" data-value="2"></i><b>(2)</b>
     poolInitialSize: 30
     poolMaxSize: 30
@@ -190,8 +190,11 @@ spec:
       key: password
   image: &lt;KEYCLOAK_IMAGE_HERE&gt; <i class="conum" data-value="3"></i><b>(3)</b>
   startOptimized: false <i class="conum" data-value="3"></i><b>(3)</b>
+  update:
+    strategy: Auto
   features:
     enabled:
+      - rolling-updates:v2
       - multi-site <i class="conum" data-value="4"></i><b>(4)</b>
   additionalOptions:
     - name: log-console-output
@@ -214,20 +217,22 @@ spec:
         key: password
     - name: db-driver
       value: software.amazon.jdbc.Driver
+    - name: db-tls-mode <i class="conum" data-value="6"></i><b>(6)</b>
+      value: verify-server
   http:
     tlsSecret: keycloak-tls-secret
   instances: 3
   truststores:
     aurora:
       configMap:
-        name: keycloak-aurora-rootcert <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+        name: keycloak-aurora-rootcert <i class="conum" data-value="7"></i><b>(7)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Secure the database connection with the <code>sslmode=verify-full</code> and <code>sslrootcert</code> properties.</td>
+<td>Set the Amazon Aurora PostgreSQL URL.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -250,6 +255,10 @@ See the <a href="https://www.keycloak.org/high-availability/multi-cluster/concep
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Secure the database connection.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
 <td>Specify the <code>ConfigMap</code> name that contains the Amazon Aurora PostgreSQL database certificate bundle.
 The Operator will automatic mount the file in directory <code>/opt/keycloak/conf/truststores/configmap-&lt;config map name&gt;/&lt;file-name&gt;</code></td>
 </tr>
@@ -261,7 +270,7 @@ The Operator will automatic mount the file in directory <code>/opt/keycloak/conf
 </div>
 </div>
 <div class="sect1">
-<h2 id="multi-cluster-verify-deployment"><a class="anchor" href="#multi-cluster-verify-deployment"></a>Verifying the deployment</h2>
+<h2 id="multi-cluster-verify-deployment"><a class="anchor" href="#multi-cluster-verify-deployment"></a>Verify the deployment</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Confirm that the Keycloak deployment is ready.</p>

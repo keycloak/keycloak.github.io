@@ -1,0 +1,586 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Deploying CloudNativePG with scheduled backups to S3 - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Deploying CloudNativePG with scheduled backups to S3">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Deploy CloudNativePG with the Barman Cloud plugin and scheduled backups to AWS S3.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg-with-backup">
+<meta property="og:url" content="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg-with-backup">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#high-availability">High availability</a></li>
+                          <li class="breadcrumb-item"><a href="https://www.keycloak.org/high-availability/single-cluster/introduction">Single cluster</a></li>
+                        <li class="breadcrumb-item active">Deploying CloudNativePG with scheduled backups to S3</li>
+                    </ol>
+                </nav>
+            </div>
+
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-cnpg-with-backup" >Nightly</option>
+                        <option value="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg-with-backup" selected="selected">26.6.0</option>
+                    </select>
+                </div>
+
+                <h1>Deploying CloudNativePG with scheduled backups to S3</h1>
+                    <span class="text-muted">Deploy CloudNativePG with the Barman Cloud plugin and scheduled backups to AWS S3.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This topic describes how to configure backup and restore for a CloudNativePG cluster using the Barman Cloud plugin with AWS S3 as the object store.</p>
+</div>
+<div class="paragraph">
+<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/high-availability/single-cluster/concepts">Concepts for single-cluster deployments</a> guide.
+Use it together with the other building blocks outlined in the <a href="https://www.keycloak.org/high-availability/single-cluster/building-blocks">Building blocks single-cluster deployments</a> guide.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+We provide these blueprints to show a minimal functionally complete example with a good baseline performance for regular installations.
+You would still need to adapt it to your environment and your organization&#8217;s standards and security best practices.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_install_the_cloudnativepg_operator_with_barman_cloud_plugin"><a class="anchor" href="#_install_the_cloudnativepg_operator_with_barman_cloud_plugin"></a>Install the CloudNativePG Operator with Barman Cloud plugin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Both the CloudNativePG operator and the Barman Cloud plugin are required in order to enable backup and restore operations using an S3-compatible object store.</p>
+</div>
+<div class="sect2">
+<h3 id="_install_the_cloudnativepg_operator"><a class="anchor" href="#_install_the_cloudnativepg_operator"></a>Install the CloudNativePG Operator</h3>
+<div class="paragraph">
+<p>Install the CloudNativePG Operator as described in <a href="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg#single-cluster-cnpg-install-operator">Deploying CloudNativePG in multiple availability zones</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_install_cert_manager"><a class="anchor" href="#_install_cert_manager"></a>Install cert-manager</h3>
+<div class="paragraph">
+<p>The Barman Cloud plugin requires <a href="https://cert-manager.io/">cert-manager</a>.
+Install it using the following commands or, alternatively, any other method described in the <a href="https://cert-manager.io/docs/installation/">cert-manager installation docs</a>:</p>
+</div>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply --filename=https://github.com/cert-manager/cert-manager/releases/download/v1.20.0/cert-manager.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the cert-manager deployments to be ready:</p>
+</div>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl rollout status deployment --namespace=cert-manager cert-manager-webhook
+kubectl rollout status deployment --namespace=cert-manager cert-manager</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">deployment "cert-manager-webhook" successfully rolled out
+deployment "cert-manager" successfully rolled out</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_install_the_barman_cloud_plugin"><a class="anchor" href="#_install_the_barman_cloud_plugin"></a>Install the Barman Cloud plugin</h3>
+<div class="paragraph">
+<p>Install the Barman Cloud plugin:</p>
+</div>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply --filename=https://github.com/cloudnative-pg/plugin-barman-cloud/releases/download/v0.11.0/manifest.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the Barman Cloud deployment to be ready:</p>
+</div>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl rollout status deployment --namespace=cnpg-system barman-cloud</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">deployment "barman-cloud" successfully rolled out</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_create_the_aws_credentials_secret"><a class="anchor" href="#_create_the_aws_credentials_secret"></a>Create the AWS credentials secret</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This blueprint uses AWS S3 as the object store.
+Refer to the <a href="https://cloudnative-pg.io/plugin-barman-cloud/docs/object_stores/">Barman Cloud plugin object stores documentation</a> for details on how to configure other cloud providers.</p>
+</div>
+<div class="paragraph">
+<p>This blueprint uses AWS access keys for authentication.
+Other authentication methods, such as IAM Roles for Service Accounts (IRSA), are also supported.
+Refer to the <a href="https://cloudnative-pg.io/plugin-barman-cloud/docs/object_stores/#aws-s3">Barman Cloud plugin AWS S3 documentation</a> for more details.</p>
+</div>
+<div class="paragraph">
+<p>Create a Kubernetes secret with the AWS credentials required to access the S3 bucket.
+The secret must be created in the same namespace as the CloudNativePG cluster.</p>
+</div>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl create secret generic aws-creds \
+  --namespace cnpg-keycloak \
+  --from-literal=ACCESS_KEY_ID=&lt;access_key&gt; \
+  --from-literal=ACCESS_SECRET_KEY=&lt;secret_key&gt; \
+  --from-literal=REGION=&lt;region&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_create_the_objectstore"><a class="anchor" href="#_create_the_objectstore"></a>Create the ObjectStore</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>ObjectStore</code> resource defines the S3 bucket destination and encryption settings for backups and WAL archiving.
+The example below uses AWS S3, but the Barman Cloud plugin also supports Azure Blob Storage and Google Cloud Storage.
+For details on configuring other cloud providers, refer to the <a href="https://cloudnative-pg.io/plugin-barman-cloud/docs/object_stores/">Barman Cloud plugin object stores documentation</a>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The S3 bucket must be created before configuring the <code>ObjectStore</code> resource.
+CloudNativePG does not create the bucket automatically.
+Refer to the <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html">AWS S3 documentation</a> for instructions on creating a bucket.
+For recommended bucket configuration settings such as lifecycle policies, refer to the <a href="https://cloudnative-pg.io/plugin-barman-cloud/docs/object_stores/#s3-lifecycle-policy">Barman Cloud plugin S3 lifecycle policy documentation</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create an <code>object-store.yaml</code> file based on the following content:</p>
+<div class="listingblock">
+<div class="title">ObjectStore resource:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: cnpg-store
+spec:
+  configuration:
+    destinationPath: s3://&lt;bucket-name&gt;/&lt;backup-path&gt;/ <i class="conum" data-value="1"></i><b>(1)</b>
+    s3Credentials:
+      accessKeyId:
+        name: aws-creds <i class="conum" data-value="2"></i><b>(2)</b>
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: aws-creds
+        key: ACCESS_SECRET_KEY
+      region:
+        name: aws-creds
+        key: REGION
+    wal: <i class="conum" data-value="3"></i><b>(3)</b>
+      encryption: AES256
+      compression: gzip
+      maxParallel: 8
+    data: <i class="conum" data-value="4"></i><b>(4)</b>
+      compression: gzip
+      encryption: AES256</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The S3 bucket destination path for backups.
+Replace <code>&lt;bucket-name&gt;</code> and <code>&lt;backup-path&gt;</code> with the appropriate values.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>References the <code>aws-creds</code> secret created in the previous step.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>WAL archiving configuration with server-side encryption and gzip compression. <code>maxParallel</code> controls the number of WAL files to be archived in parallel.
+For other supported compression algorithms, refer to the <a href="https://cloudnative-pg.io/plugin-barman-cloud/docs/compression/">Barman Cloud plugin compression documentation</a>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Base backup data configuration with compression and encryption.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Apply the <code>ObjectStore</code> resource:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply --namespace=cnpg-keycloak --filename=object-store.yaml</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configure_cloudnativepg_cluster_backups"><a class="anchor" href="#_configure_cloudnativepg_cluster_backups"></a>Configure CloudNativePG cluster backups</h2>
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Adding the Barman Cloud plugin to a running CloudNativePG cluster may cause downtime as the Pods are restarted.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Create the CloudNativePG <code>Cluster</code> resource to enable backup and WAL archiving to the object store using the Barman Cloud plugin.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create the <code>cluster.yaml</code> file to include the <code>plugins</code> section:</p>
+<div class="listingblock">
+<div class="title">Cluster resource:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cnpg-keycloak
+spec:
+  instances: 3 <i class="conum" data-value="1"></i><b>(1)</b>
+
+  storage:
+    size: 8Gi <i class="conum" data-value="2"></i><b>(2)</b>
+
+  affinity: <i class="conum" data-value="3"></i><b>(3)</b>
+    podAntiAffinityType: required
+    topologyKey: topology.kubernetes.io/zone
+
+  postgresql:
+    synchronous: <i class="conum" data-value="4"></i><b>(4)</b>
+      method: any
+      number: 1
+      dataDurability: required
+    parameters:
+      max_connections: "100" <i class="conum" data-value="5"></i><b>(5)</b>
+
+  bootstrap:
+    initdb: <i class="conum" data-value="6"></i><b>(6)</b>
+      database: keycloak
+      owner: keycloak
+
+  managed:
+    services:
+      disabledDefaultServices: ["ro", "r"] <i class="conum" data-value="7"></i><b>(7)</b>
+
+  plugins: <i class="conum" data-value="8"></i><b>(8)</b>
+  - name: barman-cloud.cloudnative-pg.io
+    isWALArchiver: true
+    parameters:
+      barmanObjectName: cnpg-store</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Number of instances.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Pod storage size.
+This setting needs to take into account the expected size of the database and PostgreSQL WAL logs.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Pod affinity rules for Kubernetes scheduler.
+The <code>topology.kubernetes.io/zone</code> value ensures the scheduler will spread the pods across different availability zones.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Enables quorum-based synchronous replication with a single standby server.
+For more information about synchronous replication, see the <a href="https://cloudnative-pg.io/docs/1.28/replication/#synchronous-replication">CloudNativePG documentation</a>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Database connection limit.
+This value should be adjusted based on the expected total number of JDBC connections from the Keycloak cluster.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Creates a database <code>keycloak</code> owned by the user <code>keycloak</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>Disables the <code>-ro</code> and <code>-r</code> default services, which are intended for read-only applications.
+Since Keycloak requires read-write access, it only connects to the <code>-rw</code> service.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>Enables the Barman Cloud plugin for WAL archiving.
+The <code>barmanObjectName</code> references the <code>ObjectStore</code> resource created in the previous step.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Apply the updated cluster resource:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak apply -f cluster.yaml</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Wait for the <code>cnpg-keycloak</code> cluster to get into the <code>Ready</code> state.</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak wait --for condition=Ready --timeout=300s cluster cnpg-keycloak</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">cluster.postgresql.cnpg.io/cnpg-keycloak condition met</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="single-cluster-cnpg-enable-scheduled-backups"><a class="anchor" href="#single-cluster-cnpg-enable-scheduled-backups"></a>Enable scheduled backups</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>ScheduledBackup</code> resource enables automatic periodic backups of the CloudNativePG cluster.
+Scheduled backups are the recommended way to implement a reliable backup strategy.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a <code>scheduled-backup.yaml</code> file based on the following content:</p>
+<div class="listingblock">
+<div class="title">ScheduledBackup resource:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: cnpg-keycloak-scheduled-backup
+spec:
+  schedule: "0 0 0 * * *" <i class="conum" data-value="1"></i><b>(1)</b>
+  backupOwnerReference: self <i class="conum" data-value="2"></i><b>(2)</b>
+  cluster:
+    name: cnpg-keycloak <i class="conum" data-value="3"></i><b>(3)</b>
+  method: plugin <i class="conum" data-value="4"></i><b>(4)</b>
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io <i class="conum" data-value="5"></i><b>(5)</b>
+  immediate: true <i class="conum" data-value="6"></i><b>(6)</b>
+  suspend: false <i class="conum" data-value="7"></i><b>(7)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Cron schedule expression using a six-field format that includes seconds: <code>seconds minutes hours day-of-month month day-of-week</code>.
+This example runs at midnight every day.
+Adjust the schedule based on the Recovery Point Objective (RPO) requirements.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Sets the ownership reference for the backup objects. <code>self</code> means the <code>ScheduledBackup</code> resource owns the created backups, and deleting it will also delete all associated backups.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The name of the CloudNativePG cluster to back up.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The backup method. <code>plugin</code> delegates the backup operation to the configured plugin.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The Barman Cloud plugin that performs the backup to the object store.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Triggers a backup immediately upon creation of the <code>ScheduledBackup</code> resource, in addition to the configured schedule.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>When set to <code>true</code>, temporarily suspends scheduled backups without deleting the resource.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Apply the <code>ScheduledBackup</code> resource:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply --namespace=cnpg-keycloak --filename=scheduled-backup.yaml</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the scheduled backup has been created:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak get scheduledbackups</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example output:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">NAME                             AGE   CLUSTER         LAST BACKUP
+cnpg-keycloak-scheduled-backup   30s   cnpg-keycloak</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After successful configuration of the backup, continue with <a href="https://www.keycloak.org/high-availability/single-cluster/deploy-keycloak">Deploying Keycloak across multiple availability-zones with the Operator</a>.</p>
+</div>
+<div class="paragraph">
+<p>For details of how to restore a CloudNativePG cluster from a backup, see <a href="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg-recovery">Recovering a CloudNativePG cluster from an S3 backup</a>.</p>
+</div>
+<div class="paragraph">
+<p>For more information about backup and recovery operations, refer to the <a href="https://cloudnative-pg.io/docs/1.28/backup">CloudNativePG documentation</a>.</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/high-availability/single-cluster/deploy-cnpg-with-backup.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

@@ -82,7 +82,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/securing-apps/jwt-authorization-grant" >Nightly</option>
-                        <option value="https://www.keycloak.org/securing-apps/jwt-authorization-grant" selected="selected">26.5.7</option>
+                        <option value="https://www.keycloak.org/securing-apps/jwt-authorization-grant" selected="selected">26.6.0</option>
                     </select>
                 </div>
 
@@ -95,25 +95,6 @@ gtag('config', 'G-0J2P9316N6');
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>JWT Profile for Oauth 2.0 Authorization Grant is
-<strong>Preview</strong>
-and is not fully supported. This feature is disabled by default.</p>
-</div>
-<div class="paragraph">
-<p>To enable start the server with <code>--features=preview</code> or <code>--features=jwt-authorization-grant</code></p>
-</div>
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>This guide defines how a JWT Bearer Token can be used in Keycloak as an authorization grant. This feature allows clients to send a JWT assertion to request an access token when the client wants to use an existing trust relationship without a direct user-approval step at the authorization server. The assertion is validated solely through the semantics of the JWT (its claims and signature). The trust relationship usually refers to another Identity Provider server (another OIDC server), and allows to obtain a cross-domain or cross-realm access token. In this sense, it is similar to the external to internal request in token exchange V1 (see <a href="https://www.keycloak.org/securing-apps/token-exchange#_external-token-to-internal-token-exchange">Configuring and using token exchange</a> for more information).</p>
 </div>
@@ -222,6 +203,18 @@ Brute force protection is not applied to the JWT Authorization Grant for tempora
 </div>
 <div class="title">Figure 1. Client configuration for JWT Authorization Grant</div>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In the <strong>Advanced</strong> tab, section <strong>OpenID Connect Compatibility Modes</strong>, the configuration option <strong>Custom audience mapping</strong> allows to configure specific custom valid audiences for individual Identity Providers. The map key is the Identity Provider alias, and the value is the custom audience that will be accepted for that provider. Note this behavior is not covered by the standard and can have major security implications.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>The Identity Provider (both types commented in the introduction) needs to also be configured to establish the relationship that will validate the assertion. In <strong>Identity providers</strong> &#8594; select your OIDC or JWT provider &#8594; <strong>Settings</strong> tab &#8594; <strong>Authorization Grant Settings</strong> section.</p>
 </div>
@@ -253,6 +246,18 @@ Brute force protection is not applied to the JWT Authorization Grant for tempora
 </div>
 </li>
 </ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The OpenID Connect Identity Provider types have one extra configuration switch <strong>Allows Client ID as audience for assertions</strong>, placed in the <strong>Advance settings</strong> section. This option, when enabled, sets the the Client ID of the provider configuration as the only valid audience for assertions used in Federated client authentication and in JWT Authorization Grants. The client ID is used instead of the token-url/issuer-url defined in the respective specifications. This behavior is not covered by any standard.
+</td>
+</tr>
+</table>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -374,7 +379,7 @@ Following the spec recommendation, the JWT Authorization Grant never issues a re
 <h2 id="_how_to_get_a_valid_token_for_jwt_authorization_grant"><a class="anchor" href="#_how_to_get_a_valid_token_for_jwt_authorization_grant"></a>How to get a valid token for JWT Authorization Grant</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The JWT Authorization Grant feature needs a previous JWT assertion in order to be exchanged for an access token. We can call the external OpenID Connect Provider (OP) <code>domaina</code>, the one that is represented in Keycloak via the Identity Provider. And we can call the Keycloak server that receives the JWT authorization grant <code>domainb</code>. The <code>domaina</code> should somehow issue a JWT that is a valid assertion for <code>domainb</code>.</p>
+<p>The JWT Authorization Grant feature needs a previous JWT assertion in order to be exchanged for an access token. We can name the external OpenID Connect Provider (OP) <code>domaina</code>, the one that is represented in Keycloak via the Identity Provider. And we can name the Keycloak server that receives the JWT authorization grant <code>domainb</code>. The <code>domaina</code> should somehow issue a JWT that is a valid assertion for <code>domainb</code>.</p>
 </div>
 <div class="paragraph">
 <p>If <code>domaina</code> is a server different to Keycloak, we don&#8217;t know how that initial JWT is obtained. But note that the specification enforces some processing of the assertion to be valid and return the access token. The way the client gets or generates such a JWT assertion in <code>domaina</code> depends completely on <code>domaina</code> server and client.</p>
@@ -393,127 +398,7 @@ Following the spec recommendation, the JWT Authorization Grant never issues a re
 </ol>
 </div>
 <div class="paragraph">
-<p>For example, if <code>domaina</code> is a Keycloak realm, the following configuration is available to use Token Exchange to obtain the JWT assertion:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Create a client that represents <code>domainb</code>. This client can be the same client configured in <code>domainb</code> for the identity provider access.</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Client ID</strong>: <a href="http://localhost:8080/realms/domainb" class="bare">http://localhost:8080/realms/domainb</a> (issuer for <code>domainb</code>).</p>
-</li>
-<li>
-<p><strong>Name</strong>: domainb</p>
-<div class="imageblock">
-<div class="content">
-<img src="https://www.keycloak.org/resources/images/guides/jwt-authorization-grant-oidc-client-domaina.png" alt="Client that represents domainb in domaina">
-</div>
-<div class="title">Figure 3. Client that represents domainb in domaina</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Create a client scope <code>access-domainb</code> to include the correct audience for the token when this scope is requested. An audience mapper for <code>domainb</code> will be added.</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Name</strong>: access-domainb</p>
-</li>
-<li>
-<p><strong>Type</strong>: None</p>
-</li>
-<li>
-<p>Only enable <strong>Include in token scope</strong>.</p>
-<div class="imageblock">
-<div class="content">
-<img src="https://www.keycloak.org/resources/images/guides/jwt-authorization-grant-oidc-client-scope-domaina.png" alt="Client scope to include domainb as audience">
-</div>
-<div class="title">Figure 4. Client scope to include domainb as audience</div>
-</div>
-</li>
-<li>
-<p>In the client scope add a mapper:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Type</strong>: Audience</p>
-</li>
-<li>
-<p><strong>Name</strong>: domainb-audience</p>
-</li>
-<li>
-<p><strong>Included Client Audience</strong>:  <a href="http://localhost:8080/realms/domainb" class="bare">http://localhost:8080/realms/domainb</a></p>
-</li>
-<li>
-<p><strong>Add to access token</strong>: On</p>
-<div class="imageblock">
-<div class="content">
-<img src="https://www.keycloak.org/resources/images/guides/jwt-authorization-grant-oidc-client-scope-mapper.png" alt="Client scope mapper for domainb audience">
-</div>
-<div class="title">Figure 5. Client scope mapper for domainb audience</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>In the client used to do the token exchange assign the previous <code>access-domainb</code> client scope as optional.</p>
-</li>
-</ol>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This example allows any user to request that client scope. Roles can be used to restrict the scope of the client scope. This way only users with a specific role would be allowed to add the <code>domainb</code> audience.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>With the previous configuration, the client in <code>domaina</code> can request a token exchange including scope <code>access-domainb</code> and restricting the audience to <code><a href="http://localhost:8080/realms/domainb" class="bare">http://localhost:8080/realms/domainb</a></code> (issuer of <code>domainb</code>).</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">POST /realms/domaina/protocol/openid-connect/token
-Content-Type: application/x-www-form-urlencoded
-Accept: application/json
-
-client_id=clienta&amp;
-client_secret=XXXXX&amp;
-grant_type=urn:ietf:params:oauth:grant-type:token-exchange&amp;
-subject_token_type=urn:ietf:params:oauth:token-type:access_token&amp;
-requested_token_type=urn:ietf:params:oauth:token-type:access_token&amp;
-scope=access-domainb&amp;
-audience=http://localhost:8080/realms/domainb&amp;
-subject_token=$SUBJECT_TOKEN</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The resulting token will be a valid token for JWT Authorization Grant in <code>domainb</code>. So another client defined for <code>domainb</code> can send a JWT Authorization Grant with that assertion.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">POST /realms/domainb/protocol/openid-connect/token
-Content-Type: application/x-www-form-urlencoded
-Accept: application/json
-
-client_id=clientb&amp;
-client_secret=YYYYYY&amp;
-grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&amp;
-scope=scope1 scope2
-assertion=$ASSERTION_TOKEN</code></pre>
-</div>
+<p>See <a href="https://www.keycloak.org/securing-apps/oauth-identity-authorization-chaining-across-domains">OAuth Identity and Authorization Chaining Across Domains</a> for a detailed configuration to perform authorization chaining across two Keycloak realms.</p>
 </div>
 </div>
 </div>
@@ -541,6 +426,83 @@ assertion=$ASSERTION_TOKEN</code></pre>
 </div>
 </li>
 </ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_jwt_authorization_grant_for_google_identity_provider"><a class="anchor" href="#_jwt_authorization_grant_for_google_identity_provider"></a>JWT Authorization Grant for Google Identity Provider</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Google Identity Provider supports the JWT Authorization Grant, allowing the use of a Google ID Token as an assertion.
+According to RFC 7523, the assertion MUST be a JWT. Since Google issues JWTs only for ID Tokens (and not for access tokens), only the ID Token can be used for this authorization grant.</p>
+</div>
+<div class="paragraph">
+<p>To enable this feature, the <strong>JWT Authorization Grant</strong> switch must be turned on in the Google Identity Provider configuration.</p>
+</div>
+<div class="listingblock">
+<div class="title">Google ID Token Payload Example</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "iss": "https://accounts.google.com", <i class="conum" data-value="1"></i><b>(1)</b>
+    "azp": "XXXX.apps.googleusercontent.com",
+    "aud": "XXXX.apps.googleusercontent.com", <i class="conum" data-value="2"></i><b>(2)</b>
+    "sub": "100209199795938692365", <i class="conum" data-value="3"></i><b>(3)</b>
+    "at_hash": "AAos4eSIx4b5uQ8N-OAPYg",
+    "iat": 1769503848,
+    "exp": 1769507448 <i class="conum" data-value="4"></i><b>(4)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Google Issuer.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Client ID that must be the same configured on the Google Identity Provider.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Subject that must be linked to the Keycloak user.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Expires 1 hour after <code>iat</code>.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The specifications described in this guide also apply to Google, with the following exceptions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Audience Validation</strong>: Google does not allow adding custom audiences to the ID Token. Therefore, the ID Token cannot contain the Token Endpoint URL or the Keycloak Issuer URL. The <code>aud</code> (audience) claim must simply match the Client ID configured for the Google Identity Provider. <strong>This is the only deviation from RFC 7523.</strong></p>
+</li>
+<li>
+<p><strong>Replay Check</strong>: It is not possible to perform a replay check because the <code>jti</code> claim is missing from the Google ID Token. Consequently, the same Google ID Token can be used multiple times.</p>
+</li>
+<li>
+<p><strong>Google ID Token Expiration</strong>: The duration of a Google ID Token is fixed at 1 hour and cannot be modified. To limit the validity window, a dedicated property in the configuration allows you to set a maximum time limit for the token. The default value is 1 hour (matching the Google ID Token lifespan).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In a scenario where a mobile application already supports login with Google without involving Keycloak, there may be an issue when integrating Keycloak later. For example, Keycloak might be configured with a Google Identity Provider that uses a different Google client than the one used by the mobile app.</p>
+</div>
+<div class="paragraph">
+<p>In this case, the Google ID token cannot be used with the JWT Authorization Grant because the <code>aud</code> claim in the ID Token does not match the client id configured in the Google Identity Provider.</p>
+</div>
+<div class="paragraph">
+<p>To address this issue, you can use the <strong>Custom audience mapping</strong> configuration option commented in the client configuration section. For example, if the Identity Provider alias is <code>google</code>, the previous audience can be configured as valid with the following mapping.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/jwt-authorization-grant-google-custom-audiences.png" alt="Custom audience mapping for the google provider">
+</div>
+<div class="title">Figure 3. Custom audience mapping for the google provider</div>
 </div>
 </div>
 </div>            </div>

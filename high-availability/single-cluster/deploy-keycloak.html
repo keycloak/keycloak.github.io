@@ -83,7 +83,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/high-availability/single-cluster/deploy-keycloak" >Nightly</option>
-                        <option value="https://www.keycloak.org/high-availability/single-cluster/deploy-keycloak" selected="selected">26.5.7</option>
+                        <option value="https://www.keycloak.org/high-availability/single-cluster/deploy-keycloak" selected="selected">26.6.0</option>
                     </select>
                 </div>
 
@@ -118,7 +118,23 @@ Use it together with the other building blocks outlined in the <a href="https://
 <p>Understanding of a <a href="https://www.keycloak.org/operator/basic-deployment">Basic Keycloak deployment</a> of Keycloak with the Keycloak Operator.</p>
 </li>
 <li>
-<p>AWS Aurora database deployed using the <a href="https://www.keycloak.org/high-availability/single-cluster/deploy-aurora">Deploying AWS Aurora in multiple availability zones</a> guide.</p>
+<p>A database deployed according to one of the following guides:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/deploy-aurora">Deploying AWS Aurora in multiple availability zones</a> guide,</p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg">Deploying CloudNativePG in multiple availability zones</a> guide.</p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg-with-backup">Deploying CloudNativePG with scheduled backups to S3</a> guide.</p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg-recovery">Recovering a CloudNativePG cluster from an S3 backup</a> guide.</p>
+</li>
+</ul>
+</div>
 </li>
 </ul>
 </div>
@@ -127,6 +143,11 @@ Use it together with the other building blocks outlined in the <a href="https://
 <div class="sect1">
 <h2 id="single-cluster-deploy-keycloak-procedure"><a class="anchor" href="#single-cluster-deploy-keycloak-procedure"></a>Procedure</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Depending on the database you deployed use the relevant procedure for deploying Keycloak.</p>
+</div>
+<div class="sect2">
+<h3 id="single-cluster-deploy-keycloak-with-aurora-procedure"><a class="anchor" href="#single-cluster-deploy-keycloak-with-aurora-procedure"></a>Procedure for deploying Keycloak with AWS Aurora</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -136,9 +157,6 @@ Use it together with the other building blocks outlined in the <a href="https://
 <p>Install the Keycloak Operator as described in the <a href="https://www.keycloak.org/operator/installation">Keycloak Operator Installation</a> guide.</p>
 </li>
 <li>
-<p>Notice the configuration file below contains options relevant for connecting to the Aurora database from <a href="https://www.keycloak.org/high-availability/single-cluster/deploy-aurora#single-cluster-aurora-connecting">Deploying AWS Aurora in multiple availability zones</a></p>
-</li>
-<li>
 <p>Build a custom Keycloak image which is <a href="https://www.keycloak.org/server/db#preparing-keycloak-for-amazon-aurora-postgresql">prepared for usage with the Amazon Aurora PostgreSQL database</a>.</p>
 </li>
 <li>
@@ -146,7 +164,158 @@ Use it together with the other building blocks outlined in the <a href="https://
 Create a <code>ConfigMap</code> with the certificate bundle using:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak create configmap keycloak-aurora-rootcert --from-file aurora.pem=/path/to/bundle.pem</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak create configmap keycloak-aurora-rootcert \
+  --from-file aurora.pem=/path/to/bundle.pem</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a generic secret <code>keycloak-db-secret</code> containing username and password values defined when creating the Aurora database.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak create secret generic keycloak-db-secret \
+  --from-literal="username=keycloak" --from-literal="password=secret99" <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Note: These are sample values for demonstration purposes only. Please chose a unique password to secure your database.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Deploy the Keycloak CR with the following values with the resource requests and limits calculated in the first step:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  labels:
+    app: keycloak
+  name: keycloak
+  namespace: keycloak
+spec:
+  hostname:
+    hostname: &lt;KEYCLOAK_URL_HERE&gt;
+  resources:
+    requests:
+      cpu: "2"
+      memory: "1250M"
+    limits:
+      cpu: "6"
+      memory: "2250M"
+  db:
+    vendor: postgres
+    url: jdbc:aws-wrapper:postgresql://&lt;AWS_AURORA_URL_HERE&gt;:5432/keycloak <i class="conum" data-value="1"></i><b>(1)</b>
+    poolMinSize: 30 <i class="conum" data-value="2"></i><b>(2)</b>
+    poolInitialSize: 30
+    poolMaxSize: 30
+    usernameSecret: <i class="conum" data-value="3"></i><b>(3)</b>
+      name: keycloak-db-secret
+      key: username
+    passwordSecret: <i class="conum" data-value="3"></i><b>(3)</b>
+      name: keycloak-db-secret
+      key: password
+  image: &lt;KEYCLOAK_IMAGE_HERE&gt; <i class="conum" data-value="4"></i><b>(4)</b>
+  startOptimized: false <i class="conum" data-value="4"></i><b>(4)</b>
+  additionalOptions:
+    - name: log-console-output
+      value: json
+    - name: metrics-enabled <i class="conum" data-value="5"></i><b>(5)</b>
+      value: 'true'
+    - name: event-metrics-user-enabled
+      value: 'true'
+    - name: db-driver
+      value: software.amazon.jdbc.Driver
+    - name: db-tls-mode <i class="conum" data-value="6"></i><b>(6)</b>
+      value: verify-server
+  http:
+    tlsSecret: keycloak-tls-secret
+  instances: 3
+  truststores:
+    aurora:
+      configMap:
+        name: keycloak-aurora-rootcert <i class="conum" data-value="7"></i><b>(7)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Set the Amazon Aurora PostgreSQL URL.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The database connection pool initial, max and min size should be identical to allow statement caching for the database.
+Adjust this number to meet the needs of your system.
+As most requests will not touch the database due to the Keycloak embedded cache, this change can serve several hundreds of requests per second.
+See the <a href="https://www.keycloak.org/high-availability/single-cluster/concepts-database-connections">Concepts for database connection pools</a> guide for details.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Utilise the Secret <code>keycloak-db-secret</code> created in the previous step for connecting to the database.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Specify the URL to your custom Keycloak image. If your image is optimized, set the <code>startOptimized</code> flag to <code>true</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Enable the metrics endpoint in order to effectively monitor the system under load.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Secure the database connection.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>Specify the <code>ConfigMap</code> name that contains the Amazon Aurora PostgreSQL database certificate bundle.
+The Operator will automatically mount the file in directory <code>/opt/keycloak/conf/truststores/configmap-&lt;config map name&gt;/&lt;file-name&gt;</code></td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="single-cluster-deploy-keycloak-with-cnpg-procedure"><a class="anchor" href="#single-cluster-deploy-keycloak-with-cnpg-procedure"></a>Procedure for deploying Keycloak with CloudNativePG</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Determine the sizing of the deployment using the <a href="https://www.keycloak.org/high-availability/single-cluster/concepts-memory-and-cpu-sizing">Concepts for sizing CPU and memory resources</a> guide.</p>
+</li>
+<li>
+<p>Install the Keycloak Operator as described in the <a href="https://www.keycloak.org/operator/installation">Keycloak Operator Installation</a> guide.</p>
+</li>
+<li>
+<p>Create a <code>ConfigMap</code> containing the generated CA certificate of the CloudNativePG cluster so that Keycloak can secure the connection to the database.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak create configmap cnpg-keycloak-ca \
+  --from-literal=cert.pem="$(kubectl --namespace cnpg-keycloak get secrets cnpg-keycloak-ca -o jsonpath='{.data.ca\.crt}' | base64 -d)"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a generic secret <code>keycloak-db-secret</code> containing a username and password for accessing the database.
+We use the values from the <code>cnpg-keycloak-app</code> Secret which is automatically generated during the installation of the CloudNativePG database cluster.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get secret cnpg-keycloak-app --namespace cnpg-keycloak -o go-template='
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-db-secret
+  namespace: keycloak
+type: Opaque
+data:
+  username: {{ .data.username }}
+  password: {{ .data.password }}
+' | kubectl apply -f -</code></pre>
 </div>
 </div>
 </li>
@@ -173,18 +342,16 @@ spec:
       memory: "2250M"
   db:
     vendor: postgres
-    url: jdbc:aws-wrapper:postgresql://&lt;AWS_AURORA_URL_HERE&gt;:5432/keycloak?sslmode=verify-full&amp;sslrootcert=/opt/keycloak/conf/truststores/configmap-keycloak-aurora-rootcert/aurora.pem <i class="conum" data-value="1"></i><b>(1)</b>
+    host: cnpg-keycloak-rw.cnpg-keycloak.svc.cluster.local <i class="conum" data-value="1"></i><b>(1)</b>
     poolMinSize: 30 <i class="conum" data-value="2"></i><b>(2)</b>
     poolInitialSize: 30
     poolMaxSize: 30
-    usernameSecret:
+    usernameSecret: <i class="conum" data-value="3"></i><b>(3)</b>
       name: keycloak-db-secret
       key: username
-    passwordSecret:
+    passwordSecret: <i class="conum" data-value="3"></i><b>(3)</b>
       name: keycloak-db-secret
       key: password
-  image: &lt;KEYCLOAK_IMAGE_HERE&gt; <i class="conum" data-value="3"></i><b>(3)</b>
-  startOptimized: false <i class="conum" data-value="3"></i><b>(3)</b>
   additionalOptions:
     - name: log-console-output
       value: json
@@ -192,42 +359,46 @@ spec:
       value: 'true'
     - name: event-metrics-user-enabled
       value: 'true'
-    - name: db-driver
-      value: software.amazon.jdbc.Driver
+    - name: db-tls-mode <i class="conum" data-value="5"></i><b>(5)</b>
+      value: verify-server
   http:
     tlsSecret: keycloak-tls-secret
   instances: 3
   truststores:
-    aurora:
+    cnpg:
       configMap:
-        name: keycloak-aurora-rootcert <i class="conum" data-value="5"></i><b>(5)</b></code></pre>
+        name: cnpg-keycloak-ca <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Secure the database connection with the <code>sslmode=verify-full</code> and <code>sslrootcert</code> properties.</td>
+<td>Set CloudNativePG read-write service URL.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>The database connection pool initial, max and min size should be identical to allow statement caching for the database.
 Adjust this number to meet the needs of your system.
-As most requests will not touch the database due to the Keycloak embedded cache, this change can server several hundreds of requests per second.
+As most requests will not touch the database due to the Keycloak embedded cache, this change can serve several hundreds of requests per second.
 See the <a href="https://www.keycloak.org/high-availability/single-cluster/concepts-database-connections">Concepts for database connection pools</a> guide for details.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Specify the URL to your custom Keycloak image. If your image is optimized, set the <code>startOptimized</code> flag to <code>true</code>.</td>
+<td>Utilise the Secret <code>keycloak-db-secret</code> created in the previous step for connecting to the database.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>To be able to analyze the system under load, enable the metrics endpoint.</td>
+<td>Enable the metrics endpoint in order to effectively monitor the system under load.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Specify the <code>ConfigMap</code> name that contains the Amazon Aurora PostgreSQL database certificate bundle.
-The Operator will automatic mount the file in directory <code>/opt/keycloak/conf/truststores/configmap-&lt;config map name&gt;/&lt;file-name&gt;</code></td>
+<td>Secure the database connection.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Specify the <code>ConfigMap</code> name that contains the CloudNativePG CA certificate.
+The Operator will automatically mount the file in directory <code>/opt/keycloak/conf/truststores/configmap-&lt;config map name&gt;/&lt;file-name&gt;</code></td>
 </tr>
 </table>
 </div>
@@ -236,8 +407,9 @@ The Operator will automatic mount the file in directory <code>/opt/keycloak/conf
 </div>
 </div>
 </div>
+</div>
 <div class="sect1">
-<h2 id="single-cluster-verify-deployment"><a class="anchor" href="#single-cluster-verify-deployment"></a>Verifying the deployment</h2>
+<h2 id="single-cluster-verify-deployment"><a class="anchor" href="#single-cluster-verify-deployment"></a>Verify the deployment</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Confirm that the Keycloak deployment is ready.</p>

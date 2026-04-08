@@ -83,7 +83,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc" >Nightly</option>
-                        <option value="https://www.keycloak.org/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc" selected="selected">26.5.7</option>
+                        <option value="https://www.keycloak.org/high-availability/multi-cluster/deploy-infinispan-kubernetes-crossdc" selected="selected">26.6.0</option>
                     </select>
                 </div>
 
@@ -115,7 +115,7 @@ See the <a href="https://www.keycloak.org/high-availability/multi-cluster/introd
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Only Infinispan version 15.0.19.Final or more recent patch releases are supported for external Infinispan deployments.</p>
+<p>Only Infinispan version 16.0.8 or more recent patch releases are supported for external Infinispan deployments.</p>
 </div>
 </td>
 </tr>
@@ -439,7 +439,10 @@ spec:
           clusterName: infinispan
           namespace: keycloak <i class="conum" data-value="12"></i><b>(12)</b>
           url: openshift://api.site-b <i class="conum" data-value="13"></i><b>(13)</b>
-          secretName: xsite-token-secret <i class="conum" data-value="14"></i><b>(14)</b></code></pre>
+          secretName: xsite-token-secret <i class="conum" data-value="14"></i><b>(14)</b>
+          
+  upgrades:
+    type: InPlaceRolling</code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -549,7 +552,10 @@ spec:
           clusterName: infinispan
           namespace: keycloak <i class="conum" data-value="12"></i><b>(12)</b>
           url: openshift://api.site-a <i class="conum" data-value="13"></i><b>(13)</b>
-          secretName: xsite-token-secret <i class="conum" data-value="14"></i><b>(14)</b></code></pre>
+          secretName: xsite-token-secret <i class="conum" data-value="14"></i><b>(14)</b>
+          
+  upgrades:
+    type: InPlaceRolling</code></pre>
 </div>
 </div>
 </li>
@@ -588,7 +594,7 @@ To take effect, the <code>Cache</code> CR must be deployed before any Keycloak P
 <div class="listingblock">
 <div class="title">Cache <code>actionTokens</code></div>
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2beta1
 kind: Cache
 metadata:
   name: actiontokens
@@ -624,7 +630,7 @@ spec:
 <div class="listingblock">
 <div class="title">Cache <code>authenticationSessions</code></div>
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2beta1
 kind: Cache
 metadata:
   name: authenticationsessions
@@ -651,6 +657,7 @@ spec:
         enabled: true
         indexed-entities:
         - keycloak.RootAuthenticationSessionEntity
+        startupMode: NONE
       backups:
         site-b: <i class="conum" data-value="3"></i><b>(3)</b>
           backup:
@@ -664,7 +671,7 @@ spec:
 <div class="listingblock">
 <div class="title">Cache <code>loginFailures</code></div>
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2beta1
 kind: Cache
 metadata:
   name: loginfailures
@@ -691,6 +698,7 @@ spec:
         enabled: true
         indexed-entities:
         - keycloak.LoginFailureEntity
+        startupMode: NONE
       backups:
         site-b: <i class="conum" data-value="3"></i><b>(3)</b>
           backup:
@@ -704,7 +712,7 @@ spec:
 <div class="listingblock">
 <div class="title">Cache <code>work</code></div>
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2beta1
 kind: Cache
 metadata:
   name: work
@@ -815,7 +823,7 @@ The <code>backup.timeout</code> must always be higher than the <code>locking.acq
 <div class="listingblock">
 <div class="title">Example for <code>actionTokens</code> cache in <code>Site-B</code></div>
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2alpha1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: infinispan.org/v2beta1
 kind: Cache
 metadata:
   name: actiontokens
@@ -849,7 +857,7 @@ spec:
 </div>
 </div>
 <div class="paragraph">
-<p>== Verifying the deployment</p>
+<p>== Verify the deployment</p>
 </div>
 </li>
 </ol>
@@ -872,7 +880,7 @@ spec:
 </div>
 </div>
 <div class="sect1">
-<h2 id="connecting-infinispan-to-keycloak"><a class="anchor" href="#connecting-infinispan-to-keycloak"></a>Connecting Infinispan with Keycloak</h2>
+<h2 id="connect-infinispan-to-keycloak"><a class="anchor" href="#connect-infinispan-to-keycloak"></a>Connect Infinispan with Keycloak</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Now that the Infinispan server is running, here are the relevant Keycloak CR changes necessary to connect it to Keycloak. These changes will be required in the <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator</a> guide.</p>
@@ -914,7 +922,7 @@ Administrators should leave those configurations untouched.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2beta1
 kind: Keycloak
 metadata:
   labels:

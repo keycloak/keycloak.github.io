@@ -82,7 +82,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/server/configuration" >Nightly</option>
-                        <option value="https://www.keycloak.org/server/configuration" selected="selected">26.5.7</option>
+                        <option value="https://www.keycloak.org/server/configuration" selected="selected">26.6.0</option>
                     </select>
                 </div>
 
@@ -166,6 +166,10 @@ gtag('config', 'G-0J2P9316N6');
 <div class="paragraph">
 <p>If <code>--db-url=cliValue</code> had not been used, the applied value would be <code>KC_DB_URL=envVarValue</code>. If the value were not applied by either the command line or an environment variable, <code>db-url=confFileValue</code> would be used. If none of the previous values were applied, the value <code>kc.db-url=keystoreValue</code> would be used due to the lowest priority among the available configuration sources.</p>
 </div>
+<div class="paragraph">
+<p>Keycloak configuration options often map to lower-level Quarkus or spi options. We refer to these as first-class and second-class configuration respectively.
+There are startup warnings to indicate if you are using a second-class option. For example if you try to directly use <code>quarkus.http.port</code>, you will be warned to use <code>kc.http-port</code> instead.</p>
+</div>
 </div>
 </div>
 </div>
@@ -183,7 +187,7 @@ gtag('config', 'G-0J2P9316N6');
 </dd>
 <dt class="hdlist1">Environment variable format</dt>
 <dd>
-<p>Values for environment variables use the uppercased <code>KC_<em>&lt;key_with_underscores&gt;</em>=<em>&lt;value&gt;</em></code> format.</p>
+<p>Values for environment variables use the uppercased <code>KC_<em>&lt;key_with_underscores&gt;</em>=<em>&lt;value&gt;</em></code> format. Alternatively, the <code>KCRAW_</code> prefix can be used instead of <code>KC_</code> to preserve values containing <code>$</code> characters — see <a href="#kcraw-prefix">Preserving literal values with the KCRAW_ prefix</a>.</p>
 </dd>
 <dt class="hdlist1">Configuration file format</dt>
 <dd>
@@ -339,9 +343,6 @@ However, for a specific behavior or capability that is missing in the Keycloak c
 <div class="paragraph">
 <p>You can also store Quarkus properties in a Java KeyStore.</p>
 </div>
-<div class="paragraph">
-<p>Note that some Quarkus properties are already mapped in the Keycloak configuration, such as <code>quarkus.http.port</code> and similar essential properties. If the property is used by Keycloak, defining that property key in <code>quarkus.properties</code> has no effect. The Keycloak configuration value takes precedence over the Quarkus property value.</p>
-</div>
 </div>
 <div class="sect2">
 <h3 id="_using_special_characters_in_values"><a class="anchor" href="#_using_special_characters_in_values"></a>Using special characters in values</h3>
@@ -366,6 +367,55 @@ For example, bash single quotes preserve the single backslash <code>--db-passwor
 </div>
 <div class="paragraph">
 <p>PowerShell handles quotes differently. It interprets the quoted string before passing it to the <code>kc.bat</code> script, removing the outer quote characters. Therefore, an extra layer of quotes is needed to preserve the value structure. Otherwise, the comma would be interpreted as a delimiter. In Windows CMD, you can use double quotes directly.</p>
+</div>
+<div class="paragraph">
+<p>When manual escaping is not feasible (like when a password is injected by a secrets manager and you cannot control the value), use the <code>KCRAW_</code> prefix described in the next section.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="kcraw-prefix"><a class="anchor" href="#kcraw-prefix"></a>Preserving literal values with the KCRAW_ prefix</h3>
+<div class="paragraph">
+<p>When setting configuration values, Keycloak (via SmallRye Config) evaluates expressions such as <code>${some_key}</code> and collapses <code>$$</code> to <code>$</code>. This means passwords or secrets containing <code>$</code> characters may be silently modified. While the <code>\</code> escaping described above works for values you control directly, it is not always practical - for example, when a secrets manager or orchestration tool injects the value and you cannot add escape characters.</p>
+</div>
+<div class="paragraph">
+<p>In these cases, use the <code>KCRAW_</code> prefix instead of <code>KC_</code> for any environment variable whose value must be preserved exactly as written. Keycloak automatically escapes <code>$</code> characters in <code>KCRAW_</code> values so that expression evaluation preserves the original value.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Setting a database password containing special characters</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># Standard prefix — the value will be modified by expression evaluation:
+export KC_DB_PASSWORD='my$$pa$\{vault}word'
+# Result: "$$" is collapsed to "$" and "$\{vault}" is evaluated as an
+# expression, producing "my$paword" or an error
+
+# Raw prefix — the value is preserved exactly as written:
+export KCRAW_DB_PASSWORD='my$$pa$\{vault}word'
+# Result: the password is used as-is: my$$pa$\{vault}word</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>KCRAW_</code> prefix applies only to environment variables, where shell quoting rules make escaping of <code>$</code> unreliable. Other configuration sources are subject to their own format escaping mechanisms and their values are still treated as expressions.</p>
+</li>
+<li>
+<p>You cannot set both <code>KC_&lt;KEY&gt;</code> and <code>KCRAW_&lt;KEY&gt;</code> for the same configuration key. If both are present, Keycloak will fail to start and report a configuration error.</p>
+</li>
+<li>
+<p>Apart from escaping <code>$</code> characters, <code>KCRAW_</code> variables behave identically to their <code>KC_</code> counterparts: the same key mapping and priority rules apply.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -425,7 +475,7 @@ Automatic mapping of the environment variable key to option key may not preserve
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-By default, when you start Keycloak in development mode, the server binds to all network addresses (<code>0.0.0.0</code>). This means your instance may be accessible from other machines on your network. If you want to restrict access to your local machine only, you can use the option <code>--http-host=127.0.0.1</code> when starting the server.
+By default, when you start Keycloak in development mode on Windows Subsystem For Linux, the server binds to all network addresses (<code>0.0.0.0</code>). This means your instance may be accessible from other machines on your network.
 </td>
 </tr>
 </table>
