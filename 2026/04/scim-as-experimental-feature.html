@@ -1,0 +1,445 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>SCIM Realm API as an Experimental Feature - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="SCIM Realm API as an Experimental Feature">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="The first step towards provisioning and deprovisioning users and groups in Keycloak via the SCIM protocol">
+<meta name="author" content="Keycloak Core IAM Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2026/04/scim-as-experimental-feature">
+<meta property="og:url" content="https://www.keycloak.org/2026/04/scim-as-experimental-feature">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2026/04/scim-as-experimental-feature","headline":"SCIM Realm API as an Experimental Feature","name":"SCIM Realm API as an Experimental Feature","datePublished":"2026-04-07T08:00:00Z","inLanguage":"en","abstract":"The first step towards provisioning and deprovisioning users and groups in Keycloak via the SCIM protocol","url":"https://www.keycloak.org/2026/04/scim-as-experimental-feature","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Keycloak Core IAM Team"}]}
+</script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article kc-asciidoc">
+    <h1>SCIM Realm API as an Experimental Feature</h1>
+    <p class="blog-date text-muted">April 07 2026 by Keycloak Core IAM Team</p>
+
+
+<div class="paragraph">
+<p>If you have been following the latest blog posts, you may have noticed that we have been working on implementing the
+System for Cross-domain Identity Management (SCIM) protocol in Keycloak.
+We are excited to announce that the SCIM Realm API is now available as an experimental feature in Keycloak 26.6.</p>
+</div>
+<div class="paragraph">
+<p>The SCIM Realm API allows you to manage users and groups in Keycloak using the SCIM protocol. This means that you can
+use any SCIM client to manage the user and group resource types in your realm.
+This is a great step towards improving the integrability of Keycloak with other (cross-domain) IAM solutions and
+downstream applications, thereby enabling common cloud use cases for identity (de)provisioning.</p>
+</div>
+<div class="paragraph">
+<p>In terms of integration, we focused on making the API as compatible as possible with Microsoft Entra ID,
+which is the integration most <a href="https://www.keycloak.org/2026/02/scim-support-survey-feedback">demanded</a> by the community.
+To do that, we have used the <a href="https://scimvalidator.microsoft.com/">EntraID SCIM Validator</a> to validate our implementation
+and ensure that it meets the requirements of Microsoft Entra ID.</p>
+</div>
+<div class="paragraph">
+<p>In essence, the SCIM Realm API is the Admin API but compliant with SCIM.</p>
+</div>
+<div class="sect1">
+<h2 id="_how_to_try_it_out"><a class="anchor" href="#_how_to_try_it_out"></a>How to try it out?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Since this is an experimental feature (not enabled by default), you need to enable it when starting the server:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">docker run --name kc-scim-api -d \
+  -e KEYCLOAK_ADMIN=admin \
+  -e KEYCLOAK_ADMIN_PASSWORD=admin \
+  -p 8080:8080 \
+  quay.io/keycloak/keycloak:nightly \
+  start-dev --features=scim-api</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Let us create a realm <code>myrealm</code> and enable the SCIM API for it. To do that, you can use the <code>kcadm.sh</code> script to create
+the realm and enable the API. First, you need to configure the credentials for the <code>kcadm.sh</code> script to be able to connect
+to the server:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./kcadm.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the realm <code>myrealm</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./kcadm.sh create realms -s realm=myrealm -s enabled=true -s scimApiEnabled=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Using the administration console, go to the <code>Realm Settings</code> page of your realm, and check that the <code>SCIM API</code> setting is enabled.
+Once the API is enabled, you can look up the SCIM base URL in the same page from the link <code>SCIM Endpoint</code> at the bottom of the page.
+When running on <code>localhost</code>, you should see something like <code><a href="http://localhost:8080/realms/myrealm/scim/v2" class="bare">http://localhost:8080/realms/myrealm/scim/v2</a></code> as the SCIM base URL.</p>
+</div>
+<div class="sect2">
+<h3 id="_connecting_a_scim_client"><a class="anchor" href="#_connecting_a_scim_client"></a>Connecting a SCIM client</h3>
+<div class="paragraph">
+<p>Let us create a service account with enough permissions to access the SCIM API. To do that, you can create a client with
+the <code>manage-users</code> role, and use the credentials of this client to obtain an access token that you can use to make
+requests to the SCIM API:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./kcadm.sh create clients -r myrealm -s clientId=scim-client -s serviceAccountsEnabled=true -s publicClient=false -s secret=secret</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To allow access to manage users and groups, grant the <code>manage-users</code> role to the service account of the client. You also
+need to grant <code>view-realm</code> role to allow access to non-resource-type endpoints such as the <code>/ServiceProviderConfig</code>,
+<code>/Schemas</code>, or <code>/ResourceTypes</code> endpoints:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./kcadm.sh add-roles -r myrealm --uusername service-account-scim-client --cclientid realm-management --rolename manage-users
+./kcadm.sh add-roles -r myrealm --uusername service-account-scim-client --cclientid realm-management --rolename view-realm</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_understanding_scim_permissions"><a class="anchor" href="#_understanding_scim_permissions"></a>Understanding SCIM Permissions</h3>
+<div class="paragraph">
+<p>In this release, there is no specific role or permission for the SCIM API yet.</p>
+</div>
+<div class="paragraph">
+<p>The SCIM API uses the same permissions as the Admin API, so you can use the same roles and permissions to control access
+to the realm resources (users and groups) via the SCIM Realm API. For example, if you want to allow read-only access to users
+via the SCIM API, you can grant them the <code>view-users</code> role in the realm. The same is true if you are using Fine-Grained
+Admin Permissions, where you can grant specific permissions to individual realm resources.</p>
+</div>
+<div class="paragraph">
+<p>You should also be able to only allow a specific set of users or groups to be accessible and manageable via SCIM. For that,
+consider enabling <a href="https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions">Fine-Grained Admin Permissions</a> to your realm.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_accessing_the_scim_realm_api"><a class="anchor" href="#_accessing_the_scim_realm_api"></a>Accessing the SCIM Realm API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once you have a client and subject with enough access to the SCIM API, you can use any SCIM client to manage users and
+groups in your realm.</p>
+</div>
+<div class="paragraph">
+<p>Let us obtain a token for the service account of the <code>scim-client</code> client we created in the
+previous step, and use it to make a request to the SCIM API. You can obtain a token for the service account with the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">ACCESS_TOKEN=$(curl -s -X POST "http://localhost:8080/realms/myrealm/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'grant_type=client_credentials&amp;client_id=scim-client&amp;client_secret=secret' \
+  | jq -r .access_token)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now you can use this token to make a request to the SCIM API, for example, to create a user with the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -v -X POST "http://localhost:8080/realms/myrealm/scim/v2/Users" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/scim+json" \
+  -H "Accept: application/scim+json" \
+  -d '{
+    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+    "userName": "jdoe",
+    "name": { "givenName": "John", "familyName": "Doe" },
+    "displayName": "John Doe",
+    "emails": [
+      { "value": "jdoe@example.com" }
+    ]
+  }'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The same is true for groups, where you can create a group with the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -v -X POST "http://localhost:8080/realms/myrealm/scim/v2/Groups" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/scim+json" \
+  -H "Accept: application/scim+json" \
+  -d '{
+    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+    "displayName": "mygroup"
+  }'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And, for example, to add a user to a group with the following command. Make sure to replace <code>{group_id}</code> and <code>{user_id}</code> with the actual ID of the group and the user you want to add as a member of the group, respectively:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -v -X PATCH "http://localhost:8080/realms/myrealm/scim/v2/Groups/{group_id}" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/scim+json" \
+  -H "Accept: application/scim+json" \
+  -d '{
+    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+    "Operations": [
+      {
+        "op": "add",
+        "path": "members",
+        "value": [
+          { "value": "{user_id}" }
+        ]
+      }
+    ]
+  }'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As mentioned before, the <code>view-realm</code> role is required to access non-resource-type endpoints, so if you have granted
+this role to the service account of the <code>scim-client</code> client, you can access the <code>/ServiceProviderConfig</code>, <code>/Schemas</code>,
+and <code>/ResourceTypes</code> endpoints with the following commands:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -v -X GET "http://localhost:8080/realms/myrealm/scim/v2/ServiceProviderConfig" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -v -X GET "http://localhost:8080/realms/myrealm/scim/v2/Schemas" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -v -X GET "http://localhost:8080/realms/myrealm/scim/v2/ResourceTypes" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mapping_user_attributes_to_scim_attributes"><a class="anchor" href="#_mapping_user_attributes_to_scim_attributes"></a>Mapping User Attributes to SCIM Attributes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Thanks to the user profile feature, you can easily map user attributes to SCIM attributes. To do that, you can add a
+<code>kc.scim.schema.attribute</code> annotation to a user profile attribute where the value is the name of the SCIM attribute you want to map to.</p>
+</div>
+<div class="paragraph">
+<p>By default, the user root attributes are automatically mapped to the corresponding SCIM attributes. For example,
+the <code>username</code> attribute is automatically mapped to the <code>userName</code> SCIM attribute, and the <code>firstName</code> attribute is automatically mapped to the <code>name.givenName</code> SCIM attribute.
+The same applies to the <code>lastName</code> and <code>email</code> attributes.</p>
+</div>
+<div class="paragraph">
+<p>The list of supported SCIM attributes can be found by querying the <code>/Schemas</code> or <code>/ResourceTypes</code> endpoints of the SCIM API.</p>
+</div>
+<div class="paragraph">
+<p>For instance, if you want to map an attribute from the enterprise user schema, such as <code>employeeNumber</code>, you can add
+the <code>kc.scim.schema.attribute</code> annotation to the corresponding user profile attribute with the value
+<code>urn:ietf:params:scim:schemas:extension:enterprise:2.0:User.employeeNumber</code>, and this attribute will be available as an
+extension attribute in user resources in the SCIM API.</p>
+</div>
+<div class="paragraph">
+<p>In future releases, we plan to add support for mapping custom attributes to SCIM attributes, so you will be able to map
+any user profile attribute to a SCIM attribute, and create your own custom schemas and attributes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mapping_group_attributes_to_scim_attributes"><a class="anchor" href="#_mapping_group_attributes_to_scim_attributes"></a>Mapping Group Attributes to SCIM Attributes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Unlike users, the group resource type is limited to only the <code>displayName</code> and <code>members</code> attributes, as per
+the group core schema.</p>
+</div>
+<div class="paragraph">
+<p>Groups do not have a user-profile-like feature, so there is no way to map custom attributes to SCIM attributes for groups
+without using a different — not ideal — approach. This is one of the key design aspects we will be looking at in the next release,
+so that we build a common mechanism for mapping both user and group attributes to SCIM attributes, and that we can
+support custom schemas and attributes for both users and groups.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_being_delivered"><a class="anchor" href="#_what_is_being_delivered"></a>What is being delivered?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The capabilities delivered in 26.6 are based on the <a href="https://datatracker.ietf.org/doc/html/rfc7643">RFC 7643</a> and
+<a href="https://datatracker.ietf.org/doc/html/rfc7644">RFC 7644</a> specifications, and include support for most of both specs.
+We aimed to deliver this initial set of capabilities in a way that is compatible with Microsoft Entra ID, so that
+SCIM clients can perform the following operations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>POST, GET, PATCH, PUT, and DELETE operations for managing users and groups</p>
+</li>
+<li>
+<p>Support for the core user, enterprise user, and group schemas</p>
+</li>
+<li>
+<p>Add and remove users from groups</p>
+</li>
+<li>
+<p>Search for users and groups using the SCIM filtering and pagination syntax</p>
+</li>
+<li>
+<p>Query the supported Service Provider Configuration, Schemas, and Resource Types</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>There are missing capabilities from the RFCs, a highlight being:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Bulk Operations</p>
+</li>
+<li>
+<p>Password Management</p>
+</li>
+<li>
+<p>Sorting</p>
+</li>
+<li>
+<p>Manage service provider config settings</p>
+</li>
+<li>
+<p>Custom Schemas and Attributes</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In regard to custom schemas and attributes, we have delivered support for mapping user profile attributes to
+SCIM attributes, but there is no support for custom schemas and attributes yet. This means that you can only map user
+profile attributes to the existing SCIM attributes defined in the core and enterprise user schemas, but you cannot
+create your own custom schemas and attributes.</p>
+</div>
+<div class="paragraph">
+<p>The feature&#8217;s roadmap includes additional capabilities such as UIs for the administration console, support for custom
+schemas and attributes, support for organizations, and more.</p>
+</div>
+<div class="paragraph">
+<p>You can find the full roadmap in the following issue:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/keycloak/keycloak/issues/45287" class="bare">https://github.com/keycloak/keycloak/issues/45287</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_does_it_map_to_other_features"><a class="anchor" href="#_how_does_it_map_to_other_features"></a>How does it map to other features?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>scim-api</code> feature turns a realm into an upstream or downstream (cross-domain) identity store. Thanks
+to the <code>workflows</code> feature, it will also be possible to enhance and automate administrative tasks when onboarding or
+offboarding identities from different channels, using a different workflow if needed.</p>
+</div>
+<div class="paragraph">
+<p>In terms of authorization, being a SCIM-compliant version of the Admin API, it leverages the same mechanisms to enforce
+access to realm resources such as users and groups. These mechanisms are based on the server/realm admin roles and
+<a href="https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions">Fine-Grained Admin Permissions</a>.</p>
+</div>
+<div class="paragraph">
+<p>In terms of attribute management, mainly for users, the SCIM API leverages the user profile feature to centralize how
+user attributes are managed. Unfortunately, we do not yet have a similar mechanism for groups.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_we_want_to_hear_from_you"><a class="anchor" href="#_we_want_to_hear_from_you"></a>We want to hear from you!</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The next releases will also be based on the feedback we receive from the community, so we encourage you to try out the
+SCIM Realm API and share your thoughts with us. While the feature remains experimental, we will be closely
+monitoring the feedback and usage to understand how it is being used and what the most important
+capabilities and fixes to deliver are.</p>
+</div>
+<div class="paragraph">
+<p>This is particularly important to help us prioritize the next capabilities to be added, and to ensure that we are
+delivering the features that are most important to you.</p>
+</div>
+<div class="paragraph">
+<p>Thanks for your support and feedback (including contributions) during the last sprints!</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
