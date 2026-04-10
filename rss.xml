@@ -9,6 +9,361 @@
   <language>en-us</language>
   <category>Keycloak/SSO/Identity and Access Management</category>
       <item>
+        <title>SCIM Realm API as an Experimental Feature</title>
+        <link>https://www.keycloak.org/2026/04/scim-as-experimental-feature</link>
+        <description>&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;If you have been following the latest blog posts, you may have noticed that we have been working on implementing the
+System for Cross-domain Identity Management (SCIM) protocol in Keycloak.
+We are excited to announce that the SCIM Realm API is now available as an experimental feature in Keycloak 26.6.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The SCIM Realm API allows you to manage users and groups in Keycloak using the SCIM protocol. This means that you can
+use any SCIM client to manage the user and group resource types in your realm.
+This is a great step towards improving the integrability of Keycloak with other (cross-domain) IAM solutions and
+downstream applications, thereby enabling common cloud use cases for identity (de)provisioning.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In terms of integration, we focused on making the API as compatible as possible with Microsoft Entra ID,
+which is the integration most &lt;a href=&quot;https://www.keycloak.org/2026/02/scim-support-survey-feedback&quot;&gt;demanded&lt;/a&gt; by the community.
+To do that, we have used the &lt;a href=&quot;https://scimvalidator.microsoft.com/&quot;&gt;EntraID SCIM Validator&lt;/a&gt; to validate our implementation
+and ensure that it meets the requirements of Microsoft Entra ID.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In essence, the SCIM Realm API is the Admin API but compliant with SCIM.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_how_to_try_it_out&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_how_to_try_it_out&quot;&gt;&lt;/a&gt;How to try it out?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Since this is an experimental feature (not enabled by default), you need to enable it when starting the server:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;docker run --name kc-scim-api -d \
+  -e KEYCLOAK_ADMIN=admin \
+  -e KEYCLOAK_ADMIN_PASSWORD=admin \
+  -p 8080:8080 \
+  quay.io/keycloak/keycloak:nightly \
+  start-dev --features=scim-api&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Let us create a realm &lt;code&gt;myrealm&lt;/code&gt; and enable the SCIM API for it. To do that, you can use the &lt;code&gt;kcadm.sh&lt;/code&gt; script to create
+the realm and enable the API. First, you need to configure the credentials for the &lt;code&gt;kcadm.sh&lt;/code&gt; script to be able to connect
+to the server:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;./kcadm.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Create the realm &lt;code&gt;myrealm&lt;/code&gt;:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;./kcadm.sh create realms -s realm=myrealm -s enabled=true -s scimApiEnabled=true&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Using the administration console, go to the &lt;code&gt;Realm Settings&lt;/code&gt; page of your realm, and check that the &lt;code&gt;SCIM API&lt;/code&gt; setting is enabled.
+Once the API is enabled, you can look up the SCIM base URL in the same page from the link &lt;code&gt;SCIM Endpoint&lt;/code&gt; at the bottom of the page.
+When running on &lt;code&gt;localhost&lt;/code&gt;, you should see something like &lt;code&gt;&lt;a href=&quot;http://localhost:8080/realms/myrealm/scim/v2&quot; class=&quot;bare&quot;&gt;http://localhost:8080/realms/myrealm/scim/v2&lt;/a&gt;&lt;/code&gt; as the SCIM base URL.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_connecting_a_scim_client&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_connecting_a_scim_client&quot;&gt;&lt;/a&gt;Connecting a SCIM client&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Let us create a service account with enough permissions to access the SCIM API. To do that, you can create a client with
+the &lt;code&gt;manage-users&lt;/code&gt; role, and use the credentials of this client to obtain an access token that you can use to make
+requests to the SCIM API:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;./kcadm.sh create clients -r myrealm -s clientId=scim-client -s serviceAccountsEnabled=true -s publicClient=false -s secret=secret&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;To allow access to manage users and groups, grant the &lt;code&gt;manage-users&lt;/code&gt; role to the service account of the client. You also
+need to grant &lt;code&gt;view-realm&lt;/code&gt; role to allow access to non-resource-type endpoints such as the &lt;code&gt;/ServiceProviderConfig&lt;/code&gt;,
+&lt;code&gt;/Schemas&lt;/code&gt;, or &lt;code&gt;/ResourceTypes&lt;/code&gt; endpoints:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;./kcadm.sh add-roles -r myrealm --uusername service-account-scim-client --cclientid realm-management --rolename manage-users
+./kcadm.sh add-roles -r myrealm --uusername service-account-scim-client --cclientid realm-management --rolename view-realm&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_understanding_scim_permissions&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_understanding_scim_permissions&quot;&gt;&lt;/a&gt;Understanding SCIM Permissions&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In this release, there is no specific role or permission for the SCIM API yet.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The SCIM API uses the same permissions as the Admin API, so you can use the same roles and permissions to control access
+to the realm resources (users and groups) via the SCIM Realm API. For example, if you want to allow read-only access to users
+via the SCIM API, you can grant them the &lt;code&gt;view-users&lt;/code&gt; role in the realm. The same is true if you are using Fine-Grained
+Admin Permissions, where you can grant specific permissions to individual realm resources.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;You should also be able to only allow a specific set of users or groups to be accessible and manageable via SCIM. For that,
+consider enabling &lt;a href=&quot;https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions&quot;&gt;Fine-Grained Admin Permissions&lt;/a&gt; to your realm.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_accessing_the_scim_realm_api&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_accessing_the_scim_realm_api&quot;&gt;&lt;/a&gt;Accessing the SCIM Realm API&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Once you have a client and subject with enough access to the SCIM API, you can use any SCIM client to manage users and
+groups in your realm.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Let us obtain a token for the service account of the &lt;code&gt;scim-client&lt;/code&gt; client we created in the
+previous step, and use it to make a request to the SCIM API. You can obtain a token for the service account with the following command:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;ACCESS_TOKEN=$(curl -s -X POST &quot;http://localhost:8080/realms/myrealm/protocol/openid-connect/token&quot; \
+  -H &quot;Content-Type: application/x-www-form-urlencoded&quot; \
+  -d &#39;grant_type=client_credentials&amp;amp;client_id=scim-client&amp;amp;client_secret=secret&#39; \
+  | jq -r .access_token)&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Now you can use this token to make a request to the SCIM API, for example, to create a user with the following command:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X POST &quot;http://localhost:8080/realms/myrealm/scim/v2/Users&quot; \
+  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot; \
+  -H &quot;Content-Type: application/scim+json&quot; \
+  -H &quot;Accept: application/scim+json&quot; \
+  -d &#39;{
+    &quot;schemas&quot;: [&quot;urn:ietf:params:scim:schemas:core:2.0:User&quot;],
+    &quot;userName&quot;: &quot;jdoe&quot;,
+    &quot;name&quot;: { &quot;givenName&quot;: &quot;John&quot;, &quot;familyName&quot;: &quot;Doe&quot; },
+    &quot;displayName&quot;: &quot;John Doe&quot;,
+    &quot;emails&quot;: [
+      { &quot;value&quot;: &quot;jdoe@example.com&quot; }
+    ]
+  }&#39;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The same is true for groups, where you can create a group with the following command:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X POST &quot;http://localhost:8080/realms/myrealm/scim/v2/Groups&quot; \
+  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot; \
+  -H &quot;Content-Type: application/scim+json&quot; \
+  -H &quot;Accept: application/scim+json&quot; \
+  -d &#39;{
+    &quot;schemas&quot;: [&quot;urn:ietf:params:scim:schemas:core:2.0:Group&quot;],
+    &quot;displayName&quot;: &quot;mygroup&quot;
+  }&#39;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;And, for example, to add a user to a group with the following command. Make sure to replace &lt;code&gt;{group_id}&lt;/code&gt; and &lt;code&gt;{user_id}&lt;/code&gt; with the actual ID of the group and the user you want to add as a member of the group, respectively:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X PATCH &quot;http://localhost:8080/realms/myrealm/scim/v2/Groups/{group_id}&quot; \
+  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot; \
+  -H &quot;Content-Type: application/scim+json&quot; \
+  -H &quot;Accept: application/scim+json&quot; \
+  -d &#39;{
+    &quot;schemas&quot;: [&quot;urn:ietf:params:scim:api:messages:2.0:PatchOp&quot;],
+    &quot;Operations&quot;: [
+      {
+        &quot;op&quot;: &quot;add&quot;,
+        &quot;path&quot;: &quot;members&quot;,
+        &quot;value&quot;: [
+          { &quot;value&quot;: &quot;{user_id}&quot; }
+        ]
+      }
+    ]
+  }&#39;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;As mentioned before, the &lt;code&gt;view-realm&lt;/code&gt; role is required to access non-resource-type endpoints, so if you have granted
+this role to the service account of the &lt;code&gt;scim-client&lt;/code&gt; client, you can access the &lt;code&gt;/ServiceProviderConfig&lt;/code&gt;, &lt;code&gt;/Schemas&lt;/code&gt;,
+and &lt;code&gt;/ResourceTypes&lt;/code&gt; endpoints with the following commands:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X GET &quot;http://localhost:8080/realms/myrealm/scim/v2/ServiceProviderConfig&quot; \
+  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X GET &quot;http://localhost:8080/realms/myrealm/scim/v2/Schemas&quot; \
+  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X GET &quot;http://localhost:8080/realms/myrealm/scim/v2/ResourceTypes&quot; \
+  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_mapping_user_attributes_to_scim_attributes&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_mapping_user_attributes_to_scim_attributes&quot;&gt;&lt;/a&gt;Mapping User Attributes to SCIM Attributes&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Thanks to the user profile feature, you can easily map user attributes to SCIM attributes. To do that, you can add a
+&lt;code&gt;kc.scim.schema.attribute&lt;/code&gt; annotation to a user profile attribute where the value is the name of the SCIM attribute you want to map to.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;By default, the user root attributes are automatically mapped to the corresponding SCIM attributes. For example,
+the &lt;code&gt;username&lt;/code&gt; attribute is automatically mapped to the &lt;code&gt;userName&lt;/code&gt; SCIM attribute, and the &lt;code&gt;firstName&lt;/code&gt; attribute is automatically mapped to the &lt;code&gt;name.givenName&lt;/code&gt; SCIM attribute.
+The same applies to the &lt;code&gt;lastName&lt;/code&gt; and &lt;code&gt;email&lt;/code&gt; attributes.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The list of supported SCIM attributes can be found by querying the &lt;code&gt;/Schemas&lt;/code&gt; or &lt;code&gt;/ResourceTypes&lt;/code&gt; endpoints of the SCIM API.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For instance, if you want to map an attribute from the enterprise user schema, such as &lt;code&gt;employeeNumber&lt;/code&gt;, you can add
+the &lt;code&gt;kc.scim.schema.attribute&lt;/code&gt; annotation to the corresponding user profile attribute with the value
+&lt;code&gt;urn:ietf:params:scim:schemas:extension:enterprise:2.0:User.employeeNumber&lt;/code&gt;, and this attribute will be available as an
+extension attribute in user resources in the SCIM API.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In future releases, we plan to add support for mapping custom attributes to SCIM attributes, so you will be able to map
+any user profile attribute to a SCIM attribute, and create your own custom schemas and attributes.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_mapping_group_attributes_to_scim_attributes&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_mapping_group_attributes_to_scim_attributes&quot;&gt;&lt;/a&gt;Mapping Group Attributes to SCIM Attributes&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Unlike users, the group resource type is limited to only the &lt;code&gt;displayName&lt;/code&gt; and &lt;code&gt;members&lt;/code&gt; attributes, as per
+the group core schema.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Groups do not have a user-profile-like feature, so there is no way to map custom attributes to SCIM attributes for groups
+without using a different — not ideal — approach. This is one of the key design aspects we will be looking at in the next release,
+so that we build a common mechanism for mapping both user and group attributes to SCIM attributes, and that we can
+support custom schemas and attributes for both users and groups.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_what_is_being_delivered&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_what_is_being_delivered&quot;&gt;&lt;/a&gt;What is being delivered?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The capabilities delivered in 26.6 are based on the &lt;a href=&quot;https://datatracker.ietf.org/doc/html/rfc7643&quot;&gt;RFC 7643&lt;/a&gt; and
+&lt;a href=&quot;https://datatracker.ietf.org/doc/html/rfc7644&quot;&gt;RFC 7644&lt;/a&gt; specifications, and include support for most of both specs.
+We aimed to deliver this initial set of capabilities in a way that is compatible with Microsoft Entra ID, so that
+SCIM clients can perform the following operations:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;POST, GET, PATCH, PUT, and DELETE operations for managing users and groups&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Support for the core user, enterprise user, and group schemas&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Add and remove users from groups&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Search for users and groups using the SCIM filtering and pagination syntax&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Query the supported Service Provider Configuration, Schemas, and Resource Types&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;There are missing capabilities from the RFCs, a highlight being:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Bulk Operations&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Password Management&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Sorting&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Manage service provider config settings&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Custom Schemas and Attributes&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In regard to custom schemas and attributes, we have delivered support for mapping user profile attributes to
+SCIM attributes, but there is no support for custom schemas and attributes yet. This means that you can only map user
+profile attributes to the existing SCIM attributes defined in the core and enterprise user schemas, but you cannot
+create your own custom schemas and attributes.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The feature&amp;#8217;s roadmap includes additional capabilities such as UIs for the administration console, support for custom
+schemas and attributes, support for organizations, and more.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;You can find the full roadmap in GitHub issue &lt;a href=&quot;https://github.com/keycloak/keycloak/issues/45287&quot;&gt;#45287&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_how_does_it_map_to_other_features&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_how_does_it_map_to_other_features&quot;&gt;&lt;/a&gt;How does it map to other features?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The &lt;code&gt;scim-api&lt;/code&gt; feature turns a realm into an upstream or downstream (cross-domain) identity store. Thanks
+to the &lt;code&gt;workflows&lt;/code&gt; feature, it will also be possible to enhance and automate administrative tasks when onboarding or
+offboarding identities from different channels, using a different workflow if needed.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In terms of authorization, being a SCIM-compliant version of the Admin API, it leverages the same mechanisms to enforce
+access to realm resources such as users and groups. These mechanisms are based on the server/realm admin roles and
+&lt;a href=&quot;https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions&quot;&gt;Fine-Grained Admin Permissions&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In terms of attribute management, mainly for users, the SCIM API leverages the user profile feature to centralize how
+user attributes are managed. Unfortunately, we do not yet have a similar mechanism for groups.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_we_want_to_hear_from_you&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_we_want_to_hear_from_you&quot;&gt;&lt;/a&gt;We want to hear from you!&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The next releases will also be based on the feedback we receive from the community, so we encourage you to try out the
+SCIM Realm API and share your thoughts with us. While the feature remains experimental, we will be closely
+monitoring the feedback and usage to understand how it is being used and what the most important
+capabilities and fixes to deliver are.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;This is particularly important to help us prioritize the next capabilities to be added, and to ensure that we are
+delivering the features that are most important to you.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Thanks for your support and feedback (including contributions) during the last sprints!&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description>
+        <guid>https://www.keycloak.org/2026/04/scim-as-experimental-feature</guid>
+        <pubDate>Fri, 10 Apr 2026 00:00:00 GMT</pubDate>
+        
+        <author>Keycloak Core IAM Team</author>
+      </item>
+      <item>
         <title>Keycloak 26.6.0 released</title>
         <link>https://www.keycloak.org/2026/04/keycloak-2660-released</link>
         <description>&lt;p&gt;To download the release go to &lt;a href=&quot;https://www.keycloak.org/downloads.html&quot;&gt;Keycloak downloads&lt;/a&gt;.&lt;/p&gt;
@@ -823,368 +1178,6 @@ Behind the scenes, the framework handles the lifecycle of Keycloak, the database
         <pubDate>Wed, 8 Apr 2026 00:00:00 GMT</pubDate>
         <category>Keycloak Release</category>
         
-      </item>
-      <item>
-        <title>SCIM Realm API as an Experimental Feature</title>
-        <link>https://www.keycloak.org/2026/04/scim-as-experimental-feature</link>
-        <description>&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;If you have been following the latest blog posts, you may have noticed that we have been working on implementing the
-System for Cross-domain Identity Management (SCIM) protocol in Keycloak.
-We are excited to announce that the SCIM Realm API is now available as an experimental feature in Keycloak 26.6.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;The SCIM Realm API allows you to manage users and groups in Keycloak using the SCIM protocol. This means that you can
-use any SCIM client to manage the user and group resource types in your realm.
-This is a great step towards improving the integrability of Keycloak with other (cross-domain) IAM solutions and
-downstream applications, thereby enabling common cloud use cases for identity (de)provisioning.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;In terms of integration, we focused on making the API as compatible as possible with Microsoft Entra ID,
-which is the integration most &lt;a href=&quot;https://www.keycloak.org/2026/02/scim-support-survey-feedback&quot;&gt;demanded&lt;/a&gt; by the community.
-To do that, we have used the &lt;a href=&quot;https://scimvalidator.microsoft.com/&quot;&gt;EntraID SCIM Validator&lt;/a&gt; to validate our implementation
-and ensure that it meets the requirements of Microsoft Entra ID.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;In essence, the SCIM Realm API is the Admin API but compliant with SCIM.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;sect1&quot;&gt;
-&lt;h2 id=&quot;_how_to_try_it_out&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_how_to_try_it_out&quot;&gt;&lt;/a&gt;How to try it out?&lt;/h2&gt;
-&lt;div class=&quot;sectionbody&quot;&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Since this is an experimental feature (not enabled by default), you need to enable it when starting the server:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;docker run --name kc-scim-api -d \
-  -e KEYCLOAK_ADMIN=admin \
-  -e KEYCLOAK_ADMIN_PASSWORD=admin \
-  -p 8080:8080 \
-  quay.io/keycloak/keycloak:nightly \
-  start-dev --features=scim-api&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Let us create a realm &lt;code&gt;myrealm&lt;/code&gt; and enable the SCIM API for it. To do that, you can use the &lt;code&gt;kcadm.sh&lt;/code&gt; script to create
-the realm and enable the API. First, you need to configure the credentials for the &lt;code&gt;kcadm.sh&lt;/code&gt; script to be able to connect
-to the server:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;./kcadm.sh config credentials --server http://localhost:8080 --realm master --user admin --password admin&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Create the realm &lt;code&gt;myrealm&lt;/code&gt;:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;./kcadm.sh create realms -s realm=myrealm -s enabled=true -s scimApiEnabled=true&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Using the administration console, go to the &lt;code&gt;Realm Settings&lt;/code&gt; page of your realm, and check that the &lt;code&gt;SCIM API&lt;/code&gt; setting is enabled.
-Once the API is enabled, you can look up the SCIM base URL in the same page from the link &lt;code&gt;SCIM Endpoint&lt;/code&gt; at the bottom of the page.
-When running on &lt;code&gt;localhost&lt;/code&gt;, you should see something like &lt;code&gt;&lt;a href=&quot;http://localhost:8080/realms/myrealm/scim/v2&quot; class=&quot;bare&quot;&gt;http://localhost:8080/realms/myrealm/scim/v2&lt;/a&gt;&lt;/code&gt; as the SCIM base URL.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;sect2&quot;&gt;
-&lt;h3 id=&quot;_connecting_a_scim_client&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_connecting_a_scim_client&quot;&gt;&lt;/a&gt;Connecting a SCIM client&lt;/h3&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Let us create a service account with enough permissions to access the SCIM API. To do that, you can create a client with
-the &lt;code&gt;manage-users&lt;/code&gt; role, and use the credentials of this client to obtain an access token that you can use to make
-requests to the SCIM API:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;./kcadm.sh create clients -r myrealm -s clientId=scim-client -s serviceAccountsEnabled=true -s publicClient=false -s secret=secret&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;To allow access to manage users and groups, grant the &lt;code&gt;manage-users&lt;/code&gt; role to the service account of the client. You also
-need to grant &lt;code&gt;view-realm&lt;/code&gt; role to allow access to non-resource-type endpoints such as the &lt;code&gt;/ServiceProviderConfig&lt;/code&gt;,
-&lt;code&gt;/Schemas&lt;/code&gt;, or &lt;code&gt;/ResourceTypes&lt;/code&gt; endpoints:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;./kcadm.sh add-roles -r myrealm --uusername service-account-scim-client --cclientid realm-management --rolename manage-users
-./kcadm.sh add-roles -r myrealm --uusername service-account-scim-client --cclientid realm-management --rolename view-realm&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;sect2&quot;&gt;
-&lt;h3 id=&quot;_understanding_scim_permissions&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_understanding_scim_permissions&quot;&gt;&lt;/a&gt;Understanding SCIM Permissions&lt;/h3&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;In this release, there is no specific role or permission for the SCIM API yet.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;The SCIM API uses the same permissions as the Admin API, so you can use the same roles and permissions to control access
-to the realm resources (users and groups) via the SCIM Realm API. For example, if you want to allow read-only access to users
-via the SCIM API, you can grant them the &lt;code&gt;view-users&lt;/code&gt; role in the realm. The same is true if you are using Fine-Grained
-Admin Permissions, where you can grant specific permissions to individual realm resources.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;You should also be able to only allow a specific set of users or groups to be accessible and manageable via SCIM. For that,
-consider enabling &lt;a href=&quot;https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions&quot;&gt;Fine-Grained Admin Permissions&lt;/a&gt; to your realm.&lt;/p&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;sect1&quot;&gt;
-&lt;h2 id=&quot;_accessing_the_scim_realm_api&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_accessing_the_scim_realm_api&quot;&gt;&lt;/a&gt;Accessing the SCIM Realm API&lt;/h2&gt;
-&lt;div class=&quot;sectionbody&quot;&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Once you have a client and subject with enough access to the SCIM API, you can use any SCIM client to manage users and
-groups in your realm.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Let us obtain a token for the service account of the &lt;code&gt;scim-client&lt;/code&gt; client we created in the
-previous step, and use it to make a request to the SCIM API. You can obtain a token for the service account with the following command:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;ACCESS_TOKEN=$(curl -s -X POST &quot;http://localhost:8080/realms/myrealm/protocol/openid-connect/token&quot; \
-  -H &quot;Content-Type: application/x-www-form-urlencoded&quot; \
-  -d &#39;grant_type=client_credentials&amp;amp;client_id=scim-client&amp;amp;client_secret=secret&#39; \
-  | jq -r .access_token)&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Now you can use this token to make a request to the SCIM API, for example, to create a user with the following command:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X POST &quot;http://localhost:8080/realms/myrealm/scim/v2/Users&quot; \
-  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot; \
-  -H &quot;Content-Type: application/scim+json&quot; \
-  -H &quot;Accept: application/scim+json&quot; \
-  -d &#39;{
-    &quot;schemas&quot;: [&quot;urn:ietf:params:scim:schemas:core:2.0:User&quot;],
-    &quot;userName&quot;: &quot;jdoe&quot;,
-    &quot;name&quot;: { &quot;givenName&quot;: &quot;John&quot;, &quot;familyName&quot;: &quot;Doe&quot; },
-    &quot;displayName&quot;: &quot;John Doe&quot;,
-    &quot;emails&quot;: [
-      { &quot;value&quot;: &quot;jdoe@example.com&quot; }
-    ]
-  }&#39;&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;The same is true for groups, where you can create a group with the following command:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X POST &quot;http://localhost:8080/realms/myrealm/scim/v2/Groups&quot; \
-  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot; \
-  -H &quot;Content-Type: application/scim+json&quot; \
-  -H &quot;Accept: application/scim+json&quot; \
-  -d &#39;{
-    &quot;schemas&quot;: [&quot;urn:ietf:params:scim:schemas:core:2.0:Group&quot;],
-    &quot;displayName&quot;: &quot;mygroup&quot;
-  }&#39;&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;And, for example, to add a user to a group with the following command. Make sure to replace &lt;code&gt;{group_id}&lt;/code&gt; and &lt;code&gt;{user_id}&lt;/code&gt; with the actual ID of the group and the user you want to add as a member of the group, respectively:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X PATCH &quot;http://localhost:8080/realms/myrealm/scim/v2/Groups/{group_id}&quot; \
-  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot; \
-  -H &quot;Content-Type: application/scim+json&quot; \
-  -H &quot;Accept: application/scim+json&quot; \
-  -d &#39;{
-    &quot;schemas&quot;: [&quot;urn:ietf:params:scim:api:messages:2.0:PatchOp&quot;],
-    &quot;Operations&quot;: [
-      {
-        &quot;op&quot;: &quot;add&quot;,
-        &quot;path&quot;: &quot;members&quot;,
-        &quot;value&quot;: [
-          { &quot;value&quot;: &quot;{user_id}&quot; }
-        ]
-      }
-    ]
-  }&#39;&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;As mentioned before, the &lt;code&gt;view-realm&lt;/code&gt; role is required to access non-resource-type endpoints, so if you have granted
-this role to the service account of the &lt;code&gt;scim-client&lt;/code&gt; client, you can access the &lt;code&gt;/ServiceProviderConfig&lt;/code&gt;, &lt;code&gt;/Schemas&lt;/code&gt;,
-and &lt;code&gt;/ResourceTypes&lt;/code&gt; endpoints with the following commands:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X GET &quot;http://localhost:8080/realms/myrealm/scim/v2/ServiceProviderConfig&quot; \
-  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot;&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X GET &quot;http://localhost:8080/realms/myrealm/scim/v2/Schemas&quot; \
-  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot;&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;listingblock&quot;&gt;
-&lt;div class=&quot;content&quot;&gt;
-&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;curl -v -X GET &quot;http://localhost:8080/realms/myrealm/scim/v2/ResourceTypes&quot; \
-  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot;&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;sect1&quot;&gt;
-&lt;h2 id=&quot;_mapping_user_attributes_to_scim_attributes&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_mapping_user_attributes_to_scim_attributes&quot;&gt;&lt;/a&gt;Mapping User Attributes to SCIM Attributes&lt;/h2&gt;
-&lt;div class=&quot;sectionbody&quot;&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Thanks to the user profile feature, you can easily map user attributes to SCIM attributes. To do that, you can add a
-&lt;code&gt;kc.scim.schema.attribute&lt;/code&gt; annotation to a user profile attribute where the value is the name of the SCIM attribute you want to map to.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;By default, the user root attributes are automatically mapped to the corresponding SCIM attributes. For example,
-the &lt;code&gt;username&lt;/code&gt; attribute is automatically mapped to the &lt;code&gt;userName&lt;/code&gt; SCIM attribute, and the &lt;code&gt;firstName&lt;/code&gt; attribute is automatically mapped to the &lt;code&gt;name.givenName&lt;/code&gt; SCIM attribute.
-The same applies to the &lt;code&gt;lastName&lt;/code&gt; and &lt;code&gt;email&lt;/code&gt; attributes.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;The list of supported SCIM attributes can be found by querying the &lt;code&gt;/Schemas&lt;/code&gt; or &lt;code&gt;/ResourceTypes&lt;/code&gt; endpoints of the SCIM API.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;For instance, if you want to map an attribute from the enterprise user schema, such as &lt;code&gt;employeeNumber&lt;/code&gt;, you can add
-the &lt;code&gt;kc.scim.schema.attribute&lt;/code&gt; annotation to the corresponding user profile attribute with the value
-&lt;code&gt;urn:ietf:params:scim:schemas:extension:enterprise:2.0:User.employeeNumber&lt;/code&gt;, and this attribute will be available as an
-extension attribute in user resources in the SCIM API.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;In future releases, we plan to add support for mapping custom attributes to SCIM attributes, so you will be able to map
-any user profile attribute to a SCIM attribute, and create your own custom schemas and attributes.&lt;/p&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;sect1&quot;&gt;
-&lt;h2 id=&quot;_mapping_group_attributes_to_scim_attributes&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_mapping_group_attributes_to_scim_attributes&quot;&gt;&lt;/a&gt;Mapping Group Attributes to SCIM Attributes&lt;/h2&gt;
-&lt;div class=&quot;sectionbody&quot;&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Unlike users, the group resource type is limited to only the &lt;code&gt;displayName&lt;/code&gt; and &lt;code&gt;members&lt;/code&gt; attributes, as per
-the group core schema.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Groups do not have a user-profile-like feature, so there is no way to map custom attributes to SCIM attributes for groups
-without using a different — not ideal — approach. This is one of the key design aspects we will be looking at in the next release,
-so that we build a common mechanism for mapping both user and group attributes to SCIM attributes, and that we can
-support custom schemas and attributes for both users and groups.&lt;/p&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;sect1&quot;&gt;
-&lt;h2 id=&quot;_what_is_being_delivered&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_what_is_being_delivered&quot;&gt;&lt;/a&gt;What is being delivered?&lt;/h2&gt;
-&lt;div class=&quot;sectionbody&quot;&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;The capabilities delivered in 26.6 are based on the &lt;a href=&quot;https://datatracker.ietf.org/doc/html/rfc7643&quot;&gt;RFC 7643&lt;/a&gt; and
-&lt;a href=&quot;https://datatracker.ietf.org/doc/html/rfc7644&quot;&gt;RFC 7644&lt;/a&gt; specifications, and include support for most of both specs.
-We aimed to deliver this initial set of capabilities in a way that is compatible with Microsoft Entra ID, so that
-SCIM clients can perform the following operations:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;ulist&quot;&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;POST, GET, PATCH, PUT, and DELETE operations for managing users and groups&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Support for the core user, enterprise user, and group schemas&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Add and remove users from groups&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Search for users and groups using the SCIM filtering and pagination syntax&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Query the supported Service Provider Configuration, Schemas, and Resource Types&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;There are missing capabilities from the RFCs, a highlight being:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;ulist&quot;&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;Bulk Operations&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Password Management&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Sorting&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Manage service provider config settings&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Custom Schemas and Attributes&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;In regard to custom schemas and attributes, we have delivered support for mapping user profile attributes to
-SCIM attributes, but there is no support for custom schemas and attributes yet. This means that you can only map user
-profile attributes to the existing SCIM attributes defined in the core and enterprise user schemas, but you cannot
-create your own custom schemas and attributes.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;The feature&amp;#8217;s roadmap includes additional capabilities such as UIs for the administration console, support for custom
-schemas and attributes, support for organizations, and more.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;You can find the full roadmap in the following issue:&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;ulist&quot;&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;&lt;a href=&quot;https://github.com/keycloak/keycloak/issues/45287&quot; class=&quot;bare&quot;&gt;https://github.com/keycloak/keycloak/issues/45287&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;sect1&quot;&gt;
-&lt;h2 id=&quot;_how_does_it_map_to_other_features&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_how_does_it_map_to_other_features&quot;&gt;&lt;/a&gt;How does it map to other features?&lt;/h2&gt;
-&lt;div class=&quot;sectionbody&quot;&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;The &lt;code&gt;scim-api&lt;/code&gt; feature turns a realm into an upstream or downstream (cross-domain) identity store. Thanks
-to the &lt;code&gt;workflows&lt;/code&gt; feature, it will also be possible to enhance and automate administrative tasks when onboarding or
-offboarding identities from different channels, using a different workflow if needed.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;In terms of authorization, being a SCIM-compliant version of the Admin API, it leverages the same mechanisms to enforce
-access to realm resources such as users and groups. These mechanisms are based on the server/realm admin roles and
-&lt;a href=&quot;https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions&quot;&gt;Fine-Grained Admin Permissions&lt;/a&gt;.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;In terms of attribute management, mainly for users, the SCIM API leverages the user profile feature to centralize how
-user attributes are managed. Unfortunately, we do not yet have a similar mechanism for groups.&lt;/p&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;sect1&quot;&gt;
-&lt;h2 id=&quot;_we_want_to_hear_from_you&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_we_want_to_hear_from_you&quot;&gt;&lt;/a&gt;We want to hear from you!&lt;/h2&gt;
-&lt;div class=&quot;sectionbody&quot;&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;The next releases will also be based on the feedback we receive from the community, so we encourage you to try out the
-SCIM Realm API and share your thoughts with us. While the feature remains experimental, we will be closely
-monitoring the feedback and usage to understand how it is being used and what the most important
-capabilities and fixes to deliver are.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;This is particularly important to help us prioritize the next capabilities to be added, and to ensure that we are
-delivering the features that are most important to you.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;Thanks for your support and feedback (including contributions) during the last sprints!&lt;/p&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;</description>
-        <guid>https://www.keycloak.org/2026/04/scim-as-experimental-feature</guid>
-        <pubDate>Tue, 7 Apr 2026 00:00:00 GMT</pubDate>
-        
-        <author>Keycloak Core IAM Team</author>
       </item>
       <item>
         <title>Keycloak 26.5.7 released</title>
