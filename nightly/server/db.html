@@ -962,6 +962,103 @@ Keycloak automatically translates these options to the appropriate vendor-specif
 </div>
 </div>
 <div class="sect1">
+<h2 id="encrypting-data-at-rest"><a class="anchor" href="#encrypting-data-at-rest"></a>Encrypting data at rest</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak stores sensitive information in the database. This includes hashed user passwords, client credentials and realm keys that are used to sign tokens.</p>
+</div>
+<div class="paragraph">
+<p>Enabling encryption at rest for your database is recommended to protect this data from unauthorized access in the event of physical media theft or improper storage decommissioning.</p>
+</div>
+<div class="sect2">
+<h3 id="_transparent_data_encryption"><a class="anchor" href="#_transparent_data_encryption"></a>Transparent Data Encryption</h3>
+<div class="paragraph">
+<p>Several database vendors support Transparent Data Encryption (TDE).
+With TDE, the database engine transparently encrypts data before writing it to disk and decrypts it when reading.
+Consult your vendor documentation for instructions on enabling TDE:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Oracle</strong>: <a href="https://docs.oracle.com/en/database/oracle/oracle-database/23/dbtde/index.html">Transparent Data Encryption (TDE)</a></p>
+</li>
+<li>
+<p><strong>Microsoft SQL Server</strong>: <a href="https://learn.microsoft.com/en-us/sql/relational-databases/security/encryption/transparent-data-encryption">Transparent Data Encryption (TDE)</a></p>
+</li>
+<li>
+<p><strong>MySQL</strong>: <a href="https://dev.mysql.com/doc/refman/8.4/en/innodb-data-encryption.html">InnoDB Data-at-Rest Encryption</a></p>
+</li>
+<li>
+<p><strong>MariaDB</strong>: <a href="https://mariadb.com/kb/en/data-at-rest-encryption-overview/">Data-at-Rest Encryption</a></p>
+</li>
+<li>
+<p><strong>EDB</strong>: <a href="https://www.enterprisedb.com/docs/tde/latest/">Transparent Data Encryption</a></p>
+</li>
+<li>
+<p><strong>PostgreSQL</strong>: While native PostgreSQL does not include TDE by default, some distributions include it.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For databases that do not offer built-in Transparent Data Encryption, use filesystem-level encryption instead.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Most cloud-managed database services, such as AWS RDS, Azure SQL, and GCP Cloud SQL, enable encryption at rest by default.
+Consult your cloud provider documentation to verify this is enabled and to understand the key management options available.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_filesystem_encryption"><a class="anchor" href="#_filesystem_encryption"></a>Filesystem encryption</h3>
+<div class="paragraph">
+<p>As an alternative or complement to TDE, you can encrypt the filesystem or block device where the database stores its data files.
+This approach works with any database vendor and is the primary recommendation for databases without built-in TDE support.
+Options include LUKS/dm-crypt on Linux, BitLocker on Windows, or cloud-provider volume encryption such as AWS EBS encryption and Azure Disk Encryption.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_write_ahead_logs_and_backups"><a class="anchor" href="#_write_ahead_logs_and_backups"></a>Write-ahead logs and backups</h3>
+<div class="paragraph">
+<p>Encryption must also cover write-ahead logs (WAL), redo logs, and database backups, as these contain the same sensitive data as the main data files.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Encrypting the main database data files alone is not sufficient.
+Write-ahead logs and backups can expose sensitive data if left unencrypted.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Ensure that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Write-ahead logs (WAL) or redo logs are encrypted or stored on encrypted storage.</p>
+</li>
+<li>
+<p>All database backups are encrypted, whether at the filesystem level or by using your backup tool&#8217;s built-in encryption capabilities.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_setting_jpa_provider_configuration_option_for_migrationstrategy"><a class="anchor" href="#_setting_jpa_provider_configuration_option_for_migrationstrategy"></a>Setting JPA provider configuration option for migrationStrategy</h2>
 <div class="sectionbody">
 <div class="paragraph">
