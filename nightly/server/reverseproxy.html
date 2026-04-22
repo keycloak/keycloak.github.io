@@ -110,15 +110,22 @@ gtag('config', 'G-0J2P9316N6');
 <h2 id="_tls_termination_modes"><a class="anchor" href="#_tls_termination_modes"></a>TLS termination modes</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>When deploying Keycloak behind a reverse proxy, there are two common approaches for handling TLS connections between clients, the proxy, and Keycloak: re-encrypt and passthrough.</p>
+<p>When deploying Keycloak behind a reverse proxy, there are three common approaches for handling TLS connections between clients, the proxy, and Keycloak: re-encrypt, edge termination and passthrough.</p>
 </div>
 <div class="sect2">
 <h3 id="_re_encrypt"><a class="anchor" href="#_re_encrypt"></a>Re-encrypt</h3>
 <div class="paragraph">
 <p>For re-encrypt, the reverse proxy terminates the client TLS connection and establishes a TLS connection to Keycloak.
 The proxy can inspect and modify HTTP headers (such as <code>Forwarded</code> or <code>X-Forwarded-*</code>) before re-encrypting the traffic to the backend.
-The proxy and Keycloak use independent TLS certificates: The proxy presents its own certificate to clients, while Keycloak uses a separate certificate for backend communication.
+The proxy and Keycloak use independent TLS certificates: the proxy presents its own certificate to clients, while Keycloak uses a separate certificate for backend communication.
 Configure <code>--proxy-headers</code> so that Keycloak parses the forwarded headers set by the proxy, including the real client IP address.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_edge_termination"><a class="anchor" href="#_edge_termination"></a>Edge termination</h3>
+<div class="paragraph">
+<p>The edge termination is similar to re-encrypt as the proxy terminates the TLS connection, but the connection between the proxy and Keycloak is then unencrypted.
+As edge termination is generally considered less secure than re-encrypt, this guide focuses on re-encrypt instead.</p>
 </div>
 </div>
 <div class="sect2">
@@ -231,7 +238,9 @@ Without this restriction, clients could bypass the proxy and send forged forward
 <p>Enable the PROXY protocol (<code>--proxy-protocol-enabled=true</code>) to see the real client IP address.
 Note that the PROXY protocol is not compatible with the <code>--proxy-headers</code> option.</p>
 <div class="paragraph">
-<p>The PROXY protocol header that the proxy adds to convey the client IP address is neither encrypted nor signed. Therefore, it can be spoofed, tampered with, or leaked. Mitigate that for example by restricting the network access.</p>
+<p>The PROXY protocol header that the proxy adds to convey the client IP address is neither encrypted nor signed.
+Therefore, it can be spoofed, tampered with, or leaked.
+Mitigate this risk, for example, by restricting network access.</p>
 </div>
 </li>
 <li>
@@ -259,27 +268,102 @@ Note that the PROXY protocol is not compatible with the <code>--proxy-headers</c
 </ul>
 </div>
 <div class="paragraph">
-<p>The port <code>8443</code> (or <code>8080</code> if HTTP is enabled) is used for the Admin UI, Account Console, SAML and OIDC endpoints and the Admin REST API as described in the <a href="https://www.keycloak.org/nightly/server/hostname">Configuring the hostname (v2)</a> guide.</p>
+<p>The port <code>8443</code> (or <code>8080</code> if HTTP is enabled) is used for the Admin UI, Account Console, SAML and OIDC endpoints, and the Admin REST API as described in the <a href="https://www.keycloak.org/nightly/server/hostname">Configuring the hostname (v2)</a> guide.</p>
 </div>
 <div class="paragraph">
-<p>The port <code>9000</code> is used for management, which includes endpoints for health checks and metrics as described in the  <a href="https://www.keycloak.org/nightly/server/management-interface">Configuring the Management Interface</a> guide.</p>
+<p>The port <code>9000</code> is used for management, which includes endpoints for health checks and metrics as described in the <a href="https://www.keycloak.org/nightly/server/management-interface">Configuring the Management Interface</a> guide.</p>
 </div>
 <div class="paragraph">
-<p>You only need to proxy port <code>8443</code> (or <code>8080</code>) even when you use different host names for frontend/backend and administration as described at <a href="https://www.keycloak.org/nightly/server/configuration-production">Configuring Keycloak for production</a>. You should not proxy port <code>9000</code> as health checks and metrics use those ports directly, and you do not want to expose this information to external callers.</p>
+<p>You only need to proxy port <code>8443</code> (or <code>8080</code>) even when you use different hostnames for frontend/backend and administration as described in <a href="https://www.keycloak.org/nightly/server/configuration-production">Configuring Keycloak for production</a>.
+You should not proxy port <code>9000</code> because health checks and metrics use that port directly, and you do not want to expose this information to external callers.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configure_the_reverse_proxy_headers"><a class="anchor" href="#_configure_the_reverse_proxy_headers"></a>Configure the reverse proxy headers</h2>
+<h2 id="_keycloak_with_tls_passthrough"><a class="anchor" href="#_keycloak_with_tls_passthrough"></a>Keycloak with TLS passthrough</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keycloak will parse the reverse proxy headers based on the <code>proxy-headers</code> option which accepts several values:</p>
+<p>In TLS passthrough mode, the proxy forwards the raw TLS connection to Keycloak without terminating it.
+Because the proxy cannot inspect or modify HTTP traffic, it cannot set or overwrite HTTP headers such as <code>Forwarded</code> or <code>X-Forwarded-*</code>.</p>
 </div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Do not set <code>--proxy-headers</code> when using TLS passthrough.
+The proxy cannot inject forwarded headers into the encrypted traffic, and any headers already present in the request originate from the client and cannot be trusted.
+Setting <code>--proxy-headers</code> in this mode would allow clients to spoof their IP address or protocol by sending forged headers directly to Keycloak.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Without forwarded headers, the only way for Keycloak to see the real client IP address is through the PROXY protocol, which is strongly recommended for TLS passthrough deployments.</p>
+</div>
+<div class="sect2">
+<h3 id="_proxy_protocol"><a class="anchor" href="#_proxy_protocol"></a>PROXY Protocol</h3>
+<div class="paragraph">
+<p>The PROXY protocol allows the proxy to prepend the original client connection information (such as the source IP address) to the TCP stream before forwarding it to Keycloak.
+This happens outside of the TLS-encrypted channel, so it works even though the proxy cannot modify HTTP traffic.</p>
+</div>
+<div class="paragraph">
+<p>Enable it in Keycloak with the <code>--proxy-protocol-enabled</code> option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-protocol-enabled true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The proxy must also be configured to send the PROXY protocol header.
+Most proxies support both version 1 (text-based) and version 2 (binary).
+Consult your proxy&#8217;s documentation for the specific configuration directive (for example, <code>send-proxy-v2</code> in HAProxy).</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>--proxy-protocol-enabled</code> option and the <code>--proxy-headers</code> option are mutually exclusive.
+Setting both will result in a configuration error.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_blueprints"><a class="anchor" href="#_blueprints"></a>Blueprints</h3>
 <div class="ulist">
 <ul>
 <li>
-<p>By default if the option is not specified, no reverse proxy headers are parsed. This should be used when no proxy is in use or with TLS passthrough.</p>
+<p><a href="https://www.keycloak.org/nightly/server/haproxy-passthrough">HAProxy with TLS passthrough</a></p>
 </li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_keycloak_with_tls_reencrypt"><a class="anchor" href="#_keycloak_with_tls_reencrypt"></a>Keycloak with TLS reencrypt</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In TLS re-encrypt mode, the proxy terminates the client TLS connection and establishes a new TLS connection to Keycloak.
+Because the proxy can inspect and modify HTTP traffic, additional configuration options are available, such as forwarded headers, path filtering, sticky sessions, and client certificate forwarding.</p>
+</div>
+<div class="sect2">
+<h3 id="_configure_the_reverse_proxy_headers"><a class="anchor" href="#_configure_the_reverse_proxy_headers"></a>Configure the reverse proxy headers</h3>
+<div class="paragraph">
+<p>Keycloak parses the reverse proxy headers based on the <code>proxy-headers</code> option, which accepts several values:</p>
+</div>
+<div class="ulist">
+<ul>
 <li>
 <p><code>forwarded</code> enables parsing of the <code>Forwarded</code> header as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC 7239</a>.</p>
 </li>
@@ -322,7 +406,8 @@ If either <code>forwarded</code> or <code>xforwarded</code> is selected, make su
 </div>
 <div class="paragraph">
 <p>Take extra precautions to ensure that the client address is properly set by your reverse proxy via the <code>Forwarded</code> or <code>X-Forwarded-For</code> headers.
-If this header is incorrectly configured, rogue clients can set this header and trick Keycloak into thinking the client is connected from a different IP address than the actual address. This precaution can be more critical if you do any deny or allow listing of IP addresses.</p>
+If these headers are incorrectly configured, rogue clients can inject false values and trick Keycloak into thinking the client is connecting from a different IP address than the actual one.
+This precaution is especially critical if you do any deny or allow listing of IP addresses.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -349,84 +434,22 @@ If the TLS connection is terminated at the reverse proxy (edge termination), ena
 </table>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_different_context_path_on_reverse_proxy"><a class="anchor" href="#_different_context_path_on_reverse_proxy"></a>Different context path on reverse proxy</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_trusted_proxies"><a class="anchor" href="#_trusted_proxies"></a>Trusted Proxies</h3>
 <div class="paragraph">
-<p>By default Keycloak is exposed through the root context path (<code>/</code>). If the proxy is using a different context path than Keycloak, one of the following must be done:
-- Use a simple hostname for the <code>hostname</code> option, <code>xforwarded</code> for the <code>proxy-headers</code> option, and have the proxy set the <code>X-Forwarded-Prefix</code> header.
-- Use a full URL for the <code>hostname</code> option including the proxy context path, for example using <code>--hostname=https://my.keycloak.org/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>.
-- Change the context path of Keycloak itself to match the context path for the reverse proxy using the <code>http-relative-path</code> option.</p>
+<p>To ensure that proxy headers are used only from proxies you trust, set the <code>proxy-trusted-addresses</code> option to a comma-separated list of IP addresses (IPv4 or IPv6) or Classless Inter-Domain Routing (CIDR) notations.</p>
 </div>
 <div class="paragraph">
-<p>For more details on exposing Keycloak on different hostname or context path incl. Administration REST API and Console, see <a href="https://www.keycloak.org/nightly/server/hostname">Configuring the hostname (v2)</a>.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_enable_sticky_sessions"><a class="anchor" href="#_enable_sticky_sessions"></a>Enable sticky sessions</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Typical cluster deployment consists of the load balancer (reverse proxy) and 2 or more Keycloak servers on private network.
-For performance purposes, it may be useful if load balancer forwards all requests related to particular browser session to the same Keycloak backend node.</p>
-</div>
-<div class="paragraph">
-<p>The reason is, that Keycloak is using Infinispan distributed cache under the covers for save data related to current authentication session and user session.
-The Infinispan distributed caches are configured with limited number of owners. That means that session related data are stored only in some cluster nodes and the other nodes need to lookup the data remotely if they want to access it.</p>
-</div>
-<div class="paragraph">
-<p>For example if authentication session with ID 123 is saved in the Infinispan cache on node1, and then node2 needs to lookup this session, it needs to send the request to node1 over the network to return the particular session entity.</p>
-</div>
-<div class="paragraph">
-<p>It is beneficial if particular session entity is always available locally, which can be done with the help of sticky sessions. The workflow in the cluster environment with the public frontend load balancer and two backend Keycloak nodes can be like this:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>User sends initial request to see the Keycloak login screen</p>
-</li>
-<li>
-<p>This request is served by the frontend load balancer, which forwards it to some random node (eg. node1). Strictly said, the node doesn&#8217;t need to be random, but can be chosen according to some other criteria (client IP address etc). It all depends on the implementation and configuration of underlying load balancer (reverse proxy).</p>
-</li>
-<li>
-<p>Keycloak creates authentication session with random ID (eg. 123) and saves it to the Infinispan cache.</p>
-</li>
-<li>
-<p>Infinispan distributed cache assigns the primary owner of the session based on the hash of session ID. See Infinispan documentation for more details around this. Let&#8217;s assume that Infinispan assigned node2 to be the owner of this session.</p>
-</li>
-<li>
-<p>Keycloak creates the cookie AUTH_SESSION_ID with the format like &lt;session-id&gt;.&lt;owner-node-id&gt; . In our example case, it will be 123.node2 .</p>
-</li>
-<li>
-<p>Response is returned to the user with the Keycloak login screen and the AUTH_SESSION_ID cookie in the browser</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>From this point, it is beneficial if load balancer forwards all the next requests to the node2 as this is the node, who is owner of the authentication session with ID 123 and hence Infinispan can lookup this session locally. After authentication is finished, the authentication session is converted to user session, which will be also saved on node2 because it has same ID 123 .</p>
-</div>
-<div class="paragraph">
-<p>The sticky session is not mandatory for the cluster setup, however it is good for performance for the reasons mentioned above. You need to configure your loadbalancer to stick over the AUTH_SESSION_ID cookie. The appropriate procedure to make this change depends on your loadbalancer.</p>
-</div>
-<div class="paragraph">
-<p>If your proxy supports session affinity without processing cookies from backend nodes, you should set the <code>spi-sticky-session-encoder--infinispan--should-attach-route</code> option
-to <code>false</code> in order to avoid attaching the node to cookies and just rely on the reverse proxy capabilities.</p>
+<p>For example:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-sticky-session-encoder--infinispan--should-attach-route=false</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>By default, the <code>spi-sticky-session-encoder--infinispan--should-attach-route</code> option value is <code>true</code> so that the node name is attached to
-cookies to indicate to the reverse proxy the node that subsequent requests should be sent to.</p>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers forwarded --proxy-trusted-addresses=192.168.0.32,127.0.0.0/8</code></pre>
 </div>
 </div>
 </div>
-<div class="sect1">
-<h2 id="_exposed_path_recommendations"><a class="anchor" href="#_exposed_path_recommendations"></a>Exposed path recommendations</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_exposed_path_recommendations"><a class="anchor" href="#_exposed_path_recommendations"></a>Exposed path recommendations</h3>
 <div class="paragraph">
 <p>When using a reverse proxy, Keycloak only requires certain paths to be exposed.
 The following table shows the recommended paths to expose.</p>
@@ -475,7 +498,7 @@ The following table shows the recommended paths to expose.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/.well-known/</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/.well-known/</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">This path is needed to resolve Authorization Server Metadata and other information via RFC 8414.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">This path is needed to resolve Authorization Server Metadata and other information via <a href="https://www.rfc-editor.org/rfc/rfc8414.html">RFC 8414</a>.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/metrics</p></td>
@@ -502,54 +525,106 @@ If not, prefix the path with your desired one.</p>
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-If you configured a <code>http-relative-path</code> on the server, proceed as follows to use discovery with RFC 8414: Configure a reverse proxy to map the <code>/.well-known/</code> path without the prefix to the path with the prefix on the server.
+If you configured an <code>http-relative-path</code> on the server, proceed as follows to use discovery with RFC 8414: Configure a reverse proxy to map the <code>/.well-known/</code> path without the prefix to the path with the prefix on the server.
 </td>
 </tr>
 </table>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_trusted_proxies"><a class="anchor" href="#_trusted_proxies"></a>Trusted Proxies</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_different_context_path_on_reverse_proxy"><a class="anchor" href="#_different_context_path_on_reverse_proxy"></a>Different context path on reverse proxy</h3>
 <div class="paragraph">
-<p>To ensure that proxy headers are used only from proxies you trust, set the <code>proxy-trusted-addresses</code> option to a comma separated list of IP addresses (IPv4 or IPv6) or Classless Inter-Domain Routing (CIDR) notations.</p>
+<p>By default, Keycloak is exposed through the root context path (<code>/</code>).
+If the proxy uses a different context path than Keycloak, one of the following must be done:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Use a simple hostname for the <code>hostname</code> option, <code>xforwarded</code> for the <code>proxy-headers</code> option, and have the proxy set the <code>X-Forwarded-Prefix</code> header.</p>
+</li>
+<li>
+<p>Use a full URL for the <code>hostname</code> option including the proxy context path, for example using <code>--hostname=https://my.keycloak.org/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>.</p>
+</li>
+<li>
+<p>Change the context path of Keycloak itself to match the context path for the reverse proxy using the <code>http-relative-path</code> option.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>For example:</p>
+<p>For more details on exposing Keycloak on a different hostname or context path, including the Administration REST API and Console, see <a href="https://www.keycloak.org/nightly/server/hostname">Configuring the hostname (v2)</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_enable_sticky_sessions"><a class="anchor" href="#_enable_sticky_sessions"></a>Enable sticky sessions</h3>
+<div class="paragraph">
+<p>A typical cluster deployment consists of a load balancer (reverse proxy) and two or more Keycloak servers on a private network.
+For performance purposes, it may be useful if the load balancer forwards all requests related to a particular browser session to the same Keycloak backend node.</p>
+</div>
+<div class="paragraph">
+<p>The reason is that Keycloak uses an Infinispan distributed cache internally to store data related to the current authentication session and user session.
+The Infinispan distributed caches are configured with a limited number of owners.
+That means that session-related data is stored only on some cluster nodes, and the other nodes need to look up the data remotely if they want to access it.</p>
+</div>
+<div class="paragraph">
+<p>For example, if an authentication session with ID 123 is saved in the Infinispan cache on node1, and then node2 needs to look up this session, it needs to send the request to node1 over the network to retrieve the session entity.</p>
+</div>
+<div class="paragraph">
+<p>It is beneficial if a particular session entity is always available locally, which can be achieved with sticky sessions.
+The workflow in a cluster environment with a public frontend load balancer and two backend Keycloak nodes can be as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The user sends the initial request to see the Keycloak login screen.</p>
+</li>
+<li>
+<p>This request is served by the frontend load balancer, which forwards it to some random node (e.g., node1).
+Strictly speaking, the node does not need to be random, but can be chosen according to other criteria (client IP address, etc.).
+It all depends on the implementation and configuration of the underlying load balancer (reverse proxy).</p>
+</li>
+<li>
+<p>Keycloak creates an authentication session with a random ID (e.g., 123) and saves it to the Infinispan cache.</p>
+</li>
+<li>
+<p>The Infinispan distributed cache assigns the primary owner of the session based on the hash of the session ID.
+See the Infinispan documentation for more details.
+Assume that Infinispan assigns node2 as the owner of this session.</p>
+</li>
+<li>
+<p>Keycloak creates the cookie <code>AUTH_SESSION_ID</code> with the format <code>&lt;session-id&gt;.&lt;owner-node-id&gt;</code>.
+In this example, the value is <code>123.node2</code>.</p>
+</li>
+<li>
+<p>The response is returned to the user with the Keycloak login screen and the <code>AUTH_SESSION_ID</code> cookie in the browser.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>From this point, it is beneficial if the load balancer forwards all subsequent requests to node2, as this is the node that owns the authentication session with ID 123 and hence Infinispan can look up this session locally.
+After authentication is finished, the authentication session is converted to a user session, which is also saved on node2 because it has the same ID 123.</p>
+</div>
+<div class="paragraph">
+<p>Sticky sessions are not mandatory for a cluster setup; however, they improve performance for the reasons mentioned above.
+You need to configure your load balancer to use the <code>AUTH_SESSION_ID</code> cookie for session affinity.
+The appropriate procedure depends on your load balancer.</p>
+</div>
+<div class="paragraph">
+<p>If your proxy supports session affinity without processing cookies from backend nodes, you should set the <code>spi-sticky-session-encoder--infinispan--should-attach-route</code> option to <code>false</code> in order to avoid attaching the node to cookies and just rely on the reverse proxy capabilities.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers forwarded --proxy-trusted-addresses=192.168.0.32,127.0.0.0/8</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-sticky-session-encoder--infinispan--should-attach-route=false</code></pre>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_proxy_protocol"><a class="anchor" href="#_proxy_protocol"></a>PROXY Protocol</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The <code>proxy-protocol-enabled</code> option controls whether the server should use the HA PROXY protocol when serving requests from behind a proxy. When set to true, the remote address returned will be the one from the actual connecting client. The value cannot be <code>true</code> when using the <code>proxy-headers</code> option.</p>
 </div>
 <div class="paragraph">
-<p>This is useful when running behind a compatible TLS passthrough proxy because the request headers cannot be manipulated.</p>
+<p>By default, the <code>spi-sticky-session-encoder--infinispan--should-attach-route</code> option value is <code>true</code> so that the node name is attached to cookies to indicate to the reverse proxy the node that subsequent requests should be sent to.</p>
 </div>
+</div>
+<div class="sect2">
+<h3 id="_enabling_client_certificate_lookup"><a class="anchor" href="#_enabling_client_certificate_lookup"></a>Enabling client certificate lookup</h3>
 <div class="paragraph">
-<p>For example:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-protocol-enabled true</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_enabling_client_certificate_lookup"><a class="anchor" href="#_enabling_client_certificate_lookup"></a>Enabling client certificate lookup</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>When the proxy is configured as a TLS termination proxy the client certificate information can be forwarded to the server through specific HTTP request headers and then used to authenticate
-clients. You are able to configure how the server is going to retrieve client certificate information depending on the proxy you are using.</p>
+<p>When the proxy is configured as a TLS termination proxy, the client certificate information can be forwarded to the server through specific HTTP request headers and then used to authenticate clients.
+You can configure how the server retrieves client certificate information depending on the proxy you are using.</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -565,9 +640,10 @@ clients. You are able to configure how the server is going to retrieve client ce
 <div class="ulist">
 <ul>
 <li>
-<p>Double check your use case needs reencrypt or edge TLS termination which implies using a proxy header for client certificate lookup. TLS passthrough is recommended as a more secure option
-when X.509 authentication is desired as it does not require passing the certificate via a proxy header. Client certificate lookup from a proxy header is applicable only to reencrypt
-and edge TLS termination.</p>
+<p>Double-check that your use case needs re-encrypt or edge TLS termination, which implies using a proxy header for client certificate lookup.
+TLS passthrough is recommended as a more secure option when X.509 authentication is desired because it does not require passing the certificate via a proxy header.
+Client certificate lookup from a proxy header is applicable only to re-encrypt
+  and edge TLS termination.</p>
 </li>
 <li>
 <p>If passthrough is not an option, implement the following security measures:</p>
@@ -577,12 +653,11 @@ and edge TLS termination.</p>
 <p>Configure your network so that Keycloak is isolated and can accept connections only from the proxy.</p>
 </li>
 <li>
-<p>Make sure that the proxy overwrites the header that is configured in <code>spi-x509cert-lookup--&lt;provider&gt;--ssl-client-cert</code> option.</p>
+<p>Make sure that the proxy overwrites the header that is configured in the <code>spi-x509cert-lookup--&lt;provider&gt;--ssl-client-cert</code> option.</p>
 </li>
 <li>
 <p>Pay extra attention to the <code>spi-x509cert-lookup--&lt;provider&gt;--trust-proxy-verification</code> setting. Make sure you enable it only if you can trust your proxy to verify the client certificate.
-Setting <code>spi-x509cert-lookup--&lt;provider&gt;--trust-proxy-verification=true</code> without the proxy verifying the client certificate chain will expose Keycloak to security vulnerability
-when a forged client certificate can be used for authentication.</p>
+Setting <code>spi-x509cert-lookup--&lt;provider&gt;--trust-proxy-verification=true</code> without the proxy verifying the client certificate chain will expose Keycloak to a security vulnerability where a forged client certificate can be used for authentication.</p>
 </li>
 </ul>
 </div>
@@ -594,7 +669,7 @@ when a forged client certificate can be used for authentication.</p>
 </table>
 </div>
 <div class="paragraph">
-<p>The server supports some of the most commons TLS termination proxies such as:</p>
+<p>The server supports some of the most common TLS termination proxies:</p>
 </div>
 <table class="tableblock frame-all grid-all fit-content">
 <colgroup>
@@ -626,7 +701,7 @@ when a forged client certificate can be used for authentication.</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">rfc9440</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Proxies that are compliant to <a href="https://datatracker.ietf.org/doc/rfc9440/">RFC 9440</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Proxies compliant with <a href="https://datatracker.ietf.org/doc/rfc9440/">RFC 9440</a></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">envoy</p></td>
@@ -635,7 +710,7 @@ when a forged client certificate can be used for authentication.</p>
 </tbody>
 </table>
 <div class="paragraph">
-<p>To configure how client certificates are retrieved from the requests you need to:</p>
+<p>To configure how client certificates are retrieved from the requests, you need to:</p>
 </div>
 <div class="listingblock">
 <div class="title">Enable the corresponding proxy provider</div>
@@ -650,7 +725,7 @@ when a forged client certificate can be used for authentication.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>When configuring the HTTP headers, you need to make sure the values you are using correspond to the name of the headers
+<p>When configuring the HTTP headers, you need to make sure the values you are using correspond to the names of the headers
 forwarded by the proxy with the client certificate information.</p>
 </div>
 <div class="paragraph">
@@ -678,7 +753,7 @@ forwarded by the proxy with the client certificate information.</p>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain-prefix</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The prefix of the headers holding additional certificates in the chain and used to retrieve individual
-certificates accordingly to the length of the chain. For instance, a value <code>CERT_CHAIN</code> will tell the server
+certificates according to the length of the chain. For instance, a value <code>CERT_CHAIN</code> will tell the server
 to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>CERT_CHAIN_9</code> if <code>certificate-chain-length</code> is set to <code>10</code>.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>apache</code>, <code>haproxy</code>, <code>nginx</code></p></td>
 </tr>
@@ -689,8 +764,8 @@ to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>
 </tr>
 </tbody>
 </table>
-<div class="sect2">
-<h3 id="_configuring_the_nginx_provider"><a class="anchor" href="#_configuring_the_nginx_provider"></a>Configuring the NGINX provider</h3>
+<div class="sect3">
+<h4 id="_configuring_the_nginx_provider"><a class="anchor" href="#_configuring_the_nginx_provider"></a>Configuring the NGINX provider</h4>
 <div class="paragraph">
 <p>The NGINX SSL/TLS module does not expose the client certificate chain. Keycloak&#8217;s NGINX certificate lookup provider rebuilds it by using the Keycloak truststore.</p>
 </div>
@@ -719,14 +794,14 @@ to configure a Keycloak Truststore. The options and defaults specific to <code>n
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">cert-is-url-encoded</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the forwarded certificate is url-encoded or not. In NGINX, this corresponds to the <code>$ssl_client_cert</code> and <code>$ssl_client_escaped_cert</code> variables.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the forwarded certificate is URL-encoded or not. In NGINX, this corresponds to the <code>$ssl_client_cert</code> and <code>$ssl_client_escaped_cert</code> variables.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<div class="sect2">
-<h3 id="_configuring_the_rfc9440_provider"><a class="anchor" href="#_configuring_the_rfc9440_provider"></a>Configuring the rfc9440 provider</h3>
+<div class="sect3">
+<h4 id="_configuring_the_rfc9440_provider"><a class="anchor" href="#_configuring_the_rfc9440_provider"></a>Configuring the rfc9440 provider</h4>
 <div class="paragraph">
 <p>If you stick to the header names mentioned in RFC 9440, you do not need to configure any additional options after selecting the <code>rfc9440</code> provider.
 The options and defaults specific to <code>rfc9440</code> are as follows:</p>
@@ -759,12 +834,12 @@ The options and defaults specific to <code>rfc9440</code> are as follows:</p>
 </tbody>
 </table>
 <div class="paragraph">
-<p>If your certificate chain is longer than the given default, you must define the option with an appropriate number.
+<p>If your certificate chain is longer than the default, you must set the <code>certificate-chain-length</code> option to an appropriate value.
 Otherwise, the provider will discard the request.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_configuring_the_traefik_provider"><a class="anchor" href="#_configuring_the_traefik_provider"></a>Configuring the Traefik provider</h3>
+<div class="sect3">
+<h4 id="_configuring_the_traefik_provider"><a class="anchor" href="#_configuring_the_traefik_provider"></a>Configuring the Traefik provider</h4>
 <div class="paragraph">
 <p>The Traefik provider handles certificates forwarded by Traefik&#8217;s <a href="https://doc.traefik.io/traefik/middlewares/http/passtlsclientcert/">PassTLSClientCert middleware</a> with <code>pem: true</code>.
 Traefik sends the client certificate and any intermediate CA certificates as PEM blocks in a single <code>X-Forwarded-Tls-Client-Cert</code> header, separated by commas.
@@ -774,11 +849,12 @@ The <code>traefik</code> provider parses all certificates from this header.</p>
 <p>Other than possibly changing the <code>certificate-chain-length</code>, you do not need to configure additional options for the <code>traefik</code> provider.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_configuring_the_envoy_provider"><a class="anchor" href="#_configuring_the_envoy_provider"></a>Configuring the Envoy provider</h3>
+<div class="sect3">
+<h4 id="_configuring_the_envoy_provider"><a class="anchor" href="#_configuring_the_envoy_provider"></a>Configuring the Envoy provider</h4>
 <div class="paragraph">
-<p>The Envoy provider will automatically retrieve the client certificate and optional certificate chain from the <code>x-forwarded-client-cert</code> header.
+<p>The Envoy provider automatically retrieves the client certificate and optional certificate chain from the <code>x-forwarded-client-cert</code> header.
 You do not need to configure additional options for the <code>envoy</code> provider.</p>
+</div>
 </div>
 </div>
 </div>
@@ -869,7 +945,8 @@ Default: <code>1s</code></p>
 <div class="sect2">
 <h3 id="_when_to_adjust_shutdown_timeouts"><a class="anchor" href="#_when_to_adjust_shutdown_timeouts"></a>When to adjust shutdown timeouts</h3>
 <div class="paragraph">
-<p>Consider adjusting these values based on your deployment configuration with the following example Scenarios:</p>
+<p>Consider adjusting these values based on your deployment configuration.
+The following table shows example scenarios:</p>
 </div>
 <table class="tableblock frame-all grid-all fit-content">
 <colgroup>
@@ -897,7 +974,7 @@ Default: <code>1s</code></p>
 <div class="ulist">
 <ul>
 <li>
-<p>5s poll interval and a load balancer reconfiguring after two successive failed probes.</p>
+<p>A 5s poll interval and a load balancer reconfiguring after two successive failed probes.</p>
 </li>
 <li>
 <p>1s for reconfiguring the proxy.</p>

@@ -442,6 +442,8 @@ export default class Keycloak {
           ref.addEventListener('loadstart', async (event) => {
             if (event.url.indexOf(getCordovaRedirectUri()) === 0) {
               const callback = this.#parseCallback(event.url)
+              completed = true
+              closeBrowser()
 
               try {
                 await this.#processCallback(callback)
@@ -449,8 +451,6 @@ export default class Keycloak {
               } catch (error) {
                 reject(error)
               }
-              closeBrowser()
-              completed = true
             }
           })
 
@@ -458,14 +458,15 @@ export default class Keycloak {
             if (!completed) {
               if (event.url.indexOf(getCordovaRedirectUri()) === 0) {
                 const callback = this.#parseCallback(event.url)
+                completed = true
+                closeBrowser()
+
                 try {
                   await this.#processCallback(callback)
                   resolve()
                 } catch (error) {
                   reject(error)
                 }
-                closeBrowser()
-                completed = true
               } else {
                 reject(new Error('Unable to process login.'))
                 closeBrowser()
