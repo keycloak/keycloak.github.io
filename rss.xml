@@ -9,6 +9,182 @@
   <language>en-us</language>
   <category>Keycloak/SSO/Identity and Access Management</category>
       <item>
+        <title>Organization Groups: Structure Your Organizations with Hierarchical Group Management</title>
+        <link>https://www.keycloak.org/2026/04/org-groups</link>
+        <description>&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Introduced in Keycloak 26.6.0, Organization Groups bring hierarchical group management to the Organizations feature. While Organizations already let you model Business-to-Business (B2B) relationships where external companies, partners, or departments each manage their own users, Organization Groups take this further by letting you organize members within each organization into logical teams, departments, or any structure that fits your needs.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_why_organization_groups&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_why_organization_groups&quot;&gt;&lt;/a&gt;Why Organization Groups?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Before Organization Groups, structuring members within an organization required workarounds using realm-level groups, which are shared across the entire realm. This creates problems in multi-tenant scenarios: if Organization A and Organization B both need an &quot;Engineering&quot; group, they&amp;#8217;d collide at the realm level.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Organization Groups solve this by giving each organization its own isolated group hierarchy. Organization A&amp;#8217;s &lt;code&gt;/Engineering/Backend&lt;/code&gt; and Organization B&amp;#8217;s &lt;code&gt;/Engineering/Backend&lt;/code&gt; are completely separate groups with their own members, attributes, and identifiers. No naming conflicts, no cross-organization leakage.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_creating_a_group_hierarchy&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_creating_a_group_hierarchy&quot;&gt;&lt;/a&gt;Creating a Group Hierarchy&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Groups can be nested to mirror real-world organizational structures:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/Engineering
+  /Engineering/Backend
+  /Engineering/Frontend
+/Sales
+  /Sales/APAC
+  /Sales/EMEA
+  /Sales/LATAM
+  /Sales/NA&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Creating groups is straightforward: navigate to your organization, click the &lt;strong&gt;Groups&lt;/strong&gt; tab, and click &lt;strong&gt;Create group&lt;/strong&gt;. To build hierarchies, select a parent group before creating a child group, or use &lt;strong&gt;Move to&lt;/strong&gt; to reorganize existing groups.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_automatic_group_assignment_via_identity_providers&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_automatic_group_assignment_via_identity_providers&quot;&gt;&lt;/a&gt;Automatic Group Assignment via Identity Providers&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;One of the most powerful capabilities is automatic group assignment during federated authentication. When an identity provider is linked to an organization, two mapper types are available:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Hardcoded Group&lt;/strong&gt; assigns every user authenticating through the IdP to a specific organization group. Useful for scenarios like &quot;everyone from this corporate IdP goes into the Engineering team.&quot;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Advanced Claim to Group&lt;/strong&gt; maps users to groups based on claim values from the external IdP. For example, you can map users with a &lt;code&gt;department=backend&lt;/code&gt; claim to &lt;code&gt;/Engineering/Backend&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;When selecting target groups in these mappers, Keycloak automatically shows both realm groups and groups from the organization linked to the IdP.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_groups_in_tokens&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_groups_in_tokens&quot;&gt;&lt;/a&gt;Groups in Tokens&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Organization group memberships can be included in both OIDC tokens and SAML assertions.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_oidc&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_oidc&quot;&gt;&lt;/a&gt;OIDC&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Add the &lt;strong&gt;Organization Group Membership&lt;/strong&gt; mapper to a scope that also contains the &lt;strong&gt;Organization Membership&lt;/strong&gt; mapper (the built-in &lt;code&gt;organization&lt;/code&gt; scope is the easiest choice). When a user authenticates and requests the &lt;code&gt;organization&lt;/code&gt; scope, groups appear within the organization claim:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-json&quot; data-lang=&quot;json&quot;&gt;{
+  &quot;organization&quot;: {
+    &quot;acme-corp&quot;: {
+      &quot;id&quot;: &quot;f8d3c4e1-...&quot;,
+      &quot;groups&quot;: [&quot;/Engineering/Backend&quot;]
+    }
+  }
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Group paths are relative to the organization, and multiple organizations can be included using &lt;code&gt;scope=organization:*&lt;/code&gt; or by specifying multiple aliases like &lt;code&gt;scope=organization:org-a organization:org-b&lt;/code&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_saml&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_saml&quot;&gt;&lt;/a&gt;SAML&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Add the &lt;strong&gt;Organization Group Membership&lt;/strong&gt; mapper to the built-in &lt;code&gt;saml_organization&lt;/code&gt; scope (which already includes the Organization Membership mapper). Groups are automatically included in assertions for all organizations the user is a member of:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;language-xml&quot; data-lang=&quot;xml&quot;&gt;&amp;lt;Attribute Name=&quot;organization.acme-corp.groups&quot;&amp;gt;
+  &amp;lt;AttributeValue&amp;gt;/Engineering/Backend&amp;lt;/AttributeValue&amp;gt;
+&amp;lt;/Attribute&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_viewing_a_members_group_memberships&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_viewing_a_members_group_memberships&quot;&gt;&lt;/a&gt;Viewing a Member&amp;#8217;s Group Memberships&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;To see which organization groups a specific member belongs to, use the kebab menu next to the member in the organization&amp;#8217;s &lt;strong&gt;Members&lt;/strong&gt; tab and select &lt;strong&gt;Show group memberships&lt;/strong&gt;. This provides a quick overview without navigating away from the member list.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_how_organization_groups_differ_from_realm_groups&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_how_organization_groups_differ_from_realm_groups&quot;&gt;&lt;/a&gt;How Organization Groups Differ from Realm Groups&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;table class=&quot;tableblock frame-all grid-all stretch&quot;&gt;
+&lt;colgroup&gt;
+&lt;col style=&quot;width: 33.3333%;&quot;&gt;
+&lt;col style=&quot;width: 33.3333%;&quot;&gt;
+&lt;col style=&quot;width: 33.3334%;&quot;&gt;
+&lt;/colgroup&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;/th&gt;
+&lt;th class=&quot;tableblock halign-left valign-top&quot;&gt;Organization Groups&lt;/th&gt;
+&lt;th class=&quot;tableblock halign-left valign-top&quot;&gt;Realm Groups&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Scope&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Belong to a single organization&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Shared across the entire realm&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Isolation&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Same paths can exist in different organizations&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Paths must be unique within the realm&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Authorization policies&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Cannot be used in Keycloak authorization policies&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Supported in authorization policies&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Token mapping&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Appear within the &lt;code&gt;organization&lt;/code&gt; claim context&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Available via standard group mappers&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_rest_api&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_rest_api&quot;&gt;&lt;/a&gt;REST API&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Organization groups are fully manageable via the Admin REST API under &lt;code&gt;/admin/realms/{realm}/organizations/{orgId}/groups&lt;/code&gt;. The API supports creating, listing, updating, moving, and deleting groups, as well as managing group members. This makes it straightforward to automate organization structure provisioning from external systems.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_getting_started&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_getting_started&quot;&gt;&lt;/a&gt;Getting Started&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Organization Groups are available starting with Keycloak 26.6.0 as part of the Organizations feature. Enable Organizations in your realm settings, create an organization, and start building your group hierarchy from the &lt;strong&gt;Groups&lt;/strong&gt; tab.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For full details, see the &lt;a href=&quot;https://www.keycloak.org/docs/latest/server_admin/#assembly-managing-organizations_server_administration_guide&quot;&gt;Organizations documentation&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description>
+        <guid>https://www.keycloak.org/2026/04/org-groups</guid>
+        <pubDate>Wed, 29 Apr 2026 00:00:00 GMT</pubDate>
+        
+        <author>Vlasta Ramik</author>
+      </item>
+      <item>
         <title>Keycloak JS 26.2.4 released</title>
         <link>https://www.keycloak.org/2026/04/keycloak-js-2624-released</link>
         <description>
