@@ -1,0 +1,197 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Fine-Grained Admin Permissions for Organizations - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Fine-Grained Admin Permissions for Organizations">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Keycloak 26.7.0 introduces organization-scoped admin permissions, allowing administrators to be granted manage or view access to specific organizations rather than the entire realm.">
+<meta name="author" content="Vlasta Ramik">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2026/05/org-fgap">
+<meta property="og:url" content="https://www.keycloak.org/2026/05/org-fgap">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2026/05/org-fgap","headline":"Fine-Grained Admin Permissions for Organizations","name":"Fine-Grained Admin Permissions for Organizations","datePublished":"2026-05-07T08:00:00Z","inLanguage":"en","abstract":"Keycloak 26.7.0 introduces organization-scoped admin permissions, allowing administrators to be granted manage or view access to specific organizations rather than the entire realm.","url":"https://www.keycloak.org/2026/05/org-fgap","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Vlasta Ramik"}]}
+</script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article kc-asciidoc">
+    <h1>Fine-Grained Admin Permissions for Organizations</h1>
+    <p class="blog-date text-muted">May 07 2026 by Vlasta Ramik</p>
+
+
+<div class="paragraph">
+<p>In Keycloak 26.7.0, Fine-Grained Admin Permissions (FGAP) will support Organizations as a resource type. This means you can grant an administrator permission to manage Org A while only allowing them to view Org B&#8201;&#8212;&#8201;or restrict their access to a single organization entirely. No more realm-wide all-or-nothing admin access for organizations.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_problem"><a class="anchor" href="#_the_problem"></a>The Problem</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before this release, administering organizations required the <code>manage-realm</code> role, which grants far broader access than just organizations&#8201;&#8212;&#8201;it covers realm settings, authentication flows, and much more. There was no way to grant someone access to manage organizations without also giving them control over the entire realm. In multi-tenant deployments where different teams or partners own different organizations, this was a significant security and operational concern.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_new"><a class="anchor" href="#_whats_new"></a>What&#8217;s New</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Two changes in Keycloak 26.7.0 work together to solve this:</p>
+</div>
+<div class="sect2">
+<h3 id="_organization_specific_admin_roles"><a class="anchor" href="#_organization_specific_admin_roles"></a>Organization-Specific Admin Roles</h3>
+<div class="paragraph">
+<p>Organizations will support scoped admin roles that let you delegate day-to-day management tasks without granting realm-wide access. An organization administrator can:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create, update, and delete organizations</p>
+</li>
+<li>
+<p>Invite new members and revoke membership</p>
+</li>
+<li>
+<p>Link and unlink identity providers</p>
+</li>
+<li>
+<p>Manage organization groups</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These roles grant access to all organizations in the realm and can only be assigned by realm administrators, ensuring that privilege escalation stays under control.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_organizations_as_a_fgap_resource_type"><a class="anchor" href="#_organizations_as_a_fgap_resource_type"></a>Organizations as a FGAP Resource Type</h3>
+<div class="paragraph">
+<p>Organizations will be a first-class resource type in the Fine-Grained Admin Permissions system, alongside Users, Groups, or Clients. This brings two permission scopes for organizations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>manage</strong>&#8201;&#8212;&#8201;full administrative control over the organization</p>
+</li>
+<li>
+<p><strong>view</strong>&#8201;&#8212;&#8201;read-only access to the organization and its configuration</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When FGAP is enabled, permissions can be set per organization. An administrator who is granted <strong>manage</strong> and <strong>view</strong> on Org A and <strong>view</strong> on Org B will see both organizations, but would be able to update (or make other managerial tasks) just Org A in the Admin Console and REST API&#8201;&#8212;&#8201;all other organizations are hidden entirely.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scoped_organization_administration"><a class="anchor" href="#_example_scoped_organization_administration"></a>Example: Scoped Organization Administration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Consider a deployment with three organizations: <strong>Acme Corp</strong>, <strong>Globex</strong>, and <strong>Initech</strong>. You want:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Alice to fully manage Acme Corp and Globex</p>
+</li>
+<li>
+<p>Bob to only view Initech</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>With FGAP for Organizations, you create permissions and policies that grant Alice both <strong>manage</strong> and <strong>view</strong> on Acme Corp and Globex, and Bob just <strong>view</strong> on Initech. When Alice logs into the Admin Console, she sees only Acme Corp and Globex and can fully manage them. Bob sees only Initech in read-only mode. Neither has access to realm-wide settings or other organizations.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_not_included_yet"><a class="anchor" href="#_whats_not_included_yet"></a>What&#8217;s Not Included (Yet)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This initial release focuses on organization-level manage and view permissions. Sub-resource permissions&#8201;&#8212;&#8201;such as separate control over an organization&#8217;s members, groups, or identity providers&#8201;&#8212;&#8201;are not included in this milestone.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_getting_started"><a class="anchor" href="#_getting_started"></a>Getting Started</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Both Fine-Grained Admin Permissions and admin roles for Organizations will be available in Keycloak 26.7.0. If you don&#8217;t want to wait for the release, you can try it out today using the <a href="https://www.keycloak.org/nightly">nightly builds</a>. We&#8217;d love to hear your feedback before the final release.</p>
+</div>
+<div class="paragraph">
+<p>To use the feature, enable both Organizations and Fine-Grained Admin Permissions in your realm settings, then configure permission policies for individual organizations through the Admin Console or the Admin REST API.</p>
+</div>
+<div class="paragraph">
+<p>For full details, see the <a href="https://www.keycloak.org/docs/nightly/server_admin/#understanding-the-realm-resource-types">Fine-Grained Admin Permissions documentation</a>.</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
