@@ -420,15 +420,21 @@ Note that when using DPoP-bound tokens, the Authorization scheme is DPoP, not Be
 <div class="sect1">
 <h2 id="_dpop_with_standard_token_exchange"><a class="anchor" href="#_dpop_with_standard_token_exchange"></a>DPoP with Standard Token Exchange</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Standard Token Exchange supports DPoP-bound tokens as <code>subject_token</code> under specific conditions:</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p>Standard Token Exchange does not support DPoP-bound tokens (as defined in RFC 7800) as the <code>subject_token</code> parameter. Only Bearer access tokens can be exchanged. If you attempt to use a DPoP-bound token as the subject token, the request will be rejected with an <code>invalid_request</code> error.</p>
+<p>The client performing the token exchange request <strong>must be the same client</strong> that the <code>subject_token</code> was issued for (the <code>azp</code> claim must match the requester client ID).</p>
 </li>
 <li>
-<p>While DPoP-bound tokens cannot be used as <code>subject_token</code> to token exchange, you can obtain DPoP-bound tokens as <strong>output</strong>.</p>
+<p>The client must include a valid DPoP proof in the exchange request, signed with the same key that was used to bind the original token. Keycloak verifies that the DPoP key thumbprint matches the <code>cnf.jkt</code> claim in the subject token.</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>The exchanged token will also be DPoP-bound if a valid DPoP proof is included in the request.</p>
 </div>
 <div class="sect2">
 <h3 id="_when_to_use_token_exchange_with_dpop"><a class="anchor" href="#_when_to_use_token_exchange_with_dpop"></a>When to Use Token Exchange with DPoP</h3>
@@ -445,6 +451,9 @@ Note that when using DPoP-bound tokens, the Authorization scheme is DPoP, not Be
 </li>
 <li>
 <p>Your backend services require DPoP but the original token was issued as Bearer</p>
+</li>
+<li>
+<p>You need to exchange a DPoP-bound token for a new one with different audiences or scopes while maintaining the DPoP binding</p>
 </li>
 </ul>
 </div>
