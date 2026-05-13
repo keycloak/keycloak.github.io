@@ -261,7 +261,7 @@ Also the default ingress does not prevent accessing admin endpoints, so you may 
 </td>
 <td class="content">
 <div class="paragraph">
-<p>If you are on OpenShift, you cannot use wildcard certificates on passthrough Routes with HTTP/2 enabled. The following Keycloak CR on OpenShift if you are using a wildcard certificate with the default IngressClass, creates such a Route. In this situation, modify the yaml based on "Accessing the Keycloak deployment" later in this topic to use TLS Termination or an OpenShift re-encrypt Route.</p>
+<p>If you are on OpenShift, you cannot use wildcard certificates on passthrough Routes with HTTP/2 enabled. The following Keycloak CR on OpenShift if you are using a wildcard certificate with the default IngressClass, creates such a Route. In this situation, modify the YAML based on "Accessing the Keycloak deployment" later in this topic to use TLS Termination or an OpenShift re-encrypt Route.</p>
 </div>
 </td>
 </tr>
@@ -305,8 +305,16 @@ spec:
   hostname:
     hostname: test.keycloak.org
   proxy:
-    headers: xforwarded # double check your reverse proxy sets and overwrites the X-Forwarded-* headers</code></pre>
+    headers: xforwarded <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Check your load balancer or reverse proxy configuration to determine whether it utilizes the <code>Forwarded</code> (RFC 7239) or <code>X-Forwarded-*</code> (e.g., <code>X-Forwarded-For</code>) mechanism for header propagation.</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>Apply the changes:</p>
@@ -379,20 +387,110 @@ See below for more on TLS termination.
 </table>
 </div>
 <div class="sect3">
-<h4 id="_proxy_modes_with_the_basic_ingress"><a class="anchor" href="#_proxy_modes_with_the_basic_ingress"></a>Proxy modes with the basic Ingress</h4>
+<h4 id="_tls_termination_with_default_ingress"><a class="anchor" href="#_tls_termination_with_default_ingress"></a>TLS Termination with default Ingress</h4>
 <div class="paragraph">
-<p>The operator annotates the Ingress to match expectations for TLS termination or passthrough on OpenShift with the default IngressClass.
-For this reason TLS reencryption is not yet considered supported by basic Ingress, but you may be able to specify the <code>tlsSecret</code> on both the <code>http</code> and <code>ingress</code> specs as a starting point.
-You should double check the requirements of your IngressClass and platform to see if additional Ingress or Service annotations are needed in your desired scenario.</p>
+<p>When using the operator-provided ingress (<code>spec.ingress.enabled: true</code>) there are a lot of Keycloak CR options (like service and ingress labels and annotations) which allow you to customize your ingress behavior. This section shows how to achieve the following TLS Termination when using OpenShift:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#passthrough">Passthrough</a></p>
+</li>
+<li>
+<p><a href="#edge_cluster_domain">Edge using cluster domain and certificate</a></p>
+</li>
+<li>
+<p><a href="#edge_custom_domain">Edge using custom domain and certificate</a></p>
+</li>
+<li>
+<p><a href="#reencrypt_cluster_domain">Reencrypt using cluster domain and certificate</a></p>
+</li>
+<li>
+<p><a href="#reencrypt_custom_domain">Reencrypt using custom domain and certificate</a></p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>TLS passthrough is shown in the preceding <code>example-kc</code> example. It is enabled when you associate a <code>tlsSecret</code> with the <code>http</code> configuration and leave Ingress enabled without specifying a <code>tlsSecret</code> on it.</p>
+<p>For other platforms or IngressControllers, you can use the provided examples as a starting point.</p>
+</div>
+<div class="sect4">
+<h5 id="passthrough"><a class="anchor" href="#passthrough"></a>Passthrough</h5>
+<div class="paragraph">
+<p>It is enabled when you associate a <code>tlsSecret</code> with the <code>http</code> configuration and leave Ingress enabled without specifying a <code>tlsSecret</code> on it.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  http:
+    tlsSecret: example-tls-secret
+  ingress:
+    enabled: true
+  hostname:
+    hostname: test.keycloak.org</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+On OpenShift you are not allowed to use wildcard certificates on passthrough Routes with HTTP/2 enabled. For wildcard certificates use edge or reencrypt termination.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_edge"><a class="anchor" href="#_edge"></a>Edge</h5>
+<div class="paragraph">
+<p>There are two ways to achieve TLS Edge. In both it is needed to enable HTTP access.</p>
+</div>
+<div id="edge_cluster_domain" class="paragraph">
+<p><strong>Using cluster domain and certificate</strong></p>
 </div>
 <div class="paragraph">
-<p>TLS termination, or edge mode, is enabled by associating a <code>tlsSecret</code> with the <code>ingress</code> spec and by enabling HTTP access.</p>
+<p>To use cluster domain do not provide a tls secret for the <code>ingress</code> and ensure to use cluster domain as <code>hostname</code>. Since no certificate is provided to the <code>ingress</code> the cluster certificate is used.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  http:
+    httpEnabled: true
+  ingress:
+    enabled: true
+  hostname:
+    hostname: keycloak.&lt;cluster-domain&gt; <i class="conum" data-value="1"></i><b>(1)</b>
+  proxy:
+    headers: xforwarded <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Must use the cluster domain.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Check your load balancer or reverse proxy configuration to determine whether it utilizes the <code>Forwarded</code> (RFC 7239) or <code>X-Forwarded-*</code> (e.g., <code>X-Forwarded-For</code>) mechanism for header propagation.</td>
+</tr>
+</table>
+</div>
+<div id="edge_custom_domain" class="paragraph">
+<p><strong>Using custom domain and certificate</strong></p>
 </div>
 <div class="paragraph">
-<p>Example TLS Termination YAML:</p>
+<p>To use custom domain provide a tls secrets for the <code>ingress</code> and ensure that <code>hostname</code> matches the <code>ingress</code> certificate.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -401,16 +499,6 @@ kind: Keycloak
 metadata:
   name: example-kc
 spec:
-  instances: 1
-  db:
-    vendor: postgres
-    host: postgres-db
-    usernameSecret:
-      name: keycloak-db-secret
-      key: username
-    passwordSecret:
-      name: keycloak-db-secret
-      key: password
   http:
     httpEnabled: true
   ingress:
@@ -418,7 +506,129 @@ spec:
   hostname:
     hostname: test.keycloak.org
   proxy:
-    headers: xforwarded # double check your reverse proxy sets and overwrites the X-Forwarded-* headers</code></pre>
+    headers: xforwarded <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Check your load balancer or reverse proxy configuration to determine whether it utilizes the <code>Forwarded</code> (RFC 7239) or <code>X-Forwarded-*</code> (e.g., <code>X-Forwarded-For</code>) mechanism for header propagation.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_reencrypt"><a class="anchor" href="#_reencrypt"></a>Reencrypt</h5>
+<div class="paragraph">
+<p>There are two ways to achieve TLS Reencryption. In both it is needed to annotate the <code>ingress</code> to specify the desired termination type since operator still lacks logic to set itself the reencrypt termination.</p>
+</div>
+<div id="reencrypt_cluster_domain" class="paragraph">
+<p><strong>Using cluster domain and certificate</strong></p>
+</div>
+<div class="paragraph">
+<p>To use cluster domain do not provide a tls secret for the <code>ingress</code> and ensure to use cluster domain as <code>hostname</code>. Since no certificate is provided to the <code>ingress</code> the cluster certificate is used.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  http:
+    annotations:
+      service.alpha.openshift.io/serving-cert-secret-name: svc-tls-secret <i class="conum" data-value="1"></i><b>(1)</b>
+      tlsSecret: svc-tls-secret <i class="conum" data-value="2"></i><b>(2)</b>
+  ingress:
+    annotations:
+      route.openshift.io/termination: reencrypt <i class="conum" data-value="3"></i><b>(3)</b>
+    enabled: true
+  hostname:
+    hostname: keycloak.&lt;cluster-domain&gt; <i class="conum" data-value="4"></i><b>(4)</b>
+  proxy:
+    headers: xforwarded <i class="conum" data-value="5"></i><b>(5)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>This will add the annotation to the service generated by the operator, so cluster will create a tls secret named svc-tls-secret</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>name of the tls secret created by the cluster, as defined in &lt;1&gt;</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>required because the operator only has built-in OpenShift logic for passthrough and edge.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Must use the cluster domain</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Check your load balancer or reverse proxy configuration to determine whether it utilizes the <code>Forwarded</code> (RFC 7239) or <code>X-Forwarded-*</code> (e.g., <code>X-Forwarded-For</code>) mechanism for header propagation.</td>
+</tr>
+</table>
+</div>
+<div id="reencrypt_custom_domain" class="paragraph">
+<p><strong>Using custom domain and certificate</strong></p>
+</div>
+<div class="paragraph">
+<p>To use custom domain provide distinct tls secrets for the <code>ingress</code> and <code>http</code> and ensure that <code>hostname</code> matches the <code>ingress</code> certificate.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  http:
+    annotations:
+      service.alpha.openshift.io/serving-cert-secret-name: svc-tls-secret <i class="conum" data-value="1"></i><b>(1)</b>
+      tlsSecret: svc-tls-secret <i class="conum" data-value="2"></i><b>(2)</b>
+  ingress:
+    annotations:
+      route.openshift.io/termination: reencrypt <i class="conum" data-value="3"></i><b>(3)</b>
+    tlsSecret: ingress-tls-secret <i class="conum" data-value="4"></i><b>(4)</b>
+    enabled: true
+  hostname:
+    hostname: test.keycloak.org <i class="conum" data-value="5"></i><b>(5)</b>
+  proxy:
+    headers: xforwarded <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>This will add the annotation to the service generated by the operator, so cluster will create a tls secret named <code>svc-tls-secret</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Name of the tls secret created by the cluster, as defined in callout 1.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Required because the operator only has built-in OpenShift logic for passthrough and edge.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Certificate to be used at the ingress/route.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Domain must match the provided certificate.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Check your load balancer or reverse proxy configuration to determine whether it utilizes the <code>Forwarded</code> (RFC 7239) or <code>X-Forwarded-*</code> (e.g., <code>X-Forwarded-For</code>) mechanism for header propagation.</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -451,12 +661,7 @@ spec:
 </div>
 </div>
 <div class="paragraph">
-<p>You can then provide an alternative ingress resource pointing to the service <code>&lt;keycloak-cr-name&gt;-service</code>. For example, on OpenShift you are not allowed to use wildcard certificates on passthrough Routes with HTTP/2 enabled. A Keycloak CR on OpenShift with TLS enabled using a wildcard certificate with the default IngressClass creates such a Route. In this case, you must disable the built-in ingress with <code>.spec.ingress.enabled: false</code>. Access may then be provided by creating a reencrypt Route instead:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">$ oc create route reencrypt --service=&lt;keycloak-cr-name&gt;-service --cert=&lt;configured-certificate&gt; --key=&lt;certificate-key&gt; --dest-ca-cert=&lt;ca-certificate&gt; --ca-cert=&lt;ca-certificate&gt; --hostname=&lt;hostname&gt;</code></pre>
-</div>
+<p>You can then provide an alternative ingress resource pointing to the service named <code>&lt;keycloak-cr-name&gt;-service</code> by default.</p>
 </div>
 <div class="paragraph">
 <p>For debugging and development purposes, consider directly connecting to the Keycloak service using a port forward. For example, enter this command:</p>
@@ -496,7 +701,7 @@ spec:
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-If the <code>proxy.headers</code> field is not specified, the Operator falls back to legacy behaviour by implicitly setting
+If the <code>proxy.headers</code> field is not specified, the Operator falls back to legacy behavior by implicitly setting
 <code>proxy=passthrough</code> by default. This results in deprecation warnings in the server log. This fallback will be removed
 in a future release.
 </td>
