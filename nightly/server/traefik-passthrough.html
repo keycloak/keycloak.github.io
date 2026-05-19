@@ -118,7 +118,7 @@ The TLS handshake occurs between the client and Keycloak, preserving end-to-end 
 </div>
 </div>
 <div class="sect1">
-<h2 id="_traefik_configuration"><a class="anchor" href="#_traefik_configuration"></a>Traefik configuration</h2>
+<h2 id="traefik-configuration-passthrough"><a class="anchor" href="#traefik-configuration-passthrough"></a>Traefik configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Traefik separates its configuration into two files:</p>
@@ -224,7 +224,7 @@ Keycloak handles TLS termination directly.</td>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>Enables <a href="https://doc.traefik.io/traefik/reference/routing-configuration/tcp/serverstransport/#proxyprotocolversion">PROXY protocol v2</a> on all backend connections.
 This allows Keycloak to read the real client IP address from the PROXY protocol header added by Traefik.
-This requires Keycloak to be configured with <code>--proxy-protocol-enabled=true</code> (see <a href="#keycloak-configuration">Keycloak configuration</a>).</td>
+This requires Keycloak to be configured with <code>--proxy-protocol-enabled=true</code> (see <a href="#keycloak-configuration-traefik-passthrough">Keycloak configuration</a>).</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
@@ -242,12 +242,12 @@ This requires Keycloak to be configured with <code>--proxy-protocol-enabled=true
 <dd>
 <p>Traefik checks each backend every <code>5s</code>, marking a server as unhealthy if it does not respond within <code>3s</code>.
 Unhealthy backends are automatically removed from the load balancer rotation and re-added once they recover.
-These values affect how quickly Traefik detects that a Keycloak instance is shutting down (see <a href="#graceful-shutdown-considerations">Graceful shutdown considerations</a>).</p>
+These values affect how quickly Traefik detects that a Keycloak instance is shutting down (see <a href="#keycloak-configuration-traefik-passthrough">Keycloak configuration</a>).</p>
 </dd>
 <dt class="hdlist1"><code>port: 9000</code></dt>
 <dd>
 <p>Directs health checks to the management port (<code>9000</code>), which is separate from the main application port (<code>8443</code>).
-The management port is configured to use plain HTTP via <code>--http-management-scheme=http</code> (see <a href="#keycloak-configuration">Keycloak configuration</a>), which is required because Traefik cannot perform an HTTPS health check on a TCP passthrough service.
+The management port is configured to use plain HTTP via <code>--http-management-scheme=http</code> (see <a href="#keycloak-configuration-traefik-passthrough">Keycloak configuration</a>), which is required because Traefik cannot perform an HTTPS health check on a TCP passthrough service.
 This is safe because the management port is only reachable on the internal backend network and is not exposed to clients.
 For details on the management port, see the <a href="https://www.keycloak.org/nightly/server/management-interface">Configuring the Management Interface</a> guide.</p>
 </dd>
@@ -299,7 +299,7 @@ Traffic is distributed across both instances using round-robin load balancing.</
 </div>
 </div>
 <div class="sect1">
-<h2 id="keycloak-configuration"><a class="anchor" href="#keycloak-configuration"></a>Keycloak configuration</h2>
+<h2 id="keycloak-configuration-traefik-passthrough"><a class="anchor" href="#keycloak-configuration-traefik-passthrough"></a>Keycloak configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>With TLS passthrough, Keycloak requires the following configuration:</p>
@@ -339,16 +339,16 @@ This is safe because the management port is only reachable on the internal backe
 </div>
 </div>
 <div class="sect1">
-<h2 id="graceful-shutdown-considerations"><a class="anchor" href="#graceful-shutdown-considerations"></a>Graceful shutdown considerations</h2>
+<h2 id="graceful-shutdown-considerations-traefik-passthrough"><a class="anchor" href="#graceful-shutdown-considerations-traefik-passthrough"></a>Graceful shutdown considerations</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>With TLS passthrough, Traefik cannot signal a connection close at the HTTP level.
-The health check timing directly determines how long it takes Traefik to detect that a Keycloak instance is shutting down and stop routing new connections to it.</p>
+The Traefik health check settings determine how long it takes for the proxy to detect that a Keycloak instance is shutting down and that connections should no longer be routed to it.</p>
 </div>
 <div class="paragraph">
 <p>With the health check settings from the configuration above (<code>interval: 5s</code>, <code>timeout: 3s</code>), it takes up to 8 seconds (<code>interval + timeout</code>) for Traefik to mark a Keycloak instance as down.
 During this period, Keycloak must remain running to serve in-flight requests.
-Therefore, configure the <code>--shutdown-delay</code> to be at least as long as the detection time:</p>
+Therefore, you need to configure the <code>--shutdown-delay</code> to be at least as long as the detection time:</p>
 </div>
 <div class="listingblock">
 <div class="content">
