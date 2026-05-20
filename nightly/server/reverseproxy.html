@@ -452,6 +452,114 @@ If the TLS connection is terminated at the reverse proxy (edge termination), ena
 </div>
 </div>
 <div class="sect2">
+<h3 id="header-filtering-recommendations"><a class="anchor" href="#header-filtering-recommendations"></a>Header filtering recommendations</h3>
+<div class="paragraph">
+<p>When using TLS re-encrypt, the proxy can inspect and modify HTTP traffic.
+Use this capability to prevent external clients from injecting headers that affect identity resolution, access control, or observability.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The following assumes that there is only a single proxy layer in front of Keycloak, and that it is not receiving traffic from another trusted proxy layer with trusted headers.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Configure the proxy to apply the following rules to incoming requests before forwarding them to Keycloak:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Overwrite</strong> <code>Forwarded</code> and <code>X-Forwarded-*</code> headers with the proxy&#8217;s own values rather than removing them, because Keycloak relies on these headers when <code>--proxy-headers</code> is configured.</p>
+</li>
+<li>
+<p><strong>Strip</strong> all other headers listed below entirely.</p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Header(s)</th>
+<th class="tableblock halign-left valign-top">Category</th>
+<th class="tableblock halign-left valign-top">Risk if not filtered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Forwarded</code>, <code>X-Forwarded-For</code>, <code>X-Forwarded-Proto</code>, <code>X-Forwarded-Host</code>, <code>X-Forwarded-Port</code>, <code>X-Forwarded-Prefix</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Proxy identity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Clients can spoof their IP address, protocol, or host, affecting access control and audit logging.
+<strong>Overwrite</strong> these headers rather than stripping them.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Original-Forwarded-For</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Proxy identity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Variant of <code>X-Forwarded-For</code> recognized by some proxies.
+Can be spoofed to bypass IP-based access controls.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Real-IP</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Proxy identity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Trusted by some applications for rate limiting and audit logging.
+Can be spoofed to bypass IP-based restrictions.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Original-URL</code>, <code>X-Original-Method</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Proxy identity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used by authentication sub-request mechanisms in some proxies.
+Can be spoofed to manipulate path-based authorization decisions.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>X-Forwarded-Access-Token</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Proxy identity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Injected by some OAuth2 proxies.
+Can be spoofed to inject forged access tokens.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>traceparent</code>, <code>tracestate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed tracing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.w3.org/TR/trace-context/">W3C Trace Context</a> headers.
+External injection allows attackers to correlate requests in the tracing backend and map internal service dependencies.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>baggage</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed tracing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.w3.org/TR/baggage/">W3C Baggage</a> header.
+Can inject arbitrary key-value pairs into the trace context propagated to downstream services.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>b3</code>, <code>x-b3-traceid</code>, <code>x-b3-spanid</code>, <code>x-b3-parentspanid</code>, <code>x-b3-sampled</code>, <code>x-b3-flags</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed tracing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/openzipkin/b3-propagation">Zipkin B3</a> propagation headers.
+External injection inflates observability costs and enables cross-service correlation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>uber-trace-id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed tracing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.jaegertracing.io/sdk-migration/#propagation-format">Jaeger</a> propagation header (deprecated in favor of W3C Trace Context).
+Same risks as other tracing headers.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>x-ot-span-context</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed tracing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OpenTracing propagation header (deprecated in favor of W3C Trace Context).
+Same risks as other tracing headers.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
 <h3 id="_exposed_path_recommendations"><a class="anchor" href="#_exposed_path_recommendations"></a>Exposed path recommendations</h3>
 <div class="paragraph">
 <p>When using a reverse proxy, Keycloak only requires certain paths to be exposed.

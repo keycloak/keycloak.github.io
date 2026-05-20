@@ -1,0 +1,835 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>AuthZEN Authorization - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="AuthZEN Authorization">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Using Keycloak as an AuthZEN Policy Decision Point (PDP) to evaluate authorization requests.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/securing-apps/authzen-authorization">
+<meta property="og:url" content="https://www.keycloak.org/nightly/securing-apps/authzen-authorization">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#securing-apps">Securing applications</a></li>
+                        <li class="breadcrumb-item active">AuthZEN Authorization</li>
+                    </ol>
+                </nav>
+            </div>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/securing-apps/authzen-authorization">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/securing-apps/authzen-authorization" selected="selected">Nightly</option>
+                        <option value="https://www.keycloak.org/securing-apps/authzen-authorization" >26.6.2</option>
+                    </select>
+                </div>
+
+                <h1>AuthZEN Authorization</h1>
+                    <span class="text-muted">Using Keycloak as an AuthZEN Policy Decision Point (PDP) to evaluate authorization requests.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This feature is <strong>experimental</strong> and may introduce breaking changes in future versions of Keycloak. Do not use this feature in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="https://openid.net/specs/authorization-api-1_0.html">The OpenID AuthZEN Authorization API 1.0</a> defines a standard protocol
+for communication between Policy Decision Points (PDPs) and Policy Enforcement Points (PEPs), enabling applications to
+request authorization decisions without being tightly coupled to the internal details of the authorization engine.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak is an AuthZEN compatible PDP that implements the Evaluation and Evaluations APIs.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enabling_authzen"><a class="anchor" href="#_enabling_authzen"></a>Enabling AuthZEN</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>AuthZEN is an experimental feature and must be explicitly enabled when starting Keycloak:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --features=authzen</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>AuthZEN exposes Keycloak&#8217;s existing authorization services. Before using AuthZEN, you must configure the following in your realm:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="https://www.keycloak.org/docs/latest/authorization_services/#_resource_server_enable_authorization">A client with authorization enabled</a>-- The client whose access token is used to authenticate AuthZEN requests must have <strong>Authorization Enabled</strong> in its settings.</p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/docs/latest/authorization_services/#_resource_create">Resources</a>&#8201;&#8212;&#8201;Define resources in the client&#8217;s <strong>Authorization</strong> &#8594; <strong>Resources</strong> section. The resource name maps to the <code>resource.id</code> in AuthZEN requests, and the resource type maps to <code>resource.type</code>.</p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/docs/latest/authorization_services/#_resource_create">Scopes</a>&#8201;&#8212;&#8201;Define scopes in the client&#8217;s <strong>Authorization</strong> &#8594; <strong>Scopes</strong> section. Scope names map to the <code>action.name</code> in AuthZEN requests.</p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/docs/latest/authorization_services/#_policy_overview">Policies</a> and <a href="https://www.keycloak.org/docs/latest/authorization_services/#_permissions_overview">Permissions</a>&#8201;&#8212;&#8201;Create policies and permissions that associate resources and scopes with authorization decisions.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_pdp_discovery_metadata"><a class="anchor" href="#_pdp_discovery_metadata"></a>PDP discovery metadata</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When AuthZEN is enabled, Keycloak exposes a <code>.well-known</code> endpoint that allows PEPs to discover the available AuthZEN endpoints:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">GET /realms/{realm}/.well-known/authzen-configuration</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For example, a realm called <code>myrealm</code> will return the following metadata:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "policy_decision_point": "https://keycloak.example.com/realms/myrealm",
+  "access_evaluation_endpoint": "https://keycloak.example.com/realms/myrealm/authzen/access/v1/evaluation",
+  "access_evaluations_endpoint": "https://keycloak.example.com/realms/myrealm/authzen/access/v1/evaluations"
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authentication"><a class="anchor" href="#_authentication"></a>Authentication</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>All AuthZEN endpoints require a valid bearer token in the <code>Authorization</code> header and the token must be issued for a
+client that has authorization services enabled.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">POST /realms/{realm}/authzen/access/v1/evaluation
+Authorization: Bearer &lt;access-token&gt;
+Content-Type: application/json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If no valid token is provided, the server returns a <code>401 Unauthorized</code> response.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_evaluation_api"><a class="anchor" href="#_evaluation_api"></a>Evaluation API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Evaluation API is the core AuthZEN endpoint. It accepts a single authorization request and returns a boolean decision.</p>
+</div>
+<div class="sect2">
+<h3 id="_endpoint"><a class="anchor" href="#_endpoint"></a>Endpoint</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>POST /realms/{realm}/authzen/access/v1/evaluation</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_request_format"><a class="anchor" href="#_request_format"></a>Request format</h3>
+<div class="paragraph">
+<p>An evaluation request has three required fields and one optional field:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>subject</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The entity requesting access. Contains <code>type</code>, <code>id</code>, and optional <code>properties</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>resource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The resource being accessed. Contains <code>type</code>, <code>id</code>, and optional <code>properties</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>action</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The action being performed. Contains <code>name</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>context</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Additional context for policy evaluation as a map of key-value pairs.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="_subject"><a class="anchor" href="#_subject"></a>Subject</h4>
+<div class="paragraph">
+<p>The <code>subject</code> object identifies who is requesting access:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Either <code>user</code> or <code>client</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Identifies the subject.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>properties</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Additional attributes to include in the evaluation context.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_resource"><a class="anchor" href="#_resource"></a>Resource</h4>
+<div class="paragraph">
+<p>The <code>resource</code> object identifies what is being accessed:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Must match the resource type configured in Keycloak&#8217;s authorization settings.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Must match the resource name configured in Keycloak&#8217;s authorization settings.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>properties</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Additional attributes included in the evaluation context.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_action"><a class="anchor" href="#_action"></a>Action</h4>
+<div class="paragraph">
+<p>The <code>action</code> object identifies the operation being performed:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>name</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Must match a scope name configured in Keycloak&#8217;s authorization settings.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_request"><a class="anchor" href="#_example_request"></a>Example request</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "subject": {
+    "type": "user",
+    "id": "alice"
+  },
+  "resource": {
+    "type": "document",
+    "id": "quarterly-report"
+  },
+  "action": {
+    "name": "read"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_response_format"><a class="anchor" href="#_response_format"></a>Response format</h3>
+<div class="paragraph">
+<p>The response contains a boolean <code>decision</code> field:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "decision": true
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A <code>decision</code> of <code>true</code> means the subject is permitted to perform the action on the resource. A <code>decision</code> of <code>false</code> means the request is denied.</p>
+</div>
+<div class="paragraph">
+<p>The response may also include a <code>context</code> map with additional information about the decision.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_evaluations_api"><a class="anchor" href="#_evaluations_api"></a>Evaluations API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Evaluations API allows PEPs to batch multiple authorization queries into a single request.</p>
+</div>
+<div class="sect2">
+<h3 id="_endpoint_2"><a class="anchor" href="#_endpoint_2"></a>Endpoint</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>POST /realms/{realm}/authzen/access/v1/evaluations</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_request_format_2"><a class="anchor" href="#_request_format_2"></a>Request format</h3>
+<div class="paragraph">
+<p>An Evaluations request supports top-level default values for <code>subject</code>, <code>resource</code>, <code>action</code>, and <code>context</code>.
+Individual evaluation items in the <code>evaluations</code> array will override any of the specified defaults.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>subject</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default subject applied to evaluation items that do not specify their own.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>resource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default resource applied to evaluation items that do not specify their own.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>action</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default action applied to evaluation items that do not specify their own.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>context</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default context applied to evaluation items that do not specify their own.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>options</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Controls evaluation semantics (see <a href="#evaluation-semantics">Evaluation semantics</a>).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>evaluations</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Array of individual evaluation items. If absent or empty, the request behaves as a single evaluation using the top-level fields.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_example_request_2"><a class="anchor" href="#_example_request_2"></a>Example request</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "subject": {
+    "type": "user",
+    "id": "alice"
+  },
+  "action": {
+    "name": "read"
+  },
+  "evaluations": [
+    {
+      "resource": {
+        "type": "document",
+        "id": "quarterly-report"
+      }
+    },
+    {
+      "resource": {
+        "type": "document",
+        "id": "annual-report"
+      }
+    },
+    {
+      "resource": {
+        "type": "image",
+        "id": "logo"
+      },
+      "action": {
+        "name": "write"
+      }
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, the first two items inherit the top-level <code>subject</code> and <code>action</code>. The third item inherits the <code>subject</code> but overrides the <code>action</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_response_format_2"><a class="anchor" href="#_response_format_2"></a>Response format</h3>
+<div class="paragraph">
+<p>The response contains an <code>evaluations</code> array with one decision per item, in the same order as the request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "evaluations": [
+    { "decision": true },
+    { "decision": true },
+    { "decision": false }
+  ]
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="evaluation-semantics"><a class="anchor" href="#evaluation-semantics"></a>Evaluation semantics</h3>
+<div class="paragraph">
+<p>The <code>options.evaluations_semantic</code> field controls how Keycloak processes the batch. Three semantics are supported:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Semantic</th>
+<th class="tableblock halign-left valign-top">Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>execute_all</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Evaluates all items and returns all decisions. This is the default.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>deny_on_first_deny</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stops processing on the first denied item. The response includes decisions up to and including the denial, with a
+<code>context</code> containing <code>"reason": "deny_on_first_deny"</code> on the denied item.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>permit_on_first_permit</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stops processing on the first permitted item. The response includes decisions up to and including the permit.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The example request below shows the expected response when <code>deny_on_first_deny</code> semantics are requested.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "subject": {
+    "type": "user",
+    "id": "alice"
+  },
+  "options": {
+    "evaluations_semantic": "deny_on_first_deny"
+  },
+  "evaluations": [
+    {
+      "resource": { "type": "document", "id": "public-doc" },
+      "action": { "name": "read" }
+    },
+    {
+      "resource": { "type": "document", "id": "restricted-doc" },
+      "action": { "name": "read" }
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the second item is denied, the response stops there:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "evaluations": [
+    { "decision": true },
+    { "decision": false, "context": { "reason": "deny_on_first_deny" } }
+  ]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="subject-lookup"><a class="anchor" href="#subject-lookup"></a>Subject lookup semantics</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>subject.type</code> can be one of two types:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>user</code>: Query if the specified user is authorized to perform an action on a resource</p>
+</li>
+<li>
+<p><code>client</code>: Query if the specified client is authorized to perform an action on a resource</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If a <code>subject.id</code> does not resolve to an existing user or client, the evaluation returns <code>{"decision": false}</code> with an
+HTTP <code>200 OK</code> status.</p>
+</div>
+<div class="sect2">
+<h3 id="_user_subject_type"><a class="anchor" href="#_user_subject_type"></a>User subject type</h3>
+<div class="paragraph">
+<p>When the <code>subject.type</code> is <code>user</code>, Keycloak supports several strategies for resolving the user identity from the
+<code>subject.id</code> field.</p>
+</div>
+<div class="paragraph">
+<p>When no namespace prefix is present, Keycloak defaults to the following lookup strategy:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If the <code>subject.id</code> value is a valid UUID, lookup up by Keycloak internal user ID.</p>
+</li>
+<li>
+<p>Otherwise, attempt to lookup a user with the <code>subject.id</code> username.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_namespace_prefixes"><a class="anchor" href="#_namespace_prefixes"></a>Namespace prefixes</h3>
+<div class="paragraph">
+<p>Use a namespace prefix to explicitly specify the lookup strategy:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Prefix</th>
+<th class="tableblock halign-left valign-top">Lookup</th>
+<th class="tableblock halign-left valign-top">Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>id:</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">By Keycloak internal user ID (UUID)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>id:f81d4fae-7dec-11d0-a765-00a0c91e6bf6</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>username:</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">By username</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>username:alice</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>email:</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">By email address</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>email:alice@example.com</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>email:</code> namespace cannot be used when the realm is configured to allow duplicate emails as the lookup would
+not be unique. Using the <code>email:</code> namespace with duplicate emails results in a <code>400 Bad Request</code> response.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_client_subject_type"><a class="anchor" href="#_client_subject_type"></a>Client subject type</h3>
+<div class="paragraph">
+<p>When the <code>subject.type</code> is <code>client</code>, the <code>subject.id</code> must match the <code>client_id</code> of the client that the bearer token was
+issued for. If they do not match, the evaluation returns a <code>false</code> decision.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_error_responses"><a class="anchor" href="#_error_responses"></a>Error responses</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>AuthZEN endpoints return standard HTTP error codes for invalid requests:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Status Code</th>
+<th class="tableblock halign-left valign-top">Condition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>400 Bad Request</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The request body is missing a required field (<code>subject</code>, <code>resource</code>, or <code>action</code>), contains an invalid <code>subject.type</code>
+value, uses an empty namespace prefix (e.g., <code>id:</code> with no value), or contains malformed JSON.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>401 Unauthorized</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The request does not include a valid bearer token in the <code>Authorization</code> header.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_request_tracing"><a class="anchor" href="#_request_tracing"></a>Request tracing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As recommended by the AuthZEN specification, Keycloak propagates the <code>X-Request-ID</code> header from requests to responses.
+If a PEP includes an <code>X-Request-ID</code> header in its request, the same header and value will appear in the response.
+This applies to all response status codes, including error responses.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">POST /realms/myrealm/authzen/access/v1/evaluation
+Authorization: Bearer &lt;access-token&gt;
+Content-Type: application/json
+X-Request-ID: req-abc-123
+
+{
+  "subject": { "type": "user", "id": "alice" },
+  "resource": { "type": "document", "id": "report" },
+  "action": { "name": "read" }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The response includes the same header:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>HTTP/1.1 200 OK
+X-Request-ID: req-abc-123
+Content-Type: application/json
+
+{ "decision": true }</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_context_and_properties"><a class="anchor" href="#_context_and_properties"></a>Context and Properties</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Both the <code>resource.properties</code> and the top-level <code>context</code> maps are merged into the evaluation context available to
+Keycloak&#8217;s authorization policies. This allows policies to make decisions based on additional attributes beyond
+the resource, scope, and subject identity.</p>
+</div>
+<div class="paragraph">
+<p>For example, a policy could use the request context to enforce time-based or location-based access:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "subject": { "type": "user", "id": "alice" },
+  "resource": {
+    "type": "document",
+    "id": "quarterly-report",
+    "properties": {
+      "classification": "confidential"
+    }
+  },
+  "action": { "name": "read" },
+  "context": {
+    "ip_address": "192.168.1.100"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Subject properties specified in <code>subject.properties</code> are also merged into the subject&#8217;s identity attributes for policy evaluation.</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/securing-apps/authzen-authorization.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

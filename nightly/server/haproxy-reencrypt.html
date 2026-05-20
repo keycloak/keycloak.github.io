@@ -140,12 +140,24 @@ defaults
 frontend https_front
     bind *:8443 ssl crt /path/to/haproxy-external-certificate <i class="conum" data-value="1"></i><b>(1)</b>
     mode http <i class="conum" data-value="2"></i><b>(2)</b>
+
+    # Prevent external spoofing
     http-request del-header Forwarded <i class="conum" data-value="3"></i><b>(3)</b>
-    http-request del-header x-forwarded-for
-    http-request del-header x-forwarded-proto
-    http-request del-header x-forwarded-host
-    http-request del-header x-forwarded-port
-    http-request del-header x-forwarded-server
+    http-request del-header x-forwarded-.* -m reg
+    http-request del-header x-original-.* -m reg
+    http-request del-header x-real-ip
+
+    # Prevent external tracing context injection (W3C Trace Context / Baggage)
+    http-request del-header traceparent
+    http-request del-header tracestate
+    http-request del-header baggage
+
+    # Prevent external tracing context injection (Zipkin, Jaeger, OpenTracing)
+    http-request del-header b3
+    http-request del-header x-b3-.* -m reg
+    http-request del-header uber-trace-id
+    http-request del-header x-ot-span-context
+
     default_backend keycloak_back
 
 backend keycloak_back
@@ -175,8 +187,9 @@ HAProxy has access to the plaintext HTTP traffic in this mode.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The <code>http-request del-header &lt;HEADER&gt;</code> entries remove particular HTTP headers from the incoming requests before passing them on.
-The example shows removing of the <code>Forwarded</code> and <code>x-forwarded-</code> headers in order to prevent a security vulnerability to IP spoofing attacks, where the client is able to impersonate the proxy or other services.</td>
+<td>The <code>http-request del-header</code> directives remove HTTP headers from incoming requests before forwarding them to Keycloak.
+This prevents external clients from spoofing proxy identity headers (such as <code>Forwarded</code>, <code>X-Forwarded-*</code>, and <code>X-Real-IP</code>), injecting authentication-related headers (such as <code>X-Forwarded-Access-Token</code>), or injecting distributed tracing context (such as W3C Trace Context, Zipkin B3, or Jaeger headers).
+For the full list of recommended headers to filter, see the <a href="https://www.keycloak.org/nightly/server/reverseproxy#header-filtering-recommendations">Configuring a reverse proxy</a> guide.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
