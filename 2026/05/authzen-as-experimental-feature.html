@@ -1,0 +1,240 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Keycloak experimental AuthZEN Support - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Keycloak experimental AuthZEN Support">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Keycloak now implements AuthZEN Evaluation and Evaluations APIs">
+<meta name="author" content="Ryan Emerson">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2026/05/authzen-as-experimental-feature">
+<meta property="og:url" content="https://www.keycloak.org/2026/05/authzen-as-experimental-feature">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2026/05/authzen-as-experimental-feature","headline":"Keycloak experimental AuthZEN Support","name":"Keycloak experimental AuthZEN Support","datePublished":"2026-05-20T08:00:00Z","inLanguage":"en","abstract":"Keycloak now implements AuthZEN Evaluation and Evaluations APIs","url":"https://www.keycloak.org/2026/05/authzen-as-experimental-feature","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Ryan Emerson"}]}
+</script></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article kc-asciidoc">
+    <h1>Keycloak experimental AuthZEN Support</h1>
+    <p class="blog-date text-muted">May 20 2026 by Ryan Emerson</p>
+
+
+<div class="paragraph">
+<p>We are excited to announce that from  26.7.0, Keycloak will include experimental support for the
+<a href="https://openid.net/specs/authorization-api-1_0.html">OpenID AuthZEN Authorization API 1.0</a> specification. This allows
+Keycloak to act as a <strong>Policy Decision Point (PDP)</strong>, exposing its authorization capabilities through a standardized API
+that any <strong>Policy Enforcement Point (PEP)</strong> can consume.</p>
+</div>
+<div class="paragraph">
+<p>You can try this now with the <a href="https://github.com/keycloak/keycloak/releases/tag/nightly">Keycloak nightly release</a>.</p>
+</div>
+<div class="sect1">
+<h2 id="_why_authzen"><a class="anchor" href="#_why_authzen"></a>Why AuthZEN?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Authorization has long been fragmented, with competing systems defining their own protocols for answering the same
+fundamental question: <em>"Can this subject perform this action on this resource?"</em>.
+This means applications are tightly coupled to whichever authorization backend they choose, and swapping
+providers requires rewriting integration code.</p>
+</div>
+<div class="paragraph">
+<p>AuthZEN changes this by defining a single, vendor-neutral API between the component that <em>asks</em> (the PEP) and the component
+that <em>decides</em> (the PDP). It is, in many ways, what OpenID Connect did for authentication&#8201;&#8212;&#8201;but for authorization.</p>
+</div>
+<div class="paragraph">
+<p>With AuthZEN:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>No more vendor lock-in</strong>&#8201;&#8212;&#8201;your application speaks one API regardless of the PDP behind it.</p>
+</li>
+<li>
+<p><strong>RBAC, ABAC, and ReBAC under one roof</strong>&#8201;&#8212;&#8201;different policy models can answer the same request format, enabling true interoperability across authorization paradigms.</p>
+</li>
+<li>
+<p><strong>Centralized, externalized authorization</strong>&#8201;&#8212;&#8201;policy logic lives in the PDP, not scattered across application code, making it easier to audit and update.</p>
+</li>
+<li>
+<p><strong>Simpler integration</strong>&#8201;&#8212;&#8201;a clean REST API with a minimal request/response model replaces complex, implementation-specific SDKs.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_a_growing_ecosystem"><a class="anchor" href="#_a_growing_ecosystem"></a>A growing ecosystem</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://authzen-interop.net">OpenID AuthZEN Interop</a> demonstrates that over a dozen independently-developed PDPs can be
+used interchangeably by the same PEP without changing a single line of application code. By adding AuthZEN support,
+Keycloak joins this ecosystem and lets you leverage your existing Keycloak policies through the same standardized API
+used by every other AuthZEN-compatible PDP.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a>How it works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The interaction between your application and Keycloak follows the standard PEP / PDP pattern defined by AuthZEN:</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/authzen-flow.png" alt="AuthZEN PEP/PDP interaction flow" width="800">
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Your application (the PEP)</strong> sends an authorization request to Keycloak over the AuthZEN Evaluation API, identifying a subject, an action, and a resource.</p>
+</li>
+<li>
+<p><strong>Keycloak (the PDP)</strong> evaluates the request against its configured authorization policies and returns a simple decision: <code>true</code> or <code>false</code>.</p>
+</li>
+<li>
+<p><strong>Your application</strong> enforces the decision&#8201;&#8212;&#8201;granting or denying access accordingly.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Keycloak also supports the <strong>Evaluations API</strong> for batching multiple authorization checks into a single request, reducing
+round-trips when your application needs to check several permissions at once.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_a_quick_walkthrough"><a class="anchor" href="#_a_quick_walkthrough"></a>A quick walkthrough</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Getting started takes just a few steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Start Keycloak</strong> with the <code>authzen</code> feature enabled.</p>
+</li>
+<li>
+<p><strong>Configure a realm</strong> with users, roles, and an authorization-enabled client that defines your resources, scopes, and policies.</p>
+</li>
+<li>
+<p><strong>Discover the endpoints</strong> by querying the <code>.well-known/authzen-configuration</code> path for your realm&#8201;&#8212;&#8201;this returns the Evaluation and Evaluations API URLs so your PEP does not need to hardcode them.</p>
+</li>
+<li>
+<p><strong>Obtain an access token</strong> for the authorization-enabled client using a standard OAuth2 client credentials grant.</p>
+</li>
+<li>
+<p><strong>Send an evaluation request</strong> with a subject, action, and resource&#8201;&#8212;&#8201;Keycloak returns <code>{"decision": true}</code> or <code>{"decision": false}</code>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Keycloak supports looking up subjects by username, UUID, or email, giving your PEP flexibility in how it identifies users.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_try_it_out"><a class="anchor" href="#_try_it_out"></a>Try it out</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://www.keycloak.org/nightly/securing-apps/authzen-authorization">Feature documentation is available in the nightly build of the docs</a>.</p>
+</div>
+<div class="paragraph">
+<p>We have also prepared a hands-on playground that walks you through the full setup with working examples of both the Evaluation
+and Evaluations API:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/keycloak/keycloak-playground/tree/main/authzen"><strong>Keycloak AuthZEN Playground on GitHub</strong></a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_feedback_welcome"><a class="anchor" href="#_feedback_welcome"></a>Feedback welcome</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>AuthZEN support in Keycloak is currently an <strong>experimental feature</strong>, and we would love to hear from the community as
+we shape its future. Download the <a href="https://github.com/keycloak/keycloak/releases/tag/nightly">Keycloak nightly release</a> and
+try it out.</p>
+</div>
+<div class="paragraph">
+<p>Please share your experiences, suggestions, and feature requests on the
+<a href="https://github.com/keycloak/keycloak/discussions/46012">AuthZEN GitHub discussion</a> or join the conversation on the
+<a href="https://groups.google.com/g/keycloak-dev">Keycloak mailing list</a>. Your input will directly influence how we evolve
+AuthZEN support in future releases.</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

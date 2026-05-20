@@ -9,6 +9,163 @@
   <language>en-us</language>
   <category>Keycloak/SSO/Identity and Access Management</category>
       <item>
+        <title>Keycloak experimental AuthZEN Support</title>
+        <link>https://www.keycloak.org/2026/05/authzen-as-experimental-feature</link>
+        <description>&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;We are excited to announce that from  26.7.0, Keycloak will include experimental support for the
+&lt;a href=&quot;https://openid.net/specs/authorization-api-1_0.html&quot;&gt;OpenID AuthZEN Authorization API 1.0&lt;/a&gt; specification. This allows
+Keycloak to act as a &lt;strong&gt;Policy Decision Point (PDP)&lt;/strong&gt;, exposing its authorization capabilities through a standardized API
+that any &lt;strong&gt;Policy Enforcement Point (PEP)&lt;/strong&gt; can consume.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;You can try this now with the &lt;a href=&quot;https://github.com/keycloak/keycloak/releases/tag/nightly&quot;&gt;Keycloak nightly release&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_why_authzen&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_why_authzen&quot;&gt;&lt;/a&gt;Why AuthZEN?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Authorization has long been fragmented, with competing systems defining their own protocols for answering the same
+fundamental question: &lt;em&gt;&quot;Can this subject perform this action on this resource?&quot;&lt;/em&gt;.
+This means applications are tightly coupled to whichever authorization backend they choose, and swapping
+providers requires rewriting integration code.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;AuthZEN changes this by defining a single, vendor-neutral API between the component that &lt;em&gt;asks&lt;/em&gt; (the PEP) and the component
+that &lt;em&gt;decides&lt;/em&gt; (the PDP). It is, in many ways, what OpenID Connect did for authentication&amp;#8201;&amp;#8212;&amp;#8201;but for authorization.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;With AuthZEN:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;No more vendor lock-in&lt;/strong&gt;&amp;#8201;&amp;#8212;&amp;#8201;your application speaks one API regardless of the PDP behind it.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;RBAC, ABAC, and ReBAC under one roof&lt;/strong&gt;&amp;#8201;&amp;#8212;&amp;#8201;different policy models can answer the same request format, enabling true interoperability across authorization paradigms.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Centralized, externalized authorization&lt;/strong&gt;&amp;#8201;&amp;#8212;&amp;#8201;policy logic lives in the PDP, not scattered across application code, making it easier to audit and update.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Simpler integration&lt;/strong&gt;&amp;#8201;&amp;#8212;&amp;#8201;a clean REST API with a minimal request/response model replaces complex, implementation-specific SDKs.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_a_growing_ecosystem&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_a_growing_ecosystem&quot;&gt;&lt;/a&gt;A growing ecosystem&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;&lt;a href=&quot;https://authzen-interop.net&quot;&gt;OpenID AuthZEN Interop&lt;/a&gt; demonstrates that over a dozen independently-developed PDPs can be
+used interchangeably by the same PEP without changing a single line of application code. By adding AuthZEN support,
+Keycloak joins this ecosystem and lets you leverage your existing Keycloak policies through the same standardized API
+used by every other AuthZEN-compatible PDP.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_how_it_works&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_how_it_works&quot;&gt;&lt;/a&gt;How it works&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The interaction between your application and Keycloak follows the standard PEP / PDP pattern defined by AuthZEN:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/authzen-flow.png&quot; alt=&quot;AuthZEN PEP/PDP interaction flow&quot; width=&quot;800&quot;&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;olist arabic&quot;&gt;
+&lt;ol class=&quot;arabic&quot;&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Your application (the PEP)&lt;/strong&gt; sends an authorization request to Keycloak over the AuthZEN Evaluation API, identifying a subject, an action, and a resource.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Keycloak (the PDP)&lt;/strong&gt; evaluates the request against its configured authorization policies and returns a simple decision: &lt;code&gt;true&lt;/code&gt; or &lt;code&gt;false&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Your application&lt;/strong&gt; enforces the decision&amp;#8201;&amp;#8212;&amp;#8201;granting or denying access accordingly.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Keycloak also supports the &lt;strong&gt;Evaluations API&lt;/strong&gt; for batching multiple authorization checks into a single request, reducing
+round-trips when your application needs to check several permissions at once.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_a_quick_walkthrough&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_a_quick_walkthrough&quot;&gt;&lt;/a&gt;A quick walkthrough&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Getting started takes just a few steps:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;olist arabic&quot;&gt;
+&lt;ol class=&quot;arabic&quot;&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Start Keycloak&lt;/strong&gt; with the &lt;code&gt;authzen&lt;/code&gt; feature enabled.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Configure a realm&lt;/strong&gt; with users, roles, and an authorization-enabled client that defines your resources, scopes, and policies.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Discover the endpoints&lt;/strong&gt; by querying the &lt;code&gt;.well-known/authzen-configuration&lt;/code&gt; path for your realm&amp;#8201;&amp;#8212;&amp;#8201;this returns the Evaluation and Evaluations API URLs so your PEP does not need to hardcode them.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Obtain an access token&lt;/strong&gt; for the authorization-enabled client using a standard OAuth2 client credentials grant.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Send an evaluation request&lt;/strong&gt; with a subject, action, and resource&amp;#8201;&amp;#8212;&amp;#8201;Keycloak returns &lt;code&gt;{&quot;decision&quot;: true}&lt;/code&gt; or &lt;code&gt;{&quot;decision&quot;: false}&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Keycloak supports looking up subjects by username, UUID, or email, giving your PEP flexibility in how it identifies users.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_try_it_out&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_try_it_out&quot;&gt;&lt;/a&gt;Try it out&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.keycloak.org/nightly/securing-apps/authzen-authorization&quot;&gt;Feature documentation is available in the nightly build of the docs&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;We have also prepared a hands-on playground that walks you through the full setup with working examples of both the Evaluation
+and Evaluations API:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/keycloak/keycloak-playground/tree/main/authzen&quot;&gt;&lt;strong&gt;Keycloak AuthZEN Playground on GitHub&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_feedback_welcome&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_feedback_welcome&quot;&gt;&lt;/a&gt;Feedback welcome&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;AuthZEN support in Keycloak is currently an &lt;strong&gt;experimental feature&lt;/strong&gt;, and we would love to hear from the community as
+we shape its future. Download the &lt;a href=&quot;https://github.com/keycloak/keycloak/releases/tag/nightly&quot;&gt;Keycloak nightly release&lt;/a&gt; and
+try it out.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Please share your experiences, suggestions, and feature requests on the
+&lt;a href=&quot;https://github.com/keycloak/keycloak/discussions/46012&quot;&gt;AuthZEN GitHub discussion&lt;/a&gt; or join the conversation on the
+&lt;a href=&quot;https://groups.google.com/g/keycloak-dev&quot;&gt;Keycloak mailing list&lt;/a&gt;. Your input will directly influence how we evolve
+AuthZEN support in future releases.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description>
+        <guid>https://www.keycloak.org/2026/05/authzen-as-experimental-feature</guid>
+        <pubDate>Wed, 20 May 2026 00:00:00 GMT</pubDate>
+        
+        <author>Ryan Emerson</author>
+      </item>
+      <item>
         <title>Keycloak 26.6.2 released</title>
         <link>https://www.keycloak.org/2026/05/keycloak-2662-released</link>
         <description>&lt;p&gt;To download the release go to &lt;a href=&quot;https://www.keycloak.org/downloads.html&quot;&gt;Keycloak downloads&lt;/a&gt;.&lt;/p&gt;
