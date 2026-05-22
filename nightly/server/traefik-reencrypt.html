@@ -10,21 +10,21 @@ gtag('js', new Date());
 gtag('config', 'G-0J2P9316N6');
 </script>
 <meta charset="utf-8"/>
-<title>HAProxy with TLS re-encrypt - Keycloak</title>
+<title>Traefik with TLS re-encrypt - Keycloak</title>
 <meta name="twitter:card" content="summary_large">
 <meta name="twitter:site" content="@keycloak">
 <meta property="og:site_name" content="Keycloak">
-<meta property="og:title" content="HAProxy with TLS re-encrypt">
+<meta property="og:title" content="Traefik with TLS re-encrypt">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" property="og:description" content="Configure HAProxy as a TLS re-encrypt load balancer for Keycloak.">
+<meta name="description" property="og:description" content="Configure Traefik as a TLS re-encrypt load balancer for Keycloak.">
 <meta name="author" content="Keycloak Team">
 <meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
 <meta name="robots" content="noindex">
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
-<link rel="canonical" href="https://www.keycloak.org/nightly/server/haproxy-reencrypt">
-<meta property="og:url" content="https://www.keycloak.org/nightly/server/haproxy-reencrypt">
+<link rel="canonical" href="https://www.keycloak.org/nightly/server/traefik-reencrypt">
+<meta property="og:url" content="https://www.keycloak.org/nightly/server/traefik-reencrypt">
 <link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
 <link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
 <link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
@@ -73,7 +73,7 @@ gtag('config', 'G-0J2P9316N6');
                     <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
                         <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#server">Server</a></li>
-                        <li class="breadcrumb-item active">HAProxy with TLS re-encrypt</li>
+                        <li class="breadcrumb-item active">Traefik with TLS re-encrypt</li>
                     </ol>
                 </nav>
             </div>
@@ -81,19 +81,19 @@ gtag('config', 'G-0J2P9316N6');
                 <div class="mb-4 alert alert-warning" role="alert">
                   <h4 class="no-top-margin">Nightly release</h4>
 
-                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/server/haproxy-reencrypt">here</a>.
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/server/traefik-reencrypt">here</a>.
                 </div>
 
             <div class="mb-4">
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
-                        <option value="https://www.keycloak.org/nightly/server/haproxy-reencrypt" selected="selected">Nightly</option>
-                        <option value="https://www.keycloak.org/server/haproxy-reencrypt" >26.6.2</option>
+                        <option value="https://www.keycloak.org/nightly/server/traefik-reencrypt" selected="selected">Nightly</option>
+                        <option value="https://www.keycloak.org/server/traefik-reencrypt" >26.6.2</option>
                     </select>
                 </div>
 
-                <h1>HAProxy with TLS re-encrypt</h1>
-                    <span class="text-muted">Configure HAProxy as a TLS re-encrypt load balancer for Keycloak.</span>
+                <h1>Traefik with TLS re-encrypt</h1>
+                    <span class="text-muted">Configure Traefik as a TLS re-encrypt load balancer for Keycloak.</span>
             </div>
 
 
@@ -102,192 +102,179 @@ gtag('config', 'G-0J2P9316N6');
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide describes how to configure <a href="https://www.haproxy.com/">HAProxy</a> as a TLS re-encrypt load balancer in front of Keycloak.</p>
+<p>This guide describes how to configure <a href="https://traefik.io/">Traefik</a> as a TLS re-encrypt load balancer in front of Keycloak.</p>
 </div>
 <div class="paragraph">
-<p>In TLS re-encrypt mode, HAProxy terminates the incoming TLS connection and establishes a new encrypted connection to Keycloak.
-HAProxy operates at Layer 7 (HTTP). Unlike passthrough, end-to-end TLS encryption between client and Keycloak is not preserved, but the proxy gains the ability to inspect and modify HTTP traffic.</p>
+<p>In TLS re-encrypt mode, Traefik terminates the incoming TLS connection and establishes a new encrypted connection to Keycloak.
+Traefik operates at Layer 7 (HTTP).
+Unlike passthrough, end-to-end TLS encryption between client and Keycloak is not preserved, but the proxy gains the ability to inspect and modify HTTP traffic.</p>
 </div>
 <div class="paragraph">
 <p>For a general overview of TLS re-encrypt and how it compares to passthrough, see the <a href="https://www.keycloak.org/nightly/server/reverseproxy">Configuring a reverse proxy</a> guide.</p>
 </div>
 <div class="paragraph">
-<p>A ready-to-run example with Docker Compose is available in the <a href="https://github.com/keycloak/keycloak-quickstarts/tree/main/proxy/haproxy/reencrypt">quickstart repository</a>.</p>
+<p>A ready-to-run example with Docker Compose is available in the <a href="https://github.com/keycloak/keycloak-quickstarts/tree/main/proxy/traefik/reencrypt">quickstart repository</a>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="haproxy-configuration-reencrypt"><a class="anchor" href="#haproxy-configuration-reencrypt"></a>HAProxy configuration</h2>
+<h2 id="traefik-configuration-reencrypt"><a class="anchor" href="#traefik-configuration-reencrypt"></a>Traefik configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The following <code>haproxy.cfg</code> shows a configuration for TLS re-encrypt with two Keycloak backend servers.</p>
+<p>Traefik separates its configuration into two files:</p>
 </div>
+<div class="ulist">
+<ul>
+<li>
+<p>A <strong>static configuration</strong> file (<code>traefik.yaml</code>) that defines entrypoints and providers, loaded once at startup.</p>
+</li>
+<li>
+<p>A <strong>dynamic configuration</strong> file (<code>keycloak.yaml</code>) that defines routing, TLS, and backend transport settings, hot-reloaded by Traefik at runtime.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_static_configuration_traefik_yaml"><a class="anchor" href="#_static_configuration_traefik_yaml"></a>Static configuration (<code>traefik.yaml</code>)</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-haproxy" data-lang="haproxy">global
-    log stdout format raw local0
-
-defaults
-    log     global
-    mode    http
-    option  httplog
-    option  dontlognull
-    timeout connect 5s
-    timeout client  50s
-    timeout server  50s
-    retries 3
-
-frontend https_front
-    bind *:8443 ssl crt /path/to/haproxy-external-certificate <i class="conum" data-value="1"></i><b>(1)</b>
-    mode http <i class="conum" data-value="2"></i><b>(2)</b>
-
-    # Prevent external spoofing
-    http-request del-header Forwarded <i class="conum" data-value="3"></i><b>(3)</b>
-    http-request del-header x-forwarded-.* -m reg
-    http-request del-header x-original-.* -m reg
-    http-request del-header x-real-ip
-
-    # Prevent external tracing context injection (W3C Trace Context / Baggage)
-    http-request del-header traceparent
-    http-request del-header tracestate
-    http-request del-header baggage
-
-    # Prevent external tracing context injection (Zipkin, Jaeger, OpenTracing)
-    http-request del-header b3
-    http-request del-header x-b3-.* -m reg
-    http-request del-header uber-trace-id
-    http-request del-header x-ot-span-context
-
-    # Public paths. Revisit the reverse proxy guide for the latest guidance. <i class="conum" data-value="4"></i><b>(4)</b>
-    # With these settings, the redirect to the welcome screen or Admin UI will not work from external IP addresses, and this is expected.
-    acl is_public_path path_beg /realms/
-    acl is_public_path path_beg /resources/
-    acl is_public_path path_beg /.well-known/
-
-    # Allowed source IP ranges. Replace with your internal IP address ranges. <i class="conum" data-value="4"></i><b>(4)</b>
-    acl is_allowed_src src 192.168.0.0/16
-    acl is_allowed_src src 172.16.0.0/12
-    acl is_allowed_src src 10.0.0.0/8
-    acl is_allowed_src src 127.0.0.0/8
-
-    http-request deny unless is_public_path or is_allowed_src <i class="conum" data-value="4"></i><b>(4)</b>
-
-    default_backend keycloak_back
-
-backend keycloak_back
-    mode http <i class="conum" data-value="5"></i><b>(5)</b>
-    balance roundrobin <i class="conum" data-value="6"></i><b>(6)</b>
-    option forwarded host by by_port for <i class="conum" data-value="7"></i><b>(7)</b>
-    option httpchk GET /health/ready <i class="conum" data-value="8"></i><b>(8)</b>
-    http-check expect status 200
-
-    server keycloak1 keycloak1:8443 ssl verify required crt /path/to/haproxy-internal-certificate ca-file /path/to/keycloak-1-certificate check port 9000 check-ssl verify none inter 5s fall 3 rise 2 <i class="conum" data-value="9"></i><b>(9)</b>
-
-    server keycloak2 keycloak2:8443 ssl verify required crt /path/to/haproxy-internal-certificate ca-file /path/to/keycloak-2-certificate check port 9000 check-ssl verify none inter 5s fall 3 rise 2</code></pre>
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">entryPoints:
+  keycloak: <i class="conum" data-value="1"></i><b>(1)</b>
+    address: ":8443"
+api:
+  dashboard: true
+  insecure: true
+log:
+  level: INFO
+providers:
+  file:
+    directory: "/mnt" <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The port HAProxy listens on for incoming TLS connections.
-The <code>ssl crt /path/to/haproxy-external-certificate</code> directive sets the certificate that the proxy will use to identify itself on the frontend.</td>
+<td>Defines an entrypoint named <code>keycloak</code> that listens for TLS connections on port <code>8443</code>.
+The name <code>keycloak</code> is used in the dynamic configuration to bind routers to this entrypoint.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Enables <a href="https://docs.haproxy.org/3.2/configuration.html#4-mode">HTTP mode</a> on the frontend.
-This tells HAProxy to operate at Layer 7, decrypting and re-encrypting HTTP traffic.
-HAProxy has access to the plaintext HTTP traffic in this mode.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The <code>http-request del-header</code> directives remove HTTP headers from incoming requests before forwarding them to Keycloak.
-This prevents external clients from spoofing proxy identity headers (such as <code>Forwarded</code>, <code>X-Forwarded-*</code>, and <code>X-Real-IP</code>), injecting authentication-related headers (such as <code>X-Forwarded-Access-Token</code>), or injecting distributed tracing context (such as W3C Trace Context, Zipkin B3, or Jaeger headers).
-For the full list of recommended headers to filter, see the <a href="https://www.keycloak.org/nightly/server/reverseproxy#header-filtering-recommendations">Configuring a reverse proxy</a> guide.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Restricts access so that only public Keycloak paths are reachable from external networks. Requests to non-public paths (such as the Admin API or Admin Console) are only allowed from the configured internal IP ranges. For the full list of paths and recommendations, see the <a href="https://www.keycloak.org/nightly/server/reverseproxy#_exposed_path_recommendations">Configuring a reverse proxy</a> guide.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>The backend must also use HTTP mode to match the frontend.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Distributes connections across backend servers using <a href="https://docs.haproxy.org/3.2/configuration.html#4-balance">round-robin</a> load balancing.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="7"></i><b>7</b></td>
-<td>This option adds a <code>Forwarded</code> header containing the correct client information.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="8"></i><b>8</b></td>
-<td>Configures <a href="https://docs.haproxy.org/3.2/configuration.html#4.2-option%20httpchk">HTTP health checks</a> against Keycloak&#8217;s readiness endpoint.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="9"></i><b>9</b></td>
-<td>Defines a backend Keycloak server.
-The parameters on this line control mTLS settings, health checks, and failure detection:</td>
+<td>Instructs Traefik to watch the <code>/mnt</code> directory for dynamic configuration files.
+The <code>keycloak.yaml</code> dynamic configuration file is mounted here.</td>
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>The <code>server</code> directive parameters are explained below:</p>
 </div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><code>ssl verify required</code></dt>
-<dd>
-<p>Enables a secure connection to Keycloak and verifies the certificate.</p>
-</dd>
-<dt class="hdlist1"><code>crt /path/to/haproxy-internal-certificate</code></dt>
-<dd>
-<p>Configures the certificate used to authenticate HAProxy to Keycloak.</p>
-</dd>
-<dt class="hdlist1"><code>ca-file /path/to/keycloak-N-certificate</code></dt>
-<dd>
-<p>Configures the backend server certificate (or issuing CA certificate) used to authenticate the particular Keycloak server to HAProxy.</p>
-</dd>
-<dt class="hdlist1"><code>check port 9000 check-ssl verify none</code></dt>
-<dd>
-<p>Directs health checks to the <a href="https://docs.haproxy.org/3.2/configuration.html#5.2-check">management port</a> (<code>9000</code>) over HTTPS.
-The <code>verify none</code> option skips TLS certificate verification for the health check connection, which is acceptable because the health check is an internal communication between HAProxy and Keycloak.
-The management port is separate from the main application port (<code>8443</code>), as described in the <a href="https://www.keycloak.org/nightly/server/management-interface">Configuring the Management Interface</a> guide.</p>
-</dd>
-<dt class="hdlist1"><code>inter 5s fall 3 rise 2</code></dt>
-<dd>
-<p>Configures the <a href="https://docs.haproxy.org/3.2/configuration.html#5.2-inter">health check frequency</a>:
-poll every 5 seconds, mark a server as down after 3 consecutive failures, and mark it as up again after 2 consecutive successes.
-These values affect how quickly HAProxy detects that a Keycloak instance is shutting down (see <a href="#graceful-shutdown-considerations-haproxy-reencrypt">Graceful shutdown considerations</a>).</p>
-</dd>
-</dl>
+<div class="sect2">
+<h3 id="_dynamic_configuration_keycloak_yaml"><a class="anchor" href="#_dynamic_configuration_keycloak_yaml"></a>Dynamic configuration (<code>keycloak.yaml</code>)</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">tls:
+  certificates:
+    - certFile: /certs/traefik-external/cert.pem <i class="conum" data-value="1"></i><b>(1)</b>
+      keyFile: /certs/traefik-external/key.pem
+
+http:
+  serversTransports:
+    keycloak-transport:
+      certificates:
+        - certFile: /certs/traefik-internal/cert.pem <i class="conum" data-value="2"></i><b>(2)</b>
+          keyFile: /certs/traefik-internal/key.pem
+      rootCAs:
+        - /certs/keycloak1-cert.pem <i class="conum" data-value="3"></i><b>(3)</b>
+        - /certs/keycloak2-cert.pem
+
+  routers:
+    keycloak:
+      entryPoints:
+        - keycloak
+      rule: "PathPrefix(`/`)" <i class="conum" data-value="4"></i><b>(4)</b>
+      tls: {} <i class="conum" data-value="5"></i><b>(5)</b>
+      service: keycloak
+
+  services:
+    keycloak:
+      loadBalancer:
+        serversTransport: keycloak-transport <i class="conum" data-value="6"></i><b>(6)</b>
+        healthCheck:
+          path: /health/ready <i class="conum" data-value="7"></i><b>(7)</b>
+          port: 9000
+          scheme: https
+          interval: "5s"
+          timeout: "3s"
+        servers:
+          - url: "https://keycloak1:8443" <i class="conum" data-value="8"></i><b>(8)</b>
+          - url: "https://keycloak2:8443"</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The certificate Traefik presents to clients on the frontend TLS connection.
+This is the externally trusted certificate that browsers verify.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The certificate Traefik presents to Keycloak on the backend mTLS connection.
+Keycloak is configured to require client authentication and will verify this certificate against its truststore.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The public certificates of each Keycloak backend server.
+Traefik verifies each backend server&#8217;s TLS certificate against these entries, ensuring the connection goes to a trusted Keycloak instance and not an impersonator.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Routes all incoming requests to the Keycloak service.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Enables TLS on the router, allowing Traefik to terminate the incoming TLS connection from the client and inspect HTTP traffic.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Links the load balancer to the named transport above, activating mTLS for all connections to the backend Keycloak servers.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>Configures <a href="https://doc.traefik.io/traefik/reference/routing-configuration/http/service/#health-check">HTTP health checks</a> against Keycloak&#8217;s readiness endpoint on the management port (<code>9000</code>) over HTTPS.
+The management port does not require client authentication, so no mTLS client certificate is needed for health check connections.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>The backend Keycloak servers.
+Traefik load-balances requests across both instances using round-robin.</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="keycloak-configuration-haproxy-reencrypt"><a class="anchor" href="#keycloak-configuration-haproxy-reencrypt"></a>Keycloak configuration</h2>
+<h2 id="keycloak-configuration-traefik-reencrypt"><a class="anchor" href="#keycloak-configuration-traefik-reencrypt"></a>Keycloak configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>With TLS re-encrypt, Keycloak requires the following configuration:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers forwarded --health-enabled true --metrics-enabled true --https-certificate-file=/path/to/certificate --https-certificate-key-file=/path/to/key --https-client-auth=required --https-trust-store-file=/path/to/https-truststore --https-management-client-auth=none</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers xforwarded --health-enabled true --metrics-enabled true --https-certificate-file=/path/to/certificate --https-certificate-key-file=/path/to/key --https-client-auth=required --https-trust-store-file=/path/to/https-truststore --https-management-client-auth=none</code></pre>
 </div>
 </div>
 <div class="dlist">
 <dl>
-<dt class="hdlist1"><code>--proxy-headers forwarded</code></dt>
+<dt class="hdlist1"><code>--proxy-headers xforwarded</code></dt>
 <dd>
-<p>Restricts the forwarding headers that Keycloak will parse to the standard <code>Forwarded</code> header as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC 7239</a>.
-Do not set <code>--proxy-protocol-enabled</code> when using TLS re-encrypt. The PROXY protocol is only relevant for TLS passthrough (TCP mode).
-The <code>--proxy-headers</code> option and the <code>--proxy-protocol-enabled</code> option are mutually exclusive.</p>
+<p>Instructs Keycloak to read the client IP address and protocol from the <code>X-Forwarded-<strong></code> headers set by Traefik.
+In re-encrypt mode, Traefik overwrites any incoming <code>X-Forwarded-</strong></code> headers with the correct client values before forwarding requests to Keycloak, preventing clients from injecting misleading header values.
+Do not set <code>--proxy-protocol-enabled</code> when using TLS re-encrypt.
+The PROXY protocol is only relevant for TLS passthrough (TCP mode).</p>
 </dd>
 <dt class="hdlist1"><code>--health-enabled true</code></dt>
 <dd>
 <p>Enables the health check endpoints on the management port (<code>9000</code>).
-Without this, the <code>/health/ready</code> endpoint that HAProxy polls will not be available, and HAProxy will mark all Keycloak instances as down.</p>
+Without this, the <code>/health/ready</code> endpoint that Traefik polls will not be available, and Traefik will mark all Keycloak instances as down.</p>
 </dd>
 <dt class="hdlist1"><code>--metrics-enabled true</code></dt>
 <dd>
@@ -306,31 +293,32 @@ See the <a href="https://www.keycloak.org/nightly/server/enabletls">Configuring 
 <dt class="hdlist1"><code>--https-trust-store-file=/path/to/https-truststore</code></dt>
 <dd>
 <p>Configures a truststore for client authentication.
-In this case the truststore should contain the public certificate of the HAProxy.
+In this case the truststore should contain the public certificate of the Traefik proxy.
 See the <a href="https://www.keycloak.org/nightly/server/mutual-tls">Configuring trusted certificates for mTLS</a> guide for additional details.</p>
 </dd>
 <dt class="hdlist1"><code>--https-management-client-auth=none</code></dt>
 <dd>
-<p>Disables the client authentication requirement for the management endpoint.</p>
+<p>Disables the client authentication requirement for the management endpoint.
+This allows Traefik to perform HTTPS health checks against the management port (<code>9000</code>) without needing to present the mTLS client certificate.</p>
 </dd>
 </dl>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="graceful-shutdown-considerations-haproxy-reencrypt"><a class="anchor" href="#graceful-shutdown-considerations-haproxy-reencrypt"></a>Graceful shutdown considerations</h2>
+<h2 id="graceful-shutdown-considerations-traefik-reencrypt"><a class="anchor" href="#graceful-shutdown-considerations-traefik-reencrypt"></a>Graceful shutdown considerations</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The HAProxy health check settings determine how long it takes for the proxy to detect that a Keycloak instance is shutting down and that connections should no longer be routed to it.</p>
+<p>The Traefik health check settings determine how long it takes for the proxy to detect that a Keycloak instance is shutting down and that connections should no longer be routed to it.</p>
 </div>
 <div class="paragraph">
-<p>With the health check settings from the configuration above (<code>inter 5s fall 3</code>), it takes up to 15 seconds (3 failures x 5-second interval) for HAProxy to mark a Keycloak instance as down.
+<p>With the health check settings from the <a href="#dynamic-configuration-keycloak-yaml">configuration above</a> (<code>interval: 5s</code>, <code>timeout: 3s</code>), it takes up to 8 seconds (<code>interval + timeout</code>) for Traefik to mark a Keycloak instance as down.
 During this period, Keycloak must remain running to serve in-flight requests.
 Therefore, you need to configure the <code>--shutdown-delay</code> to be at least as long as the detection time:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers forwarded --health-enabled true --metrics-enabled true --https-certificate-file=/path/to/certificate --https-certificate-key-file=/path/to/key --https-client-auth=required --https-trust-store-file=/path/to/https-truststore --https-management-client-auth=none --shutdown-delay=16s</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers xforwarded --health-enabled true --metrics-enabled true --https-certificate-file=/path/to/certificate --https-certificate-key-file=/path/to/key --https-client-auth=required --https-trust-store-file=/path/to/https-truststore --https-management-client-auth=none --shutdown-delay=8s</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -543,7 +531,7 @@ Therefore, you need to configure the <code>--shutdown-delay</code> to be at leas
                 <div class="mt-2 mb-2 fw-bold">On this page</div>
                 <div id="js-toc"></div>
                 <div class="mt-4">
-                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/server/haproxy-reencrypt.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/server/traefik-reencrypt.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
                 </div>
             </div>
         </div>
