@@ -866,7 +866,13 @@ forwarded by the proxy with the client certificate information.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The prefix of the headers holding additional certificates in the chain and used to retrieve individual
 certificates according to the length of the chain. For instance, a value <code>CERT_CHAIN</code> will tell the server
 to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>CERT_CHAIN_9</code> if <code>certificate-chain-length</code> is set to <code>10</code>.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>apache</code>, <code>haproxy</code>, <code>nginx</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>apache</code>, <code>nginx</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the header holding the full certificate chain as a single value.
+All chain certificates are contained in one header rather than split across indexed headers.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>haproxy</code>, <code>rfc9440</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">certificate-chain-length</p></td>
@@ -875,6 +881,68 @@ to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>
 </tr>
 </tbody>
 </table>
+<div class="sect3">
+<h4 id="_configuring_the_haproxy_provider"><a class="anchor" href="#_configuring_the_haproxy_provider"></a>Configuring the HAProxy provider</h4>
+<div class="paragraph">
+<p>HAProxy can forward client certificates as base64-encoded DER using its <code>ssl_c_der,base64</code> and <code>ssl_c_chain_der,base64</code> sample fetches.
+The <code>haproxy</code> provider reads the client certificate from the <code>ssl-client-cert</code> header and the certificate chain from the <code>ssl-cert-chain</code> header.</p>
+</div>
+<div class="paragraph">
+<p>The options and defaults specific to <code>haproxy</code> are as follows:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-client-cert</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the header holding the client certificate.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(none)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the header holding the full certificate chain as a single base64-encoded DER value. HAProxy&#8217;s <code>ssl_c_chain_der,base64</code> produces the concatenated DER encoding of all CA certificates in one value.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(none)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">certificate-chain-length</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The maximum number of certificates to load from the chain header.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Example HAProxy configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>http-request set-header Client-Cert %[ssl_c_der,base64] if { ssl_c_used } { ssl_c_verify 0 }
+http-request set-header Client-Cert-Chain %[ssl_c_chain_der,base64] if { ssl_c_used } { ssl_c_verify 0 }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Corresponding Keycloak configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-x509cert-lookup--provider=haproxy --spi-x509cert-lookup--haproxy--ssl-client-cert=Client-Cert --spi-x509cert-lookup--haproxy--ssl-cert-chain=Client-Cert-Chain --spi-x509cert-lookup--haproxy--certificate-chain-length=2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the number of intermediate certificates in your certificate chain is longer than the default, you must set the
+<code>certificate-chain-length</code> option to an appropriate value. Otherwise, the provider will discard the request.</p>
+</div>
+</div>
 <div class="sect3">
 <h4 id="_configuring_the_nginx_provider"><a class="anchor" href="#_configuring_the_nginx_provider"></a>Configuring the NGINX provider</h4>
 <div class="paragraph">
@@ -945,8 +1013,8 @@ The options and defaults specific to <code>rfc9440</code> are as follows:</p>
 </tbody>
 </table>
 <div class="paragraph">
-<p>If your certificate chain is longer than the default, you must set the <code>certificate-chain-length</code> option to an appropriate value.
-Otherwise, the provider will discard the request.</p>
+<p>If the number of intermediate certificates in your certificate chain is longer than the default, you must set the
+<code>certificate-chain-length</code> option to an appropriate value. Otherwise, the provider will discard the request.</p>
 </div>
 </div>
 <div class="sect3">

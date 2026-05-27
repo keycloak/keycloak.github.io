@@ -158,6 +158,10 @@ frontend https_front
     http-request del-header uber-trace-id
     http-request del-header x-ot-span-context
 
+    # Optional. Forward client identities so that client certificate lookups work as expected
+    http-request set-header Client-Cert %[ssl_c_der,base64] if { ssl_c_used } { ssl_c_verify 0 }
+    http-request set-header Client-Cert-Chain %[ssl_c_chain_der,base64] if { ssl_c_used } { ssl_c_verify 0 }
+
     # Public paths. Revisit the reverse proxy guide for the latest guidance. <i class="conum" data-value="4"></i><b>(4)</b>
     # With these settings, the redirect to the welcome screen or Admin UI will not work from external IP addresses, and this is expected.
     acl is_public_path path_beg /realms/
@@ -314,6 +318,24 @@ See the <a href="https://www.keycloak.org/nightly/server/mutual-tls">Configuring
 <p>Disables the client authentication requirement for the management endpoint.</p>
 </dd>
 </dl>
+</div>
+<div class="sect2">
+<h3 id="_enabling_client_certificate_lookups"><a class="anchor" href="#_enabling_client_certificate_lookups"></a>Enabling client certificate lookups</h3>
+<div class="paragraph">
+<p>To enable the client certificate lookups, the following CLI options are required when starting Keycloak:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-x509cert-lookup--provider=haproxy --spi-x509cert-lookup--haproxy--ssl-client-cert=Client-Cert --spi-x509cert-lookup--haproxy--ssl-cert-chain=Client-Cert-Chain --spi-x509cert-lookup--haproxy--certificate-chain-length=2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the number of intermediate certificates in your certificate chain is longer than the default, you must set the
+<code>certificate-chain-length</code> option to an appropriate value. Otherwise, the provider will discard the request.</p>
+</div>
+<div class="paragraph">
+<p>See <a href="https://www.keycloak.org/nightly/server/reverseproxy">Configuring a reverse proxy</a> for more details.</p>
+</div>
 </div>
 </div>
 </div>
