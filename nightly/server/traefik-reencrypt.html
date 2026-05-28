@@ -35,7 +35,7 @@ gtag('config', 'G-0J2P9316N6');
     <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
         <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
     </a>
-    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 338/20" alt="GitHub stars"/></a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
       <span class="fa fa-bars fa-lg px-1 py-2"></span>
     </button>
@@ -59,7 +59,7 @@ gtag('config', 'G-0J2P9316N6');
       </ul>
     </div>
     <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
-        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 338/20" alt="GitHub stars"/></a>
     </div>
 </nav>
 </header>
@@ -184,26 +184,63 @@ http:
         - /certs/keycloak1-cert.pem <i class="conum" data-value="3"></i><b>(3)</b>
         - /certs/keycloak2-cert.pem
 
+  middlewares:
+    filter-headers:
+      headers:
+        customRequestHeaders:
+          # Prevent external spoofing of proxy identity headers (IP, protocol, host, path).
+          # Traefik re-adds its own verified values after stripping client-supplied ones.
+          Forwarded: "" <i class="conum" data-value="4"></i><b>(4)</b>
+          X-Forwarded-For: ""
+          X-Forwarded-Proto: ""
+          X-Forwarded-Host: ""
+          X-Forwarded-Port: ""
+          X-Forwarded-Server: ""
+          X-Forwarded-Prefix: ""
+          X-Forwarded-Access-Token: ""
+          # Prevent external spoofing of reverse-proxy metadata headers
+          X-Original-Forwarded-For: ""
+          X-Original-URL: ""
+          X-Original-Method: ""
+          X-Real-IP: ""
+          X-Forwarded-Tls-Client-Cert: ""
+          X-Forwarded-Tls-Client-Cert-Info: ""
+          # Prevent external tracing context injection (W3C Trace Context / Baggage)
+          Traceparent: ""
+          Tracestate: ""
+          Baggage: ""
+          # Prevent external tracing context injection (Zipkin, Jaeger, OpenTracing)
+          B3: ""
+          X-B3-Traceid: ""
+          X-B3-Spanid: ""
+          X-B3-Parentspanid: ""
+          X-B3-Sampled: ""
+          X-B3-Flags: ""
+          Uber-Trace-Id: ""
+          X-Ot-Span-Context: ""
+
   routers:
     keycloak:
       entryPoints:
         - keycloak
-      rule: "PathPrefix(`/`)" <i class="conum" data-value="4"></i><b>(4)</b>
-      tls: {} <i class="conum" data-value="5"></i><b>(5)</b>
+      rule: "PathPrefix(`/`)" <i class="conum" data-value="5"></i><b>(5)</b>
+      middlewares:
+        - filter-headers <i class="conum" data-value="6"></i><b>(6)</b>
+      tls: {} <i class="conum" data-value="7"></i><b>(7)</b>
       service: keycloak
 
   services:
     keycloak:
       loadBalancer:
-        serversTransport: keycloak-transport <i class="conum" data-value="6"></i><b>(6)</b>
+        serversTransport: keycloak-transport <i class="conum" data-value="8"></i><b>(8)</b>
         healthCheck:
-          path: /health/ready <i class="conum" data-value="7"></i><b>(7)</b>
+          path: /health/ready <i class="conum" data-value="9"></i><b>(9)</b>
           port: 9000
           scheme: https
           interval: "5s"
           timeout: "3s"
         servers:
-          - url: "https://keycloak1:8443" <i class="conum" data-value="8"></i><b>(8)</b>
+          - url: "https://keycloak1:8443" <i class="conum" data-value="10"></i><b>(10)</b>
           - url: "https://keycloak2:8443"</code></pre>
 </div>
 </div>
@@ -226,23 +263,34 @@ Traefik verifies each backend server&#8217;s TLS certificate against these entri
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Routes all incoming requests to the Keycloak service.</td>
+<td>To remove an HTTP header from requests forwarded to Keycloak, define a key-value entry in <code>customRequestHeaders</code> where the key is the name of the HTTP header and the value is an empty string to indicate the header should be removed.
+Removing specific HTTP headers prevents external clients from spoofing proxy identity headers (such as <code>Forwarded</code>, <code>X-Forwarded-*</code>, and <code>X-Real-IP</code>), injecting authentication-related headers (such as <code>X-Forwarded-Access-Token</code>), or injecting distributed tracing context (such as W3C Trace Context, Zipkin B3, or Jaeger headers).
+Unlike HAProxy, Traefik does not support regex-based header matching, so each header variant must be listed explicitly.
+For the full list of recommended headers to filter, see the <a href="https://www.keycloak.org/nightly/server/reverseproxy#header-filtering-recommendations">Configuring a reverse proxy</a> guide.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Enables TLS on the router, allowing Traefik to terminate the incoming TLS connection from the client and inspect HTTP traffic.</td>
+<td>Routes all incoming requests to the Keycloak service.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Links the load balancer to the named transport above, activating mTLS for all connections to the backend Keycloak servers.</td>
+<td>Attaches the <code>filter-headers</code> middleware to the router so that the <code>customRequestHeaders</code> rules defined in &lt;4&gt; are applied to all incoming requests.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="7"></i><b>7</b></td>
-<td>Configures <a href="https://doc.traefik.io/traefik/reference/routing-configuration/http/service/#health-check">HTTP health checks</a> against Keycloak&#8217;s readiness endpoint on the management port (<code>9000</code>) over HTTPS.
-The management port does not require client authentication, so no mTLS client certificate is needed for health check connections.</td>
+<td>Enables TLS on the router, allowing Traefik to terminate the incoming TLS connection from the client and inspect HTTP traffic.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>Links the load balancer to the named transport above, activating mTLS for all connections to the backend Keycloak servers.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>Configures <a href="https://doc.traefik.io/traefik/routing/services/#health-check">HTTP health checks</a> against Keycloak&#8217;s readiness endpoint on the management port (<code>9000</code>) over HTTPS.
+The management port does not require client authentication, so no mTLS client certificate is needed for health check connections.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="10"></i><b>10</b></td>
 <td>The backend Keycloak servers.
 Traefik load-balances requests across both instances using round-robin.</td>
 </tr>
@@ -312,7 +360,7 @@ This allows Traefik to perform HTTPS health checks against the management port (
 <p>The Traefik health check settings determine how long it takes for the proxy to detect that a Keycloak instance is shutting down and that connections should no longer be routed to it.</p>
 </div>
 <div class="paragraph">
-<p>With the health check settings from the <a href="#dynamic-configuration-keycloak-yaml">configuration above</a> (<code>interval: 5s</code>, <code>timeout: 3s</code>), it takes up to 8 seconds (<code>interval + timeout</code>) for Traefik to mark a Keycloak instance as down.
+<p>With the health check settings from the configuration above (<code>interval: 5s</code>, <code>timeout: 3s</code>), it takes up to 8 seconds (<code>interval + timeout</code>) for Traefik to mark a Keycloak instance as down.
 During this period, Keycloak must remain running to serve in-flight requests.
 Therefore, you need to configure the <code>--shutdown-delay</code> to be at least as long as the detection time:</p>
 </div>
