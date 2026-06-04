@@ -88,7 +88,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/server/traefik-reencrypt" selected="selected">Nightly</option>
-                        <option value="https://www.keycloak.org/server/traefik-reencrypt" >26.6.2</option>
+                        <option value="https://www.keycloak.org/server/traefik-reencrypt" >26.6.3</option>
                     </select>
                 </div>
 
@@ -219,14 +219,36 @@ http:
           Uber-Trace-Id: ""
           X-Ot-Span-Context: ""
 
+    # Allowed source IP ranges. Replace with your internal IP address ranges. <i class="conum" data-value="5"></i><b>(5)</b>
+    ip-allowlist:
+      ipAllowList:
+        sourceRange:
+          - 192.168.0.0/16
+          - 172.16.0.0/12
+          - 10.0.0.0/8
+          - 127.0.0.0/8
+
   routers:
-    keycloak:
+    # Public router: accessible from any source IP address. <i class="conum" data-value="6"></i><b>(6)</b>
+    keycloak-public:
       entryPoints:
         - keycloak
-      rule: "PathPrefix(`/`)" <i class="conum" data-value="5"></i><b>(5)</b>
+      rule: "PathPrefix(`/realms/`) || PathPrefix(`/resources/`) || PathPrefix(`/.well-known/`)"
       middlewares:
-        - filter-headers <i class="conum" data-value="6"></i><b>(6)</b>
-      tls: {} <i class="conum" data-value="7"></i><b>(7)</b>
+        - filter-headers
+      tls: {}
+      service: keycloak
+
+    # Internal router: all other paths are restricted to the allowed source IP ranges. <i class="conum" data-value="7"></i><b>(7)</b>
+    keycloak-internal:
+      entryPoints:
+        - keycloak
+      rule: "PathPrefix(`/`)"
+      priority: 1
+      middlewares:
+        - filter-headers
+        - ip-allowlist
+      tls: {}
       service: keycloak
 
   services:
@@ -270,15 +292,21 @@ For the full list of recommended headers to filter, see the <a href="https://www
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Routes all incoming requests to the Keycloak service.</td>
+<td>Restricts access so that only public Keycloak paths are reachable from external networks.
+Requests to non-public paths (such as the Admin API or Admin Console) are only allowed from the configured internal IP ranges.
+Replace the example ranges with your internal IP address ranges.
+For the full list of paths and recommendations, see the <a href="https://www.keycloak.org/nightly/server/reverseproxy#_exposed_path_recommendations">Configuring a reverse proxy</a> guide.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Attaches the <code>filter-headers</code> middleware to the router so that the <code>customRequestHeaders</code> rules defined in &lt;4&gt; are applied to all incoming requests.</td>
+<td>The public router matches only the paths that must be reachable by external clients (<code>/realms/</code>, <code>/resources/</code>, and <code>/.well-known/</code>) and is therefore not subject to the IP allowlist.
+The <code>filter-headers</code> middleware and <code>tls</code> settings apply as on the internal router.
+With these settings, the redirect to the welcome screen or Admin UI will not work from external IP addresses, and this is expected.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="7"></i><b>7</b></td>
-<td>Enables TLS on the router, allowing Traefik to terminate the incoming TLS connection from the client and inspect HTTP traffic.</td>
+<td>The internal router matches all remaining paths and additionally applies the <code>ip-allowlist</code> middleware, so these paths are only reachable from the allowed source IP ranges.
+The <code>priority: 1</code> is set deliberately low so that Traefik always evaluates the more specific public router first; only requests that do not match a public path fall through to this router.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="8"></i><b>8</b></td>

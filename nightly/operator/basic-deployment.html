@@ -88,7 +88,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/operator/basic-deployment" selected="selected">Nightly</option>
-                        <option value="https://www.keycloak.org/operator/basic-deployment" >26.6.2</option>
+                        <option value="https://www.keycloak.org/operator/basic-deployment" >26.6.3</option>
                     </select>
                 </div>
 
@@ -389,7 +389,27 @@ See below for more on TLS termination.
 <div class="sect3">
 <h4 id="_tls_termination_with_default_ingress"><a class="anchor" href="#_tls_termination_with_default_ingress"></a>TLS Termination with default Ingress</h4>
 <div class="paragraph">
-<p>When using the operator-provided ingress (<code>spec.ingress.enabled: true</code>) there are a lot of Keycloak CR options (like service and ingress labels and annotations) which allow you to customize your ingress behavior. This section shows how to achieve the following TLS Termination when using OpenShift:</p>
+<p>When using the operator-provided ingress (<code>spec.ingress.enabled: true</code>), there are many Keycloak CR options (like service and ingress labels and annotations) that allow you to customize your ingress behavior.</p>
+</div>
+<div class="paragraph">
+<p>With passthrough, the client IP address is not visible to Keycloak because the default ingress controller does not support the PROXY protocol between the ingress and Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>Passthrough is the best option when you want to use mTLS (mutual TLS), as the TLS connection is established directly between the client and Keycloak, preserving the client certificate for authentication.
+Edge and reencrypt do not offer mTLS between the client and the ingress via configuration options in the CRs.</p>
+</div>
+<div class="paragraph">
+<p>With edge, the ingress controller terminates TLS and forwards the connection to Keycloak unencrypted.
+If internal encryption is required, use reencrypt instead.</p>
+</div>
+<div class="paragraph">
+<p>With edge or reencrypt, you can only trust the client IP address and other forwarded headers if you restrict access to the Keycloak HTTP port via network policies (see <a href="https://www.keycloak.org/nightly/operator/advanced-configuration#_network_policies">Advanced configuration</a>). For example, allow connections only from the namespace where the ingress controller runs.
+You must also prevent users in the Keycloak namespace from creating additional ingress or route instances, as an unauthorized ingress could bypass the trusted ingress controller and spoof client IP addresses or other forwarded headers.
+Without these protections, any Pod that can connect to Keycloak directly can spoof forwarded headers.
+Parsing proxy headers therefore conflicts with direct backchannel access to Keycloak, as backchannel clients bypass the ingress and could spoof those headers.</p>
+</div>
+<div class="paragraph">
+<p>This section shows how to achieve the following TLS Termination when using OpenShift:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -471,7 +491,10 @@ spec:
   hostname:
     hostname: keycloak.&lt;cluster-domain&gt; <i class="conum" data-value="1"></i><b>(1)</b>
   proxy:
-    headers: xforwarded <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+    headers: xforwarded <i class="conum" data-value="2"></i><b>(2)</b>
+  networkPolicy:
+    enabled: true
+    http: ... <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -483,6 +506,10 @@ spec:
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>Check your load balancer or reverse proxy configuration to determine whether it utilizes the <code>Forwarded</code> (RFC 7239) or <code>X-Forwarded-*</code> (e.g., <code>X-Forwarded-For</code>) mechanism for header propagation.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Restrict access to the ingress controller to avoid spoofing of forwarding headers.</td>
 </tr>
 </table>
 </div>
@@ -506,7 +533,10 @@ spec:
   hostname:
     hostname: test.keycloak.org
   proxy:
-    headers: xforwarded <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+    headers: xforwarded <i class="conum" data-value="1"></i><b>(1)</b>
+  networkPolicy:
+    enabled: true
+    http: ... <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -514,6 +544,10 @@ spec:
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Check your load balancer or reverse proxy configuration to determine whether it utilizes the <code>Forwarded</code> (RFC 7239) or <code>X-Forwarded-*</code> (e.g., <code>X-Forwarded-For</code>) mechanism for header propagation.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Restrict access to the ingress controller to avoid spoofing of forwarding headers.</td>
 </tr>
 </table>
 </div>
@@ -547,7 +581,10 @@ spec:
   hostname:
     hostname: keycloak.&lt;cluster-domain&gt; <i class="conum" data-value="4"></i><b>(4)</b>
   proxy:
-    headers: xforwarded <i class="conum" data-value="5"></i><b>(5)</b></code></pre>
+    headers: xforwarded <i class="conum" data-value="5"></i><b>(5)</b>
+  networkPolicy:
+    enabled: true
+    https: ... <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -558,11 +595,11 @@ spec:
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>name of the tls secret created by the cluster, as defined in &lt;1&gt;</td>
+<td>Name of the tls secret created by the cluster, as defined in &lt;1&gt;</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>required because the operator only has built-in OpenShift logic for passthrough and edge.</td>
+<td>Required because the operator only has built-in OpenShift logic for passthrough and edge.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
@@ -571,6 +608,10 @@ spec:
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>Check your load balancer or reverse proxy configuration to determine whether it utilizes the <code>Forwarded</code> (RFC 7239) or <code>X-Forwarded-*</code> (e.g., <code>X-Forwarded-For</code>) mechanism for header propagation.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Restrict access to the ingress controller to avoid spoofing of forwarding headers.</td>
 </tr>
 </table>
 </div>
@@ -599,7 +640,10 @@ spec:
   hostname:
     hostname: test.keycloak.org <i class="conum" data-value="5"></i><b>(5)</b>
   proxy:
-    headers: xforwarded <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+    headers: xforwarded <i class="conum" data-value="6"></i><b>(6)</b>
+  networkPolicy:
+    enabled: true
+    https: ... <i class="conum" data-value="7"></i><b>(7)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -628,6 +672,10 @@ spec:
 <td><i class="conum" data-value="6"></i><b>6</b></td>
 <td>Check your load balancer or reverse proxy configuration to determine whether it utilizes the <code>Forwarded</code> (RFC 7239) or <code>X-Forwarded-*</code> (e.g., <code>X-Forwarded-For</code>) mechanism for header propagation.</td>
 </tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>Restrict access to the ingress controller to avoid spoofing of forwarding headers.</td>
+</tr>
 </table>
 </div>
 </div>
@@ -647,10 +695,21 @@ kind: Keycloak
 metadata:
   name: example-kc
 spec:
-    ...
-    ingress:
-      enabled: false</code></pre>
+  ...
+  ingress:
+    enabled: false
+  networkPolicy:
+    enabled: true
+    https: ... <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Restrict access to the ingress controller to avoid spoofing of forwarding headers.</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>Apply the changes:</p>
@@ -691,8 +750,19 @@ metadata:
 spec:
   ...
   proxy:
-    headers: forwarded|xforwarded</code></pre>
+    headers: forwarded|xforwarded
+  networkPolicy:
+    enabled: true
+    https: ... <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>restrict incoming connections to the ingress controller to avoid spoofing of forwarding headers.</td>
+</tr>
+</table>
 </div>
 <div class="admonitionblock note">
 <table>
