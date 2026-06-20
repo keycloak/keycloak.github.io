@@ -1,0 +1,410 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Managing Keycloak Clients - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Managing Keycloak Clients">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Manage Keycloak OIDC and SAML clients declaratively using the operator.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/operator/managing-clients">
+<meta property="og:url" content="https://www.keycloak.org/nightly/operator/managing-clients">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#operator">Operator</a></li>
+                        <li class="breadcrumb-item active">Managing Keycloak Clients</li>
+                    </ol>
+                </nav>
+            </div>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/operator/managing-clients">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/operator/managing-clients" selected="selected">Nightly</option>
+                        <option value="https://www.keycloak.org/operator/managing-clients" >26.6.3</option>
+                    </select>
+                </div>
+
+                <h1>Managing Keycloak Clients</h1>
+                    <span class="text-muted">Manage Keycloak OIDC and SAML clients declaratively using the operator.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div class="sect1">
+<h2 id="_managing_oidc_and_saml_clients_with_the_operator"><a class="anchor" href="#_managing_oidc_and_saml_clients_with_the_operator"></a>Managing OIDC and SAML clients with the Operator</h2>
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This feature is <strong>experimental</strong> and may introduce breaking changes in future versions of Keycloak. Do not use this feature in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The Keycloak Operator can manage OIDC and SAML clients declaratively through Custom Resources.
+The operator creates, updates, and deletes clients on the Keycloak server to match the desired state defined in the CR.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Do not modify operator-managed clients through the Admin UI or API, including server-side client secret rotation.
+The operator does not detect external changes and will overwrite them.
+A future release will introduce resource ownership controls that prevent such modifications automatically.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="paragraph">
+<p>The following must be in place before creating client CRs.</p>
+</div>
+<div class="sect3">
+<h4 id="_enable_the_client_admin_api_feature"><a class="anchor" href="#_enable_the_client_admin_api_feature"></a>Enable the Client Admin API feature</h4>
+<div class="paragraph">
+<p>The <code>client-admin-api:v2</code> feature must be enabled on the Keycloak server.
+For more details about this API, see the <a href="https://www.keycloak.org/nightly/admin-api/admin-api-v2">Admin API v2</a> guide.
+Add it to the Keycloak CR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  name: example-kc
+spec:
+  features:
+    enabled:
+      - client-admin-api:v2
+  ...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_configure_the_admin_credentials"><a class="anchor" href="#_configure_the_admin_credentials"></a>Configure the admin credentials</h4>
+<div class="paragraph">
+<p>The operator authenticates to Keycloak using the client credentials flow against the <code>master</code> realm.
+It reads credentials from a Kubernetes Secret named <code>&lt;keycloak-cr-name&gt;-admin</code> in the same namespace, which must contain <code>client-id</code> and <code>client-secret</code> keys.
+This Secret must be created manually as part of the bootstrap admin setup.
+For setup details, see the Admin Bootstrapping section in the <a href="https://www.keycloak.org/nightly/operator/advanced-configuration">Advanced configuration</a> guide.
+A future release may simplify this by automating the credential setup.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_mutual_tls"><a class="anchor" href="#_mutual_tls"></a>Mutual TLS</h4>
+<div class="paragraph">
+<p>If Keycloak <a href="https://www.keycloak.org/nightly/server/mutual-tls">Configuring trusted certificates for mTLS</a>,
+<code>spec.admin.tlsSecret</code> is used to provide the name of a Kubernetes TLS Secret containing the operator&#8217;s client certificate and private key (<code>tls.crt</code> and <code>tls.key</code>), which must be trusted by the server.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_creating_an_oidc_client"><a class="anchor" href="#_creating_an_oidc_client"></a>Creating an OIDC Client</h3>
+<div class="paragraph">
+<p>Create a file <code>my-oidc-client.yaml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakOIDCClient
+metadata:
+  name: my-oidc-app <i class="conum" data-value="1"></i><b>(1)</b>
+spec:
+  keycloakCRName: example-kc <i class="conum" data-value="2"></i><b>(2)</b>
+  realm: my-realm <i class="conum" data-value="3"></i><b>(3)</b>
+  client: <i class="conum" data-value="4"></i><b>(4)</b>
+    loginFlows:
+      - STANDARD
+    redirectUris:
+      - "https://my-app.example.com/*"</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Becomes the <code>clientId</code> in Keycloak. Cannot be changed after creation.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Must match the <code>metadata.name</code> of the Keycloak CR (e.g., <code>example-kc</code> from the prerequisite example). Cannot be changed after creation.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The realm where the client is created. Cannot be changed after creation.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Available fields are defined by the client representations in the <a href="https://www.keycloak.org/nightly/admin-api/admin-api-v2">Admin API v2</a> guide.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Apply the CR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f my-oidc-client.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_creating_a_saml_client"><a class="anchor" href="#_creating_a_saml_client"></a>Creating a SAML Client</h3>
+<div class="paragraph">
+<p>Create a file <code>my-saml-client.yaml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakSAMLClient
+metadata:
+  name: my-saml-app
+spec:
+  keycloakCRName: example-kc
+  realm: my-realm
+  client:
+    nameIdFormat: persistent
+    signDocuments: true
+    signAssertions: true
+    forcePostBinding: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the CR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f my-saml-client.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_secret_references_for_oidc_authentication"><a class="anchor" href="#_using_secret_references_for_oidc_authentication"></a>Using Secret References for OIDC Authentication</h3>
+<div class="paragraph">
+<p>OIDC clients that use <code>client-secret</code> authentication can store the secret in a Kubernetes Secret rather than inline in the CR.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: my-app-credentials
+stringData:
+  client-secret-key: "my-secret"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakOIDCClient
+metadata:
+  name: my-confidential-app
+spec:
+  keycloakCRName: example-kc
+  realm: my-realm
+  client:
+    auth:
+      method: client-secret
+      secretRef:
+        name: my-app-credentials <i class="conum" data-value="1"></i><b>(1)</b>
+        key: client-secret-key <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Name of the Kubernetes Secret in the same namespace.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Key within the Secret that holds the client secret value.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If the referenced Secret does not exist, the CR will report a <code>HasErrors</code> status condition.
+When the value in the Kubernetes Secret changes, the operator detects the change within its polling interval and updates the client on the Keycloak server.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_checking_client_status"><a class="anchor" href="#_checking_client_status"></a>Checking Client Status</h3>
+<div class="paragraph">
+<p>To check the status of a client CR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get keycloakoidcclients/my-oidc-app -o go-template='{{range .status.conditions}}CONDITION: {{.type}}{{"\n"}}  STATUS: {{.status}}{{"\n"}}  MESSAGE: {{.message}}{{"\n"}}{{end}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the client has been created successfully:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>CONDITION: HasErrors
+  STATUS: false
+  MESSAGE:</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common error causes include a missing <code>client-admin-api:v2</code> feature, a missing secret reference, or the Keycloak server not being ready.
+The operator retries the operation periodically until it succeeds.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_updating_a_client"><a class="anchor" href="#_updating_a_client"></a>Updating a Client</h3>
+<div class="paragraph">
+<p>To update a client, modify the <code>spec.client</code> fields in the CR and re-apply:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f my-oidc-client.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Custom Resource must contain the complete desired client configuration.
+The operator detects changes and updates the client on the Keycloak server.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_deleting_a_client"><a class="anchor" href="#_deleting_a_client"></a>Deleting a Client</h3>
+<div class="paragraph">
+<p>To delete a client from Keycloak, delete the CR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl delete keycloakoidcclients/my-oidc-app</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The operator deletes the client from the Keycloak server before removing the CR.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If the Keycloak CR is deleted before the client CR, the operator cannot reach the server and the client will remain on the Keycloak server.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/operator/managing-clients.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

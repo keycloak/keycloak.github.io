@@ -1,0 +1,750 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Shared Signals Framework (SSF) - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Shared Signals Framework (SSF)">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Using Keycloak as a Shared Signals Framework (SSF) Transmitter to deliver security event signals to downstream receivers.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/securing-apps/ssf-support">
+<meta property="og:url" content="https://www.keycloak.org/nightly/securing-apps/ssf-support">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#securing-apps">Securing applications</a></li>
+                        <li class="breadcrumb-item active">Shared Signals Framework (SSF)</li>
+                    </ol>
+                </nav>
+            </div>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/securing-apps/ssf-support">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/securing-apps/ssf-support" selected="selected">Nightly</option>
+                        <option value="https://www.keycloak.org/securing-apps/ssf-support" >26.6.3</option>
+                    </select>
+                </div>
+
+                <h1>Shared Signals Framework (SSF)</h1>
+                    <span class="text-muted">Using Keycloak as a Shared Signals Framework (SSF) Transmitter to deliver security event signals to downstream receivers.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This feature is <strong>experimental</strong> and may introduce breaking changes in future versions of Keycloak. Do not use this feature in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="https://openid.net/specs/openid-sharedsignals-framework-1_0-final.html">The OpenID Shared Signals Framework (SSF) 1.0</a>
+defines a standard way for one identity system to push security-relevant signals, e.g. a session was revoked, a credential
+changed, an account was disabled, an assurance level changed etc. to other relying parties in near real time. The signals
+are encoded as JWS-signed <a href="https://www.rfc-editor.org/rfc/rfc8417">Security Event Tokens (SETs)</a> whose payloads are described by
+profiles such as <a href="https://openid.net/specs/openid-caep-1_0-final.html">CAEP</a> (Continuous Access Evaluation Profile) and
+<a href="https://openid.net/specs/openid-risc-1_0-final.html">RISC</a> (Risk Incident Sharing and Coordination). Receivers verify
+each SET against the transmitter&#8217;s JWKS and act on it locally, e.g. for example, by terminating cached sessions when
+Keycloak signals a logout.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak plays the <strong>Transmitter</strong> role: it observes user, session, and credential events, maps them to typed
+SETs, signs them, and delivers them to registered <strong>Receivers</strong> over the wire formats defined by
+<a href="https://www.rfc-editor.org/rfc/rfc8935">RFC 8935</a> (PUSH) and <a href="https://www.rfc-editor.org/rfc/rfc8936">RFC 8936</a> (POLL).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak SSF Transmitter exposes four moving parts that an administrator works with:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Realm-level transmitter capability</strong> a per-realm switch that turns SSF on for a single realm. Discovery metadata
+is published at <code>/.well-known/ssf-configuration/realms/{realm}</code> (and the alternative
+<code>/realms/{realm}/.well-known/ssf-configuration</code>).</p>
+</li>
+<li>
+<p><strong>SSF Receivers</strong> regular OAuth/OIDC clients marked as SSF receivers. Each receiver describes how it wants
+events delivered (PUSH or POLL), which event types it supports, and which subjects it is interested in.</p>
+</li>
+<li>
+<p><strong>Streams</strong> one stream per receiver, representing the active subscription. The stream carries the delivery
+method, endpoint URL (for PUSH), the event types currently requested, and the stream status
+(<code>enabled</code>/<code>paused</code>/<code>disabled</code>).</p>
+</li>
+<li>
+<p><strong>Subjects</strong> the users (or organizations) that the receiver is notified about. Selection combines a transmitter-wide
+default policy with per-user/per-organization overrides.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Behind the scenes, every dispatched event is persisted to a durable outbox before the user&#8217;s request returns,
+so no signal is lost across restarts and slow or unreachable receivers never block user-facing flows. A
+cluster-aware background drainer task handles retries, exponential backoff, and dead-lettering for PUSH delivery.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enabling_the_ssf_feature"><a class="anchor" href="#_enabling_the_ssf_feature"></a>Enabling the SSF feature</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>SSF is an experimental feature and must be explicitly enabled when starting Keycloak:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --features=ssf</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This enables the SSF code paths server-wide. Each realm that wishes to act as an SSF Transmitter must then
+opt in individually (see the next section).</p>
+</div>
+<div class="sect2">
+<h3 id="_optional_spi_configuration"><a class="anchor" href="#_optional_spi_configuration"></a>Optional SPI configuration</h3>
+<div class="paragraph">
+<p>The <code>ssf-transmitter</code> SPI category exposes the transmitter-wide defaults. The most commonly tuned options are
+shown below; the rest keep sensible defaults and rarely need adjustment.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 16.6666%;">
+<col style="width: 50.0001%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>signature-algorithm</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>RS256</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JWS algorithm used to sign SETs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>user-subject-format</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>iss_sub</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default user-subject shape. Can be overridden per receiver.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>default-subjects</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NONE</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default subscription policy: <code>ALL</code> delivers events for every user unless explicitly excluded; <code>NONE</code> delivers
+only for users that have been explicitly subscribed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>min-verification-interval-seconds</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>60</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum interval between receiver-initiated verification requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>outbox-drainer-interval</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>30s</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">How often the PUSH outbox drainer runs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>sse-caep-enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Advertise the legacy RISC delivery URIs alongside the SSF 1.0 URIs, for interop with Apple Business Manager and other pre-SSF 1.0 receivers.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>allow-insecure-push-targets</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Relaxes the scheme/host class check on receiver-supplied PUSH URLs (allows <code>http://</code> and loopback/private
+hosts). Intended for closed-network deployments and integration tests; never auto-enabled in <code>start-dev</code>.
+The per-receiver <code>ssf.validPushUrls</code> allow-list still applies.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enabling_the_ssf_transmitter_for_a_realm"><a class="anchor" href="#_enabling_the_ssf_transmitter_for_a_realm"></a>Enabling the SSF Transmitter for a realm</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With the feature flag on, individual realms must enable the transmitter via the realm attribute
+<code>ssf.transmitterEnabled=true</code>. When this attribute is unset, the realm&#8217;s SSF endpoints return <code>404</code> and no events
+are produced, even though SSF is on at the server level.</p>
+</div>
+<div class="paragraph">
+<p>The setting is surfaced in the Keycloak admin console under <strong>Realm settings</strong> &#8594; <strong>SSF</strong>. After enabling the
+transmitter, the realm&#8217;s discovery metadata becomes available at the host-rooted location defined by SSF 1.0 §7.2,
+formed by inserting <code>/.well-known/ssf-configuration</code> between the host and path components of the issuer:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">GET /.well-known/ssf-configuration/realms/{realm}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This primary form requires Keycloak to be deployed at the web root (i.e. <code>KC_HTTP_RELATIVE_PATH</code> is empty),
+because the host-rooted <code>/.well-known</code> path must be served from the root of the host. The same document is also
+published at the OIDC-discovery-style alternative location, which works regardless of the deployment path:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">GET /realms/{realm}/.well-known/ssf-configuration</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The realm-level SSF page also exposes transmitter-wide defaults that override the SPI defaults for this realm:
+signature algorithm, default user-subject format, <code>default_subjects</code> policy, minimum verification interval, and
+default push HTTP timeouts.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_a_client_representing_an_ssf_receiver"><a class="anchor" href="#_creating_a_client_representing_an_ssf_receiver"></a>Creating a Client representing an SSF Receiver</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An SSF receiver is a regular OAuth/OIDC client with the client attribute <code>ssf.enabled=true</code>. To create one:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a normal <strong>OpenID Connect</strong> client in the realm (typical client-credentials configuration if the receiver
+authenticates with a service account).</p>
+</li>
+<li>
+<p>Open the client and toggle <strong>SSF enabled</strong> on. An <strong>SSF</strong> tab appears in the client editor.</p>
+</li>
+<li>
+<p>Configure the receiver on the <strong>Receiver</strong> sub-tab (see <a href="#receiver-configuration">Receiver configuration</a>).</p>
+</li>
+<li>
+<p>Hand the receiver its credentials and let it register its own stream against the SSF management API. This is
+the default flow: the receiver discovers the transmitter via <code>/.well-known/ssf-configuration</code>, calls
+<code>POST /realms/{realm}/ssf/transmitter/streams</code> with the delivery method and event types it wants, and continues
+to manage the subscription itself. Streams registered this way are marked as <a href="#managed-by"><strong>RECEIVER-managed</strong></a>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The receiver authenticates SSF management API calls using a bearer token issued for this client. Required scopes
+and roles can be tightened with <code>ssf.requireServiceAccount</code> and <code>ssf.requiredRole</code> (see the <strong>Authentication</strong>
+section on the Receiver sub-tab).</p>
+</div>
+<div class="paragraph">
+<p>Alternatively, an administrator can pre-provision the stream from the <strong>Stream</strong> sub-tab in the admin console
+before the receiver software is running. The receiver then picks up the existing stream via <code>GET /streams</code> once
+it comes online. Streams created this way are marked as <a href="#managed-by"><strong>KEYCLOAK-managed</strong></a>.</p>
+</div>
+<div class="sect2">
+<h3 id="receiver-configuration"><a class="anchor" href="#receiver-configuration"></a>Receiver configuration</h3>
+<div class="paragraph">
+<p>The <strong>Receiver</strong> sub-tab groups configuration into sections. Frequently used knobs:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Setting</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Profile</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>SSF_1_0</code> (default) or <code>SSE_CAEP</code> (legacy wire format used by Apple Business Manager / Apple School Manager).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Default subjects</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Per-receiver override of the realm-wide <code>default_subjects</code> policy (<code>ALL</code> / <code>NONE</code>).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>User subject format</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">How the user identity is encoded in the SET&#8217;s <code>sub_id</code>: <code>iss_sub</code>, <code>email</code>,
+<code>complex.iss_sub+tenant</code>, or <code>complex.email+tenant</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Supported events</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Multi-select of the SSF event types this receiver wishes to support. Native event types are badged as
+<strong>built-in</strong>; custom event types contributed by extensions appear here automatically.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Auto notify on login</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Auto-subscribe the user as a subject the first time they log in via this receiver client.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Allowed delivery methods</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Two checkboxes (<strong>Push delivery</strong>, <strong>Poll delivery</strong>) gating which delivery families this receiver may use.
+Empty means both are allowed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Valid push URLs</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>##</code>-separated allow-list of URL patterns the receiver may register as its push endpoint. Required when PUSH
+is allowed. Each entry is matched as either an exact URL or a trailing-<code><strong></code> suffix wildcard
+(e.g. <code>https://receiver.example.com/ssf/</strong></code>). Bare <code>*</code> is not honoured, this is the SSRF defence on outbound
+PUSH delivery.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Allow synthetic events</strong> / <strong>Emit events role</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Opt-in path for trusted external systems (LDAP-change notifier, MDM, risk engine) to inject supported SSF events for
+this receiver via the admin emit endpoint, gated by a client role the caller&#8217;s service account must hold.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_delivery_push_or_poll"><a class="anchor" href="#_configuring_delivery_push_or_poll"></a>Configuring delivery (PUSH or POLL)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A receiver picks exactly one delivery method per stream. Both methods deliver the same signed SETs; they differ
+only in who initiates the HTTP call.</p>
+</div>
+<div class="sect2">
+<h3 id="_push_delivery_rfc_8935"><a class="anchor" href="#_push_delivery_rfc_8935"></a>PUSH delivery (RFC 8935)</h3>
+<div class="paragraph">
+<p>In PUSH mode Keycloak performs an outbound HTTP <code>POST</code> to a receiver-supplied URL whenever a SET is ready
+for delivery. To configure PUSH:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>On the <strong>Receiver</strong> sub-tab, make sure <strong>Push delivery</strong> is allowed and add at least one entry to <strong>Valid push URLs</strong>
+matching the receiver&#8217;s endpoint.</p>
+</li>
+<li>
+<p>On the <strong>Stream</strong> sub-tab, select <strong>Push</strong> as the delivery method and enter the receiver&#8217;s endpoint URL.</p>
+</li>
+<li>
+<p>Optionally, provide an <strong>Authorization header</strong> value the transmitter must send on each delivery (e.g.
+<code>Bearer &lt;token&gt;</code> issued by the receiver). Vault expressions like <code>${vault.my-secret}</code> are resolved at dispatch time.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Receiver-supplied URLs are validated against the per-receiver <code>ssf.validPushUrls</code> allow-list, and after a
+successful match the URL itself must use the <code>https</code> scheme and must not resolve to a loopback/link-local/
+site-local/unique-local/multicast address. Rejections are reported as HTTP <code>400</code> with a generic message;
+the operator-facing log entry contains the rejected URL and a suggested allow-list entry.</p>
+</div>
+<div class="paragraph">
+<p>PUSH delivery uses exponential backoff (8 attempts by default). After the attempt budget is exhausted, the row
+transitions to <code>DEAD_LETTER</code> and is retained for 30 days for inspection in the <strong>Event Search</strong> sub-tab.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_poll_delivery_rfc_8936"><a class="anchor" href="#_poll_delivery_rfc_8936"></a>POLL delivery (RFC 8936)</h3>
+<div class="paragraph">
+<p>In POLL mode Keycloak hosts the endpoint and the receiver fetches events on its own cadence. To configure POLL:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>On the <strong>Receiver</strong> sub-tab, make sure <strong>Poll delivery</strong> is allowed.</p>
+</li>
+<li>
+<p>On the <strong>Stream</strong> sub-tab, select <strong>Poll</strong> as the delivery method. A copy-to-clipboard field appears with the
+transmitter-owned poll URL of the form:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>POST /realms/{realm}/ssf/transmitter/receivers/{clientId}/streams/{streamId}/poll</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The receiver authenticates to this endpoint with the same bearer-token mechanism it would use for the SSF
+management API. A poll request carries <code>maxEvents</code>, optional <code>ack</code> (jti list to acknowledge), and optional
+<code>setErrs</code> (jti list to negative-acknowledge). The response delivers up to <code>maxEvents</code> signed SETs and a
+<code>moreAvailable</code> flag.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+HTTP long-polling (<code>returnImmediately=false</code>, <code>maxWait</code>) is parsed but not yet honoured. This means every poll
+returns immediately. Receivers should configure their own polling cadence accordingly.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_switching_delivery_method"><a class="anchor" href="#_switching_delivery_method"></a>Switching delivery method</h3>
+<div class="paragraph">
+<p>Flipping the delivery method on an existing stream re-routes already-queued events between the PUSH and POLL
+outbox kinds without losing them. The stream status is preserved.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_stream_configuration"><a class="anchor" href="#_stream_configuration"></a>Stream configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Each receiver owns exactly one stream. The stream is what receivers manage via the SSF spec endpoints, and what
+operators see on the <strong>Stream</strong> sub-tab.</p>
+</div>
+<div class="sect2">
+<h3 id="_receiver_managed_stream_lifecycle"><a class="anchor" href="#_receiver_managed_stream_lifecycle"></a>Receiver-managed stream lifecycle</h3>
+<div class="paragraph">
+<p>Receivers may use the standard SSF §8.1 management endpoints to create, read, update, and delete their stream:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>POST   /realms/{realm}/ssf/transmitter/streams
+GET    /realms/{realm}/ssf/transmitter/streams
+PATCH  /realms/{realm}/ssf/transmitter/streams
+PUT    /realms/{realm}/ssf/transmitter/streams
+DELETE /realms/{realm}/ssf/transmitter/streams</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Transmitter-controlled fields such as <code>stream_id</code>, <code>iss</code>, <code>aud</code>, and <code>events_supported</code> are stamped by
+Keycloak and rejected if the receiver tries to supply them. Multi-stream per receiver is not supported in
+this release, a second <code>POST /streams</code> returns <code>409 Conflict</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_stream_status_transitions"><a class="anchor" href="#_stream_status_transitions"></a>Stream status transitions</h3>
+<div class="paragraph">
+<p>The stream has three statuses, transitioned via <code>POST /streams/status</code> (receiver-driven) or the admin
+<strong>Stream</strong> sub-tab:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Status</th>
+<th class="tableblock halign-left valign-top">Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default. Events flow through the dispatcher to the outbox and are delivered.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>paused</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">New events are enqueued as <code>HELD</code> instead of being delivered. Existing pending events transition to <code>HELD</code>.
+Re-enabling the stream releases held events back to delivery.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>disabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All pending and held events for this stream are discarded per the SSF specification&#8217;s MUST-NOT-hold rule.
+Re-enabling starts from an empty queue.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>A <code>stream-updated</code> SET is dispatched on every status transition, including auto-pauses triggered by the
+inactivity timeout.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verification"><a class="anchor" href="#_verification"></a>Verification</h3>
+<div class="paragraph">
+<p>A verification SET (containing only an opaque <code>sub_id = stream_id</code>) can be triggered:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>By the receiver via <code>POST /realms/{realm}/ssf/transmitter/verify</code>, rate-limited per receiver via the
+<code>min_verification_interval</code> setting; over-frequent calls receive <code>429 Too Many Requests</code>.</p>
+</li>
+<li>
+<p>By an administrator via the <strong>Verify</strong> button on the <strong>Stream</strong> sub-tab, bypasses the rate limit.</p>
+</li>
+<li>
+<p>Automatically by the transmitter shortly after stream creation.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="managed-by"><a class="anchor" href="#managed-by"></a>Receiver-managed vs. Keycloak-managed streams</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Every stream is marked at creation time with a <strong>ManagedBy</strong> attribute that records which surface originally
+registered it:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>RECEIVER</strong> the stream was registered through the receiver-facing <code>POST /streams</code> endpoint. The receiver
+client is the conceptual owner of the configuration; the admin UI flags admin edits as overrides. This is
+also the implicit value for streams that pre-date the introduction of the marker.</p>
+</li>
+<li>
+<p><strong>KEYCLOAK</strong> the stream was registered through the admin-facing
+<code>POST /admin/realms/{realm}/ssf/clients/{clientId}/stream</code> endpoint, driven by the <strong>Stream</strong> sub-tab in the
+admin console. The receiver never called the SSF management endpoints; the operator drives the stream lifecycle.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The marker is purely informational. Both modes accept both admin-driven and receiver-driven updates; the
+dispatcher gate does not consider it. The value is set at stream creation and is immutable thereafter, it
+exists so the admin UI can render which surface conceptually owns the configuration and warn operators before
+they overwrite a receiver-managed stream.</p>
+</div>
+<div class="paragraph">
+<p>This distinction matters in practice for two scenarios:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Pre-provisioned integrations</strong>, an operator can configure the receiver&#8217;s stream completely from the admin UI
+before the receiver software is even running, and the receiver picks up the existing stream via
+<code>GET /streams</code> once it comes online. These streams are marked <code>KEYCLOAK</code>.</p>
+</li>
+<li>
+<p><strong>Self-service receivers</strong>, a receiver application registers and updates its own stream via the SSF spec
+endpoints. These streams are marked <code>RECEIVER</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_subjects"><a class="anchor" href="#_configuring_subjects"></a>Configuring subjects</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Not every Keycloak user event is interesting to every receiver. The transmitter applies a <strong>subject-selection
+gate</strong> before signing and enqueueing a SET: for each stream it decides whether the user that the event is about
+should produce a notification.</p>
+</div>
+<div class="paragraph">
+<p>The gate combines a transmitter-wide default with per-user and per-organization overrides.</p>
+</div>
+<div class="sect2">
+<h3 id="_default_subscription_policy"><a class="anchor" href="#_default_subscription_policy"></a>Default subscription policy</h3>
+<div class="paragraph">
+<p>The <code>default_subjects</code> setting, realm-wide on the transmitter, optionally overridden per receiver, which controls
+the default outcome:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ALL</code>: automatic delivery. Every user in the realm is an implicit subject for every receiver, unless an
+explicit override says otherwise.</p>
+</li>
+<li>
+<p><code>NONE</code>: opt-in delivery. A user is <strong>not</strong> a subject for any receiver unless explicitly subscribed.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_subject_management_endpoints"><a class="anchor" href="#_subject_management_endpoints"></a>Subject management endpoints</h3>
+<div class="paragraph">
+<p>Receivers manage their own subject list via SSF §8.1.3:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>POST /realms/{realm}/ssf/transmitter/subjects/add
+POST /realms/{realm}/ssf/transmitter/subjects/remove</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For privacy, both endpoints respond with their normal success status, <code>200 OK</code> for add and <code>204 No Content</code> for
+remove, even when the supplied subject does not resolve to an existing user, so they do not act as an existence
+oracle for the realm&#8217;s user store.</p>
+</div>
+<div class="paragraph">
+<p>Administrators can manage subjects from the <strong>Subjects</strong> sub-tab in the admin console. The sub-tab also exposes
+an <strong>ignore</strong> operation that explicitly excludes a subject (distinct from removing them from the subscription
+list), and a <strong>check</strong> action that surfaces what the gate would decide for a given user without emitting an event.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_synthetic_event_emitter"><a class="anchor" href="#_synthetic_event_emitter"></a>Synthetic event emitter</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Some security signals do not originate inside Keycloak: an LDAP password change against a federated
+directory, a device-compliance change from an MDM, a fraud signal from a risk engine. The synthetic event emitter
+lets an authorized caller produce an SSF event over REST as if Keycloak had observed it. Receivers see a
+normal signed SET on the wire; they cannot tell whether the signal came from a native event or from a synthetic
+emit.</p>
+</div>
+<div class="paragraph">
+<p>Two authorized call paths exist:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Administrator emit</strong>&#8201;&#8212;&#8201;callers with permission to manage the receiver client may emit any registered event
+type via the <strong>Emit Events</strong> sub-tab in the admin console, or via
+<code>POST /admin/realms/{realm}/ssf/clients/{clientId}/events/emit</code>.</p>
+</li>
+<li>
+<p><strong>Trusted-emitter service account</strong>&#8201;&#8212;&#8201;with <code>ssf.allowEmitEvents=true</code> and <code>ssf.emitEventsRole=&lt;role&gt;</code> set on
+the receiver, an external system can post events to the same endpoint using its own OAuth service-account
+credentials, provided the service account holds the configured role.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Stream-internal lifecycle event types (<code>stream-verification</code>, <code>stream-updated</code>) cannot be emitted, as they are
+reserved to the transmitter so external callers cannot forge transmitter behaviour towards a receiver.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_specifications"><a class="anchor" href="#_specifications"></a>Specifications</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak SSF Transmitter targets conformance with:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://openid.net/specs/openid-sharedsignals-framework-1_0-final.html">OpenID Shared Signals Framework 1.0 (Final)</a>&#8201;&#8212;&#8201;stream / subject management, verification, delivery negotiation, metadata.</p>
+</li>
+<li>
+<p><a href="https://www.rfc-editor.org/rfc/rfc8417">RFC 8417</a> Security Event Tokens (SETs).</p>
+</li>
+<li>
+<p><a href="https://www.rfc-editor.org/rfc/rfc8935">RFC 8935</a> SET delivery via HTTP PUSH.</p>
+</li>
+<li>
+<p><a href="https://www.rfc-editor.org/rfc/rfc8936">RFC 8936</a> SET delivery via HTTP POLL.</p>
+</li>
+<li>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9493">RFC 9493</a> Subject Identifiers (<code>iss_sub</code>, <code>email</code>, <code>opaque</code>,
+<code>complex</code>).</p>
+</li>
+<li>
+<p><a href="https://openid.net/specs/openid-caep-interoperability-profile-1_0.html">CAEP Interoperability Profile 1.0 (draft)</a>&#8201;&#8212;&#8201;<code>session-revoked</code> and <code>credential-change</code> event types.</p>
+</li>
+<li>
+<p>Legacy SSE CAEP profile for Apple Business Manager interop (gated behind the <code>sse-caep-enabled</code> SPI flag).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/securing-apps/ssf-support.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
