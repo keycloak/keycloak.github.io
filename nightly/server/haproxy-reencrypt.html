@@ -112,7 +112,7 @@ HAProxy operates at Layer 7 (HTTP). Unlike passthrough, end-to-end TLS encryptio
 <p>For a general overview of TLS re-encrypt and how it compares to passthrough, see the <a href="https://www.keycloak.org/nightly/server/reverseproxy">Configuring a reverse proxy</a> guide.</p>
 </div>
 <div class="paragraph">
-<p>A ready-to-run example with Docker Compose is available in the <a href="https://github.com/keycloak/keycloak-quickstarts/tree/main/proxy/haproxy/reencrypt">quickstart repository</a>.</p>
+<p>A ready-to-run example with a Compose file is available in the <a href="https://github.com/keycloak/keycloak-quickstarts/tree/main/proxy/haproxy/reencrypt">quickstart repository</a>.</p>
 </div>
 </div>
 </div>
@@ -340,6 +340,107 @@ See the <a href="https://www.keycloak.org/nightly/server/mutual-tls">Configuring
 </div>
 <div class="paragraph">
 <p>See <a href="https://www.keycloak.org/nightly/server/reverseproxy">Configuring a reverse proxy</a> for more details.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="admin-dedicated-port-haproxy-reencrypt"><a class="anchor" href="#admin-dedicated-port-haproxy-reencrypt"></a>Optional: Admin UI and Admin API on a dedicated hostname and port</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the Admin UI and Admin API are served on the same port as the public endpoints, protected only by the source IP filtering (<code>is_allowed_src</code>).
+For stricter network-level isolation, you can move them to a dedicated hostname and port so they can be independently firewalled.</p>
+</div>
+<div class="paragraph">
+<p>Because the admin port and the public port share the same HAProxy frontend, the header filtering and client certificate forwarding described above apply to both automatically.</p>
+</div>
+<div class="paragraph">
+<p>To enable this, add the configurations outlined in the following subsections.</p>
+</div>
+<div class="sect2">
+<h3 id="_keycloak_configuration"><a class="anchor" href="#_keycloak_configuration"></a>Keycloak configuration</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--hostname-admin=https://...</code></dt>
+<dd>
+<p>Add the full admin URL with its hostname and the port (if it is a non-standard port) to the Keycloak configuration.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Setting <code>hostname-admin</code> only changes the URLs Keycloak generates for the Admin Console and Admin API.
+It does not stop the Admin API from also answering on the public frontend URL — restricting administration access to the dedicated port must be enforced at the reverse proxy, which is what the rules below do.
+See the <a href="https://www.keycloak.org/nightly/server/hostname">Configuring the hostname (v2)</a> guide.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_haproxy_configuration"><a class="anchor" href="#_haproxy_configuration"></a>HAProxy configuration</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">TLS certificate</dt>
+<dd>
+<p>If you choose to have a different hostname for the admin API, update your certificate to include the admin hostname as an additional Subject Alternative Name in the certificate, or issue a separate certificate.</p>
+</dd>
+<dt class="hdlist1"><code>haproxy.cfg</code></dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Add the second <code>bind *:8444 &#8230;&#8203;</code>, which makes the frontend also listen on the admin port.
+If you choose a different port, replace <code>8444</code> in the examples below with your chosen port.</p>
+</li>
+<li>
+<p>Replace the default <code>http-request deny unless is_public_path or is_allowed_src</code> rule with the three isolation rules:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-haproxy" data-lang="haproxy">acl is_admin_port dst_port 8444
+http-request deny if !is_admin_port !is_public_path
+http-request deny if is_admin_port !is_allowed_src</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>These rules route by destination port:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Public port:</strong> only the public paths (<code>/realms/</code>, <code>/resources/</code>, <code>/.well-known/</code>) are served; any other path, including the Admin Console and Admin API, is denied.</p>
+</li>
+<li>
+<p><strong>Admin port:</strong> all paths are served, but only to the allowed source IP ranges.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>With this setup, any request to an admin path on the public port is denied with an HTTP 403 response.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>

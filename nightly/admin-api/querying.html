@@ -1,0 +1,557 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Admin API v2: Filtering and Projection - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Admin API v2: Filtering and Projection">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Filter and project client resources using the Admin API v2 query syntax.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/admin-api/querying">
+<meta property="og:url" content="https://www.keycloak.org/nightly/admin-api/querying">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#admin-api">Admin API</a></li>
+                        <li class="breadcrumb-item active">Admin API v2: Filtering and Projection</li>
+                    </ol>
+                </nav>
+            </div>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/admin-api/querying">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/admin-api/querying" selected="selected">Nightly</option>
+                        <option value="https://www.keycloak.org/admin-api/querying" >26.6.3</option>
+                    </select>
+                </div>
+
+                <h1>Admin API v2: Filtering and Projection</h1>
+                    <span class="text-muted">Filter and project client resources using the Admin API v2 query syntax.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This feature is <strong>experimental</strong> and may introduce breaking changes in future versions of Keycloak. Do not use this feature in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The Admin API v2 supports filtering clients using the <code>q</code> query parameter.
+The filter syntax is a subset of the <a href="https://www.keycloak.org/docs/latest/server_admin/#_scim_filtering_resources">SCIM filter syntax</a> defined in <a href="https://datatracker.ietf.org/doc/html/rfc7644#section-3.4.2.2">RFC 7644, Section 3.4.2.2</a>. All string comparisons are case-sensitive.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>GET /admin/api/{realmName}/clients/v2?q=&lt;filter-expression&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>String values must be enclosed in double quotes.
+Boolean values are unquoted.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>GET /admin/api/{realmName}/clients/v2?q=clientId eq "my-app"
+GET /admin/api/{realmName}/clients/v2?q=enabled eq true</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_supported_operators"><a class="anchor" href="#_supported_operators"></a>Supported operators</h3>
+<div class="paragraph">
+<p>The following comparison operators are supported for client filtering:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 33.3333%;">
+<col style="width: 50.0001%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Operator</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+<th class="tableblock halign-left valign-top">Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>eq</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Equal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>clientId eq "my-app"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ne</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not equal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>protocol ne "saml"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>co</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Contains (substring)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>description co "oauth"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>sw</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Starts with</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>clientId sw "query-"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ew</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ends with</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>clientId ew "-app"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pr</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Present (field is not null)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>description pr</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Logical operators (<code>and</code>, <code>or</code>, <code>not</code>) and parentheses for grouping are supported.
+For the full syntax reference, including operator precedence and detailed examples, see the <a href="https://www.keycloak.org/docs/latest/server_admin/#_scim_filtering_resources">SCIM filtering</a> guide in the Server Administration Guide.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>gt</code>, <code>ge</code>, <code>lt</code>, and <code>le</code> operators supported by the SCIM API are not available for client filtering.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_queryable_fields"><a class="anchor" href="#_queryable_fields"></a>Queryable fields</h3>
+<div class="paragraph">
+<p>Only registered fields can be used in filter expressions.
+Using an unknown field returns HTTP 400, unlike the SCIM API which silently ignores unrecognized attributes.</p>
+</div>
+<div class="sect3">
+<h4 id="_common_fields_all_client_types"><a class="anchor" href="#_common_fields_all_client_types"></a>Common fields (all client types)</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>uuid</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Internal unique identifier</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>clientId</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client identifier</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>displayName</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Display name shown in the UI</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>description</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client description</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the client is enabled</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>protocol</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Protocol type (<code>openid-connect</code> or <code>saml</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>appUrl</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Application base URL</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>redirectUris</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set&lt;String&gt;</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Registered redirect URIs</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>roles</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set&lt;String&gt;</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client role names</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_oidc_specific_fields"><a class="anchor" href="#_oidc_specific_fields"></a>OIDC-specific fields</h4>
+<div class="paragraph">
+<p>These fields are available only for <code>openid-connect</code> clients.
+They resolve to <code>null</code> for SAML clients, so value-based comparisons like <code>eq</code>, <code>co</code>, or <code>sw</code> will not match.
+However, <code>eq null</code> and <code>not &#8230;&#8203; pr</code> will match because the field is genuinely absent.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>loginFlows</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set&lt;String&gt;</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enabled login flows (<code>STANDARD</code>, <code>IMPLICIT</code>, <code>DIRECT_GRANT</code>, <code>SERVICE_ACCOUNT</code>, <code>TOKEN_EXCHANGE</code>, <code>DEVICE</code>, <code>CIBA</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>auth.method</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client authentication method (e.g. <code>client-secret</code>, <code>client-secret-jwt</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>webOrigins</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set&lt;String&gt;</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allowed web origins</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>serviceAccountRoles</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set&lt;String&gt;</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Roles assigned to the service account</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_saml_specific_fields"><a class="anchor" href="#_saml_specific_fields"></a>SAML-specific fields</h4>
+<div class="paragraph">
+<p>These fields are available only for <code>saml</code> clients.
+They resolve to <code>null</code> for OIDC clients, so value-based comparisons like <code>eq</code>, <code>co</code>, or <code>sw</code> will not match.
+However, <code>eq null</code> and <code>not &#8230;&#8203; pr</code> will match because the field is genuinely absent.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>nameIdFormat</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Name ID format (<code>username</code>, <code>email</code>, <code>persistent</code>, <code>transient</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>forceNameIdFormat</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Force the specified Name ID format</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>includeAuthnStatement</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Include AuthnStatement in the response</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>signDocuments</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sign SAML documents on the server side</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>signAssertions</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sign SAML assertions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>clientSignatureRequired</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Require the client to sign requests</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>signatureAlgorithm</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Signature algorithm (e.g. <code>RSA_SHA256</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>signatureCanonicalizationMethod</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Canonicalization method for XML signatures</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>signingCertificate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">X.509 certificate for signing (PEM format, without headers)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>forcePostBinding</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Force POST binding for responses</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>frontChannelLogout</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Use front-channel logout (browser redirect)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>allowEcpFlow</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allow Enhanced Client or Proxy flow</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_collection_field_matching"><a class="anchor" href="#_collection_field_matching"></a>Collection field matching</h3>
+<div class="paragraph">
+<p>For fields that hold a collection of values (<code>redirectUris</code>, <code>roles</code>, <code>loginFlows</code>, <code>webOrigins</code>, <code>serviceAccountRoles</code>), the <code>eq</code>, <code>co</code>, <code>sw</code>, and <code>ew</code> operators match if <strong>any</strong> element in the collection satisfies the condition:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>roles eq "admin"</code> - matches clients that have a role named <code>admin</code></p>
+</li>
+<li>
+<p><code>redirectUris co "example.com"</code> - matches clients with any redirect URI containing <code>example.com</code></p>
+</li>
+<li>
+<p><code>loginFlows eq "SERVICE_ACCOUNT"</code> - matches OIDC clients with the service account flow enabled</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The <code>ne</code> operator is the logical negation of <code>eq</code>: it matches if <strong>no</strong> element in the collection equals the value.
+For example, <code>roles ne "admin"</code> matches clients that do not have a role named <code>admin</code>.</p>
+</div>
+<div class="paragraph">
+<p>To match clients that have multiple values, combine conditions with <code>and</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>q=roles eq "admin" and roles eq "user"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_examples"><a class="anchor" href="#_examples"></a>Examples</h3>
+<div class="paragraph">
+<p>Find all enabled OIDC clients:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>GET /admin/api/{realmName}/clients/v2?q=protocol eq "openid-connect" and enabled eq true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Find clients with a description:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>GET /admin/api/{realmName}/clients/v2?q=description pr</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Find OIDC clients using client-secret authentication:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>GET /admin/api/{realmName}/clients/v2?q=auth.method eq "client-secret"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Find SAML clients with document signing enabled:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>GET /admin/api/{realmName}/clients/v2?q=signDocuments eq true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Find clients by display name prefix, excluding a specific protocol:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>GET /admin/api/{realmName}/clients/v2?q=displayName sw "My" and protocol ne "saml"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_projection"><a class="anchor" href="#_projection"></a>Projection</h3>
+<div class="paragraph">
+<p>Use the <code>fields</code> query parameter to include only specific fields in the response.
+If omitted, all fields are returned.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>GET /admin/api/{realmName}/clients/v2?fields=clientId,enabled,protocol</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Filtering and projection can be combined.
+The filter evaluates against the full representation before projection is applied, so filtered fields do not need to be included in the projection:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>GET /admin/api/{realmName}/clients/v2?q=enabled eq true&amp;fields=clientId,displayName</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_error_handling"><a class="anchor" href="#_error_handling"></a>Error handling</h3>
+<div class="paragraph">
+<p>The server returns HTTP 400 with a descriptive error message when:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The filter expression has a syntax error.</p>
+</li>
+<li>
+<p>The filter references an unknown field.</p>
+</li>
+<li>
+<p>The filter uses an unsupported operator (e.g. <code>gt</code>, <code>ge</code>, <code>lt</code>, <code>le</code>).</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "error": "Unknown query field: unknownField"
+}</code></pre>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/admin-api/querying.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

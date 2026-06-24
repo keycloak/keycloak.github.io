@@ -113,7 +113,7 @@ Unlike passthrough, end-to-end TLS encryption between client and Keycloak is not
 <p>For a general overview of TLS re-encrypt and how it compares to passthrough, see the <a href="https://www.keycloak.org/nightly/server/reverseproxy">Configuring a reverse proxy</a> guide.</p>
 </div>
 <div class="paragraph">
-<p>A ready-to-run example with Docker Compose is available in the <a href="https://github.com/keycloak/keycloak-quickstarts/tree/main/proxy/traefik/reencrypt">quickstart repository</a>.</p>
+<p>A ready-to-run example with a Compose file is available in the <a href="https://github.com/keycloak/keycloak-quickstarts/tree/main/proxy/traefik/reencrypt">quickstart repository</a>.</p>
 </div>
 </div>
 </div>
@@ -378,6 +378,121 @@ See the <a href="https://www.keycloak.org/nightly/server/mutual-tls">Configuring
 This allows Traefik to perform HTTPS health checks against the management port (<code>9000</code>) without needing to present the mTLS client certificate.</p>
 </dd>
 </dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="admin-dedicated-port-traefik-reencrypt"><a class="anchor" href="#admin-dedicated-port-traefik-reencrypt"></a>Optional: Admin UI and Admin API on a dedicated hostname and port</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the Admin UI and Admin API are served on the same port as the public endpoints, protected only by the <code>ip-allowlist</code> middleware.
+For stricter network-level isolation, you can move them to a dedicated hostname and port so they can be independently firewalled.</p>
+</div>
+<div class="paragraph">
+<p>To enable this, add the configurations outlined in the following subsections.</p>
+</div>
+<div class="sect2">
+<h3 id="_keycloak_configuration"><a class="anchor" href="#_keycloak_configuration"></a>Keycloak configuration</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--hostname-admin=https://...</code></dt>
+<dd>
+<p>Add the full admin URL with its hostname and the port (if it is a non-standard port) to the Keycloak configuration.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Setting <code>hostname-admin</code> only changes the URLs Keycloak generates for the Admin Console and Admin API.
+It does not stop the Admin API from also answering on the public frontend URL — restricting administration access to the dedicated port must be enforced at the reverse proxy, which is what the rules below do.
+See the <a href="https://www.keycloak.org/nightly/server/hostname">Configuring the hostname (v2)</a> guide.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_traefik_configuration"><a class="anchor" href="#_traefik_configuration"></a>Traefik configuration</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">TLS certificate</dt>
+<dd>
+<p>If you choose to have a different hostname for the admin API, update your certificate to include the admin hostname as an additional Subject Alternative Name in the certificate, or issue a separate certificate.</p>
+</dd>
+<dt class="hdlist1"><code>traefik.yaml</code></dt>
+<dd>
+<p>Add the <code>keycloak-admin</code> entrypoint to create a second Traefik listener on port 8444:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">entryPoints:
+  keycloak-admin:
+    ...
+    address: ":8444" <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Replace with a port of your choice, matching the port configured as admin URL in Keycloak.</td>
+</tr>
+</table>
+</div>
+</dd>
+<dt class="hdlist1"><code>keycloak.yaml</code></dt>
+<dd>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Remove the <code>keycloak-internal</code> router as it is no longer needed. The admin paths are now handled exclusively by the dedicated <code>keycloak-admin</code> router.
+Leaving both enabled would cause the <code>keycloak-internal</code> router to match admin paths on the original endpoint as well.</p>
+</li>
+<li>
+<p>Add the <code>keycloak-admin</code> router, which routes all traffic on the <code>keycloak-admin</code> entrypoint to the <code>keycloak</code> service, restricted to the <code>ip-allowlist</code>.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">  routers:
+    ...
+    keycloak-admin:
+      entryPoints:
+        - keycloak-admin
+      rule: "PathPrefix(`/`)"
+      middlewares:
+        - filter-headers
+        - pass-client-cert
+        - ip-allowlist
+      tls: { }
+      service: keycloak</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>With this setup, any request to an admin path on the public port (8443 in our example) will fall through to the <code>keycloak-public</code> router, which only matches <code>/realms/</code>, <code>/resources/</code>, and <code>/.well-known/</code>.
+Admin paths on this port will return a 404.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>
