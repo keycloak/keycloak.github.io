@@ -586,7 +586,7 @@ The specification states that the <code>client_id</code> URL SHOULD NOT include 
 <div class="sect2">
 <h3 id="_visual_studio_code_desktop_integration"><a class="anchor" href="#_visual_studio_code_desktop_integration"></a>Visual Studio Code desktop integration</h3>
 <div class="paragraph">
-<p><a href="https://code.visualstudio.com/">Microsoft Visual Studio Code</a> (VS Code) desktop is an MCP client that supports OAuth Client ID Metadata Document. When VS Code desktop connects to an MCP server that requires authorization, it sends an authorization request with a <code>client_id</code> parameter that is an <code>https</code> URL hosted on <code>vscode.dev</code> (e.g., <code>https://vscode.dev/mcp-client</code>). Keycloak fetches the Client ID Metadata Document from this URL and uses the metadata to process the request.</p>
+<p><a href="https://code.visualstudio.com/">Microsoft Visual Studio Code</a> (VS Code) desktop is an MCP client that supports OAuth Client ID Metadata Document. When VS Code desktop connects to an MCP server that requires authorization, it sends an authorization request with a <code>client_id</code> parameter that is an <code>https</code> URL hosted on <code>vscode.dev</code> (e.g., <code>https://vscode.dev/oauth/client-metadata.json</code>). Keycloak fetches the Client ID Metadata Document from this URL and uses the metadata to process the request.</p>
 </div>
 <div class="paragraph">
 <p>VS Code desktop uses localhost callbacks for the OAuth redirect. It starts a local HTTP server and uses a redirect URI such as <code>http://127.0.0.1:&lt;port&gt;/callback</code>. Because the redirect URI is on <code>127.0.0.1</code> rather than on the <code>vscode.dev</code> domain, the <strong>Restrict same domain</strong> option in the client profile executor must be set to <code>OFF</code>.</p>
@@ -641,7 +641,7 @@ VS Code desktop is a public client that uses PKCE (Proof Key for Code Exchange) 
 <p><strong>Allow http scheme</strong>: <code>OFF</code></p>
 </li>
 <li>
-<p><strong>Trusted domains</strong>: <code>vscode.dev</code>, <code>127.0.0.1</code></p>
+<p><strong>Trusted domains</strong>: <code>vscode.dev</code>, <code>127.0.0.1</code>, <code>code.visualstudio.com</code> (This option is applied not only to the <code>client_id</code> URL but also to the URL-valued properties of the Client ID Metadata Document, such as <code>client_uri</code>, <code>logo_uri</code>, <code>tos_uri</code>, <code>policy_uri</code>, and <code>jwks_uri</code>. VS Code desktop&#8217;s Client ID Metadata Document includes a <code>logo_uri</code> property whose value is a URL on <code>code.visualstudio.com</code>. Therefore, this domain must be included in the trusted domains list.)</p>
 </li>
 <li>
 <p><strong>Restrict same domain</strong>: <code>OFF</code> (VS Code desktop uses a localhost redirect URI such as <code>http://127.0.0.1:&lt;port&gt;/callback</code>, which is not on the same domain as <code>vscode.dev</code>)</p>
@@ -700,6 +700,126 @@ VS Code desktop is a public client that uses PKCE (Proof Key for Code Exchange) 
 </div>
 <div class="paragraph">
 <p>With this configuration, when VS Code desktop sends an authorization request, Keycloak recognizes the <code>client_id</code> as a URL on <code>vscode.dev</code>, fetches the Client ID Metadata Document, and uses a localhost callback to complete the OAuth flow.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_claude_code_desktop_integration"><a class="anchor" href="#_claude_code_desktop_integration"></a>Claude Code desktop integration</h3>
+<div class="paragraph">
+<p><a href="https://claude.com/product/claude-code/">Claude Code</a> desktop is an MCP client that supports OAuth Client ID Metadata Document. When Claude Code desktop connects to an MCP server that requires authorization, it sends an authorization request with a <code>client_id</code> parameter that is an <code>https</code> URL hosted on <code>claude.ai</code> (e.g., <code>https://claude.ai/oauth/claude-code-client-metadata</code>). Keycloak fetches the Client ID Metadata Document from this URL and uses the metadata to process the request.</p>
+</div>
+<div class="paragraph">
+<p>Claude Code desktop uses localhost callbacks for the OAuth redirect. It starts a local HTTP server and uses a redirect URI such as <code>http://localhost:&lt;port&gt;/callback</code>. Because the redirect URI is on <code>localhost</code> rather than on the <code>claude.ai</code> domain, the <strong>Restrict same domain</strong> option in the client profile executor must be set to <code>OFF</code>.</p>
+</div>
+<div class="paragraph">
+<p>To configure Keycloak for Claude Code desktop&#8217;s MCP client, follow the steps below.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Claude Code desktop is a public client that uses PKCE (Proof Key for Code Exchange) for OAuth. It does not use a client secret.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_starting_keycloak_with_the_cimd_feature_2"><a class="anchor" href="#_starting_keycloak_with_the_cimd_feature_2"></a>Starting Keycloak with the CIMD feature</h4>
+<div class="paragraph">
+<p>Start Keycloak with the <code>cimd</code> feature flag enabled:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --features=cimd</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_setting_up_the_client_profile_for_claude_code_desktop"><a class="anchor" href="#_setting_up_the_client_profile_for_claude_code_desktop"></a>Setting up the client profile for Claude Code desktop</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Profiles</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client profile</strong>.</p>
+</li>
+<li>
+<p>Give the profile a name such as <code>claude-code-cimd-profile</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add executor</strong> and select <code>client-id-metadata-document</code> from the list.</p>
+</li>
+<li>
+<p>Configure the executor with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Allow http scheme</strong>: <code>OFF</code></p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: <code>claude.ai</code>, <code>localhost</code>, <code>127.0.0.1</code></p>
+</li>
+<li>
+<p><strong>Restrict same domain</strong>: <code>OFF</code> (Claude Code desktop uses a localhost redirect URI such as <code>http://localhost:&lt;port&gt;/callback</code>, which is not on the same domain as <code>claude.ai</code>)</p>
+</li>
+<li>
+<p><strong>Only Allow Confidential Client</strong>: <code>OFF</code> (Claude Code desktop is a public client)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_setting_up_the_client_policy_for_claude_code_desktop"><a class="anchor" href="#_setting_up_the_client_policy_for_claude_code_desktop"></a>Setting up the client policy for Claude Code desktop</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Policies</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client policy</strong>.</p>
+</li>
+<li>
+<p>Give the policy a name such as <code>claude-code-cimd-policy</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Conditions</strong>, click <strong>Add condition</strong> and select <code>client-id-uri</code> from the list.</p>
+</li>
+<li>
+<p>Configure the condition with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>URI scheme</strong>: <code>https</code></p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: <code>claude.ai</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Associated client profiles</strong>, add the <code>claude-code-cimd-profile</code> profile created in the previous step.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>With this configuration, when Claude Code desktop sends an authorization request, Keycloak recognizes the <code>client_id</code> as a URL on <code>claude.ai</code>, fetches the Client ID Metadata Document, and uses a localhost callback to complete the OAuth flow.</p>
 </div>
 </div>
 </div>

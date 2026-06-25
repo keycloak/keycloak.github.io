@@ -1,0 +1,276 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Troubleshooting performance issues using JVM thread dumps - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Troubleshooting performance issues using JVM thread dumps">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Capture JVM thread dumps of a Keycloak server to diagnose performance issues">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/observability/thread-dumps">
+<meta property="og:url" content="https://www.keycloak.org/nightly/observability/thread-dumps">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <a class="nav-link d-none d-sm-block d-md-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="fa fa-bars fa-lg px-1 py-2"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav flex-row flex-wrap bd-navbar-nav pt-2 py-md-0">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#observability">Observability</a></li>
+                        <li class="breadcrumb-item active">Troubleshooting performance issues using JVM thread dumps</li>
+                    </ol>
+                </nav>
+            </div>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/observability/thread-dumps">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/observability/thread-dumps" selected="selected">Nightly</option>
+                        <option value="https://www.keycloak.org/observability/thread-dumps" >26.6.3</option>
+                    </select>
+                </div>
+
+                <h1>Troubleshooting performance issues using JVM thread dumps</h1>
+                    <span class="text-muted">Capture JVM thread dumps of a Keycloak server to diagnose performance issues</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div class="sect1">
+<h2 id="_what_is_a_thread_dump"><a class="anchor" href="#_what_is_a_thread_dump"></a>What is a thread dump?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A JVM thread dump is a snapshot of all active threads in the JVM at a specific point in time.</p>
+</div>
+<div class="paragraph">
+<p>Thread dumps are useful for diagnosing issues such as thread contention, deadlocks, CPU spikes, or stuck I/O operations.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_to_capture_a_jvm_thread_dump"><a class="anchor" href="#_how_to_capture_a_jvm_thread_dump"></a>How to capture a JVM thread dump</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are several ways to capture a thread dump. This guide uses <code>jcmd</code> as it provides the most straightforward command-line experience.</p>
+</div>
+<div class="paragraph">
+<p>The <code>jcmd</code> tool sends diagnostic commands to a running JVM. There are two commands relevant to capturing thread dumps: <code>Thread.print</code> and <code>Thread.dump_to_file</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>Thread.print</code> command lacks detailed information about virtual threads.
+The <code>Thread.dump_to_file</code> command lacks information about locks and object monitors on JDK versions prior to JDK 25.
+It also omits some JVM-internal and OS-level information that <code>Thread.print</code> includes.</p>
+</div>
+<div class="paragraph">
+<p>To form a comprehensive picture of the JVM state, create thread dumps using both the <code>Thread.print</code> and the <code>Thread.dump_to_file</code> commands, and provide them to an engineer for analysis.</p>
+</div>
+<div class="sect2">
+<h3 id="_using_the_thread_print_command"><a class="anchor" href="#_using_the_thread_print_command"></a>Using the <code>Thread.print</code> command</h3>
+<div class="paragraph">
+<p>The following command prints a thread dump to the standard output.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd &lt;PID&gt; Thread.print -l <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>-l</code> option enables printing of additional information about locks.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_the_thread_dump_to_file_command"><a class="anchor" href="#_using_the_thread_dump_to_file_command"></a>Using the <code>Thread.dump_to_file</code> command</h3>
+<div class="paragraph">
+<p>The following command writes a thread dump to a file in plain-text format.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd &lt;PID&gt; Thread.dump_to_file thread_dump.txt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The following command writes a thread dump to a file in JSON format.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd &lt;PID&gt; Thread.dump_to_file -format=json thread_dump.json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Compared with the plain-text format, the JSON output contains additional information about the thread container hierarchy.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If the filename argument is not an absolute path, the thread dump will be created in the current working directory of the target process.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Running the <code>jcmd</code> command without arguments lists the Java processes running on the system and their PIDs.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>242551 io.quarkus.bootstrap.runner.QuarkusEntryPoint start ... <i class="conum" data-value="1"></i><b>(1)</b>
+268778 jdk.jcmd/sun.tools.jcmd.JCmd</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Assuming Keycloak is the only Quarkus-based application running on the system, its PID in this example would be <code>242551</code>.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following script demonstrates simple PID auto-detection:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>#!/bin/bash -e
+PID=$(jcmd | grep -m1 QuarkusEntryPoint | awk '{print $1}')
+if [ -z "$PID" ]; then
+  echo "Process not found."
+  exit 1
+fi
+jcmd "$PID" Thread.print -l &gt; thread_dump_print.txt
+jcmd "$PID" Thread.dump_to_file "$PWD/thread_dump_to_file.txt"</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_collecting_multiple_samples"><a class="anchor" href="#_collecting_multiple_samples"></a>Collecting multiple samples</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Because a single thread dump captures only one moment in time, it is recommended to capture multiple thread dumps over a short period&#8201;&#8212;&#8201;for example, three to four samples spaced one to two seconds apart.
+This allows you to see which threads are blocked and which are making progress.</p>
+</div>
+<div class="paragraph">
+<p>For example, assuming the <code>PID</code> variable is set, the following script captures four thread dumps two seconds apart:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">for i in {1..4}; do
+  jcmd "$PID" Thread.print -l &gt; "thread_dump_print_${i}.txt"
+  jcmd "$PID" Thread.dump_to_file "$PWD/thread_dump_to_file_${i}.txt"
+  sleep 2
+done</code></pre>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/thread-dumps.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
