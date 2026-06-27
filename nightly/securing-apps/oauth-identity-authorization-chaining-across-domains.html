@@ -102,7 +102,20 @@ gtag('config', 'G-0J2P9316N6');
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Applications can require access to resources that are distributed across multiple trust domains where each trust domain has its own OAuth 2.0 authorization server. A request may transverse multiple resource servers in multiple trust domains before completing. The <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-identity-chaining/">OAuth Identity and Authorization Chaining Across Domains</a> is a draft specification that refers to this scenario as <strong>chaining</strong>. It defines a common pattern for combining <a href="https://datatracker.ietf.org/doc/html/rfc8693">OAuth 2.0 Token Exchange (RFC8693)</a> and the <a href="https://datatracker.ietf.org/doc/html/rfc7523">JWT Profile for OAuth 2.0 Client Authentication and Authorization Grants (RFC7523)</a> to access resources across multiple trust domains while preserving identity and authorization information.</p>
+<p>Applications can require access to resources that are distributed across multiple trust domains where each trust domain has its own OAuth 2.0 authorization server. A request may transverse multiple resource servers in multiple trust domains before completing.</p>
+</div>
+<div class="paragraph">
+<p>The <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-identity-chaining/">OAuth Identity and Authorization Chaining Across Domains</a> is a draft specification that refers to this scenario as <strong>chaining</strong>. It defines a common pattern for combining two standards:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://datatracker.ietf.org/doc/html/rfc8693">OAuth 2.0 Token Exchange (RFC8693)</a> to produce a JWT assertion targeted at the destination domain.</p>
+</li>
+<li>
+<p><a href="https://datatracker.ietf.org/doc/html/rfc7523">JWT Profile for OAuth 2.0 Client Authentication and Authorization Grants (RFC7523)</a> to convert the assertion into a valid access token in the destination domain.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>The following diagram illustrates the steps that the client in trust domain A needs to perform to access a protected resource in trust domain B.</p>
@@ -136,7 +149,17 @@ gtag('config', 'G-0J2P9316N6');
 </ol>
 </div>
 <div class="paragraph">
-<p>Keycloak currently provides standard Token Exchange (see <a href="https://www.keycloak.org/nightly/securing-apps/token-exchange#_standard-token-exchange">Configuring and using token exchange</a>) and JWT Authorization Grant (see <a href="https://www.keycloak.org/nightly/securing-apps/jwt-authorization-grant">JWT Authorization Grant</a>) as supported features. This way, Keycloak can implement OAuth Identity and Authorization Chaining Across Domains between two different realms or servers. For domain A, domain B is an audience that can be restricted via token exchange. For domain B, domain A is an Identity Provider that is used to validate the assertion.</p>
+<p>Keycloak can implement OAuth Identity and Authorization Chaining Across Domains between two different realms or servers by combining the following supported features:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Token Exchange</strong>: Used in domain A to produce a JWT assertion for domain B. Domain B is configured as an audience that can be restricted via token exchange. See <a href="https://www.keycloak.org/nightly/securing-apps/token-exchange#_standard-token-exchange">Configuring and using token exchange</a> for more information.</p>
+</li>
+<li>
+<p><strong>JWT Authorization Grant</strong>: Used in domain B to validate the assertion and issue an access token. Domain A is configured as an Identity Provider that is used to validate the assertion. See <a href="https://www.keycloak.org/nightly/securing-apps/jwt-authorization-grant">JWT Authorization Grant</a> for more information.</p>
+</li>
+</ul>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -153,16 +176,37 @@ OAuth Identity and Authorization Chaining Across Domains is still in draft, it i
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configuring_token_exchange_in_domaina_for_chaining"><a class="anchor" href="#_configuring_token_exchange_in_domaina_for_chaining"></a>Configuring Token Exchange in <code>domaina</code> for chaining</h2>
+<h2 id="_overview_of_the_complete_flow"><a class="anchor" href="#_overview_of_the_complete_flow"></a>Overview of the complete flow</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>In this sample configuration two realms, <code>domaina</code> and <code>domainb</code>, are used to represent the domains involved in the chaining diagram. This first chapter describes the steps done in <code>domaina</code>. With them, a client will be able to request a Token Exchange for <code>domainb</code>, and the resulting access token will be a valid assertion to be used for the JWT Authorization grant.</p>
+<p>To access resources in <code>domainb</code> from a client authenticated in <code>domaina</code>, you need to complete these three steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Obtain token1</strong>: Get an initial access token from <code>domaina</code> (via normal OAuth flow).</p>
+</li>
+<li>
+<p><strong>Token Exchange</strong>: Exchange token1 in <code>domaina</code> to get token2 (a JWT assertion for <code>domainb</code>).</p>
+</li>
+<li>
+<p><strong>JWT Authorization Grant</strong>: Present token2 to <code>domainb</code> to get token3 (the final access token for <code>domainb</code>).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_configure_token_exchange_in_domaina"><a class="anchor" href="#_step_1_configure_token_exchange_in_domaina"></a>Step 1: Configure Token Exchange in <code>domaina</code></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this sample configuration two realms, <code>domaina</code> and <code>domainb</code>, are used to represent the domains involved in the chaining diagram. This step configures <code>domaina</code> to enable a client to request a Token Exchange for <code>domainb</code>. The result will be a JWT assertion that can be used for JWT Authorization Grant in <code>domainb</code>.</p>
 </div>
 <div class="paragraph">
 <p>For more information about Standard Token Exchange, see <a href="https://www.keycloak.org/nightly/securing-apps/token-exchange#_standard-token-exchange">Configuring and using token exchange</a>.</p>
 </div>
 <div class="sect2">
-<h3 id="_create_a_client_that_represents_domainb"><a class="anchor" href="#_create_a_client_that_represents_domainb"></a>Create a client that represents <code>domainb</code></h3>
+<h3 id="_1_1_create_a_client_that_represents_domainb"><a class="anchor" href="#_1_1_create_a_client_that_represents_domainb"></a>1.1 Create a client that represents <code>domainb</code></h3>
 <div class="paragraph">
 <p>This client will also be the client configured in <code>domainb</code> for the identity provider access. Go to <strong>Clients</strong> and click <strong>Create Client</strong>.</p>
 </div>
@@ -193,7 +237,7 @@ OAuth Identity and Authorization Chaining Across Domains is still in draft, it i
 </div>
 </div>
 <div class="sect2">
-<h3 id="_create_a_client_scope_to_grant_access_to_domainb"><a class="anchor" href="#_create_a_client_scope_to_grant_access_to_domainb"></a>Create a client scope to grant access to <code>domainb</code></h3>
+<h3 id="_1_2_create_a_client_scope_to_grant_access_to_domainb"><a class="anchor" href="#_1_2_create_a_client_scope_to_grant_access_to_domainb"></a>1.2 Create a client scope to grant access to <code>domainb</code></h3>
 <div class="paragraph">
 <p>Create a client scope <code>access-domainb</code> to include the correct audience for the token when this scope is requested. An audience mapper for <code>domainb</code> will be added. In <strong>Client scopes</strong>, click <strong>Create client scope</strong>.</p>
 </div>
@@ -255,7 +299,7 @@ This example allows any user to request that client scope. Roles can be used to 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_create_a_client_to_perform_the_token_exchange"><a class="anchor" href="#_create_a_client_to_perform_the_token_exchange"></a>Create a client to perform the Token Exchange</h3>
+<h3 id="_1_3_create_a_client_to_perform_the_token_exchange"><a class="anchor" href="#_1_3_create_a_client_to_perform_the_token_exchange"></a>1.3 Create a client to perform the Token Exchange</h3>
 <div class="paragraph">
 <p>Create a confidential OpenID Connect client <code>clienta</code> with <strong>Standard flow</strong>, <strong>Direct access grants</strong> and <strong>Standard token exchange</strong> capability enabled.</p>
 </div>
@@ -292,13 +336,13 @@ This example allows any user to request that client scope. Roles can be used to 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_create_a_sample_user"><a class="anchor" href="#_create_a_sample_user"></a>Create a sample user</h3>
+<h3 id="_1_4_create_a_sample_user"><a class="anchor" href="#_1_4_create_a_sample_user"></a>1.4 Create a sample user</h3>
 <div class="paragraph">
 <p>Finally create a sample user in <code>domaina</code> with username <code>testuser</code>. Set a password to the account.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_example_token_exchange"><a class="anchor" href="#_example_token_exchange"></a>Example request for Token Exchange</h3>
+<h3 id="_example_token_exchange"><a class="anchor" href="#_example_token_exchange"></a>1.5 Test Token Exchange</h3>
 <div class="paragraph">
 <p>Normally <code>clienta</code> will possess an initial token issued by <code>domaina</code>, obtained via normal authorization flow, or just because the client is a service endpoint that receives the token as a bearer. In this example, a direct access grant for <code>testuser</code> is requested to get <code>token1</code>.</p>
 </div>
@@ -332,22 +376,25 @@ This example allows any user to request that client scope. Roles can be used to 
 </div>
 </div>
 <div class="paragraph">
-<p>The resulting access token <code>token2</code> will be a valid assertion for JWT Authorization Grant in <code>domainb</code>.</p>
+<p>The resulting token <code>token2</code> is a JWT assertion (not a bearer token) that must be presented to <code>domainb</code> via JWT Authorization Grant to obtain a valid access token.</p>
+</div>
+<div class="paragraph">
+<p>You have now completed the configuration in <code>domaina</code>. Next, you need to configure <code>domainb</code> to accept the JWT assertion and convert it into a valid access token.</p>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configuring_jwt_authorization_grant_in_domainb_for_chaining"><a class="anchor" href="#_configuring_jwt_authorization_grant_in_domainb_for_chaining"></a>Configuring JWT Authorization grant in <code>domainb</code> for chaining</h2>
+<h2 id="_step_2_configure_jwt_authorization_grant_in_domainb"><a class="anchor" href="#_step_2_configure_jwt_authorization_grant_in_domainb"></a>Step 2: Configure JWT Authorization Grant in <code>domainb</code></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The next steps configure <code>domainb</code> to accept a JWT authorization grant using the assertion obtained via Token Exchange in <code>domaina</code> (see previous chapter). The resulting access token will be valid for <code>domainb</code>.</p>
+<p>This step configures <code>domainb</code> to accept a JWT authorization grant using the assertion obtained via Token Exchange in <code>domaina</code>. This is required to convert the assertion into an access token that is valid for <code>domainb</code> and trusted by its resource servers.</p>
 </div>
 <div class="paragraph">
 <p>For more information about JWT Authorization Grant, see <a href="https://www.keycloak.org/nightly/securing-apps/jwt-authorization-grant">JWT Authorization Grant</a>.</p>
 </div>
 <div class="sect2">
-<h3 id="_create_an_openid_connect_identity_provider_for_domaina"><a class="anchor" href="#_create_an_openid_connect_identity_provider_for_domaina"></a>Create an OpenID Connect Identity provider for <code>domaina</code></h3>
+<h3 id="_2_1_create_an_openid_connect_identity_provider_for_domaina"><a class="anchor" href="#_2_1_create_an_openid_connect_identity_provider_for_domaina"></a>2.1 Create an OpenID Connect Identity Provider for <code>domaina</code></h3>
 <div class="paragraph">
 <p>Create a Identity Provider to establish the trust relationship with <code>domaina</code>. In <strong>Identity providers</strong>, click the <strong>OpenID Connect v1.0</strong> type.</p>
 </div>
@@ -376,9 +423,21 @@ This example allows any user to request that client scope. Roles can be used to 
 <div class="paragraph">
 <p>After creation, enable the <strong>JWT Authorization Grant</strong> option.</p>
 </div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+This option must be enabled to allow the Identity Provider to accept JWT assertions from <code>domaina</code> and convert them into access tokens.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
-<h3 id="_create_a_client_to_perform_the_jwt_authorization_grant"><a class="anchor" href="#_create_a_client_to_perform_the_jwt_authorization_grant"></a>Create a client to perform the JWT authorization grant</h3>
+<h3 id="_2_2_create_a_client_to_perform_the_jwt_authorization_grant"><a class="anchor" href="#_2_2_create_a_client_to_perform_the_jwt_authorization_grant"></a>2.2 Create a client to perform the JWT Authorization Grant</h3>
 <div class="paragraph">
 <p>Create a confidential OpenID Connect client <code>clientb</code> with <strong>JWT Authorization Grant</strong> capability enabled. In the option <strong>Allowed Identity Providers for JWT Authorization Grant</strong> add the <code>domaina</code> Identity Provider.</p>
 </div>
@@ -409,7 +468,7 @@ This example allows any user to request that client scope. Roles can be used to 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_link_the_sample_user_in_domainb"><a class="anchor" href="#_link_the_sample_user_in_domainb"></a>Link the sample user in <code>domainb</code></h3>
+<h3 id="_2_3_link_the_sample_user_in_domainb"><a class="anchor" href="#_2_3_link_the_sample_user_in_domainb"></a>2.3 Link the sample user in <code>domainb</code></h3>
 <div class="paragraph">
 <p>To test the JWT Authorization Grant, the sample user created in <code>domaina</code> should be linked in <code>domainb</code>. You can just access to the account page in <code>domainb</code>:</p>
 </div>
@@ -434,9 +493,9 @@ This example allows any user to request that client scope. Roles can be used to 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_example_request_for_jwt_authorization_grant"><a class="anchor" href="#_example_request_for_jwt_authorization_grant"></a>Example request for JWT authorization grant</h3>
+<h3 id="_2_4_test_jwt_authorization_grant"><a class="anchor" href="#_2_4_test_jwt_authorization_grant"></a>2.4 Test JWT Authorization Grant</h3>
 <div class="paragraph">
-<p>The <code>token2</code> obtained in <a href="#_example_token_exchange">Example request for Token Exchange</a> will be a valid assertion for <code>domainb</code>. So, the <code>clientb</code> defined in <code>domainb</code> can send a JWT Authorization Grant with that token.</p>
+<p>The <code>token2</code> obtained in <a href="#_example_token_exchange">Test Token Exchange</a> is a valid assertion for <code>domainb</code>. The <code>clientb</code> defined in <code>domainb</code> can send a JWT Authorization Grant request with that token.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -451,7 +510,7 @@ This example allows any user to request that client scope. Roles can be used to 
 </div>
 </div>
 <div class="paragraph">
-<p>The response will contain a new access token issued by <code>domainb</code>.</p>
+<p>The response will contain a new access token (<code>token3</code>) issued by <code>domainb</code>. This token3 is the final access token that can be used as a Bearer token to access protected resources in <code>domainb</code>.</p>
 </div>
 </div>
 </div>
