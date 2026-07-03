@@ -147,6 +147,12 @@ frontend https_front
     http-request del-header x-original-.* -m reg
     http-request del-header x-real-ip
 
+    # Prevent external spoofing of client certificate headers
+    # These must be deleted unconditionally, because the set-header directives below
+    # are conditional
+    http-request del-header Client-Cert
+    http-request del-header Client-Cert-Chain
+
     # Prevent external tracing context injection (W3C Trace Context / Baggage)
     http-request del-header traceparent
     http-request del-header tracestate
@@ -441,6 +447,33 @@ http-request deny if is_admin_port !is_allowed_src</code></pre>
 </td>
 </tr>
 </table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="isolating-master-realm-haproxy-reencrypt"><a class="anchor" href="#isolating-master-realm-haproxy-reencrypt"></a>Isolating the master realm from the public internet</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As a security best practice, restrict access to the administrative <code>master</code> realm endpoints from public IP addresses.
+Use the following steps to allow access to these URLs only from allowed internal IP addresses.</p>
+</div>
+<div class="sect2">
+<h3 id="_haproxy_configuration_2"><a class="anchor" href="#_haproxy_configuration_2"></a>HAProxy configuration</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-haproxy" data-lang="haproxy"># Config for isolating the master realm from public internet.
+acl is_master_realm path /realms/master
+acl is_master_realm path_beg /realms/master/
+http-request deny if is_master_realm !is_allowed_src</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This configuration targets requests matching the administrative paths <code>/realms/master</code> or starting with <code>/realms/master/</code>.
+This rule matches core management traffic (such as token requests, logins, or console lookups inside the master realm) while letting other user realm paths pass through unhindered.</p>
+</div>
+<div class="paragraph">
+<p>HAProxy evaluates <code>http-request</code> rules from top to bottom, so place this deny rule before any broader allow/deny rules that would otherwise permit <code>/realms/</code> traffic from external clients.</p>
 </div>
 </div>
 </div>

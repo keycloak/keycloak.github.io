@@ -497,6 +497,44 @@ Admin paths on this port will return a 404.</p>
 </div>
 </div>
 <div class="sect1">
+<h2 id="isolating-master-realm-traefik-reencrypt"><a class="anchor" href="#isolating-master-realm-traefik-reencrypt"></a>Isolating the master realm from the public internet</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As a security best practice, prevent logins to the administrative <code>master</code> realm from public IP addresses.
+Use the following steps to allow access to these URLs only from allowed internal IP addresses.</p>
+</div>
+<div class="sect2">
+<h3 id="_traefik_configuration_2"><a class="anchor" href="#_traefik_configuration_2"></a>Traefik configuration</h3>
+<div class="paragraph">
+<p>The <code>keycloak-master</code> router isolates the default management realm from custom application realms.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">  routers:
+    keycloak-master:
+      entryPoints:
+        - keycloak
+      rule: "PathRegexp(`^/realms/master(/|$)`)"
+      priority: 100
+      middlewares:
+        - filter-headers
+        - pass-client-cert
+        - ip-allowlist
+      tls: { }
+      service: keycloak</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This router targets requests matching the regular expression <code>^/realms/master(/|$)</code>.
+This rule matches core management traffic (such as token requests, logins, or console lookups inside the master realm) while letting other user realm paths pass through unhindered.</p>
+</div>
+<div class="paragraph">
+<p>The explicit use of <code>priority: 100</code> on the master router ensures it is evaluated before the <code>keycloak-public</code> router.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="graceful-shutdown-considerations-traefik-reencrypt"><a class="anchor" href="#graceful-shutdown-considerations-traefik-reencrypt"></a>Graceful shutdown considerations</h2>
 <div class="sectionbody">
 <div class="paragraph">
