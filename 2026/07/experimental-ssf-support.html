@@ -1,0 +1,471 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Experimental Shared Signals Framework support in Keycloak - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Experimental Shared Signals Framework support in Keycloak">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Keycloak can now act as an OpenID Shared Signals Framework Transmitter, federating realm, user, session and credential events to downstream services as signed Security Event Tokens.">
+<meta name="author" content="Thomas Darimont">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2026/07/experimental-ssf-support">
+<meta property="og:url" content="https://www.keycloak.org/2026/07/experimental-ssf-support">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2026/07/experimental-ssf-support","headline":"Experimental Shared Signals Framework support in Keycloak","name":"Experimental Shared Signals Framework support in Keycloak","datePublished":"2026-07-03T08:00:00Z","inLanguage":"en","abstract":"Keycloak can now act as an OpenID Shared Signals Framework Transmitter, federating realm, user, session and credential events to downstream services as signed Security Event Tokens.","url":"https://www.keycloak.org/2026/07/experimental-ssf-support","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Thomas Darimont"}]}
+</script></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://events.linuxfoundation.org/kubecon-cloudnativecon-japan/co-located-events/keycloakcon/">
+        Join us at KeycloakCon Japan 2026, colocated with KubeCon Japan 2026 &middot; July 28 &middot; <span class="fw-semibold text-decoration-underline">Register Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 122/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 122/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article kc-asciidoc">
+    <h1>Experimental Shared Signals Framework support in Keycloak</h1>
+    <p class="blog-date text-muted">July 03 2026 by Thomas Darimont</p>
+
+
+<div class="paragraph">
+<p>We are excited to announce that Keycloak now provides experimental support for the
+<a href="https://openid.net/specs/openid-sharedsignals-framework-1_0.html">OpenID Shared Signals Framework 1.0</a> specification,
+available from today in the <a href="https://github.com/keycloak/keycloak/releases/tag/nightly">nightly release</a>.
+This allows Keycloak to act as a <strong>Shared Signals Transmitter</strong>, pushing signed <strong>Security Event Tokens (SETs)</strong> about
+identity-relevant events to any subscribed <strong>Receiver</strong>, using a standardised wire format defined by the OpenID Foundation.</p>
+</div>
+<div class="paragraph">
+<p>This closes a long-standing gap. When you revoke a user&#8217;s session in Keycloak today, the SaaS app they&#8217;re logged
+into usually doesn&#8217;t sign them out until their next token refresh, which can be minutes, hours, or in some cases
+never. The same gap exists when an account is disabled, a credential is rotated, or a device is flagged as
+non-compliant. Keycloak knows; the relying parties don&#8217;t, until they happen to ask again. With SSF, Keycloak can
+now push those signals to subscribed receivers in seconds — no per-vendor webhooks, no bespoke polling endpoints,
+no Kafka topic per integration.</p>
+</div>
+<div class="paragraph">
+<p>Concretely, this also unlocks an integration the Keycloak ecosystem has been missing: <strong>Keycloak can now act as the
+federated IdP for Apple Business Manager</strong>, signalling user-state changes back to Apple so
+enrolled devices can ask the user to reauthenticate.</p>
+</div>
+<div class="paragraph">
+<p>This post is the first in a small series. It introduces SSF, walks through what&#8217;s actually shipped in the experimental
+release, and outlines where we&#8217;d like to take it next. Follow-up posts will cover how to define custom events, how to emit synthetic events, and an Apple Business Manager integration end to end.</p>
+</div>
+<div class="sect1">
+<h2 id="_a_short_tour_of_shared_signals"><a class="anchor" href="#_a_short_tour_of_shared_signals"></a>A short tour of Shared Signals</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The OpenID Foundation&#8217;s <a href="https://openid.net/specs/openid-sharedsignals-framework-1_0.html">Shared Signals Framework 1.0</a>
+defines a standard way for one party (the <strong>Transmitter</strong>) to tell another party (the <strong>Receiver</strong>) about identity-relevant
+events as they happen. Each event is delivered as a signed JWT, a <strong>Security Event Token</strong> (<a href="https://www.rfc-editor.org/rfc/rfc8417">RFC 8417</a>) delivered over either an HTTP push channel (<a href="https://www.rfc-editor.org/rfc/rfc8935">RFC 8935</a>) or an HTTP poll channel (<a href="https://www.rfc-editor.org/rfc/rfc8936">RFC 8936</a>).</p>
+</div>
+<div class="paragraph">
+<p>Two profiles ride on top of that envelope:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://openid.net/specs/openid-caep-1_0.html">CAEP 1.0</a> Continuous Access Evaluation Profile. Events like
+<code>session-revoked</code>, <code>credential-change</code>, <code>device-compliance-change</code>. Roughly: "the conditions under which I issued
+that token have changed".</p>
+</li>
+<li>
+<p><a href="https://openid.net/specs/openid-risc-profile-specification-1_0.html">RISC 1.0</a> Risk and Incident Sharing and
+Coordination. Events like <code>account-disabled</code>, <code>account-credential-change-required</code>, <code>identifier-changed</code>. Roughly:
+"something happened to this account that downstream parties should know about".</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In both cases the receiver decides what to do — sign the user out, prompt for re-auth, force a step-up, lock a device,
+log it. The framework moves the <strong>signal</strong>; policy stays with the receiver.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_why_this_matters_in_practice"><a class="anchor" href="#_why_this_matters_in_practice"></a>Why this matters in practice</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Beyond the headline gap, SSF gives Keycloak operators three concrete benefits:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Faster propagation of security-sensitive state</strong>. A <code>session-revoked</code> event can reach subscribed receivers in seconds,
+not minutes-to-hours.</p>
+</li>
+<li>
+<p><strong>A single, standardised wire format</strong>. No more per-vendor webhooks, polling endpoints, or Kafka topics each with
+their own schema and auth model. SETs are JWTs, signing is JWS, transport is HTTP, and the event vocabulary is
+defined by CAEP and RISC.</p>
+</li>
+<li>
+<p><strong>A growing ecosystem of receivers</strong>. Apple&#8217;s device fleet management products (<strong>Apple Business Manager</strong> and
+<strong>Apple School Manager</strong>) consume SSF events from upstream IdPs to keep enrolled-device state in sync with user state.
+The same model applies to a growing list of SaaS and security tooling vendors (Okta, Cisco Duo, Slack and others
+have either shipped or announced SSF support).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_in_the_experimental_release"><a class="anchor" href="#_whats_in_the_experimental_release"></a>What&#8217;s in the experimental release</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>SSF is shipped as an <strong>experimental</strong> feature, gated behind <code>Profile.Feature.SSF</code>. It&#8217;s off by default, and you opt in
+per realm and per client. The current scope covers the <strong>Transmitter</strong> role — i.e. Keycloak emits SETs, downstream
+services receive them.</p>
+</div>
+<div class="paragraph">
+<p>Concretely:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Standards conformance.</strong> SSF 1.0 (Final), CAEP 1.0, RFC 8935 (push), RFC 8936 (poll, return-immediately
+form), RFC 9493 (Subject Identifiers), RFC 8417 (SETs), and the CAEP Interoperability Profile 1.0.</p>
+</li>
+<li>
+<p><strong>Stream management.</strong> Full CRUD on streams, plus status, verification and stream-config endpoints.</p>
+</li>
+<li>
+<p><strong>Subject management.</strong> Per-user and per-organisation subscription, with an <code>ssf.notify.&lt;clientId&gt;</code> attribute, a
+<code>defaultSubjects</code> policy of <code>ALL</code> or <code>NONE</code>, and an <strong>ignore</strong> state to explicitly exclude users from delivery.</p>
+</li>
+<li>
+<p><strong>Receivers as OIDC clients.</strong> SSF Receivers are configured as regular OIDC clients in the realm with client-credentials
+or auth-code grant, with a per-client <code>ssf.enabled</code> toggle. Currently we only support one stream per client.</p>
+</li>
+<li>
+<p><strong>Event mapping.</strong> Native Keycloak events (login, logout, credential change, session revocation, …) are mapped to
+the right CAEP / RISC events automatically. Custom event types can be added through an SPI.</p>
+</li>
+<li>
+<p><strong>Transactional outbox.</strong> Events are persisted into a durable outbox inside the same transaction that produced
+them, then drained asynchronously by a cluster-aware drainer with exponential backoff. This decouples event
+<strong>generation</strong> from <strong>delivery</strong>, a slow or failing receiver can never block the originating transaction or drop events.</p>
+</li>
+<li>
+<p><strong>Delivery channels.</strong> HTTP push (RFC 8935) and HTTP poll (RFC 8936, return-immediately).</p>
+</li>
+<li>
+<p><strong>Synthetic event endpoint.</strong> A REST endpoint to inject events that didn&#8217;t originate inside Keycloak, for example,
+a SOC/IAM tool reporting a compromised or changed credential. Useful for bridging an external IAM source.</p>
+</li>
+<li>
+<p><strong>Per-receiver event filter.</strong> An "emit-only-events" allowlist so a receiver only sees the event types it actually
+cares about.</p>
+</li>
+<li>
+<p><strong>Legacy SSE CAEP profile.</strong> Shipped alongside CAEP 1.0 specifically for <strong>Apple Business Manager</strong> / <strong>Apple School
+Manager</strong> interop, since Apple still consumes the older draft profile and changing that out from under deployed
+fleets is not on the table.</p>
+</li>
+<li>
+<p><strong>Admin UI + REST.</strong> Per-realm SSF admin endpoints and Admin Console pages to manage SSF-enabled clients,
+Receiver, Stream, Subjects and Events tabs.</p>
+</li>
+<li>
+<p><strong>Observability.</strong> Prometheus metrics under <code>keycloak_ssf_*</code> cover the dispatcher, drainer, poll endpoints,
+verification flow, outbox depth and per-delivery counters / latencies.</p>
+</li>
+<li>
+<p><strong>Test coverage.</strong> Over 100 integration tests across the dispatch / outbox / push / poll pipeline.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_a_new_capability_keycloak_as_idp_for_apple_business_manager"><a class="anchor" href="#_a_new_capability_keycloak_as_idp_for_apple_business_manager"></a>A new capability: Keycloak as IdP for Apple Business Manager</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>One of the strongest motivations for shipping the Transmitter first is <strong>Apple device fleets</strong>. Apple Business Manager
+(ABM) and Apple School Manager (ASM) want a <strong>federated identity</strong> relationship with the organisation&#8217;s IdP, and they
+want to be told, in close to real time, when a user&#8217;s status changes so that the corresponding enrolled devices can
+be locked, wiped or re-enrolled.</p>
+</div>
+<div class="paragraph">
+<p>Until now there has been no clean path to put Keycloak in that role. With the new SSF Transmitter, plus the legacy SSE
+CAEP profile bundled for ABM / ASM compatibility, Keycloak can be configured as the federated IdP for an Apple
+Business Manager tenant and signal <code>session-revoked</code>, <code>credential-change</code> and <code>device-compliance-change</code> events to
+Apple, which then propagates them onto the enrolled devices.</p>
+</div>
+<div class="paragraph">
+<p>This was verified end-to-end against ABM during development. A dedicated follow-up post will walk through the setup like
+realm configuration, client / stream registration on the ABM side, the legacy CAEP profile toggle, and how to test
+the event flow. This effectively allows to use Keycloak as the identity provider for federated Apple accounts.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_roadmap"><a class="anchor" href="#_roadmap"></a>Roadmap</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Transmitter is the first half of the picture. Tracked separately:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Documentation.</strong> Describe the concepts, configuration and integration patterns in the official documentation. The Admin Console UI is designed to be discoverable without docs, but we want to provide more detailed guidance and examples.</p>
+</li>
+<li>
+<p><strong>SSF Receiver role.</strong> Keycloak ingesting SETs from upstream IdPs and risk engines (originally proposed in
+<a href="https://github.com/keycloak/keycloak/issues/43614">#43614</a>). The hard problem is <strong>action mapping</strong>, e.g. how an incoming
+<code>account-disabled</code> event from an upstream party should affect Keycloak&#8217;s local state. We deliberately want to
+validate the data plane via the Transmitter side first before settling that. Eventually an SSF event might just trigger a workflow.</p>
+</li>
+<li>
+<p><strong>More events.</strong> Broader coverage of CAEP / RISC events, and a richer set of synthetic events for integrations with
+external IAM and SOC tooling.</p>
+</li>
+<li>
+<p><strong>Dedicated SSF signing key.</strong> Today SETs are signed with the realm&#8217;s OIDC signing key. A separate SSF signing key
+is on the roadmap so key rotation policies can diverge.</p>
+</li>
+<li>
+<p><strong>Security review.</strong> Required before promoting SSF out of experimental status.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_getting_started"><a class="anchor" href="#_getting_started"></a>Getting started</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://www.keycloak.org/nightly/securing-apps/ssf-support">Feature documentation is available in the nightly build of the docs</a>.</p>
+</div>
+<div class="paragraph">
+<p>SSF is experimental and off by default. Enable it on the server with:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kc.sh start-dev --feature-ssf=enabled</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To see the pipeline end-to-end the quickest path is to point Keycloak at <a href="https://caep.dev"><code>caep.dev</code></a>, SGNL&#8217;s public
+CAEP test receiver, and subscribe to <code>session-revoked</code> and <code>credential-change</code> events via HTTP poll.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Even with HTTP poll as the delivery channel, <code>caep.dev</code> still needs to reach Keycloak to call the transmitter
+metadata and stream-management endpoints. If you&#8217;re running Keycloak locally, expose it through a tunnel like
+<a href="https://ngrok.com">ngrok</a> first.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Enable the SSF Transmitter on the realm.</strong> In the Admin Console, open the realm&#8217;s settings and turn the <strong>SSF
+Transmitter</strong> toggle on. This sets the <code>ssf.transmitterEnabled</code> realm attribute and activates the per-realm SSF
+endpoints (transmitter metadata, stream management, JWKS).</p>
+</li>
+<li>
+<p><strong>Create the SSF Receiver client.</strong> Under <strong>Clients → Create client</strong>, register an OpenID Connect client (for example
+<code>caep-receiver</code>) with:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Client authentication</strong> on, <strong>Service accounts roles</strong> enabled (no browser flows needed)</p>
+</li>
+<li>
+<p>On the <strong>SSF</strong> tab: SSF enabled, <strong>Default Subjects</strong> set to <code>ALL</code>, an <strong>Audience</strong> of your choice (e.g.
+<code><a href="https://caep.dev" class="bare">https://caep.dev</a></code>), and both <strong>Push</strong> and <strong>Poll</strong> ticked as supported delivery methods</p>
+</li>
+<li>
+<p>Under <strong>Client scopes</strong>, add <code>ssf.read</code> and <code>ssf.manage</code> as <strong>Optional</strong> scopes</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Register on <code>caep.dev</code></strong> at <a href="https://caep.dev/register" class="bare">https://caep.dev/register</a>, then open <a href="https://caep.dev/receiver/streams"><code>caep.dev/receiver/streams</code></a>
+and click <strong>Receive events</strong>.</p>
+</li>
+<li>
+<p><strong>Obtain a Keycloak access token</strong> via the client-credentials grant, scoped to <code>ssf.read ssf.manage</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -s -X POST "https://my.keycloak.test/realms/myrealm/protocol/openid-connect/token" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=caep-receiver" \
+  -d "client_secret=…" \
+  -d "scope=ssf.read ssf.manage"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Create the stream on <code>caep.dev</code></strong> with the following settings:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Access token</strong>: the token from the previous step</p>
+</li>
+<li>
+<p><strong>Transmitter metadata URL</strong>: <code><a href="https://my.keycloak.test/.well-known/ssf-configuration/realms/myrealm" class="bare">https://my.keycloak.test/.well-known/ssf-configuration/realms/myrealm</a></code></p>
+</li>
+<li>
+<p><strong>Delivery method</strong>: POLL, <strong>Poll interval</strong>: <code>20s</code></p>
+</li>
+<li>
+<p><strong>Event types</strong>: <code>Session Revoked</code>, <code>Credential Change</code></p>
+</li>
+<li>
+<p><strong>Description</strong>: anything you like (e.g. <code>my poll</code>)</p>
+<div class="paragraph">
+<p>Click <strong>Create</strong>. <code>caep.dev</code> calls Keycloak&#8217;s <code>POST /streams</code> endpoint under the hood; the stream then appears in the
+Admin Console under <strong>SSF → Streams</strong> on the realm, marked as receiver-managed.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Verify the round-trip.</strong> Back on <code>caep.dev</code>, click <strong>Poll Now</strong>. After a few seconds an SSF verification event should
+appear in the receiver&#8217;s event list, confirming the stream is live.</p>
+</li>
+<li>
+<p><strong>Generate real events.</strong> Sign in to the realm&#8217;s Account Console as a test user, change the user&#8217;s password, then
+sign out again. Hit <strong>Poll Now</strong> on <code>caep.dev</code> and a <code>credential-change</code> followed by a <code>session-revoked</code> SET should
+arrive in the stream UI within a poll cycle.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>From here you can experiment with subject management (per-user opt-in via <code>ssf.notify.&lt;clientId&gt;</code>, or the <code>ignore</code>
+state), swap delivery to push against a <a href="https://webhook.site"><code>webhook.site</code></a> endpoint, or point a second receiver at
+the same realm.</p>
+</div>
+<div class="paragraph">
+<p>For a more application-oriented receiver, the
+<a href="https://github.com/quarkiverse/quarkus-openid-ssf"><code>quarkus-openid-ssf</code></a> Quarkiverse extension turns any Quarkus
+application into an SSF Receiver, handling stream registration, SET verification and event dispatch so apps only
+need to react to the decoded events. The
+<a href="https://github.com/thomasdarimont/quarkus-openid-ssf-test"><code>quarkus-openid-ssf-test</code></a> sample wires it end-to-end
+against a Keycloak Transmitter and is a good starting point if you want to consume CAEP / RISC events directly
+inside an application.</p>
+</div>
+<div class="paragraph">
+<p>We&#8217;d love feedback — particularly from anyone with concrete CAEP / RISC integrations they want to try against a
+Keycloak Transmitter.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_feedback"><a class="anchor" href="#_feedback"></a>Feedback</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>SSF is shipping experimental specifically so we can shape it around real integration experience before it&#8217;s promoted
+to a stable feature. We&#8217;d particularly like to hear from you if any of the following applies:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You have a concrete CAEP / RISC receiver (in-house or third-party) that you want to drive from a Keycloak realm.</p>
+</li>
+<li>
+<p>You&#8217;re already running SSF somewhere and have an opinion on the event vocabulary, stream-management ergonomics, or
+the receiver authentication options.</p>
+</li>
+<li>
+<p>Your use case isn&#8217;t covered by the current event mapping and you&#8217;d like to see additional native Keycloak events
+surfaced as CAEP / RISC events (or as custom event types via the SPI).</p>
+</li>
+<li>
+<p>You hit a rough edge, e.g. a missing metric, confusing Admin UI label, an integration that didn&#8217;t behave as you expected.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Please share your feedback, integration reports and feature requests in the dedicated GitHub discussion:</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/keycloak/keycloak/discussions/48840"><strong>Shared Signals Framework support — discussion #48840</strong></a></p>
+</div>
+<div class="paragraph">
+<p>Bug reports against the experimental implementation are best filed as regular issues against
+<a href="https://github.com/keycloak/keycloak">keycloak/keycloak</a> with the <code>area/ssf</code> label, so the discussion thread can stay
+focused on direction and integration experience rather than tracking individual fixes.</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
