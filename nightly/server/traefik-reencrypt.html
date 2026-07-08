@@ -179,6 +179,14 @@ The <code>keycloak.yaml</code> dynamic configuration file is mounted here.</td>
   certificates:
     - certFile: /certs/traefik-external/cert.pem <i class="conum" data-value="1"></i><b>(1)</b>
       keyFile: /certs/traefik-external/key.pem
+  options:
+    default:
+      clientAuth:
+        # CA chain used to verify client certificates presented during the TLS handshake
+        caFiles:
+          - /certs/client-ca-chain.pem
+        # Request a client certificate but do not require one; clients without one can still connect
+        clientAuthType: VerifyClientCertIfGiven
 
 http:
   serversTransports:
@@ -225,6 +233,11 @@ http:
           Uber-Trace-Id: ""
           X-Ot-Span-Context: ""
 
+    # Forward the client certificate verified during the TLS handshake as a PEM block
+    pass-client-cert:
+      passTLSClientCert:
+        pem: true
+
     # Allowed source IP ranges. Replace with your internal IP address ranges. <i class="conum" data-value="5"></i><b>(5)</b>
     ip-allowlist:
       ipAllowList:
@@ -242,6 +255,7 @@ http:
       rule: "PathPrefix(`/realms/`) || PathPrefix(`/resources/`) || PathPrefix(`/.well-known/`)"
       middlewares:
         - filter-headers
+        - pass-client-cert
       tls: {}
       service: keycloak
 
@@ -253,6 +267,7 @@ http:
       priority: 1
       middlewares:
         - filter-headers
+        - pass-client-cert
         - ip-allowlist
       tls: {}
       service: keycloak
@@ -384,6 +399,29 @@ See the <a href="https://www.keycloak.org/nightly/server/mutual-tls">Configuring
 This allows Traefik to perform HTTPS health checks against the management port (<code>9000</code>) without needing to present the mTLS client certificate.</p>
 </dd>
 </dl>
+</div>
+<div class="sect2">
+<h3 id="_enabling_client_certificate_lookups"><a class="anchor" href="#_enabling_client_certificate_lookups"></a>Enabling client certificate lookups</h3>
+<div class="paragraph">
+<p>The mTLS configuration above secures the connection between Traefik and Keycloak.
+To additionally use a certificate that an end user presents to Traefik for X.509 authentication, Keycloak must read the certificate that the <code>pass-client-cert</code> middleware forwards in the <code>X-Forwarded-Tls-Client-Cert</code> header.
+Enable the <code>traefik</code> client certificate lookup provider when starting Keycloak:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-x509cert-lookup--provider=traefik</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>traefik</code> provider reads the client certificate and any intermediate CA certificates from the <code>X-Forwarded-Tls-Client-Cert</code> header, so no header names need to be configured.
+If your certificate chain contains more intermediate certificates than the default, set the <code>certificate-chain-length</code> option accordingly.
+Otherwise, the provider discards the request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-x509cert-lookup--provider=traefik --spi-x509cert-lookup--traefik--certificate-chain-length=2</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
