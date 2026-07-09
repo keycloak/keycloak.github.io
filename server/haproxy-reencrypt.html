@@ -1,0 +1,730 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>HAProxy with TLS re-encrypt - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="HAProxy with TLS re-encrypt">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Configure HAProxy as a TLS re-encrypt load balancer for Keycloak.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/server/haproxy-reencrypt">
+<meta property="og:url" content="https://www.keycloak.org/server/haproxy-reencrypt">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://events.linuxfoundation.org/kubecon-cloudnativecon-japan/co-located-events/keycloakcon/">
+        Join us at KeycloakCon Japan 2026, colocated with KubeCon Japan 2026 &middot; July 28 &middot; <span class="fw-semibold text-decoration-underline">Register Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">HAProxy with TLS re-encrypt</li>
+                    </ol>
+                </nav>
+            </div>
+
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/server/haproxy-reencrypt" >Nightly</option>
+                        <option value="https://www.keycloak.org/server/haproxy-reencrypt" selected="selected">26.7.0</option>
+                    </select>
+                </div>
+
+                <h1>HAProxy with TLS re-encrypt</h1>
+                    <span class="text-muted">Configure HAProxy as a TLS re-encrypt load balancer for Keycloak.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide describes how to configure <a href="https://www.haproxy.com/">HAProxy</a> as a TLS re-encrypt load balancer in front of Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>In TLS re-encrypt mode, HAProxy terminates the incoming TLS connection and establishes a new encrypted connection to Keycloak.
+HAProxy operates at Layer 7 (HTTP). Unlike passthrough, end-to-end TLS encryption between client and Keycloak is not preserved, but the proxy gains the ability to inspect and modify HTTP traffic.</p>
+</div>
+<div class="paragraph">
+<p>For a general overview of TLS re-encrypt and how it compares to passthrough, see the <a href="https://www.keycloak.org/server/reverseproxy">Configuring a reverse proxy</a> guide.</p>
+</div>
+<div class="paragraph">
+<p>A ready-to-run example with a Compose file is available in the <a href="https://github.com/keycloak/keycloak-quickstarts/tree/main/proxy/haproxy/reencrypt">quickstart repository</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="haproxy-configuration-reencrypt"><a class="anchor" href="#haproxy-configuration-reencrypt"></a>HAProxy configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following <code>haproxy.cfg</code> shows a configuration for TLS re-encrypt with two Keycloak backend servers.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-haproxy" data-lang="haproxy">global
+    log stdout format raw local0
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5s
+    timeout client  50s
+    timeout server  50s
+    retries 3
+
+frontend https_front
+    bind *:8443 ssl crt /path/to/haproxy-external-certificate <i class="conum" data-value="1"></i><b>(1)</b>
+    mode http <i class="conum" data-value="2"></i><b>(2)</b>
+
+    # Prevent external spoofing
+    http-request del-header Forwarded <i class="conum" data-value="3"></i><b>(3)</b>
+    http-request del-header x-forwarded-.* -m reg
+    http-request del-header x-original-.* -m reg
+    http-request del-header x-real-ip
+
+    # Prevent external spoofing of client certificate headers
+    # These must be deleted unconditionally, because the set-header directives below
+    # are conditional
+    http-request del-header Client-Cert
+    http-request del-header Client-Cert-Chain
+
+    # Prevent external tracing context injection (W3C Trace Context / Baggage)
+    http-request del-header traceparent
+    http-request del-header tracestate
+    http-request del-header baggage
+
+    # Prevent external tracing context injection (Zipkin, Jaeger, OpenTracing)
+    http-request del-header b3
+    http-request del-header x-b3-.* -m reg
+    http-request del-header uber-trace-id
+    http-request del-header x-ot-span-context
+
+    # Optional. Forward client identities so that client certificate lookups work as expected
+    http-request set-header Client-Cert %[ssl_c_der,base64] if { ssl_c_used } { ssl_c_verify 0 }
+    http-request set-header Client-Cert-Chain %[ssl_c_chain_der,base64] if { ssl_c_used } { ssl_c_verify 0 }
+
+    # Public paths. Revisit the reverse proxy guide for the latest guidance. <i class="conum" data-value="4"></i><b>(4)</b>
+    # With these settings, the redirect to the welcome screen or Admin UI will not work from external IP addresses, and this is expected.
+    acl is_public_path path_beg /realms/
+    acl is_public_path path_beg /resources/
+    acl is_public_path path_beg /.well-known/
+
+    # Allowed source IP ranges. Replace with your internal IP address ranges. <i class="conum" data-value="4"></i><b>(4)</b>
+    acl is_allowed_src src 192.168.0.0/16
+    acl is_allowed_src src 172.16.0.0/12
+    acl is_allowed_src src 10.0.0.0/8
+    acl is_allowed_src src 127.0.0.0/8
+
+    http-request deny unless is_public_path or is_allowed_src <i class="conum" data-value="4"></i><b>(4)</b>
+
+    default_backend keycloak_back
+
+backend keycloak_back
+    mode http <i class="conum" data-value="5"></i><b>(5)</b>
+    balance roundrobin <i class="conum" data-value="6"></i><b>(6)</b>
+    option forwarded host by by_port for <i class="conum" data-value="7"></i><b>(7)</b>
+    option httpchk GET /health/ready <i class="conum" data-value="8"></i><b>(8)</b>
+    http-check expect status 200
+
+    server keycloak1 keycloak1:8443 ssl verify required crt /path/to/haproxy-internal-certificate ca-file /path/to/keycloak-1-certificate check port 9000 check-ssl verify none inter 5s fall 3 rise 2 slowstart 60s <i class="conum" data-value="9"></i><b>(9)</b>
+
+    server keycloak2 keycloak2:8443 ssl verify required crt /path/to/haproxy-internal-certificate ca-file /path/to/keycloak-2-certificate check port 9000 check-ssl verify none inter 5s fall 3 rise 2 slowstart 60s</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The port HAProxy listens on for incoming TLS connections.
+The <code>ssl crt /path/to/haproxy-external-certificate</code> directive sets the certificate that the proxy will use to identify itself on the frontend.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Enables <a href="https://docs.haproxy.org/3.2/configuration.html#4-mode">HTTP mode</a> on the frontend.
+This tells HAProxy to operate at Layer 7, decrypting and re-encrypting HTTP traffic.
+HAProxy has access to the plaintext HTTP traffic in this mode.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The <code>http-request del-header</code> directives remove HTTP headers from incoming requests before forwarding them to Keycloak.
+This prevents external clients from spoofing proxy identity headers (such as <code>Forwarded</code>, <code>X-Forwarded-*</code>, and <code>X-Real-IP</code>), injecting authentication-related headers (such as <code>X-Forwarded-Access-Token</code>), or injecting distributed tracing context (such as W3C Trace Context, Zipkin B3, or Jaeger headers).
+For the full list of recommended headers to filter, see the <a href="https://www.keycloak.org/server/reverseproxy#header-filtering-recommendations">Configuring a reverse proxy</a> guide.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Restricts access so that only public Keycloak paths are reachable from external networks. Requests to non-public paths (such as the Admin API or Admin Console) are only allowed from the configured internal IP ranges. For the full list of paths and recommendations, see the <a href="https://www.keycloak.org/server/reverseproxy#_exposed_path_recommendations">Configuring a reverse proxy</a> guide.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The backend must also use HTTP mode to match the frontend.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Distributes connections across backend servers using <a href="https://docs.haproxy.org/3.2/configuration.html#4-balance">round-robin</a> load balancing.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>This option adds a <code>Forwarded</code> header containing the correct client information.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>Configures <a href="https://docs.haproxy.org/3.2/configuration.html#4.2-option%20httpchk">HTTP health checks</a> against Keycloak&#8217;s readiness endpoint.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>Defines a backend Keycloak server.
+The parameters on this line control mTLS settings, health checks, and failure detection:</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>server</code> directive parameters are explained below:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>ssl verify required</code></dt>
+<dd>
+<p>Enables a secure connection to Keycloak and verifies the certificate.</p>
+</dd>
+<dt class="hdlist1"><code>crt /path/to/haproxy-internal-certificate</code></dt>
+<dd>
+<p>Configures the certificate used to authenticate HAProxy to Keycloak.</p>
+</dd>
+<dt class="hdlist1"><code>ca-file /path/to/keycloak-N-certificate</code></dt>
+<dd>
+<p>Configures the backend server certificate (or issuing CA certificate) used to authenticate the particular Keycloak server to HAProxy.</p>
+</dd>
+<dt class="hdlist1"><code>check port 9000 check-ssl verify none</code></dt>
+<dd>
+<p>Directs health checks to the <a href="https://docs.haproxy.org/3.2/configuration.html#5.2-check">management port</a> (<code>9000</code>) over HTTPS.
+The <code>verify none</code> option skips TLS certificate verification for the health check connection, which is acceptable because the health check is an internal communication between HAProxy and Keycloak.
+The management port is separate from the main application port (<code>8443</code>), as described in the <a href="https://www.keycloak.org/server/management-interface">Configuring the Management Interface</a> guide.</p>
+</dd>
+<dt class="hdlist1"><code>inter 5s fall 3 rise 2</code></dt>
+<dd>
+<p>Configures the <a href="https://docs.haproxy.org/3.2/configuration.html#5.2-inter">health check frequency</a>:
+poll every 5 seconds, mark a server as down after 3 consecutive failures, and mark it as up again after 2 consecutive successes.
+These values affect how quickly HAProxy detects that a Keycloak instance is shutting down (see <a href="#graceful-shutdown-considerations-haproxy-reencrypt">Graceful shutdown considerations</a>).</p>
+</dd>
+<dt class="hdlist1"><code>slowstart 60s</code></dt>
+<dd>
+<p>Gradually increases the server&#8217;s weight from 0 to its full value over 60 seconds after the server becomes available.
+This gives Keycloak and the JVM time to warm up (JIT compilation, class loading, cache population) before receiving full traffic, preventing performance degradation and timeouts during the warmup phase.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="keycloak-configuration-haproxy-reencrypt"><a class="anchor" href="#keycloak-configuration-haproxy-reencrypt"></a>Keycloak configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With TLS re-encrypt, Keycloak requires the following configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers forwarded --health-enabled true --metrics-enabled true --https-certificate-file=/path/to/certificate --https-certificate-key-file=/path/to/key --https-client-auth=required --https-trust-store-file=/path/to/https-truststore --https-management-client-auth=none</code></pre>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--proxy-headers forwarded</code></dt>
+<dd>
+<p>Restricts the forwarding headers that Keycloak will parse to the standard <code>Forwarded</code> header as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC 7239</a>.
+Do not set <code>--proxy-protocol-enabled</code> when using TLS re-encrypt. The PROXY protocol is only relevant for TLS passthrough (TCP mode).
+The <code>--proxy-headers</code> option and the <code>--proxy-protocol-enabled</code> option are mutually exclusive.</p>
+</dd>
+<dt class="hdlist1"><code>--health-enabled true</code></dt>
+<dd>
+<p>Enables the health check endpoints on the management port (<code>9000</code>).
+Without this, the <code>/health/ready</code> endpoint that HAProxy polls will not be available, and HAProxy will mark all Keycloak instances as down.</p>
+</dd>
+<dt class="hdlist1"><code>--metrics-enabled true</code></dt>
+<dd>
+<p>Enables the metrics endpoints on the management port.
+Enabling metrics also enables an additional status check for the database, so it is recommended to enable metrics.</p>
+</dd>
+<dt class="hdlist1"><code>--https-certificate-file=/path/to/certificate</code> and <code>--https-certificate-key-file=/path/to/key</code></dt>
+<dd>
+<p>Configure the certificate and the private key Keycloak will use for HTTPS.
+See the <a href="https://www.keycloak.org/server/enabletls">Configuring TLS</a> guide for additional details.</p>
+</dd>
+<dt class="hdlist1"><code>--https-client-auth=required</code></dt>
+<dd>
+<p>Configures Keycloak to require client authentication, for mutual TLS.</p>
+</dd>
+<dt class="hdlist1"><code>--https-trust-store-file=/path/to/https-truststore</code></dt>
+<dd>
+<p>Configures a truststore for client authentication.
+In this case the truststore should contain the public certificate of the HAProxy.
+See the <a href="https://www.keycloak.org/server/mutual-tls">Configuring trusted certificates for mTLS</a> guide for additional details.</p>
+</dd>
+<dt class="hdlist1"><code>--https-management-client-auth=none</code></dt>
+<dd>
+<p>Disables the client authentication requirement for the management endpoint.</p>
+</dd>
+</dl>
+</div>
+<div class="sect2">
+<h3 id="_enabling_client_certificate_lookups"><a class="anchor" href="#_enabling_client_certificate_lookups"></a>Enabling client certificate lookups</h3>
+<div class="paragraph">
+<p>To enable the client certificate lookups, the following CLI options are required when starting Keycloak:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-x509cert-lookup--provider=haproxy --spi-x509cert-lookup--haproxy--ssl-client-cert=Client-Cert --spi-x509cert-lookup--haproxy--ssl-cert-chain=Client-Cert-Chain --spi-x509cert-lookup--haproxy--certificate-chain-length=2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the number of intermediate certificates in your certificate chain is longer than the default, you must set the
+<code>certificate-chain-length</code> option to an appropriate value. Otherwise, the provider will discard the request.</p>
+</div>
+<div class="paragraph">
+<p>See <a href="https://www.keycloak.org/server/reverseproxy">Configuring a reverse proxy</a> for more details.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="admin-dedicated-port-haproxy-reencrypt"><a class="anchor" href="#admin-dedicated-port-haproxy-reencrypt"></a>Optional: Admin UI and Admin API on a dedicated hostname and port</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the Admin UI and Admin API are served on the same port as the public endpoints, protected only by the source IP filtering (<code>is_allowed_src</code>).
+For stricter network-level isolation, you can move them to a dedicated hostname and port so they can be independently firewalled.</p>
+</div>
+<div class="paragraph">
+<p>Because the admin port and the public port share the same HAProxy frontend, the header filtering and client certificate forwarding described above apply to both automatically.</p>
+</div>
+<div class="paragraph">
+<p>To enable this, add the configurations outlined in the following subsections.</p>
+</div>
+<div class="sect2">
+<h3 id="_keycloak_configuration"><a class="anchor" href="#_keycloak_configuration"></a>Keycloak configuration</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--hostname-admin=https://...</code></dt>
+<dd>
+<p>Add the full admin URL with its hostname and the port (if it is a non-standard port) to the Keycloak configuration.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Setting <code>hostname-admin</code> only changes the URLs Keycloak generates for the Admin Console and Admin API.
+It does not stop the Admin API from also answering on the public frontend URL — restricting administration access to the dedicated port must be enforced at the reverse proxy, which is what the rules below do.
+See the <a href="https://www.keycloak.org/server/hostname">Configuring the hostname (v2)</a> guide.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_haproxy_configuration"><a class="anchor" href="#_haproxy_configuration"></a>HAProxy configuration</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">TLS certificate</dt>
+<dd>
+<p>If you choose to have a different hostname for the admin API, update your certificate to include the admin hostname as an additional Subject Alternative Name in the certificate, or issue a separate certificate.</p>
+</dd>
+<dt class="hdlist1"><code>haproxy.cfg</code></dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Add the second <code>bind *:8444 &#8230;&#8203;</code>, which makes the frontend also listen on the admin port.
+If you choose a different port, replace <code>8444</code> in the examples below with your chosen port.</p>
+</li>
+<li>
+<p>Replace the default <code>http-request deny unless is_public_path or is_allowed_src</code> rule with the three isolation rules:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-haproxy" data-lang="haproxy">acl is_admin_port dst_port 8444
+http-request deny if !is_admin_port !is_public_path
+http-request deny if is_admin_port !is_allowed_src</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>These rules route by destination port:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Public port:</strong> only the public paths (<code>/realms/</code>, <code>/resources/</code>, <code>/.well-known/</code>) are served; any other path, including the Admin Console and Admin API, is denied.</p>
+</li>
+<li>
+<p><strong>Admin port:</strong> all paths are served, but only to the allowed source IP ranges.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>With this setup, any request to an admin path on the public port is denied with an HTTP 403 response.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="isolating-master-realm-haproxy-reencrypt"><a class="anchor" href="#isolating-master-realm-haproxy-reencrypt"></a>Isolating the master realm from the public internet</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As a security best practice, restrict access to the administrative <code>master</code> realm endpoints from public IP addresses.
+Use the following steps to allow access to these URLs only from allowed internal IP addresses.</p>
+</div>
+<div class="sect2">
+<h3 id="_haproxy_configuration_2"><a class="anchor" href="#_haproxy_configuration_2"></a>HAProxy configuration</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-haproxy" data-lang="haproxy"># Config for isolating the master realm from public internet.
+acl is_master_realm path /realms/master
+acl is_master_realm path_beg /realms/master/
+http-request deny if is_master_realm !is_allowed_src</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This configuration targets requests matching the administrative paths <code>/realms/master</code> or starting with <code>/realms/master/</code>.
+This rule matches core management traffic (such as token requests, logins, or console lookups inside the master realm) while letting other user realm paths pass through unhindered.</p>
+</div>
+<div class="paragraph">
+<p>HAProxy evaluates <code>http-request</code> rules from top to bottom, so place this deny rule before any broader allow/deny rules that would otherwise permit <code>/realms/</code> traffic from external clients.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="graceful-shutdown-considerations-haproxy-reencrypt"><a class="anchor" href="#graceful-shutdown-considerations-haproxy-reencrypt"></a>Graceful shutdown considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The HAProxy health check settings determine how long it takes for the proxy to detect that a Keycloak instance is shutting down and that connections should no longer be routed to it.</p>
+</div>
+<div class="paragraph">
+<p>With the health check settings from the configuration above (<code>inter 5s fall 3</code>), it takes up to 15 seconds (3 failures x 5-second interval) for HAProxy to mark a Keycloak instance as down.
+During this period, Keycloak must remain running to serve in-flight requests.
+Therefore, you need to configure the <code>--shutdown-delay</code> to be at least as long as the detection time:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers forwarded --health-enabled true --metrics-enabled true --https-certificate-file=/path/to/certificate --https-certificate-key-file=/path/to/key --https-client-auth=required --https-trust-store-file=/path/to/https-truststore --https-management-client-auth=none --shutdown-delay=16s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a detailed explanation of shutdown phases and how to tune the delay and timeout values, see the Graceful HTTP shutdown section in the <a href="https://www.keycloak.org/server/reverseproxy">Configuring a reverse proxy</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-certificate-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a server certificate or certificate chain in PEM format.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-certificate-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CERTIFICATE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-certificate-key-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a private key in PEM format.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-certificate-key-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CERTIFICATE_KEY_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-client-auth</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Configures the server to require/request client authentication.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-client-auth</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CLIENT_AUTH</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code>, <code>request</code>, <code>required</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-trust-store-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The trust store which holds the certificate information of the certificates to trust.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-trust-store-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_TRUST_STORE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>shutdown-delay</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Length of the pre-shutdown phase during which the server prepares for shutdown.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d]. This period allows for loadbalancer reconfiguration and draining of TLS/HTTP keepalive connections.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--shutdown-delay</code><br>
+<strong>Env:</strong> <code>KC_SHUTDOWN_DELAY</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1s</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>health-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose health check endpoints.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If enabled, health checks are available at the <code>/health</code>, <code>/health/ready</code> and <code>/health/live</code> endpoints.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--health-enabled</code><br>
+<strong>Env:</strong> <code>KC_HEALTH_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-management-client-auth</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Configures the management interface to require/request client authentication.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from HTTP options. Relevant only when something is exposed on the management interface - see the guide for details.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-management-client-auth</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_MANAGEMENT_CLIENT_AUTH</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code>, <code>request</code>, <code>required</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>metrics-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose metrics.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If enabled, metrics are available at the <code>/metrics</code> endpoint.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--metrics-enabled</code><br>
+<strong>Env:</strong> <code>KC_METRICS_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>proxy-headers</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The proxy headers that should be accepted by the server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Misconfiguration might leave the server exposed to security vulnerabilities. Takes precedence over the deprecated proxy option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--proxy-headers</code><br>
+<strong>Env:</strong> <code>KC_PROXY_HEADERS</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>forwarded</code>, <code>xforwarded</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/server/haproxy-reencrypt.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

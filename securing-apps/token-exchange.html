@@ -88,7 +88,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/securing-apps/token-exchange" >Nightly</option>
-                        <option value="https://www.keycloak.org/securing-apps/token-exchange" selected="selected">26.6.4</option>
+                        <option value="https://www.keycloak.org/securing-apps/token-exchange" selected="selected">26.7.0</option>
                     </select>
                 </div>
 
@@ -522,7 +522,9 @@ This use case can be replaced by refresh token grant.</p>
 exchanges his own token, which was issued to it. Exchanging to itself might be useful to downscope/upscope the token or filter unneeded token audiences and so on.</p>
 </li>
 <li>
-<p>Sender-constrained tokens (as defined in RFC 7800) cannot be used as <code>subject_token</code>. This includes DPoP-bound tokens and X.509 certificate-bound tokens. Standard Token Exchange only accepts Bearer access tokens as subject tokens. If you provide a sender-constrained token, the request will be rejected with an <code>invalid_request</code> error. However, you can obtain DPoP-bound tokens as <strong>output</strong> from token exchange by including a valid DPoP proof in the request. For more details, see <a href="https://www.keycloak.org/securing-apps/dpop">Securing applications with Demonstrating Proof-of-Possession (DPoP)</a>.</p>
+<p>Sender-constrained tokens (as defined in RFC 7800) can be used as <code>subject_token</code> only when the requesting client is the same client that the token was originally issued for.
+The client must also provide valid proof of possession: a DPoP proof for DPoP-bound tokens, or the matching client certificate for mTLS-bound tokens.
+If the client does not match or the proof is missing/invalid, the request is rejected. For more details on DPoP, see <a href="https://www.keycloak.org/securing-apps/dpop">Securing applications with Demonstrating Proof-of-Possession (DPoP)</a>.</p>
 </li>
 <li>
 <p>Consents - If the requester client has <strong>Consent required</strong> enabled, the token exchange is allowed only if the user is already granted consent to all requested scopes</p>
@@ -560,8 +562,8 @@ for the requester client (if the client session was not yet created).</p>
 <p>Keycloak Token exchange does not yet have support for the <code>resource</code> parameter.</p>
 </li>
 <li>
-<p>The token exchange specification mentions the concepts of <a href="https://datatracker.ietf.org/doc/html/rfc8693#name-delegation-vs-impersonation">impersonation and delegation</a>. Keycloak has support for the
-impersonation use case, but not yet for the delegation use case.</p>
+<p>The token exchange specification mentions the concepts of <a href="https://datatracker.ietf.org/doc/html/rfc8693#name-delegation-vs-impersonation">impersonation and delegation</a>. Keycloak has support for
+impersonation and experimental support for delegation through the <a href="#_token-exchange-delegation">Token Exchange Delegation</a> feature.</p>
 </li>
 </ul>
 </div>
@@ -667,7 +669,7 @@ the required target audience</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Delegation per RFC 8693</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Not supported yet</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Experimental support via <a href="#_token-exchange-delegation">Token Exchange Delegation</a></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Not supported</p></td>
 </tr>
 <tr>
@@ -692,6 +694,121 @@ the required target audience</p></td>
 </tr>
 </tbody>
 </table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_token-exchange-delegation"><a class="anchor" href="#_token-exchange-delegation"></a>Token exchange delegation</h2>
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This feature is <strong>experimental</strong> and may introduce breaking changes in future versions of Keycloak. Do not use this feature in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Token exchange delegation allows a subject to pre-authorize an actor to act on their behalf, as described in the <a href="https://datatracker.ietf.org/doc/html/rfc8693#name-delegation-vs-impersonation">delegation semantics of the token exchange specification</a>.</p>
+</div>
+<div class="paragraph">
+<p>This feature requires the <code>parameterized-scopes</code> feature to be enabled. To enable both features, start Keycloak with:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --features=token-exchange-delegation,parameterized-scopes</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_admin_delegation"><a class="anchor" href="#_admin_delegation"></a>Admin delegation</h3>
+<div class="paragraph">
+<p>Admin delegation allows a user (subject) to delegate their token to an administrator. The client requests the <code>delegation</code> scope with the administrator&#8217;s identifier as a parameter using the <a href="https://datatracker.ietf.org/doc/html/rfc9396">parameterized scopes</a> syntax.</p>
+</div>
+<div class="paragraph">
+<p>When the feature is enabled, a <code>delegation</code> client scope is automatically created in new realms. Clients that want to use delegation must add the <code>delegation</code> scope to their optional client scopes in the Admin Console.</p>
+</div>
+<div class="sect3">
+<h4 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a>How it works</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The client requests the <code>delegation</code> scope with the administrator&#8217;s (actor) identifier as a parameter, for example <code>scope=openid delegation:admin</code>.</p>
+</li>
+<li>
+<p>Keycloak validates that the specified administrator (actor) exists and has the <code>impersonation</code> role from the <code>realm-management</code> client.</p>
+</li>
+<li>
+<p>The user (subject) is presented with a consent screen to approve the delegation.</p>
+</li>
+<li>
+<p>If the user consents and validation passes, the issued token includes the <code>may_act</code> claim with the actor&#8217;s user ID as the <code>sub</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "sub": "subject@example.com",
+  "may_act": {
+    "sub": "f1234567-89ab-cdef-0123-456789abcdef"
+  },
+  "scope": "openid delegation:admin",
+  ...
+}</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The <code>may_act</code> claim declares that the specified administrator (actor) is authorized to act on behalf of the user (subject). The <code>sub</code> inside <code>may_act</code> contains the actor&#8217;s user ID, consistent with Keycloak&#8217;s standard <code>sub</code> claim semantics. An external Security Token Service (STS) receiving this token can verify the delegation authorization directly from the claim without querying back to Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>If the administrator (actor) does not have impersonation permission, the delegation scope is silently dropped and the <code>may_act</code> claim is not included in the token. The consent for delegation is always required and is not stored permanently - the user must approve delegation each login session.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_adding_additional_claims_to_may_act"><a class="anchor" href="#_adding_additional_claims_to_may_act"></a>Adding additional claims to <code>may_act</code></h4>
+<div class="paragraph">
+<p>By default, only the actor&#8217;s <code>sub</code> (user ID) is included in the <code>may_act</code> claim. Additional claims can be added by configuring extra "Parameterized Scope User Property" mappers on the <code>delegation</code> client scope in the Admin Console.</p>
+</div>
+<div class="paragraph">
+<p>For example, to include the actor&#8217;s username:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Client scopes</strong> &#8594; <strong>delegation</strong> &#8594; <strong>Mappers</strong> &#8594; <strong>Add mapper</strong> &#8594; <strong>By type</strong> &#8594; <strong>Parameterized Scope User Property</strong>.</p>
+</li>
+<li>
+<p>Set <strong>User Property</strong> to <code>username</code>.</p>
+</li>
+<li>
+<p>Set <strong>Token Claim Name</strong> to <code>may_act.preferred_username</code>.</p>
+</li>
+<li>
+<p>Enable the token types where the claim should be included (e.g. access token, ID token).</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The resulting token will then include:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "may_act": {
+    "sub": "f1234567-89ab-cdef-0123-456789abcdef",
+    "preferred_username": "admin"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Other useful claims to add include <code>may_act.email</code> (user property <code>email</code>) or <code>may_act.iss</code> (for cross-realm delegation scenarios).</p>
+</div>
+</div>
 </div>
 </div>
 </div>

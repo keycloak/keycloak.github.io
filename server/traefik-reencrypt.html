@@ -1,0 +1,824 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Traefik with TLS re-encrypt - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Traefik with TLS re-encrypt">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Configure Traefik as a TLS re-encrypt load balancer for Keycloak.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/server/traefik-reencrypt">
+<meta property="og:url" content="https://www.keycloak.org/server/traefik-reencrypt">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://events.linuxfoundation.org/kubecon-cloudnativecon-japan/co-located-events/keycloakcon/">
+        Join us at KeycloakCon Japan 2026, colocated with KubeCon Japan 2026 &middot; July 28 &middot; <span class="fw-semibold text-decoration-underline">Register Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">Traefik with TLS re-encrypt</li>
+                    </ol>
+                </nav>
+            </div>
+
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/server/traefik-reencrypt" >Nightly</option>
+                        <option value="https://www.keycloak.org/server/traefik-reencrypt" selected="selected">26.7.0</option>
+                    </select>
+                </div>
+
+                <h1>Traefik with TLS re-encrypt</h1>
+                    <span class="text-muted">Configure Traefik as a TLS re-encrypt load balancer for Keycloak.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide describes how to configure <a href="https://traefik.io/">Traefik</a> as a TLS re-encrypt load balancer in front of Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>In TLS re-encrypt mode, Traefik terminates the incoming TLS connection and establishes a new encrypted connection to Keycloak.
+Traefik operates at Layer 7 (HTTP).
+Unlike passthrough, end-to-end TLS encryption between client and Keycloak is not preserved, but the proxy gains the ability to inspect and modify HTTP traffic.</p>
+</div>
+<div class="paragraph">
+<p>For a general overview of TLS re-encrypt and how it compares to passthrough, see the <a href="https://www.keycloak.org/server/reverseproxy">Configuring a reverse proxy</a> guide.</p>
+</div>
+<div class="paragraph">
+<p>A ready-to-run example with a Compose file is available in the <a href="https://github.com/keycloak/keycloak-quickstarts/tree/main/proxy/traefik/reencrypt">quickstart repository</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="traefik-configuration-reencrypt"><a class="anchor" href="#traefik-configuration-reencrypt"></a>Traefik configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Traefik separates its configuration into two files:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A <strong>static configuration</strong> file (<code>traefik.yaml</code>) that defines entrypoints and providers, loaded once at startup.</p>
+</li>
+<li>
+<p>A <strong>dynamic configuration</strong> file (<code>keycloak.yaml</code>) that defines routing, TLS, and backend transport settings, hot-reloaded by Traefik at runtime.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_static_configuration_traefik_yaml"><a class="anchor" href="#_static_configuration_traefik_yaml"></a>Static configuration (<code>traefik.yaml</code>)</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">entryPoints:
+  keycloak: <i class="conum" data-value="1"></i><b>(1)</b>
+    address: ":8443"
+api:
+  dashboard: true
+  insecure: true
+log:
+  level: INFO
+providers:
+  file:
+    directory: "/mnt" <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Defines an entrypoint named <code>keycloak</code> that listens for TLS connections on port <code>8443</code>.
+The name <code>keycloak</code> is used in the dynamic configuration to bind routers to this entrypoint.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Instructs Traefik to watch the <code>/mnt</code> directory for dynamic configuration files.
+The <code>keycloak.yaml</code> dynamic configuration file is mounted here.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dynamic_configuration_keycloak_yaml"><a class="anchor" href="#_dynamic_configuration_keycloak_yaml"></a>Dynamic configuration (<code>keycloak.yaml</code>)</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">tls:
+  certificates:
+    - certFile: /certs/traefik-external/cert.pem <i class="conum" data-value="1"></i><b>(1)</b>
+      keyFile: /certs/traefik-external/key.pem
+  options:
+    default:
+      clientAuth:
+        # CA chain used to verify client certificates presented during the TLS handshake
+        caFiles:
+          - /certs/client-ca-chain.pem
+        # Request a client certificate but do not require one; clients without one can still connect
+        clientAuthType: VerifyClientCertIfGiven
+
+http:
+  serversTransports:
+    keycloak-transport:
+      certificates:
+        - certFile: /certs/traefik-internal/cert.pem <i class="conum" data-value="2"></i><b>(2)</b>
+          keyFile: /certs/traefik-internal/key.pem
+      rootCAs:
+        - /certs/keycloak1-cert.pem <i class="conum" data-value="3"></i><b>(3)</b>
+        - /certs/keycloak2-cert.pem
+
+  middlewares:
+    filter-headers:
+      headers:
+        customRequestHeaders:
+          # Prevent external spoofing of proxy identity headers (IP, protocol, host, path).
+          # Traefik re-adds its own verified values after stripping client-supplied ones.
+          Forwarded: "" <i class="conum" data-value="4"></i><b>(4)</b>
+          X-Forwarded-For: ""
+          X-Forwarded-Proto: ""
+          X-Forwarded-Host: ""
+          X-Forwarded-Port: ""
+          X-Forwarded-Server: ""
+          X-Forwarded-Prefix: ""
+          X-Forwarded-Access-Token: ""
+          # Prevent external spoofing of reverse-proxy metadata headers
+          X-Original-Forwarded-For: ""
+          X-Original-URL: ""
+          X-Original-Method: ""
+          X-Real-IP: ""
+          X-Forwarded-Tls-Client-Cert: ""
+          X-Forwarded-Tls-Client-Cert-Info: ""
+          # Prevent external tracing context injection (W3C Trace Context / Baggage)
+          Traceparent: ""
+          Tracestate: ""
+          Baggage: ""
+          # Prevent external tracing context injection (Zipkin, Jaeger, OpenTracing)
+          B3: ""
+          X-B3-Traceid: ""
+          X-B3-Spanid: ""
+          X-B3-Parentspanid: ""
+          X-B3-Sampled: ""
+          X-B3-Flags: ""
+          Uber-Trace-Id: ""
+          X-Ot-Span-Context: ""
+
+    # Forward the client certificate verified during the TLS handshake as a PEM block
+    pass-client-cert:
+      passTLSClientCert:
+        pem: true
+
+    # Allowed source IP ranges. Replace with your internal IP address ranges. <i class="conum" data-value="5"></i><b>(5)</b>
+    ip-allowlist:
+      ipAllowList:
+        sourceRange:
+          - 192.168.0.0/16
+          - 172.16.0.0/12
+          - 10.0.0.0/8
+          - 127.0.0.0/8
+
+  routers:
+    # Public router: accessible from any source IP address. <i class="conum" data-value="6"></i><b>(6)</b>
+    keycloak-public:
+      entryPoints:
+        - keycloak
+      rule: "PathPrefix(`/realms/`) || PathPrefix(`/resources/`) || PathPrefix(`/.well-known/`)"
+      middlewares:
+        - filter-headers
+        - pass-client-cert
+      tls: {}
+      service: keycloak
+
+    # Internal router: all other paths are restricted to the allowed source IP ranges. <i class="conum" data-value="7"></i><b>(7)</b>
+    keycloak-internal:
+      entryPoints:
+        - keycloak
+      rule: "PathPrefix(`/`)"
+      priority: 1
+      middlewares:
+        - filter-headers
+        - pass-client-cert
+        - ip-allowlist
+      tls: {}
+      service: keycloak
+
+  services:
+    keycloak:
+      loadBalancer:
+        serversTransport: keycloak-transport <i class="conum" data-value="8"></i><b>(8)</b>
+        healthCheck:
+          path: /health/ready <i class="conum" data-value="9"></i><b>(9)</b>
+          port: 9000
+          scheme: https
+          interval: "5s"
+          timeout: "3s"
+        servers:
+          - url: "https://keycloak1:8443" <i class="conum" data-value="10"></i><b>(10)</b>
+          - url: "https://keycloak2:8443"</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The certificate Traefik presents to clients on the frontend TLS connection.
+This is the externally trusted certificate that browsers verify.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The certificate Traefik presents to Keycloak on the backend mTLS connection.
+Keycloak is configured to require client authentication and will verify this certificate against its truststore.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The public certificates of each Keycloak backend server.
+Traefik verifies each backend server&#8217;s TLS certificate against these entries, ensuring the connection goes to a trusted Keycloak instance and not an impersonator.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>To remove an HTTP header from requests forwarded to Keycloak, define a key-value entry in <code>customRequestHeaders</code> where the key is the name of the HTTP header and the value is an empty string to indicate the header should be removed.
+Removing specific HTTP headers prevents external clients from spoofing proxy identity headers (such as <code>Forwarded</code>, <code>X-Forwarded-*</code>, and <code>X-Real-IP</code>), injecting authentication-related headers (such as <code>X-Forwarded-Access-Token</code>), or injecting distributed tracing context (such as W3C Trace Context, Zipkin B3, or Jaeger headers).
+Unlike HAProxy, Traefik does not support regex-based header matching, so each header variant must be listed explicitly.
+For the full list of recommended headers to filter, see the <a href="https://www.keycloak.org/server/reverseproxy#header-filtering-recommendations">Configuring a reverse proxy</a> guide.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Restricts access so that only public Keycloak paths are reachable from external networks.
+Requests to non-public paths (such as the Admin API or Admin Console) are only allowed from the configured internal IP ranges.
+Replace the example ranges with your internal IP address ranges.
+For the full list of paths and recommendations, see the <a href="https://www.keycloak.org/server/reverseproxy#_exposed_path_recommendations">Configuring a reverse proxy</a> guide.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The public router matches only the paths that must be reachable by external clients (<code>/realms/</code>, <code>/resources/</code>, and <code>/.well-known/</code>) and is therefore not subject to the IP allowlist.
+The <code>filter-headers</code> middleware and <code>tls</code> settings apply as on the internal router.
+With these settings, the redirect to the welcome screen or Admin UI will not work from external IP addresses, and this is expected.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>The internal router matches all remaining paths and additionally applies the <code>ip-allowlist</code> middleware, so these paths are only reachable from the allowed source IP ranges.
+The <code>priority: 1</code> is set deliberately low so that Traefik always evaluates the more specific public router first; only requests that do not match a public path fall through to this router.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>Links the load balancer to the named transport above, activating mTLS for all connections to the backend Keycloak servers.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>Configures <a href="https://doc.traefik.io/traefik/routing/services/#health-check">HTTP health checks</a> against Keycloak&#8217;s readiness endpoint on the management port (<code>9000</code>) over HTTPS.
+The management port does not require client authentication, so no mTLS client certificate is needed for health check connections.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="10"></i><b>10</b></td>
+<td>The backend Keycloak servers.
+Traefik load-balances requests across both instances using round-robin.</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="keycloak-configuration-traefik-reencrypt"><a class="anchor" href="#keycloak-configuration-traefik-reencrypt"></a>Keycloak configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With TLS re-encrypt, Keycloak requires the following configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers xforwarded --health-enabled true --metrics-enabled true --https-certificate-file=/path/to/certificate --https-certificate-key-file=/path/to/key --https-client-auth=required --https-trust-store-file=/path/to/https-truststore --https-management-client-auth=none</code></pre>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--proxy-headers xforwarded</code></dt>
+<dd>
+<p>Instructs Keycloak to read the client IP address and protocol from the <code>X-Forwarded-<strong></code> headers set by Traefik.
+In re-encrypt mode, Traefik overwrites any incoming <code>X-Forwarded-</strong></code> headers with the correct client values before forwarding requests to Keycloak, preventing clients from injecting misleading header values.
+Do not set <code>--proxy-protocol-enabled</code> when using TLS re-encrypt.
+The PROXY protocol is only relevant for TLS passthrough (TCP mode).</p>
+</dd>
+<dt class="hdlist1"><code>--health-enabled true</code></dt>
+<dd>
+<p>Enables the health check endpoints on the management port (<code>9000</code>).
+Without this, the <code>/health/ready</code> endpoint that Traefik polls will not be available, and Traefik will mark all Keycloak instances as down.</p>
+</dd>
+<dt class="hdlist1"><code>--metrics-enabled true</code></dt>
+<dd>
+<p>Enables the metrics endpoints on the management port.
+Enabling metrics also enables an additional status check for the database, so it is recommended to enable metrics.</p>
+</dd>
+<dt class="hdlist1"><code>--https-certificate-file=/path/to/certificate</code> and <code>--https-certificate-key-file=/path/to/key</code></dt>
+<dd>
+<p>Configure the certificate and the private key Keycloak will use for HTTPS.
+See the <a href="https://www.keycloak.org/server/enabletls">Configuring TLS</a> guide for additional details.</p>
+</dd>
+<dt class="hdlist1"><code>--https-client-auth=required</code></dt>
+<dd>
+<p>Configures Keycloak to require client authentication, for mutual TLS.</p>
+</dd>
+<dt class="hdlist1"><code>--https-trust-store-file=/path/to/https-truststore</code></dt>
+<dd>
+<p>Configures a truststore for client authentication.
+In this case the truststore should contain the public certificate of the Traefik proxy.
+See the <a href="https://www.keycloak.org/server/mutual-tls">Configuring trusted certificates for mTLS</a> guide for additional details.</p>
+</dd>
+<dt class="hdlist1"><code>--https-management-client-auth=none</code></dt>
+<dd>
+<p>Disables the client authentication requirement for the management endpoint.
+This allows Traefik to perform HTTPS health checks against the management port (<code>9000</code>) without needing to present the mTLS client certificate.</p>
+</dd>
+</dl>
+</div>
+<div class="sect2">
+<h3 id="_enabling_client_certificate_lookups"><a class="anchor" href="#_enabling_client_certificate_lookups"></a>Enabling client certificate lookups</h3>
+<div class="paragraph">
+<p>The mTLS configuration above secures the connection between Traefik and Keycloak.
+To additionally use a certificate that an end user presents to Traefik for X.509 authentication, Keycloak must read the certificate that the <code>pass-client-cert</code> middleware forwards in the <code>X-Forwarded-Tls-Client-Cert</code> header.
+Enable the <code>traefik</code> client certificate lookup provider when starting Keycloak:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-x509cert-lookup--provider=traefik</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>traefik</code> provider reads the client certificate and any intermediate CA certificates from the <code>X-Forwarded-Tls-Client-Cert</code> header, so no header names need to be configured.
+If your certificate chain contains more intermediate certificates than the default, set the <code>certificate-chain-length</code> option accordingly.
+Otherwise, the provider discards the request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --spi-x509cert-lookup--provider=traefik --spi-x509cert-lookup--traefik--certificate-chain-length=2</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="admin-dedicated-port-traefik-reencrypt"><a class="anchor" href="#admin-dedicated-port-traefik-reencrypt"></a>Optional: Admin UI and Admin API on a dedicated hostname and port</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the Admin UI and Admin API are served on the same port as the public endpoints, protected only by the <code>ip-allowlist</code> middleware.
+For stricter network-level isolation, you can move them to a dedicated hostname and port so they can be independently firewalled.</p>
+</div>
+<div class="paragraph">
+<p>To enable this, add the configurations outlined in the following subsections.</p>
+</div>
+<div class="sect2">
+<h3 id="_keycloak_configuration"><a class="anchor" href="#_keycloak_configuration"></a>Keycloak configuration</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--hostname-admin=https://...</code></dt>
+<dd>
+<p>Add the full admin URL with its hostname and the port (if it is a non-standard port) to the Keycloak configuration.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Setting <code>hostname-admin</code> only changes the URLs Keycloak generates for the Admin Console and Admin API.
+It does not stop the Admin API from also answering on the public frontend URL — restricting administration access to the dedicated port must be enforced at the reverse proxy, which is what the rules below do.
+See the <a href="https://www.keycloak.org/server/hostname">Configuring the hostname (v2)</a> guide.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_traefik_configuration"><a class="anchor" href="#_traefik_configuration"></a>Traefik configuration</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">TLS certificate</dt>
+<dd>
+<p>If you choose to have a different hostname for the admin API, update your certificate to include the admin hostname as an additional Subject Alternative Name in the certificate, or issue a separate certificate.</p>
+</dd>
+<dt class="hdlist1"><code>traefik.yaml</code></dt>
+<dd>
+<p>Add the <code>keycloak-admin</code> entrypoint to create a second Traefik listener on port 8444:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">entryPoints:
+  keycloak-admin:
+    ...
+    address: ":8444" <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Replace with a port of your choice, matching the port configured as admin URL in Keycloak.</td>
+</tr>
+</table>
+</div>
+</dd>
+<dt class="hdlist1"><code>keycloak.yaml</code></dt>
+<dd>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Remove the <code>keycloak-internal</code> router as it is no longer needed. The admin paths are now handled exclusively by the dedicated <code>keycloak-admin</code> router.
+Leaving both enabled would cause the <code>keycloak-internal</code> router to match admin paths on the original endpoint as well.</p>
+</li>
+<li>
+<p>Add the <code>keycloak-admin</code> router, which routes all traffic on the <code>keycloak-admin</code> entrypoint to the <code>keycloak</code> service, restricted to the <code>ip-allowlist</code>.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">  routers:
+    ...
+    keycloak-admin:
+      entryPoints:
+        - keycloak-admin
+      rule: "PathPrefix(`/`)"
+      middlewares:
+        - filter-headers
+        - pass-client-cert
+        - ip-allowlist
+      tls: { }
+      service: keycloak</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>With this setup, any request to an admin path on the public port (8443 in our example) will fall through to the <code>keycloak-public</code> router, which only matches <code>/realms/</code>, <code>/resources/</code>, and <code>/.well-known/</code>.
+Admin paths on this port will return a 404.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="isolating-master-realm-traefik-reencrypt"><a class="anchor" href="#isolating-master-realm-traefik-reencrypt"></a>Isolating the master realm from the public internet</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As a security best practice, prevent logins to the administrative <code>master</code> realm from public IP addresses.
+Use the following steps to allow access to these URLs only from allowed internal IP addresses.</p>
+</div>
+<div class="sect2">
+<h3 id="_traefik_configuration_2"><a class="anchor" href="#_traefik_configuration_2"></a>Traefik configuration</h3>
+<div class="paragraph">
+<p>The <code>keycloak-master</code> router isolates the default management realm from custom application realms.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">  routers:
+    keycloak-master:
+      entryPoints:
+        - keycloak
+      rule: "PathRegexp(`^/realms/master(/|$)`)"
+      priority: 100
+      middlewares:
+        - filter-headers
+        - pass-client-cert
+        - ip-allowlist
+      tls: { }
+      service: keycloak</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This router targets requests matching the regular expression <code>^/realms/master(/|$)</code>.
+This rule matches core management traffic (such as token requests, logins, or console lookups inside the master realm) while letting other user realm paths pass through unhindered.</p>
+</div>
+<div class="paragraph">
+<p>The explicit use of <code>priority: 100</code> on the master router ensures it is evaluated before the <code>keycloak-public</code> router.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="graceful-shutdown-considerations-traefik-reencrypt"><a class="anchor" href="#graceful-shutdown-considerations-traefik-reencrypt"></a>Graceful shutdown considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Traefik health check settings determine how long it takes for the proxy to detect that a Keycloak instance is shutting down and that connections should no longer be routed to it.</p>
+</div>
+<div class="paragraph">
+<p>With the health check settings from the configuration above (<code>interval: 5s</code>, <code>timeout: 3s</code>), it takes up to 8 seconds (<code>interval + timeout</code>) for Traefik to mark a Keycloak instance as down.
+During this period, Keycloak must remain running to serve in-flight requests.
+Therefore, you need to configure the <code>--shutdown-delay</code> to be at least as long as the detection time:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --proxy-headers xforwarded --health-enabled true --metrics-enabled true --https-certificate-file=/path/to/certificate --https-certificate-key-file=/path/to/key --https-client-auth=required --https-trust-store-file=/path/to/https-truststore --https-management-client-auth=none --shutdown-delay=8s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a detailed explanation of shutdown phases and how to tune the delay and timeout values, see the Graceful HTTP shutdown section in the <a href="https://www.keycloak.org/server/reverseproxy">Configuring a reverse proxy</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-certificate-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a server certificate or certificate chain in PEM format.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-certificate-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CERTIFICATE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-certificate-key-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a private key in PEM format.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-certificate-key-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CERTIFICATE_KEY_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-client-auth</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Configures the server to require/request client authentication.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-client-auth</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CLIENT_AUTH</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code>, <code>request</code>, <code>required</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-trust-store-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The trust store which holds the certificate information of the certificates to trust.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-trust-store-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_TRUST_STORE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>shutdown-delay</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Length of the pre-shutdown phase during which the server prepares for shutdown.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d]. This period allows for loadbalancer reconfiguration and draining of TLS/HTTP keepalive connections.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--shutdown-delay</code><br>
+<strong>Env:</strong> <code>KC_SHUTDOWN_DELAY</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1s</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>health-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose health check endpoints.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If enabled, health checks are available at the <code>/health</code>, <code>/health/ready</code> and <code>/health/live</code> endpoints.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--health-enabled</code><br>
+<strong>Env:</strong> <code>KC_HEALTH_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-management-client-auth</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Configures the management interface to require/request client authentication.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from HTTP options. Relevant only when something is exposed on the management interface - see the guide for details.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-management-client-auth</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_MANAGEMENT_CLIENT_AUTH</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code>, <code>request</code>, <code>required</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>metrics-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose metrics.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If enabled, metrics are available at the <code>/metrics</code> endpoint.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--metrics-enabled</code><br>
+<strong>Env:</strong> <code>KC_METRICS_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>proxy-headers</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The proxy headers that should be accepted by the server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Misconfiguration might leave the server exposed to security vulnerabilities. Takes precedence over the deprecated proxy option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--proxy-headers</code><br>
+<strong>Env:</strong> <code>KC_PROXY_HEADERS</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>forwarded</code>, <code>xforwarded</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/server/traefik-reencrypt.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

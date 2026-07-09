@@ -88,7 +88,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/server/db" >Nightly</option>
-                        <option value="https://www.keycloak.org/server/db" selected="selected">26.6.4</option>
+                        <option value="https://www.keycloak.org/server/db" selected="selected">26.7.0</option>
                     </select>
                 </div>
 
@@ -592,6 +592,16 @@ Default: <code>10s</code>.</p>
 <h2 id="_preparing_for_postgresql"><a class="anchor" href="#_preparing_for_postgresql"></a>Preparing for PostgreSQL</h2>
 <div class="sectionbody">
 <div class="sect2">
+<h3 id="_asynchronous_commits"><a class="anchor" href="#_asynchronous_commits"></a>Asynchronous commits</h3>
+<div class="paragraph">
+<p>Transactions that update only ephemeral tables like persisted user sessions, client sessions, login failures, or events will use PostgreSQL&#8217;s async commit feature.
+Logouts will still force a synchronous commit.</p>
+</div>
+<div class="paragraph">
+<p>You can opt out of this feature by setting <code>--spi-connections-jpa--quarkus--async-commit=false</code></p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_writer_and_reader_instances"><a class="anchor" href="#_writer_and_reader_instances"></a>Writer and reader instances</h3>
 <div class="paragraph">
 <p>When running PostgreSQL reader and writer instances, Keycloak needs to always connect to the writer instance to do its work.
@@ -660,6 +670,9 @@ Secure the connection by adding the options:</p>
 <h2 id="preparing-keycloak-for-amazon-aurora-postgresql"><a class="anchor" href="#preparing-keycloak-for-amazon-aurora-postgresql"></a>Preparing for Amazon Aurora PostgreSQL</h2>
 <div class="sectionbody">
 <div class="paragraph">
+<p>Asynchronous commits, an optimization for PostgreSQL databases, are disabled when logical replication is enabled as they might conflict with Debezium change data capture.</p>
+</div>
+<div class="paragraph">
 <p>When using Amazon Aurora PostgreSQL, the <a href="https://github.com/awslabs/aws-advanced-jdbc-wrapper">Amazon Web Services JDBC Driver</a> offers additional features like transfer of database connections when a writer instance changes in a Multi-AZ setup.
 This driver is not part of the distribution and needs to be installed before it can be used.</p>
 </div>
@@ -679,7 +692,7 @@ This driver is not part of the distribution and needs to be installed before it 
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-dockerfile" data-lang="dockerfile">FROM quay.io/keycloak/keycloak:latest
-ADD --chmod=0666 https://github.com/awslabs/aws-advanced-jdbc-wrapper/releases/download/2.5.6/aws-advanced-jdbc-wrapper-2.5.6.jar /opt/keycloak/providers/aws-advanced-jdbc-wrapper.jar</code></pre>
+ADD --chmod=0666 https://github.com/awslabs/aws-advanced-jdbc-wrapper/releases/download/4.0.1/aws-advanced-jdbc-wrapper-4.0.1.jar /opt/keycloak/providers/aws-advanced-jdbc-wrapper.jar</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -777,6 +790,39 @@ You then need to disable it by setting the parameter <code>sql_generate_invisibl
 <div class="content">
 <pre class="highlight"><code class="language-sql" data-lang="sql">ALTER DATABASE &lt;your-database-name&gt; SET READ_COMMITTED_SNAPSHOT ON;</code></pre>
 </div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>ALTER DATABASE</code> command requires exclusive access to the database.
+Ensure no other database connections are active, or the command will block until all other connections are closed.</p>
+</li>
+<li>
+<p>For that, shutdown all instances of Keycloak first, and start them again once the change is complete.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To verify the current isolation level, connect to the database and execute:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">DBCC USEROPTIONS;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the output, look for the row where the option is <code>isolation level</code>. The value should be <code>read committed snapshot</code> after the <code>ALTER DATABASE</code> command has been applied.</p>
 </div>
 </div>
 </div>
@@ -958,6 +1004,103 @@ Keycloak automatically translates these options to the appropriate vendor-specif
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db=postgres --db-tls-mode=verify-server --truststore-paths=/path/to/certificate.pem</code></pre>
 </div>
+</div>
+<div class="sect2">
+<h3 id="_enabling_mtls"><a class="anchor" href="#_enabling_mtls"></a>Enabling mTLS</h3>
+<div class="paragraph">
+<p>For environments that require mutual TLS authentication, Keycloak supports configuring a client keystore in addition to the truststore.
+With mTLS, both the server and the client authenticate each other using certificates.</p>
+</div>
+<div class="paragraph">
+<p>The following additional options are available for mTLS:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>db-mtls-key-store-file</code></dt>
+<dd>
+<p>The path to the keystore file containing the client certificate and private key used for mTLS authentication with the database server.</p>
+</dd>
+<dt class="hdlist1"><code>db-mtls-key-store-password</code></dt>
+<dd>
+<p>The password to access the keystore file specified in <code>db-mtls-key-store-file</code>.</p>
+</dd>
+<dt class="hdlist1"><code>db-mtls-key-store-type</code></dt>
+<dd>
+<p>The type of the keystore file.
+Common values include <code>JKS</code> (Java KeyStore) and <code>PKCS12</code>.
+If not specified, the driver&#8217;s default keystore type is used.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>The following example demonstrates how to configure database mTLS using these options for a PostgreSQL database.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db=postgres --db-tls-mode=verify-server --db-tls-trust-store-file=/path/to/truststore.pem --db-mtls-key-store-file=/path/to/keystore.p12 --db-mtls-key-store-password=changeit</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vendor_specific_tls_and_mtls_notes"><a class="anchor" href="#_vendor_specific_tls_and_mtls_notes"></a>Vendor-specific TLS and mTLS notes</h3>
+<div class="paragraph">
+<p>The following table summarizes the expected file types, mTLS support, and additional considerations for each supported database vendor.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 22.2222%;">
+<col style="width: 22.2222%;">
+<col style="width: 11.1111%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Vendor</th>
+<th class="tableblock halign-left valign-top">Truststore type</th>
+<th class="tableblock halign-left valign-top">Keystore type</th>
+<th class="tableblock halign-left valign-top">mTLS</th>
+<th class="tableblock halign-left valign-top">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PEM certificate file (<code>.pem</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PKCS#12 (<code>.p12</code> or <code>.pfx</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The truststore file must be a PEM-encoded certificate. The keystore must be PKCS#12 with the private key alias set to <code>user</code> as this is hardcoded in pgjdbc&#8217;s <code>PKCS12KeyManager</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MySQL / TiDB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JKS or PKCS#12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JKS or PKCS#12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The truststore and keystore file paths must be prefixed with <code>file://</code> as the JDBC driver expects a URL e.g. <code><a href="file:///path/to/keystore.p12" class="bare">file:///path/to/keystore.p12</a></code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MariaDB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PEM certificate file (<code>.pem</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JKS or PKCS#12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oracle</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JKS or PKCS#12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JKS or PKCS#12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">When mTLS is configured, Keycloak automatically sets <code>oracle.net.authentication_services=(TCPS)</code> to enable certificate-based authentication without requiring a database password, if this is not desired you should manually configure the JDBC URL.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MSSQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JKS or PKCS#12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MSSQL does not natively support mTLS as a general-purpose authentication method for standard external client-to-database connections.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>
@@ -1205,7 +1348,7 @@ In the example above, the <code>org.your.extension.UserEntity</code> JPA entity 
 <h4 id="_2_required_properties"><a class="anchor" href="#_2_required_properties"></a>2. Required properties</h4>
 <div class="paragraph">
 <p>Once you have set up your <code>persistence.xml</code>, the minimal configuration on the Keycloak side is the setup of the DB kind/vendor for the specified datasource.
-You need to specify the build time option <code>db-kind-&lt;name&gt;</code>, where the <code>&lt;name&gt;</code> is the name of your datasource and must be the <strong>same</strong> as specified in the <code>persistence.xml</code> file.</p>
+You need to specify the build time option <code>db-kind-&lt;datasource&gt;</code>, where the <code>&lt;datasource&gt;</code> is the name of your datasource and must be the <strong>same</strong> as specified in the <code>persistence.xml</code> file.</p>
 </div>
 <div class="paragraph">
 <p>Therefore, you can enable the additional datasource <code>user-store</code> as follows (<code>postgres</code> as an example):</p>
@@ -1342,6 +1485,9 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 <p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
 </div>
 <div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-connect-timeout-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
 <p><strong>CLI:</strong> <code>--db-connect-timeout</code><br>
 <strong>Env:</strong> <code>KC_DB_CONNECT_TIMEOUT</code></p>
 </div>
@@ -1418,6 +1564,72 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>10000</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-mtls-key-store-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The path to the keystore file containing the client certificate and private key used for mTLS authentication with the database server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-mtls-key-store-file-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-mtls-key-store-file</code><br>
+<strong>Env:</strong> <code>KC_DB_MTLS_KEY_STORE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-mtls-key-store-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password to access the keystore file specified in db-mtls-key-store-file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-mtls-key-store-password-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-mtls-key-store-password</code><br>
+<strong>Env:</strong> <code>KC_DB_MTLS_KEY_STORE_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-mtls-key-store-type</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The type of the keystore file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Common values include <code>JKS</code> (Java KeyStore) and <code>PKCS12</code>. If not specified, it uses the driver&#8217;s default.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-mtls-key-store-type-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-mtls-key-store-type</code><br>
+<strong>Env:</strong> <code>KC_DB_MTLS_KEY_STORE_TYPE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -1842,6 +2054,13 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </tbody>
 </table>
 <div class="sect2">
+<h3 id="_health_checks"><a class="anchor" href="#_health_checks"></a>Health checks</h3>
+<div class="paragraph">
+<p>Additional datasources are included by default in the readiness health check endpoint. If the additional datasource is not critical to your usage, you may exclude it from
+the health check with <code>db-health-exclude-&lt;datasource&gt;</code> set to <code>true</code>.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_additional_datasources_options"><a class="anchor" href="#_additional_datasources_options"></a>Additional datasources options</h3>
 <table class="tableblock frame-all grid-all stretch options">
 <colgroup>
@@ -1857,6 +2076,27 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </tr>
 </thead>
 <tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-connect-timeout-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Sets the JDBC driver connection timeout and login timeout. May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-connect-timeout-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_CONNECT_TIMEOUT_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10s</code></p></td>
+</tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>db-debug-jpql-&lt;datasource&gt;</code></span></p>
@@ -1919,6 +2159,24 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-health-exclude-&lt;datasource&gt;</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If you have enabled health endpoints, but want the given datasource excluded from the health check.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-health-exclude-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_HEALTH_EXCLUDE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>db-kind-&lt;datasource&gt;</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
 </div>
 <div class="paragraph">
@@ -1927,7 +2185,7 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 <div class="openblock options-extended">
 <div class="content">
 <div class="paragraph">
-<p><span class="options-description-extended">The database vendor. In production mode the default value of <code>dev-file</code> is deprecated, you should explicitly specify the db instead.</span></p>
+<p><span class="options-description-extended">The database vendor.</span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--db-kind-&lt;datasource&gt;</code><br>
@@ -1958,6 +2216,69 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>10000</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-mtls-key-store-file-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The path to the keystore file containing the client certificate and private key used for mTLS authentication with the database server.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-mtls-key-store-file-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_MTLS_KEY_STORE_FILE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-mtls-key-store-password-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The password to access the keystore file specified in db-mtls-key-store-file.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-mtls-key-store-password-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_MTLS_KEY_STORE_PASSWORD_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-mtls-key-store-type-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The type of the keystore file. Common values include <code>JKS</code> (Java KeyStore) and <code>PKCS12</code>. If not specified, it uses the driver&#8217;s default.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-mtls-key-store-type-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_MTLS_KEY_STORE_TYPE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
@@ -2180,6 +2501,9 @@ Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of
 <div class="content">
 <div class="paragraph">
 <p><span class="options-description-extended">The full database JDBC URL. If not provided, a default URL is set based on the selected database vendor. For instance, if using <code>postgres</code>, the default JDBC URL would be <code>jdbc:postgresql://localhost/keycloak</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-url-full-&lt;datasource&gt;</code></span></p>
 </div>
 <div class="paragraph">
 <p><strong>CLI:</strong> <code>--db-url-full-&lt;datasource&gt;</code><br>
