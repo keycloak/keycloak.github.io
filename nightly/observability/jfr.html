@@ -1,0 +1,345 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Troubleshooting performance issues using Java Flight Recorder (JFR) - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Troubleshooting performance issues using Java Flight Recorder (JFR)">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Create Java Flight Recorder (JFR) recordings of a Keycloak server to diagnose performance issues">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/nightly/observability/jfr">
+<meta property="og:url" content="https://www.keycloak.org/nightly/observability/jfr">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://events.linuxfoundation.org/kubecon-cloudnativecon-japan/co-located-events/keycloakcon/">
+        Join us at KeycloakCon Japan 2026, colocated with KubeCon Japan 2026 &middot; July 28 &middot; <span class="fw-semibold text-decoration-underline">Register Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12">
+            <div class="d-flex align-items-center mb-3">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/nightly/guides#observability">Observability</a></li>
+                        <li class="breadcrumb-item active">Troubleshooting performance issues using Java Flight Recorder (JFR)</li>
+                    </ol>
+                </nav>
+            </div>
+
+                <div class="mb-4 alert alert-warning" role="alert">
+                  <h4 class="no-top-margin">Nightly release</h4>
+
+                  This guide is for the unstable nightly release, for the latest release go <a href="https://www.keycloak.org/observability/jfr">here</a>.
+                </div>
+
+            <div class="mb-4">
+                <div data-nosnippet class="me-3 float-end">
+                    <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+                        <option value="https://www.keycloak.org/nightly/observability/jfr" selected="selected">Nightly</option>
+                        <option value="https://www.keycloak.org/observability/jfr" >26.7.0</option>
+                    </select>
+                </div>
+
+                <h1>Troubleshooting performance issues using Java Flight Recorder (JFR)</h1>
+                    <span class="text-muted">Create Java Flight Recorder (JFR) recordings of a Keycloak server to diagnose performance issues</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div class="sect1">
+<h2 id="_what_is_java_flight_recorder"><a class="anchor" href="#_what_is_java_flight_recorder"></a>What is Java Flight Recorder</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Java Flight Recorder (JFR) is a standard monitoring tool for collecting diagnostic and profiling data about a running Java application. It is built into the JVM and designed to have a low performance impact.</p>
+</div>
+<div class="paragraph">
+<p>The most common way to run JFR for Keycloak is a fixed-time recording.
+This guide demonstrates creating a fixed-time flight recording using the <code>jcmd</code> tool.
+Collecting data continuously is outside the scope of this guide.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Some of the diagnostic data collected by Java Flight Recorder is security-sensitive, such as confidential environment variables, network information or messages from exceptions.</p>
+</div>
+<div class="paragraph">
+<p>Do not share it outside your trust boundary.</p>
+</div>
+<div class="paragraph">
+<p>Sanitizing it using the <code>jfr scrub</code> command or disabling the collection of certain types of data at the time of collection is outside the scope of this guide.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_find_the_keycloak_server_process"><a class="anchor" href="#_find_the_keycloak_server_process"></a>Find the Keycloak server process</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>jcmd</code> tool can use a PID or a main class to identify the target process:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd &lt;PID|main-class&gt; &lt;diagnostic-command&gt; ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Running the <code>jcmd</code> command without any arguments will list all Java processes on the system with their PIDs and main classes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>897052 jdk.jcmd/sun.tools.jcmd.JCmd
+896224 io.quarkus.bootstrap.runner.QuarkusEntryPoint start ... <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Assuming Keycloak is the only Quarkus-based application running on the system, its PID is <code>896224</code>. It is also possible to use the main class <code>QuarkusEntryPoint</code> instead of the PID.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Example: Running a <code>JFR.check</code> diagnostic command using the PID:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd 896224 JFR.check</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example: Running a <code>JFR.check</code> diagnostic command using the main class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd QuarkusEntryPoint JFR.check</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>896224:
+No available recordings.
+
+Use jcmd 896224 JFR.start to start a recording.</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="create-a-fixed-time-recording"><a class="anchor" href="#create-a-fixed-time-recording"></a>Create a fixed-time recording</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A fixed-time recording can be created by executing the <code>JFR.start</code> command with the <code>duration</code> parameter. After the requested interval elapses, the recording will be stopped and its data automatically dumped into a file.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd QuarkusEntryPoint JFR.start \
+  duration=2m \ <i class="conum" data-value="1"></i><b>(1)</b>
+  settings=profile \ <i class="conum" data-value="2"></i><b>(2)</b>
+  filename=recording.jfr <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Intended duration of the recording. A 2-minute recording is usually sufficient for diagnosing most performance issues.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Name of a JFR configuration file. For fixed-time recordings, we recommend <code>profile</code>, which has an overhead of about 2%. With the <code>profile</code> configuration, expect roughly 1-5 MB per minute under load.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The <code>filename</code> parameter is optional. If not provided, the name will be generated automatically based on PID and timestamp. If an absolute path is not provided, the file will be created in the current working directory of the target application.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Use the <code>JFR.check</code> command shortly after to verify that the recording was started:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jcmd QuarkusEntryPoint JFR.check</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>896224:
+Recording 1: name=1 duration=2m (running)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_view_a_recording"><a class="anchor" href="#_view_a_recording"></a>View a recording</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once the recording is dumped into a file, it can be viewed and manipulated using the standard <code>jfr</code> tool.</p>
+</div>
+<div class="paragraph">
+<p>Analyzing Keycloak&#8217;s behavior based on the recording is outside of scope for this guide.</p>
+</div>
+<div class="paragraph">
+<p>To print the content of a recording in a human-readable form, use the <code>jfr print</code> command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jfr print recording.jfr</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To get a general overview of the content, use the <code>jfr summary</code> command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>jfr summary recording.jfr</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code> Version: 2.1
+ Chunks: 1
+ Start: YYYY-MM-DD HH:mm:ss (UTC)
+ Duration: 120 s
+
+ Event Type                              Count  Size (bytes)
+=============================================================
+ jdk.NativeMethodSample                   5919         82597
+ jdk.ModuleExport                         2134         27601
+ jdk.ThreadPark                           2082         73000
+ jdk.JavaMonitorWait                       781         22715
+ jdk.BooleanFlag                           494         16124
+ jdk.ActiveSetting                         376         10893
+ jdk.Checkpoint                            168        136675
+ jdk.ModuleRequire                         160          1920
+ jdk.LongFlag                              137          4674
+ jdk.ThreadAllocationStatistics            122          1604
+ jdk.CPULoad                               120          2520
+ jdk.ClassLoadingStatistics                120          1560
+ jdk.CompilerStatistics                    120          3840
+ jdk.ExceptionStatistics                   120          1440
+ jdk.JavaThreadStatistics                  120          1560
+ ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To display aggregated content of the recording in a tabular form, use the <code>jfr view</code> command.</p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/main/docs/guides/observability/jfr.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
