@@ -1,0 +1,305 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Multi-Cluster v2 and Stateless Mode now in Preview - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Multi-Cluster v2 and Stateless Mode now in Preview">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Keycloak's new stateless feature eliminates the need for an external Infinispan cluster, enabling simpler multi-cluster deployments backed only by a synchronously replicated database.">
+<meta name="author" content="Alexander Schwartz">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2026/07/multi-cluster-v2-and-stateless-mode">
+<meta property="og:url" content="https://www.keycloak.org/2026/07/multi-cluster-v2-and-stateless-mode">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2026/07/multi-cluster-v2-and-stateless-mode","headline":"Multi-Cluster v2 and Stateless Mode now in Preview","name":"Multi-Cluster v2 and Stateless Mode now in Preview","datePublished":"2026-07-17T08:00:00Z","inLanguage":"en","abstract":"Keycloak's new stateless feature eliminates the need for an external Infinispan cluster, enabling simpler multi-cluster deployments backed only by a synchronously replicated database.","url":"https://www.keycloak.org/2026/07/multi-cluster-v2-and-stateless-mode","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Alexander Schwartz"}]}
+</script></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://events.linuxfoundation.org/kubecon-cloudnativecon-japan/co-located-events/keycloakcon/">
+        Keycloak 26.7 block party - Celebrating our summer release! &middot; July 21 &middot; <span class="fw-semibold text-decoration-underline">Join us live &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-sm-none d-md-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 124/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article kc-asciidoc">
+    <h1>Multi-Cluster v2 and Stateless Mode now in Preview</h1>
+    <p class="blog-date text-muted">July 17 2026 by Alexander Schwartz</p>
+
+
+<div class="paragraph">
+<p>Starting with Keycloak 26.7, the <code>stateless</code> feature is available as a preview. It fundamentally simplifies how Keycloak handles volatile data — authentication sessions, action tokens, and brute-force counters move from embedded or external Infinispan caches to the database. The result: Keycloak deployments that are easier to operate, more resilient, and ready for multi-cluster setups without an external Infinispan cluster.</p>
+</div>
+<div class="paragraph">
+<p>Read on to learn more, and <a href="https://www.youtube.com/watch?v=_htgZ1bSinA">ask questions in our upcoming live Q&amp;A event on Jul 21!</a></p>
+</div>
+<div class="sect1">
+<h2 id="_the_problem_with_the_current_approach"><a class="anchor" href="#_the_problem_with_the_current_approach"></a>The problem with the current approach</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A multi-cluster setup becomes necessary when no transparent networking between two sites is available for Keycloak&#8217;s embedded Infinispan to form a single cluster — for example, when sites are in different availability zones or data centers without a shared network layer.</p>
+</div>
+<div class="paragraph">
+<p>Running Keycloak in such a multi-cluster setup today requires significant infrastructure beyond Keycloak itself. Without the <code>stateless</code> feature, the architecture depends on an external Infinispan cluster with cross-datacenter replication channels, dedicated monitoring to detect and handle Infinispan failover, and operational procedures for failback. It was tied to specific environments like Kubernetes and AWS, and using it in other environments would require significant work to adapt it.</p>
+</div>
+<div class="paragraph">
+<p>Even in single-cluster deployments, Infinispan clustering introduces operational overhead: rebalancing data in distributed caches when a node is lost or restarted, and transient failures in login flows if a node unexpectedly disappears. In large installations, the login failure cache can grow significantly, consuming substantial memory and causing long rebalancing times when nodes join or leave the cluster. While distributed caches replicate data across at least two nodes — so individual node failures do not lose data — a full cluster restart during minor upgrades resets volatile state such as in-progress authentication sessions and brute-force counters.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_changes_with_stateless_mode"><a class="anchor" href="#_what_changes_with_stateless_mode"></a>What changes with stateless mode</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When you enable the <code>stateless</code> feature, Keycloak stores volatile data in the database instead of distributed Infinispan caches:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Authentication sessions</strong> — users mid-login no longer lose progress during full cluster restarts on minor upgrades.</p>
+</li>
+<li>
+<p><strong>Action tokens</strong> — email verification links, password reset tokens, and OAuth codes persist across cluster restarts.</p>
+</li>
+<li>
+<p><strong>Login failure counters</strong> — brute-force detection remains effective even when the entire cluster is restarted.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Realm and authorization data continues to be cached locally in each Keycloak node for fast reads. Within a cluster, JGroups handles immediate cache invalidation when realm data changes. Between clusters, a database outbox pattern propagates invalidation messages via polling, with a default interval of 100 milliseconds.</p>
+</div>
+<div class="paragraph">
+<p>No Infinispan traffic is involved during OIDC or SAML request processing, eliminating transient failures if a node fails unexpectedly. JGroups is still used for intra-cluster realm cache coordination, but it is not touched during authentication flows.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_when_to_use_stateless_mode"><a class="anchor" href="#_when_to_use_stateless_mode"></a>When to use stateless mode</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Stateless mode benefits both single-cluster and multi-cluster deployments.</p>
+</div>
+<div class="sect2">
+<h3 id="_single_cluster"><a class="anchor" href="#_single_cluster"></a>Single cluster</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Durable sessions</strong>: Volatile data survives full cluster restarts during minor upgrades.</p>
+</li>
+<li>
+<p><strong>Simpler operations</strong>: No more large in-memory caches, rebalancing delays, or transient failures when nodes are added or removed.</p>
+</li>
+<li>
+<p><strong>Trade-off:</strong> Approximately 8-10 milliseconds of additional latency per authentication interaction, negligible for interactive login flows. Database CPU load and IOPS can increase by roughly a factor of two.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_multi_cluster"><a class="anchor" href="#_multi_cluster"></a>Multi-cluster</h3>
+<div class="paragraph">
+<p>All single-cluster benefits apply, plus:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>No external Infinispan cluster</strong>: Eliminates a separate Infinispan deployment, its monitoring, and failover/failback procedures.</p>
+</li>
+<li>
+<p><strong>Session failover</strong>: Because sessions are stored in the synchronously replicated database, users stay logged in when traffic fails over to a surviving site.</p>
+</li>
+<li>
+<p><strong>Environment-agnostic</strong>: The architecture is not tied to Kubernetes or a specific cloud provider.</p>
+</li>
+<li>
+<p><strong>Automatic failover</strong>: During a site failure, the load balancer redirects traffic to the surviving site with no data loss, assuming the setup was not degraded from previous failures.</p>
+</li>
+<li>
+<p><strong>Prerequisite:</strong> A synchronously replicated database and a low-latency network between sites (less than 5 ms suggested, below 10 ms required for database round-trip).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The new <code>stateless</code> feature prioritizes consistency over availability. Every write is synchronously replicated, so no data is lost during failover at the cost of requiring a low-latency network between sites.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_architecture_at_a_glance"><a class="anchor" href="#_architecture_at_a_glance"></a>Architecture at a glance</h2>
+<div class="sectionbody">
+<div class="imageblock text-center">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/multi-cluster-v2-architecture.svg" alt="Multi-cluster v2 architecture: two independent Keycloak clusters connected only through a synchronously replicated database" width="800">
+</div>
+<div class="title">Figure 1. Multi-cluster v2: Two independent Keycloak clusters connected only through a synchronously replicated database</div>
+</div>
+<div class="paragraph">
+<p>A multi-cluster v2 deployment consists of:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Two or more independent Keycloak cluster deployments, each running in a different site</p>
+</li>
+<li>
+<p>A highly available, synchronously replicated database (tested with Amazon Aurora PostgreSQL)</p>
+</li>
+<li>
+<p>An external load balancer distributing traffic across clusters (tested with AWS Global Accelerator)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>All entities — users, realms, clients, user sessions, and now also authentication sessions and login failures — are stored in the database. Realm data is cached locally in each Keycloak node. Cross-cluster cache invalidation is handled through a database queuing table, not through direct network connections between clusters.</p>
+</div>
+<div class="sect2">
+<h3 id="_database_impact"><a class="anchor" href="#_database_impact"></a>Database impact</h3>
+<div class="paragraph">
+<p>Moving volatile data to the database roughly doubles database utilization compared to a setup where only persistent data is stored. Plan database capacity accordingly — both for connection pool sizing and storage I/O.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_current_limitations"><a class="anchor" href="#_current_limitations"></a>Current limitations</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Single-region only</strong>: Synchronously replicated databases are generally not available across multiple regions.</p>
+</li>
+<li>
+<p><strong>Database latency matters</strong>: Because synchronous replication defers responses until data reaches the other site, latency between database nodes directly affects Keycloak response times. Multiple database interactions per request amplify this effect.</p>
+</li>
+<li>
+<p><strong>Planned outages</strong>: Patch upgrades are zero-downtime. Minor and major upgrades require shutting down all sites except one, upgrading that site, then deploying the new version to the remaining sites.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_migrating_existing_installations"><a class="anchor" href="#_migrating_existing_installations"></a>Migrating existing installations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you are running a multi-site v1 deployment, migrating to v2 is straightforward: enable the <code>stateless</code> feature flag, then remove the external Infinispan cluster, its configuration, the AWS Lambda, and the Prometheus monitoring and alerts.</p>
+</div>
+<div class="paragraph">
+<p>As all user sessions are stored in the database already in v1, users will still be logged in after the migration to v2.
+Information about in-progress logins and login failure counters is lost during the upgrade.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_getting_started"><a class="anchor" href="#_getting_started"></a>Getting started</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Start Keycloak with the <code>stateless</code> feature enabled:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.sh start \
+  --features=stateless \
+  --spi-cache-embedded--default--cluster-name=CLUSTER1 \
+  --db=postgres --db-url=jdbc:postgresql://db-host/keycloak \
+  --db-username=keycloak --db-password=&lt;password&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a second cluster, use a different <code>cluster-name</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.sh start \
+  --features=stateless \
+  --spi-cache-embedded--default--cluster-name=CLUSTER2 \
+  --db=postgres --db-url=jdbc:postgresql://db-host/keycloak \
+  --db-username=keycloak --db-password=&lt;password&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Full documentation is available in the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster-v2/introduction">multi-cluster v2 guide</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_feedback_welcome"><a class="anchor" href="#_feedback_welcome"></a>Feedback welcome</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Stateless mode is currently a <strong>preview feature</strong>, and we would love to hear from the community as we shape its future. Try it with Keycloak 26.7.</p>
+</div>
+<div class="paragraph">
+<p>Please share your experiences, suggestions, and feature requests on the <a href="https://github.com/keycloak/keycloak/discussions/50640">GitHub discussion</a>. Your input will directly influence how we evolve this feature toward supported status.</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
