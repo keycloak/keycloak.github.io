@@ -278,12 +278,12 @@ Networking problems can cause downtimes until the failure detection isolates pro
 <dt class="hdlist1">Login failure counters</dt>
 <dd>
 <p>Brute-force detection counters are reset.
-Any ongoing temporary lockouts are cleared.</p>
+Any ongoing lockouts are cleared.</p>
 </dd>
-<dt class="hdlist1">Action tokens in the Infinispan cache</dt>
+<dt class="hdlist1">OAuth authorization codes</dt>
 <dd>
-<p>Email verification links, password reset tokens, and OAuth codes that were stored in Infinispan are lost.
-Users with pending email verifications or password resets need to request new links.</p>
+<p>OAuth authorization codes that were stored in Infinispan are lost.
+Users with in-progress OAuth flows need to restart the authorization.</p>
 </dd>
 </dl>
 </div>
@@ -421,7 +421,25 @@ See the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluste
 </div>
 </li>
 <li>
+<p>Deploy the updated Keycloak CR to all sites:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak apply -f keycloak.yaml</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the deployment.</p>
+<div class="paragraph">
+<p>Follow the verification steps in the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster-v2/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator (v2)</a> guide.
+Afterward, verify that the external load balancer routes traffic to all sites.</p>
+</div>
+</li>
+<li>
 <p>Remove the Infinispan deployment.</p>
+<div class="paragraph">
+<p>Once the v2 deployment is verified, remove the v1 infrastructure.</p>
+</div>
 <div class="openblock">
 <div class="content">
 <div class="olist loweralpha">
@@ -449,7 +467,8 @@ See the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluste
 <pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak delete secret remote-store-secret
 kubectl --namespace keycloak delete secret ispn-xsite-sa-token
 kubectl --namespace keycloak delete secret xsite-keystore-secret
-kubectl --namespace keycloak delete secret xsite-truststore-secret</code></pre>
+kubectl --namespace keycloak delete secret xsite-truststore-secret
+kubectl --namespace keycloak delete secret xsite-token-secret</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -494,21 +513,6 @@ kubectl --namespace keycloak delete secret xsite-truststore-secret</code></pre>
 <p>Remove Infinispan-specific monitoring.</p>
 <div class="paragraph">
 <p>Remove any Prometheus <code>ServiceMonitor</code> or <code>PodMonitor</code> resources that target the Infinispan deployment, as well as any Grafana dashboards for Infinispan cache metrics.</p>
-</div>
-</li>
-<li>
-<p>Deploy the updated Keycloak CR to all sites:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak apply -f keycloak.yaml</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Verify the deployment.</p>
-<div class="paragraph">
-<p>Follow the verification steps in the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster-v2/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator (v2)</a> guide.
-Afterward, verify that the external load balancer routes traffic to all sites.</p>
 </div>
 </li>
 </ol>
