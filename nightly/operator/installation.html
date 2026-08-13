@@ -498,6 +498,95 @@ kubectl apply -k ./</code></pre>
 </div>
 </div>
 <div class="sect2">
+<h3 id="_installing_by_using_helm"><a class="anchor" href="#_installing_by_using_helm"></a>Installing by using Helm</h3>
+<div class="paragraph">
+<p>The Operator Helm chart is published as an OCI artifact to Quay alongside each Operator release. It installs the Operator cluster-wide, deploying the same resources as the <code>kubectl</code> install path above, with values that let you tune image, resources, and CRD management.</p>
+</div>
+<div class="paragraph">
+<p>Install the Operator into the <code>keycloak</code> namespace:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install keycloak-operator oci://quay.io/keycloak/keycloak-operator-helm \
+  --namespace keycloak --create-namespace</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, the chart installs the Operator CRDs (for example <code>Keycloak</code>, <code>KeycloakRealmImport</code>, <code>KeycloakOIDCClient</code>, <code>KeycloakSAMLClient</code>) as part of the release. If your CRDs are managed out-of-band (for example, applied separately as part of a cluster bootstrap), disable CRD installation with <code>--set crds.enabled=false</code>.</p>
+</div>
+<div class="sect3">
+<h4 id="_tuning_the_install"><a class="anchor" href="#_tuning_the_install"></a>Tuning the install</h4>
+<div class="paragraph">
+<p>Common values you may want to override:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Value</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>operator.image</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Operator image reference. Defaults to the image published for this release.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>operator.resources.limits.cpu</code> / <code>operator.resources.limits.memory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Container CPU/memory limits.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>operator.resources.requests.cpu</code> / <code>operator.resources.requests.memory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Container CPU/memory requests.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>crds.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether to install the CRDs as part of this release. Defaults to <code>true</code>.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Run <code>helm show values oci://quay.io/keycloak/keycloak-operator-helm</code> for the full list.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_migrating_from_the_kubectl_install_path"><a class="anchor" href="#_migrating_from_the_kubectl_install_path"></a>Migrating from the kubectl install path</h4>
+<div class="paragraph">
+<p>The Helm chart deploys the same Kubernetes resources as the kustomize install above (same <code>ServiceAccount</code>, <code>ClusterRole</code>, <code>ClusterRoleBinding</code>, <code>Service</code>, <code>Deployment</code> names). Migration steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Delete only the existing operator workload and RBAC resources, <strong>keeping</strong> the CRDs. Do not run <code>kubectl delete -k</code> against the kustomization, because it also deletes the CRDs (<code>keycloaks.k8s.keycloak.org</code>, <code>keycloakrealmimports.k8s.keycloak.org</code>, and the client CRDs) — that would garbage-collect every <code>Keycloak</code>, <code>KeycloakRealmImport</code>, and client custom resource in the cluster. Delete the resources by name instead (replace <code>keycloak</code> with the namespace you installed the Operator into):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl delete deployment,service,serviceaccount keycloak-operator -n keycloak
+kubectl delete clusterrole keycloak-operator-clusterrole
+kubectl delete clusterrolebinding keycloak-operator-clusterrole-binding</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install via Helm with <code>crds.enabled=false</code> so Helm does not try to re-create the CRDs Helm did not originally install:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install keycloak-operator oci://quay.io/keycloak/keycloak-operator-helm \
+  --namespace keycloak --set crds.enabled=false</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>After the chart is installed and the operator is healthy, you can leave CRD management as-is (out-of-band) or transfer ownership to the chart on the next upgrade by setting the <code>helm.sh/resource-policy: keep</code> annotation on the existing CRDs and re-installing with <code>crds.enabled=true</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_installing_multiple_operators"><a class="anchor" href="#_installing_multiple_operators"></a>Installing Multiple Operators</h3>
 <div class="paragraph">
 <p>In most cases, a single Operator installed in cluster-wide mode is simpler than installing multiple Operators. Install multiple Operators only when you need separate Operator instances, for example to run different Keycloak or Operator versions in parallel.</p>
