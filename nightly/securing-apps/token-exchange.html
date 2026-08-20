@@ -737,10 +737,72 @@ This feature is <strong>experimental</strong> and may introduce breaking changes
 <div class="sect2">
 <h3 id="_admin_delegation"><a class="anchor" href="#_admin_delegation"></a>Admin delegation</h3>
 <div class="paragraph">
-<p>Admin delegation allows a user (subject) to delegate their token to an administrator. The client requests the <code>delegation</code> scope with the administrator&#8217;s identifier as a parameter using the <a href="https://datatracker.ietf.org/doc/html/rfc9396">parameterized scopes</a> syntax.</p>
+<p>Admin delegation allows a user (subject) to delegate their token to an administrator (actor). The client requests the <code>delegation</code> scope with the administrator&#8217;s identifier as a parameter using the <a href="https://datatracker.ietf.org/doc/html/rfc9396">parameterized scopes</a> syntax.</p>
 </div>
 <div class="paragraph">
 <p>When the feature is enabled, a <code>delegation</code> client scope is automatically created in new realms. Clients that want to use delegation must add the <code>delegation</code> scope to their optional client scopes in the Admin Console.</p>
+</div>
+<div class="sect3">
+<h4 id="_granting_delegation_permission"><a class="anchor" href="#_granting_delegation_permission"></a>Granting delegation permission</h4>
+<div class="paragraph">
+<p>Delegation permissions are managed through <a href="https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions">Fine-grained admin permissions version 2</a> (FGAP V2). Unlike impersonation, delegation does not use admin roles. Instead, you configure FGAP permissions to control which administrators can be delegated to and for which users.</p>
+</div>
+<div class="sect4">
+<h5 id="_granting_delegation_to_all_users"><a class="anchor" href="#_granting_delegation_to_all_users"></a>Granting delegation to all users</h5>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Go to <strong>Realm Settings</strong> &#8594; <strong>Admin Permissions</strong> and enable Admin Permissions.</p>
+</li>
+<li>
+<p>Navigate to <strong>Admin Permissions</strong> &#8594; <strong>Users</strong>.</p>
+</li>
+<li>
+<p>Create a new permission on the <strong>Users</strong> resource type.</p>
+</li>
+<li>
+<p>Add the <strong>delegate</strong> scope.</p>
+</li>
+<li>
+<p>Assign a policy that grants this permission.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+To restrict delegation to specific users, select individual users when creating the permission. To restrict which administrators or service accounts can delegate, use a more specific policy (for example, a <strong>User</strong> or <strong>Client</strong> policy).
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_granting_delegation_to_members_of_a_specific_group"><a class="anchor" href="#_granting_delegation_to_members_of_a_specific_group"></a>Granting delegation to members of a specific group</h5>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Admin Permissions</strong> &#8594; <strong>Groups</strong>.</p>
+</li>
+<li>
+<p>Select the target group.</p>
+</li>
+<li>
+<p>Create a new permission on the group.</p>
+</li>
+<li>
+<p>Add the <strong>delegate-members</strong> scope.</p>
+</li>
+<li>
+<p>Assign a policy targeting the administrator or service account allowed to delegate.</p>
+</li>
+</ol>
+</div>
+</div>
 </div>
 <div class="sect3">
 <h4 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a>How it works</h4>
@@ -750,7 +812,7 @@ This feature is <strong>experimental</strong> and may introduce breaking changes
 <p>The client requests the <code>delegation</code> scope with the administrator&#8217;s (actor) identifier as a parameter, for example <code>scope=openid delegation:admin</code>.</p>
 </li>
 <li>
-<p>Keycloak validates that the specified administrator (actor) exists and has the <code>impersonation</code> role from the <code>realm-management</code> client.</p>
+<p>Keycloak validates that the specified administrator (actor) exists and has the <code>delegate</code> permission for the user (subject) through FGAP V2.</p>
 </li>
 <li>
 <p>The user (subject) is presented with a consent screen to approve the delegation.</p>
@@ -776,7 +838,19 @@ This feature is <strong>experimental</strong> and may introduce breaking changes
 <p>The <code>may_act</code> claim declares that the specified administrator (actor) is authorized to act on behalf of the user (subject). The <code>sub</code> inside <code>may_act</code> contains the actor&#8217;s user ID, consistent with Keycloak&#8217;s standard <code>sub</code> claim semantics. An external Security Token Service (STS) receiving this token can verify the delegation authorization directly from the claim without querying back to Keycloak.</p>
 </div>
 <div class="paragraph">
-<p>If the administrator (actor) does not have impersonation permission, the delegation scope is silently dropped and the <code>may_act</code> claim is not included in the token. The consent for delegation is always required and is not stored permanently - the user must approve delegation each login session.</p>
+<p>If the administrator (actor) does not have the delegation permission, the delegation scope is silently dropped and the <code>may_act</code> claim is not included in the token. The consent for delegation is always required and is not stored permanently - the user must approve delegation each login session.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Delegation permissions require FGAP V2. FGAP V1 does not support delegation.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect3">

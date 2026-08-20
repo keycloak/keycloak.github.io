@@ -109,19 +109,13 @@ gtag('config', 'G-0J2P9316N6');
 <div class="sectionbody">
 <div class="paragraph">
 <p>The Keycloak admin client is a Java library that facilitates the access and usage of the Keycloak Admin REST API.
-The library requires Java 11 or higher at runtime (RESTEasy dependency enforces this requirement).
-To use it from your application add a dependency on the <code>keycloak-admin-client</code> library.
-For example using Maven:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-xml" data-lang="xml">&lt;dependency&gt;
-    &lt;groupId&gt;org.keycloak&lt;/groupId&gt;
-    &lt;artifactId&gt;keycloak-admin-client&lt;/artifactId&gt;
-    &lt;version&gt;999.0.0-SNAPSHOT&lt;/version&gt;
-&lt;/dependency&gt;</code></pre>
+It is available for either Jackson 2 or Jackson 3, both sharing the same API.</p>
 </div>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_usage"><a class="anchor" href="#_usage"></a>Usage</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>The following example shows how to use the Java client library to get the details of the master realm:</p>
 </div>
@@ -146,8 +140,24 @@ RealmRepresentation realm = keycloak.realm("master").toRepresentation();</code><
 </div>
 </div>
 <div class="sect1">
-<h2 id="_admin_client_compatibility"><a class="anchor" href="#_admin_client_compatibility"></a>Compatibility with Keycloak server</h2>
+<h2 id="_admin_client_with_jackson_2"><a class="anchor" href="#_admin_client_with_jackson_2"></a>Admin client with Jackson 2</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>The admin client with Jackson 2 requires Java 11 or higher.
+To use it from your application add a dependency on the <code>keycloak-admin-client</code> library.
+For example using Maven:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-xml" data-lang="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.keycloak&lt;/groupId&gt;
+    &lt;artifactId&gt;keycloak-admin-client&lt;/artifactId&gt;
+    &lt;version&gt;999.0.0-SNAPSHOT&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_admin_client_compatibility"><a class="anchor" href="#_admin_client_compatibility"></a>Compatibility with Keycloak server</h3>
 <div class="paragraph">
 <p>The Keycloak admin client aims to work with multiple versions of the Keycloak server. For the details about supported Keycloak server versions, see <a href="https://www.keycloak.org/nightly/securing-apps/upgrading">Upgrading the Keycloak Client Libraries</a>.</p>
 </div>
@@ -189,6 +199,45 @@ the properties above if you want to avoid compatibility issues.</p>
 <div class="paragraph">
 <p>In this case, please make sure that your class <code>MyCustomJacksonProvider</code> extends from the class <code>org.keycloak.admin.client.JacksonProvider</code> or make sure to configure the <code>ObjectMapper</code> manually in a way described above.
 The similar care should be taken when using <code>KeycloakBuilder</code> to create the admin client and the RestEasy client is manually injected and created.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_admin_client_with_jackson_3"><a class="anchor" href="#_admin_client_with_jackson_3"></a>Admin client with Jackson 3</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The admin client with Jackson 3 requires Java 17 or higher.
+It is a drop-in replacement for applications that already use Jackson 3.
+To use it from your application replace the <code>keycloak-admin-client</code> dependency with <code>keycloak-admin-client-jackson3</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-xml" data-lang="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.keycloak&lt;/groupId&gt;
+    &lt;artifactId&gt;keycloak-admin-client-jackson3&lt;/artifactId&gt;
+    &lt;version&gt;999.0.0-SNAPSHOT&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_admin_client_jackson3_compatibility"><a class="anchor" href="#_admin_client_jackson3_compatibility"></a>Compatibility with Keycloak server</h3>
+<div class="paragraph">
+<p>The same <a href="#_admin_client_compatibility">compatibility considerations</a> apply here.
+With Jackson 3, the equivalent <code>tools.jackson.databind.json.JsonMapper</code> configuration is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">JsonMapper mapper = JsonMapper.builder()
+        .changeDefaultPropertyInclusion(v -&gt; JsonInclude.Value.construct(
+                JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are injecting a custom Jackson provider as described in the Jackson 2 section, extend <code>org.keycloak.admin.client.jackson3.JacksonProvider3</code> instead of <code>org.keycloak.admin.client.JacksonProvider</code>.</p>
+</div>
 </div>
 </div>
 </div>            </div>
