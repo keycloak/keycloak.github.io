@@ -140,7 +140,7 @@ You should verify the performance and failure behavior of your specific environm
 <p><a href="https://github.com/keycloak/keycloak/releases/download/26.7.2/keycloak-26.7.2.zip">keycloak-26.7.2.zip</a> downloaded and extracted on each node.</p>
 </li>
 <li>
-<p>A highly available database deployed with synchronous replication across sites, reachable from all Keycloak nodes. The following example assumes a PostgreSQL database. Any database supported by Keycloak will work.</p>
+<p>A highly available database deployed with synchronous replication across sites, reachable from all Keycloak nodes. The following example assumes a PostgreSQL database. Any database supported by Keycloak will work. How to configure the database for high availability is out of scope for this guide.</p>
 </li>
 <li>
 <p>TLS certificate and private key files for HTTPS.</p>
@@ -257,7 +257,7 @@ export KC_DB_PASSWORD=&lt;DB_PASSWORD&gt;</code></pre>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>The database connection pool initial, max and min size should be identical to allow statement caching for the database.
-Adjust this number to meet the needs of your system.
+The values shown are a starting point for production deployments; adjust to meet the needs of your system.
 With the <code>stateless</code> feature, authentication sessions and action tokens are stored in the database, which increases database load compared to setups with an external Infinispan cluster. Adjust the pool size accordingly.
 See the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster/concepts-database-connections">Concepts for database connection pools</a> guide for details.</td>
 </tr>
@@ -272,7 +272,8 @@ This option is only available if the <code>stateless</code> feature is enabled.<
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Set the hostname clients use to connect to Keycloak. This should match the hostname configured on the load balancer.</td>
+<td>Set the hostname clients use to connect to Keycloak. This must be the same on every site and match the hostname configured on the external load balancer, so that the OIDC issuer is identical regardless of which site answers.
+If the public URL uses a port other than 443, include the port (for example, <code>https://auth.example.com:8443</code>).</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
@@ -280,7 +281,8 @@ This option is only available if the <code>stateless</code> feature is enabled.<
 </tr>
 <tr>
 <td><i class="conum" data-value="7"></i><b>7</b></td>
-<td>Secure the database connection. Specify the path to the database CA certificate file. Keycloak automatically loads certificates from the specified truststore path.</td>
+<td>Secure the database connection. Specify the path to the database CA certificate file. Keycloak automatically loads certificates from the specified truststore path.
+For non-production-grade environments without database TLS, set <code>--db-tls-mode</code> to <code>disabled</code> and omit <code>--truststore-paths</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="8"></i><b>8</b></td>
@@ -328,7 +330,15 @@ The <code>checks</code> array contains the readiness checks enabled for the depl
 <p>Repeat this check for each node in each site.</p>
 </div>
 <div class="paragraph">
-<p>Additionally, verify that <code>/lb-check</code> per site returns <code>200 OK</code> with status <code>UP</code>:</p>
+<p>To verify the hostname configuration, confirm that the OIDC issuer is identical on every site by querying each site&#8217;s load balancer:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -sk https://&lt;SITE_LB_HOSTNAME&gt;/realms/master/.well-known/openid-configuration | jq .issuer</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Additionally, verify that <code>/lb-check</code> per site returns <code>200 OK</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
