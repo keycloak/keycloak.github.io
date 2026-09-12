@@ -775,12 +775,81 @@ To do this download the <a href="https://docs.aws.amazon.com/AmazonRDS/latest/Au
 </div>
 </div>
 <div class="sect1">
-<h2 id="_preparing_for_mysql_server"><a class="anchor" href="#_preparing_for_mysql_server"></a>Preparing for MySQL server</h2>
+<h2 id="_preparing_for_mysql_and_mariadb"><a class="anchor" href="#_preparing_for_mysql_and_mariadb"></a>Preparing for MySQL and MariaDB</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_generated_invisible_primary_keys_mysql"><a class="anchor" href="#_generated_invisible_primary_keys_mysql"></a>Generated invisible primary keys (MySQL)</h3>
 <div class="paragraph">
 <p>Beginning with MySQL 8.0.30, MySQL supports generated invisible primary keys for any InnoDB table that is created without an explicit primary key (more information <a href="https://dev.mysql.com/doc/refman/8.0/en/create-table-gipks.html">here</a>).
 If this feature is enabled, the database schema initialization and also migrations will fail with the error message <code>Multiple primary key defined (1068)</code>.
 You then need to disable it by setting the parameter <code>sql_generate_invisible_primary_key</code> to <code>OFF</code> in your MySQL server configuration before installing or upgrading Keycloak.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="mysql-mariadb-transaction-isolation-level-in-stateless-mode"><a class="anchor" href="#mysql-mariadb-transaction-isolation-level-in-stateless-mode"></a>Transaction isolation level in stateless mode</h3>
+<div class="paragraph">
+<p>When the <code>stateless</code> feature is enabled, Keycloak automatically sets the transaction isolation level to <code>READ COMMITTED</code> for MySQL and MariaDB.
+The default <code>REPEATABLE READ</code> isolation level acquires gap locks on upsert statements, which causes deadlocks under concurrent logins.
+<code>READ COMMITTED</code> is the default isolation level used by PostgreSQL, Oracle, and Microsoft SQL Server.</p>
+</div>
+<div class="paragraph">
+<p>This requires that binary logging is not configured with <code>binlog_format = STATEMENT</code>.
+MySQL 8.0 and later default to <code>binlog_format = ROW</code>, and MariaDB 10.6 and later defaults to <code>binlog_format = MIXED</code>, both of which are compatible.</p>
+</div>
+<div class="paragraph">
+<p>To verify your current setting, run:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">SHOW VARIABLES LIKE 'binlog_format';</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the result is <code>STATEMENT</code>, change it to <code>ROW</code> or <code>MIXED</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">SET GLOBAL binlog_format = 'ROW';</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, update the MySQL or MariaDB configuration file (<code>my.cnf</code> / <code>my.ini</code>) to make the change persistent across database restarts.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="mariadb-galera-cluster-considerations"><a class="anchor" href="#mariadb-galera-cluster-considerations"></a>MariaDB Galera Cluster</h3>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+MariaDB Galera Cluster is not a supported database configuration for Keycloak. The guidance in this section is provided on a best-effort basis. Before reporting bugs, reproduce them with a supported database configuration first.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>MariaDB Galera Cluster uses certification-based replication.
+The <code>transaction_isolation</code> setting configured by Keycloak has no practical effect on Galera, as Galera internally operates under its own Snapshot Isolation model regardless of the configured isolation level.</p>
+</div>
+<div class="paragraph">
+<p>On a multi-writer Galera setup, concurrent write transactions on different nodes that modify the same row can trigger certification failures.
+Keycloak does not retry these operations, which causes the affected request to fail.
+In <code>stateless</code> mode, authentication sessions and login failure data are written directly to the database, increasing the likelihood of such conflicts under concurrent logins.</p>
+</div>
+<div class="paragraph">
+<p>To avoid certification failures, route all Keycloak write traffic to a single Galera node, using the remaining nodes as read replicas or failover targets.</p>
+</div>
+<div class="paragraph">
+<p>Galera replication is asynchronous by default.
+A write committed on one node may not yet be visible on other nodes.
+This affects all modes of Keycloak: when data is written to one node and a subsequent request is routed to a different node that has not yet received the replication event, the read may return stale or missing data.
+This can cause cache invalidation to race with replication, leading to stale data being served from the database after the cache has been cleared.
+If read traffic is distributed across multiple nodes, set <code>wsrep_sync_wait = 1</code> on the reader nodes to enable causal reads.
+This ensures that read operations wait for all pending replication events to be applied before returning results.</p>
+</div>
 </div>
 </div>
 </div>
@@ -889,6 +958,21 @@ This optimization is not available when using XA datasources (<code>--transactio
 </div>
 <div class="paragraph">
 <p>You can opt out of this feature by setting <code>--spi-connections-jpa--quarkus--async-commit=false</code></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_oracle_oci_thick_driver"><a class="anchor" href="#_oracle_oci_thick_driver"></a>Oracle OCI (thick) driver</h3>
+<div class="paragraph">
+<p>Keycloak sets a socket read timeout on every acquired database connection to prevent long hanging threads.
+The Oracle OCI (thick) driver (<code>jdbc:oracle:oci:</code> and <code>jdbc:oracle:oci8:</code> URL schemes) does not support this JDBC feature (<code>Connection.setNetworkTimeout()</code>).
+Keycloak detects OCI connections and skips the socket timeout configuration automatically.</p>
+</div>
+<div class="paragraph">
+<p>Timeouts for OCI connections are governed by <code>sqlnet.ora</code> and TNS descriptor parameters such as <code>CONNECT_TIMEOUT</code>, <code>TRANSPORT_CONNECT_TIMEOUT</code>, and <code>EXPIRE_TIME</code>.
+Consult the Oracle documentation for details.</p>
+</div>
+<div class="paragraph">
+<p>The standard Oracle Thin driver (<code>jdbc:oracle:thin:</code>) supports <code>setNetworkTimeout()</code> and is not affected by this limitation.</p>
 </div>
 </div>
 </div>

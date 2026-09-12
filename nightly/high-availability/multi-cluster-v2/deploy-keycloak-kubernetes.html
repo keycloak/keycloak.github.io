@@ -126,7 +126,8 @@ Please provide your feedback by <a href="https://github.com/keycloak/keycloak/di
 <p>This guide describes advanced Keycloak configurations for Kubernetes which are load tested and will recover from single Pod failures or site failures.</p>
 </div>
 <div class="paragraph">
-<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster-v2/concepts">Concepts for multi-cluster deployments (v2)</a> guide.</p>
+<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster-v2/concepts">Concepts for multi-cluster deployments (v2)</a> guide.
+Ensure that the <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster-v2/introduction#multi-cluster-v2-infrastructure-requirements">Multi-cluster deployments (v2)</a> are met before proceeding.</p>
 </div>
 <div class="paragraph">
 <p>While this blueprint uses Kubernetes, the concepts are not limited to Kubernetes.</p>
@@ -142,7 +143,8 @@ Please provide your feedback by <a href="https://github.com/keycloak/keycloak/di
 <p>Kubernetes clusters running. Each Kubernetes cluster should have its own internal load balancing to leverage the startup, liveness and readiness probes of the Keycloak Pods.</p>
 </li>
 <li>
-<p>A load balancer in front of the clusters that is probing the URL <code>/lb-check</code> of the Keycloak clusters.</p>
+<p>A load balancer in front of the clusters.
+Each Kubernetes cluster&#8217;s ingress routes traffic to Keycloak Pods based on the <code>/health/ready</code> readiness probe, while the external load balancer probes <code>/lb-check</code> on each cluster to detect site-level failures.</p>
 </li>
 <li>
 <p>A highly available database deployed with synchronous replication across sites, reachable from all Keycloak nodes in all clusters.
@@ -224,7 +226,7 @@ spec:
     enabled:
       - stateless <i class="conum" data-value="4"></i><b>(4)</b>
   additionalOptions:
-    - name: spi-cache-embedded--default--cluster-name
+    - name: cache-embedded-cluster-name
       value: &lt;CLUSTER_NAME_HERE&gt; <i class="conum" data-value="5"></i><b>(5)</b>
     - name: log-console-output
       value: json
@@ -326,7 +328,8 @@ kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keyc
 <div class="paragraph">
 <p>Afterward, verify that the external load balancer routes traffic to both clusters.
 The external load balancer should probe <code>GET /lb-check</code> on each cluster and expect an HTTP <code>200 OK</code> response to determine if a site is healthy.
-When a site&#8217;s Keycloak nodes are all unavailable, <code>/lb-check</code> will not return <code>200 OK</code>, and the load balancer should stop routing traffic to that site.</p>
+When a site&#8217;s Keycloak nodes are all unavailable, <code>/lb-check</code> will not return <code>200 OK</code>, and the load balancer should stop routing traffic to that site.
+Kubernetes probes each Pod&#8217;s <code>/health/ready</code> endpoint on management port 9000 and removes unready Pods from the Service endpoints, allowing the cluster ingress to avoid nodes affected by failures such as split-brain or loss of database connectivity.</p>
 </div>
 </div>
 </div>

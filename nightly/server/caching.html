@@ -291,60 +291,13 @@ to the node where their sessions were initially created. By doing that, you are 
 CPU, memory, and network utilization.</p>
 </div>
 <div class="paragraph">
-<div class="title">User sessions</div>
-<p>Once the user is authenticated, a user session is created. The user session tracks your active users and their state so that they can seamlessly
-authenticate to any application without being asked for their credentials again. For each application, the user authenticates with a client session, so that the server can track the applications the user is authenticated with and their state on a per-application basis.</p>
-</div>
-<div class="paragraph">
-<p>User and client sessions are automatically destroyed whenever the user performs a logout, the client performs a token revocation, or due to reaching their expiration time.</p>
-</div>
-<div class="paragraph">
-<p>The session data are stored in the database by default and loaded on-demand to the following caches:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>sessions</code></p>
-</li>
-<li>
-<p><code>clientSessions</code></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>By relying on a distributable cache, cached user and client sessions are available to any node in the cluster so that users can be redirected
-to any node without the need to load session data from the database. However, production-ready deployments should always consider session affinity and favor redirecting users
-to the node where their sessions were initially created. By doing that, you are going to avoid unnecessary state transfer between nodes and improve
-CPU, memory, and network utilization.</p>
-</div>
-<div class="paragraph">
-<p>These in-memory caches for user sessions and client sessions are limited to, by default, 10000 entries per node which reduces the overall memory usage of Keycloak for larger installations.
-The internal caches will run with only a single owner for each cache entry.</p>
-</div>
-<div class="paragraph">
-<div class="title">Offline user sessions</div>
-<p>As an OpenID Connect Provider, the server is capable of authenticating users and issuing offline tokens. When issuing an offline token after successful authentication, the server creates an offline user session and offline client session.</p>
-</div>
-<div class="paragraph">
-<p>The following caches are used to store offline sessions:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>offlineSessions</p>
-</li>
-<li>
-<p>offlineClientSessions</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Like the user and client sessions caches, the offline user and client session caches are limited to 10000 entries per node by default. Items which are evicted from the memory will be loaded on-demand from the database when needed.</p>
-</div>
-<div class="paragraph">
 <div class="title">Password brute force detection</div>
-<p>The <code>loginFailures</code> distributed cache is used to track data about failed login attempts.
-This cache is needed for the Brute Force Protection feature to work in a multi-node Keycloak setup.</p>
+<p>Login failure data for brute force detection is stored in the database by default.
+Deployments using the <code>multi-site</code> or <code>clusterless</code> features continue to store login failures in the external Infinispan <code>loginFailures</code> cache.
+The embedded <code>loginFailures</code> distributed cache is available as a fallback when the deprecated <code>login-failures:v1</code> feature is explicitly enabled, but this mode will be removed in a future release.
+When switching between storage modes (for example, from database to external Infinispan or vice versa), stale login failure entries may remain in the previous store.
+These entries are not cleaned up automatically and can resurface if the deployment reverts to the previous storage mode.
+Administrators should manually remove stale login failure data from the previous store after switching.</p>
 </div>
 <div class="paragraph">
 <div class="title">Action tokens</div>
@@ -365,56 +318,73 @@ You can see the applied Infinispan configuration in the logs by configuring <cod
 </div>
 </div>
 <div class="sect2">
-<h3 id="_volatile_user_sessions"><a class="anchor" href="#_volatile_user_sessions"></a>Volatile user sessions</h3>
-<div class="paragraph">
-<p>By default, regular user sessions are stored in the database and loaded on-demand to the cache.
-It is possible to configure Keycloak to store regular user sessions in the cache only and minimize calls to the database.</p>
+<h3 id="_user_session_caching_deprecated"><a class="anchor" href="#_user_session_caching_deprecated"></a>User session caching (deprecated)</h3>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Caching of persistent user and offline sessions is deprecated since Keycloak 26.8 and will be removed in a future release.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>Since all the sessions in this setup are stored in-memory, there are two side effects related to this:</p>
+<p>A user session tracks an authenticated user across one or more applications (client sessions). Offline sessions are long-lived sessions backed by offline tokens.
+User sessions, client sessions, offline user sessions, and offline client sessions are stored in the database. The embedded Infinispan caches (<code>sessions</code>, <code>clientSessions</code>, <code>offlineSessions</code>, <code>offlineClientSessions</code>) exist but are not populated by default.</p>
+</div>
+<div class="paragraph">
+<p>To temporarily re-enable session caching (for example, to reduce database load at the cost of increased memory usage and the risk of data loss on restart), set:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>spi-user-sessions--infinispan--use-caches=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When enabled:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Losing sessions when all Keycloak nodes restart.</p>
+<p>Sessions are loaded on-demand from the database into the embedded caches.</p>
 </li>
 <li>
-<p>Increased memory consumption.</p>
+<p>Cached sessions are available to any node in the cluster without a database round-trip.</p>
+</li>
+<li>
+<p>In-memory caches are limited to 10000 entries per node by default (configurable via <code>--cache-embedded-sessions-max-count</code> etc.).</p>
+</li>
+<li>
+<p>Cache entries use a single owner per entry.</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>When using volatile user sessions, the cache is the source of truth for user and client sessions.
-Keycloak automatically adjusts the number of entries that can be stored in memory, and increases the number of copies to prevent data loss.</p>
-</div>
-<div class="paragraph">
-<p>Follow these steps to enable this setup:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Disable <code>persistent-user-sessions</code> feature using the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre>bin/kc.sh start --features-disabled=persistent-user-sessions ...</pre>
+<p>This option will be removed in a future release. Remove it from your configuration before upgrading to that release.</p>
 </div>
 </div>
-</li>
-</ol>
-</div>
-<div class="admonitionblock note">
+<div class="sect2">
+<h3 id="_volatile_user_sessions_deprecated"><a class="anchor" href="#_volatile_user_sessions_deprecated"></a>Volatile user sessions (deprecated)</h3>
+<div class="admonitionblock warning">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-<div class="paragraph">
-<p>Disabling <code>persistent-user-sessions</code> is not possible when <code>multi-site</code> feature is enabled.</p>
-</div>
+Volatile user sessions are deprecated since Keycloak 26.8 and will be removed in a future release. Persistent user sessions will become the only supported mode.
+If you have <code>--features-disabled=persistent-user-sessions</code> in your configuration, remove it to use the default persistent sessions mode.
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p>By default, regular user sessions are stored in the database.
+It is possible to configure Keycloak to store regular user sessions in-memory only by disabling the <code>persistent-user-sessions</code> feature.
+This means all user sessions are lost when all Keycloak nodes are restarted, and memory consumption increases as the number of active sessions grows.</p>
 </div>
 </div>
 <div class="sect2">
@@ -442,7 +412,7 @@ and is not fully supported. This feature is disabled by default.</p>
 <p>When the feature <code>stateless</code> is enabled, Keycloak does not cache user entity data, and login failures, authentication sessions, and action tokens are persisted to the database. While realm and authorization data are still cached, session-related state is persisted and the database becomes the source of truth. The <code>work</code> cache is still used to invalidate realm and authorization data within the cluster.</p>
 </div>
 <div class="paragraph">
-<p>If you are running multiple independent Keycloak clusters against the same database, cache invalidation between clusters is performed via a database table (outbox). For that, each cluster needs to have a unique name specified via <code>--spi-cache-embedded--default--cluster-name</code>.</p>
+<p>If you are running multiple independent Keycloak clusters against the same database, cache invalidation between clusters is performed via a database table (outbox). For that, each cluster needs to have a unique name specified via <code>--cache-embedded-cluster-name</code>.</p>
 </div>
 <div class="paragraph">
 <p>This is the foundation for the multi-cluster (v2) setup that is covered in more detail in the high-availability guide at <a href="https://www.keycloak.org/nightly/high-availability/multi-cluster-v2/introduction">Multi-cluster deployments (v2)</a>.</p>
@@ -459,7 +429,7 @@ apply the upper bound to. For example, to apply an upper-bound of <code>1000</co
 <code>actionToken</code>, <code>authenticationSessions</code>, <code>loginFailures</code>, <code>work</code>.</p>
 </div>
 <div class="paragraph">
-<p>Setting a maximum cache size for <code>sessions</code>, <code>clientSessions</code> is not supported when volatile sessions are enabled.</p>
+<p>Setting a maximum cache size for <code>sessions</code>, <code>clientSessions</code> is not supported when the deprecated volatile sessions mode is used.</p>
 </div>
 </div>
 <div class="sect2">
@@ -550,17 +520,17 @@ If the Infinispan server has authentication enabled, Keycloak will fail to start
 </div>
 <div class="dlist">
 <dl>
-<dt class="hdlist1">Cluster name (experimental)</dt>
+<dt class="hdlist1">Cluster name</dt>
 <dd>
 <p>Defines the name of the cluster.
 Only nodes with the same cluster name can discover each other and form a cluster.
 Because Keycloak uses the database for node discovery via <code>jdbc-ping</code> by default, clusters that share the same database but should remain separate will merge unless they have distinct cluster names.
 The default cluster name is <code>ISPN</code>.</p>
 <div class="paragraph">
-<p>Use the SPI option <code>spi-cache-embedded--default--cluster-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__CLUSTER_NAME</code>).</p>
+<p>Use <code>--cache-embedded-cluster-name</code> (or environment variable <code>KC_CACHE_EMBEDDED_CLUSTER_NAME</code>).</p>
 </div>
 <div class="paragraph">
-<p>For example: <code>--spi-cache-embedded--default--cluster-name=my-cluster</code></p>
+<p>For example: <code>--cache-embedded-cluster-name=my-cluster</code></p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -569,7 +539,7 @@ The default cluster name is <code>ISPN</code>.</p>
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-As invalidation of caches between clusters with distinct names will not work, this will lead to stale caches and incorrect behavior. Do not use in production environments. Use only together with the <code>stateless</code> feature.
+As invalidation of caches between clusters with distinct names will not work, this will lead to stale caches and incorrect behavior. Use only together with the <code>stateless</code> feature.
 </td>
 </tr>
 </table>
@@ -581,10 +551,10 @@ As invalidation of caches between clusters with distinct names will not work, th
 By default, a random name is generated on each start, which makes it difficult to correlate metrics and logs across restarts.
 Set this option to assign a stable name, which is especially useful for observability tools such as Grafana dashboards and log aggregation.</p>
 <div class="paragraph">
-<p>Use the SPI option <code>spi-cache-embedded--default--node-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__NODE_NAME</code>).</p>
+<p>Use <code>--cache-embedded-node-name</code> (or environment variable <code>KC_CACHE_EMBEDDED_NODE_NAME</code>).</p>
 </div>
 <div class="paragraph">
-<p>For example: <code>--spi-cache-embedded--default--node-name=node-1</code></p>
+<p>For example: <code>--cache-embedded-node-name=node-1</code></p>
 </div>
 </dd>
 </dl>
@@ -1358,6 +1328,30 @@ While these metrics provide more insights into the latency distribution, collect
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-cluster-name</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Name of the embedded Infinispan cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">All nodes that belong to the same Keycloak deployment must share the same value; nodes that belong to different deployments sharing the same database must each use a different value. Defaults to <code>ISPN</code> if not set. WARNING: Using distinct cluster names without enabling the stateless feature disables cross-cluster cache invalidation, which leads to stale caches and incorrect behavior. Use only together with <code>--features=stateless</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-cluster-name</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_CLUSTER_NAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><span class="options-key"><code>cache-embedded-crl-max-count</code></span></p>
 </div>
 <div class="paragraph">
@@ -1621,6 +1615,30 @@ While these metrics provide more insights into the latency distribution, collect
 <p>Available only when Infinispan clustered embedded is enabled</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-node-name</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Name of this node in the embedded cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Used in log messages and management tools to identify this instance. If not set, a name is generated automatically.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-node-name</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NODE_NAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
