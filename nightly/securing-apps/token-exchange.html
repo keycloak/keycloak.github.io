@@ -725,8 +725,95 @@ This feature is <strong>experimental</strong> and may introduce breaking changes
 </table>
 </div>
 <div class="paragraph">
-<p>Token exchange delegation allows a subject to pre-authorize an actor to act on their behalf, as described in the <a href="https://datatracker.ietf.org/doc/html/rfc8693#name-delegation-vs-impersonation">delegation semantics of the token exchange specification</a>.</p>
+<p>Token exchange delegation allows a subject (a user) to pre-authorize an actor (an administrator or a client application) to act on their behalf, as described in the <a href="https://datatracker.ietf.org/doc/html/rfc8693#name-delegation-vs-impersonation">delegation semantics of the token exchange specification</a>.</p>
 </div>
+<div class="sect2">
+<h3 id="_why_use_delegation"><a class="anchor" href="#_why_use_delegation"></a>Why use delegation</h3>
+<div class="paragraph">
+<p>The specification describes two ways one party can act for another. Suppose Alice, the <strong>subject</strong>, wants a calendar app, the <strong>actor</strong>, to book meetings for her:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Impersonation</dt>
+<dd>
+<p>The app gets a token that simply says "Alice". Her calendar service cannot tell whether Alice or the app made a booking.</p>
+</dd>
+<dt class="hdlist1">Delegation</dt>
+<dd>
+<p>The app gets a token that says "the calendar app, acting for Alice". The calendar service sees both names, and can log or restrict what the app does on her behalf.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Keycloak implements delegation, through the <code>may_act</code> and <code>act</code> claims.</p>
+</div>
+<div class="paragraph">
+<p>Handing the user&#8217;s own access token to the actor, whether that actor is another user or a client application, is impersonation in effect, and it has significant drawbacks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>No audience control.</strong> Alice&#8217;s token was issued to the app she logged in with, and its <code>aud</code> comes from that client&#8217;s audience and role scope mappings. Nothing binds it to the calendar service, so the calendar app can present it to any other service that accepts it.</p>
+</li>
+<li>
+<p><strong>No scope restriction.</strong> Alice&#8217;s token carries everything she is allowed to do, not just booking meetings. If the calendar app is compromised, the attacker can use it anywhere Alice&#8217;s token is accepted.</p>
+</li>
+<li>
+<p><strong>No audit trail.</strong> The calendar service sees a request from Alice. It cannot tell the calendar app made it, so a misbehaving app looks exactly like her.</p>
+</li>
+<li>
+<p><strong>No user consent.</strong> Alice is never asked whether the calendar app may act for her.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Delegation addresses all of these. The delegated token is issued with the audience and scopes of the requesting client, the client that performs the exchange, narrowing it to only what that client needs. In client delegation, the requesting client is the actor itself. The <code>act</code> claim provides a clear audit trail, and the user must explicitly consent to the delegation.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_delegation_types"><a class="anchor" href="#_delegation_types"></a>Delegation types</h3>
+<div class="paragraph">
+<p>Keycloak supports two kinds of actor.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Aspect</th>
+<th class="tableblock halign-left valign-top">Admin delegation</th>
+<th class="tableblock halign-left valign-top">Client delegation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Scope</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>delegation:user:&lt;username&gt;</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>delegation:client:&lt;client_id&gt;</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Actor</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A user, typically an administrator</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A client application, through its service account</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Use case</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Administrator acts on behalf of a user</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Application, such as an AI agent, acts on behalf of a user</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong><code>may_act</code> contains</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>sub</code> (actor user ID)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>sub</code> (service account user ID) and <code>client_id</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_enabling_delegation"><a class="anchor" href="#_enabling_delegation"></a>Enabling delegation</h3>
 <div class="paragraph">
 <p>This feature requires the <code>parameterized-scopes</code> feature to be enabled. To enable both features, start Keycloak with:</p>
 </div>
@@ -735,21 +822,38 @@ This feature is <strong>experimental</strong> and may introduce breaking changes
 <pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --features=token-exchange-delegation,parameterized-scopes</code></pre>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_admin_delegation"><a class="anchor" href="#_admin_delegation"></a>Admin delegation</h3>
 <div class="paragraph">
-<p>Admin delegation allows a user (subject) to delegate their token to an administrator (actor). The client requests the <code>delegation:user</code> scope with the administrator&#8217;s identifier as a parameter using the <a href="https://datatracker.ietf.org/doc/html/rfc9396">parameterized scopes</a> syntax.</p>
+<p>When the feature is enabled, the delegation client scopes (<code>delegation:user</code> and <code>delegation:client</code>) are automatically created in all realms (new and existing) as <strong>Optional</strong> client scopes, making them available to all clients by default. No manual client scope assignment is needed.</p>
 </div>
 <div class="paragraph">
-<p>When the feature is enabled, the <code>delegation:user</code> client scope is automatically created in all realms (new and existing) as an <strong>Optional</strong> client scope, making it available to all clients by default. Delegation also requires <a href="#_granting_delegation_permission">granting delegation permission</a>. Without a matching permission granting the <code>delegate</code> scope, the delegation scope is silently dropped from the token.</p>
+<p>The client requesting a delegation scope must have <strong>Consent required</strong> enabled. The delegation scopes are marked as always requiring consent, and Keycloak rejects a request for such a scope from a client that does not require consent. The delegation consent is never stored permanently, so the user approves the delegation on every login session.</p>
+</div>
+<div class="paragraph">
+<p>Delegation also requires granting a delegation permission through <a href="https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions">Fine-grained admin permissions version 2</a> (FGAP V2). Without a matching permission granting the <code>delegate</code> scope, the delegation scope is silently dropped from the request and the <code>may_act</code> claim is not included in the token. The login itself still succeeds.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Delegation permissions require FGAP V2. FGAP V1 does not support delegation.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_granting_delegation_permission"><a class="anchor" href="#_granting_delegation_permission"></a>Granting delegation permission</h3>
+<div class="paragraph">
+<p>Unlike impersonation, delegation does not use admin roles. Instead, you configure FGAP V2 permissions to control which actors can be delegated to and for which users.</p>
 </div>
 <div class="sect3">
-<h4 id="_granting_delegation_permission"><a class="anchor" href="#_granting_delegation_permission"></a>Granting delegation permission</h4>
+<h4 id="_granting_delegation_to_all_users"><a class="anchor" href="#_granting_delegation_to_all_users"></a>Granting delegation to all users</h4>
 <div class="paragraph">
-<p>Delegation permissions are managed through <a href="https://www.keycloak.org/docs/latest/server_admin/#_fine_grained_permissions">Fine-grained admin permissions version 2</a> (FGAP V2). Unlike impersonation, delegation does not use admin roles. Instead, you configure FGAP permissions to control which administrators can be delegated to and for which users.</p>
+<p>This example allows the <code>actor-app</code> client, and only that client, to act on behalf of any user in the realm.</p>
 </div>
-<div class="sect4">
-<h5 id="_granting_delegation_to_all_users"><a class="anchor" href="#_granting_delegation_to_all_users"></a>Granting delegation to all users</h5>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -765,25 +869,22 @@ This feature is <strong>experimental</strong> and may introduce breaking changes
 <p>Add the <strong>delegate</strong> scope.</p>
 </li>
 <li>
-<p>Assign a policy that grants this permission.</p>
+<p>Under <strong>Enforce access to</strong>, leave <strong>All users</strong> selected. Those are the users that can be acted <strong>for</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Policies</strong>, click <strong>Create new policy</strong>, choose <strong>Client</strong>, and select <code>actor-app</code>. The policy is the set of actors allowed to act, so only <code>actor-app</code> can delegate. Adding more clients to the policy widens that set.</p>
 </li>
 </ol>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-To restrict delegation to specific users, select individual users when creating the permission. To restrict which administrators or service accounts can delegate, use a more specific policy (for example, a <strong>User</strong> or <strong>Client</strong> policy).
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p>If you want to restrict the permission to an administrator instead of a client, choose the <strong>User</strong> type for the policy in the last step, and select the administrator username.</p>
+</div>
+<div class="paragraph">
+<p>With this in place, <code>scope=openid delegation:client:actor-app</code> succeeds for any user, while <code>delegation:client:some-other-app</code> is dropped during scope resolution.</p>
 </div>
 </div>
-<div class="sect4">
-<h5 id="_granting_delegation_to_members_of_a_specific_group"><a class="anchor" href="#_granting_delegation_to_members_of_a_specific_group"></a>Granting delegation to members of a specific group</h5>
+<div class="sect3">
+<h4 id="_granting_delegation_to_members_of_a_specific_group"><a class="anchor" href="#_granting_delegation_to_members_of_a_specific_group"></a>Granting delegation to members of a specific group</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -793,27 +894,35 @@ To restrict delegation to specific users, select individual users when creating 
 <p>Create a new permission on the <strong>Groups</strong> resource type.</p>
 </li>
 <li>
-<p>Select the target groups.</p>
-</li>
-<li>
 <p>Add the <strong>delegate-members</strong> scope.</p>
 </li>
 <li>
-<p>Assign a policy targeting the administrator or service account allowed to delegate.</p>
+<p>Under <strong>Enforce access to</strong>, choose <strong>Specific groups</strong> and select the target groups.</p>
+</li>
+<li>
+<p>Under <strong>Policies</strong>, click <strong>Create new policy</strong>, or assign an existing one, targeting the administrator or service account allowed to delegate.</p>
 </li>
 </ol>
 </div>
 </div>
+</div>
+<div class="sect2">
+<h3 id="_admin_delegation"><a class="anchor" href="#_admin_delegation"></a>Admin delegation</h3>
+<div class="paragraph">
+<p>Admin delegation allows a user (subject) to delegate their token to an administrator (actor). The client requests the <code>delegation:user</code> scope with the administrator&#8217;s identifier as a parameter using the <a href="https://www.keycloak.org/docs/latest/server_admin/#_parameterized_client_scopes">parameterized scopes</a> syntax.</p>
 </div>
 <div class="sect3">
 <h4 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a>How it works</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>The client requests the <code>delegation:user</code> scope with the administrator&#8217;s (actor) identifier as a parameter, for example <code>scope=openid delegation:user:admin</code>.</p>
+<p>The client requests the <code>delegation:user</code> scope with the administrator&#8217;s (actor) username as a parameter, for example <code>scope=openid delegation:user:admin</code>.</p>
 </li>
 <li>
-<p>Keycloak validates that the specified administrator (actor) exists and has the <code>delegate</code> permission for the user (subject) through FGAP V2.</p>
+<p>Keycloak validates that the named user exists, is not a service account, and is not the user who is logging in.</p>
+</li>
+<li>
+<p>Keycloak validates that the named administrator (actor) has the <code>delegate</code> permission for the user (subject) through FGAP V2.</p>
 </li>
 <li>
 <p>The user (subject) is presented with a consent screen to approve the delegation.</p>
@@ -838,9 +947,6 @@ To restrict delegation to specific users, select individual users when creating 
 <div class="paragraph">
 <p>The <code>may_act</code> claim declares that the specified administrator (actor) is authorized to act on behalf of the user (subject). The <code>sub</code> inside <code>may_act</code> contains the actor&#8217;s user ID, consistent with Keycloak&#8217;s standard <code>sub</code> claim semantics. An external Security Token Service (STS) receiving this token can verify the delegation authorization directly from the claim without querying back to Keycloak.</p>
 </div>
-<div class="paragraph">
-<p>If the administrator (actor) does not have the delegation permission, the delegation scope is silently dropped and the <code>may_act</code> claim is not included in the token. The consent for delegation is always required and is not stored permanently - the user must approve delegation each login session.</p>
-</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -848,7 +954,7 @@ To restrict delegation to specific users, select individual users when creating 
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Delegation permissions require FGAP V2. FGAP V1 does not support delegation.
+Unlike <code>delegation:client</code>, the <code>delegation:user</code> scope does not add anything to the subject token&#8217;s <code>aud</code> claim. If the administrator performs the exchange from a client other than the one the subject token was issued for, that client must still be within the subject token&#8217;s audience. Add an <strong>Audience</strong> mapper to the subject client if that is not already the case.
 </td>
 </tr>
 </table>
@@ -857,7 +963,7 @@ Delegation permissions require FGAP V2. FGAP V1 does not support delegation.
 <div class="sect3">
 <h4 id="_adding_additional_claims_to_may_act"><a class="anchor" href="#_adding_additional_claims_to_may_act"></a>Adding additional claims to <code>may_act</code></h4>
 <div class="paragraph">
-<p>By default, only the actor&#8217;s <code>sub</code> (user ID) is included in the <code>may_act</code> claim. Additional claims can be added by configuring extra "Parameterized Scope User Property" mappers on the <code>delegation:user</code> client scope in the Admin Console.</p>
+<p>By default, only the actor&#8217;s <code>sub</code> (user ID) is included in the <code>may_act</code> claim. It is produced by the built-in <strong>Parameterized Scope User Property</strong> mapper named <code>may_act sub</code>, which resolves the scope parameter as a username and maps that user&#8217;s ID into the claim. Additional claims can be added by configuring extra <strong>Parameterized Scope User Property</strong> mappers on the <code>delegation:user</code> client scope in the Admin Console.</p>
 </div>
 <div class="paragraph">
 <p>For example, to include the actor&#8217;s username:</p>
@@ -894,6 +1000,403 @@ Delegation permissions require FGAP V2. FGAP V1 does not support delegation.
 <div class="paragraph">
 <p>Other useful claims to add include <code>may_act.email</code> (user attribute <code>email</code>) or <code>may_act.iss</code> (for cross-realm delegation scenarios).</p>
 </div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_client-delegation"><a class="anchor" href="#_client-delegation"></a>Client delegation</h3>
+<div class="paragraph">
+<p>Client delegation allows a user (subject) to delegate their token to a client application (actor), such as an AI agent or automated service. The client requests the <code>delegation:client</code> scope with the actor client&#8217;s identifier as a parameter using the <a href="https://www.keycloak.org/docs/latest/server_admin/#_parameterized_client_scopes">parameterized scopes</a> syntax (for example, <code>delegation:client:actor-app</code>).</p>
+</div>
+<div class="paragraph">
+<p>Unlike admin delegation, which is designed for human administrators, client delegation is designed for application-to-application scenarios where a user consents to let a specific client act on their behalf. The actor client does not need any admin roles or access to the Admin REST API.</p>
+</div>
+<div class="sect3">
+<h4 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h4>
+<div class="paragraph">
+<p>The actor client (the application that will act on behalf of the user) must meet the following requirements:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>It must be a <strong>confidential</strong> client.</p>
+</li>
+<li>
+<p>It must have a <strong>service account</strong> enabled.</p>
+</li>
+<li>
+<p>It must have <strong>Standard Token Exchange</strong> enabled.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_how_it_works_2"><a class="anchor" href="#_how_it_works_2"></a>How it works</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The client requests the <code>delegation:client</code> scope with the actor client&#8217;s <code>client_id</code> as a parameter, for example <code>scope=openid delegation:client:actor-app</code>.</p>
+</li>
+<li>
+<p>Keycloak validates that the named client exists, is enabled, has service accounts enabled, and that its service account user can be resolved.</p>
+</li>
+<li>
+<p>Keycloak validates that the actor client&#8217;s service account has the <code>delegate</code> permission for the user (subject) through FGAP V2.</p>
+</li>
+<li>
+<p>The user (subject) is presented with a consent screen to approve the delegation.</p>
+</li>
+<li>
+<p>If the user consents and validation passes, the issued token includes the <code>may_act</code> claim with the actor&#8217;s service account user ID as <code>sub</code> and the client identifier as <code>client_id</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "sub": "0fa1e5d4-3c2b-4a19-8765-0123456789ab",
+  "may_act": {
+    "sub": "9b8c7d6e-5f4a-4b2c-9d0e-fedcba987654",
+    "client_id": "actor-app"
+  },
+  "scope": "openid delegation:client:actor-app",
+  ...
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>delegation:client</code> scope also automatically adds the actor client to the <code>aud</code> claim of the subject&#8217;s token. This is required because the standard token exchange validates that the requester client is present in the subject token&#8217;s audience.</p>
+</div>
+</li>
+<li>
+<p>The actor client receives the subject&#8217;s token (containing <code>may_act</code>) and performs a token exchange at the token endpoint, as described in <a href="#_performing-the-delegated-exchange">Performing the delegated exchange</a>.</p>
+</li>
+<li>
+<p>The resulting delegated token is issued in a transient session (access token only, no refresh token). The token&#8217;s <code>aud</code> claim and scopes are resolved from the actor client&#8217;s configuration (its client scopes and role mappings), not from the original subject token. This effectively narrows the delegated token to only the audiences and permissions that the actor client is configured for. The token also contains the <code>act</code> claim identifying the actor:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "sub": "0fa1e5d4-3c2b-4a19-8765-0123456789ab",
+  "act": {
+    "sub": "9b8c7d6e-5f4a-4b2c-9d0e-fedcba987654",
+    "client_id": "actor-app"
+  },
+  ...
+}</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The <code>act</code> claim allows resource servers to identify both who the data belongs to (the subject, via the <code>sub</code> claim) and who is actually making the request (the actor client, via the <code>act</code> claim).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_adding_additional_claims_to_may_act_2"><a class="anchor" href="#_adding_additional_claims_to_may_act_2"></a>Adding additional claims to <code>may_act</code></h4>
+<div class="paragraph">
+<p>By default, the <code>may_act</code> claim contains the actor&#8217;s <code>sub</code> (service account user ID) and <code>client_id</code>. Additional claims can be added by configuring extra mappers on the <code>delegation:client</code> client scope in the Admin Console, in the same way as for admin delegation.</p>
+</div>
+<div class="paragraph">
+<p>For example, to add a custom claim describing the actor:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Client scopes</strong> &#8594; <strong>delegation:client</strong> &#8594; <strong>Mappers</strong> &#8594; <strong>Add mapper</strong> &#8594; <strong>By configuration</strong> &#8594; <strong>Hardcoded claim</strong>.</p>
+</li>
+<li>
+<p>Set <strong>Token Claim Name</strong> to <code>may_act.custom_value</code>.</p>
+</li>
+<li>
+<p>Set <strong>Claim value</strong> to <code>hello</code>.</p>
+</li>
+<li>
+<p>Enable the token types where the claim should be included (e.g. access token, ID token).</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The resulting token will then include:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "may_act": {
+    "sub": "9b8c7d6e-5f4a-4b2c-9d0e-fedcba987654",
+    "client_id": "actor-app",
+    "custom_value": "hello"
+  },
+  ...
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Keycloak validates only <code>sub</code>, <code>client_id</code> and <code>iss</code> inside <code>may_act</code>. Every other claim is copied unchanged into the <code>act</code> claim of the delegated token, so it serves to identify and describe the actor for the parties reading the token, never as an input to an authorization decision.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+A <strong>Hardcoded claim</strong> is the same for every actor client, and no mapper resolves an attribute of the actor client itself. <strong>Parameterized Scope User Property</strong> cannot be reused here, since it treats the scope parameter as a username.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_performing-the-delegated-exchange"><a class="anchor" href="#_performing-the-delegated-exchange"></a>Performing the delegated exchange</h3>
+<div class="paragraph">
+<p>Once the subject&#8217;s token carries a <code>may_act</code> claim, the actor performs the actual exchange at the token endpoint. This step is the same for admin delegation and client delegation. Only the contents of the <code>may_act</code> claim differ.</p>
+</div>
+<div class="paragraph">
+<p>The <code>actor_token</code> is an ordinary access token belonging to the actor. Keycloak resolves the user behind it and treats the request as client delegation when that user is a service account, and as admin delegation otherwise. For client delegation, the actor client obtains the token for its own service account with the <code>client_credentials</code> grant:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-http" data-lang="http">POST /realms/myrealm/protocol/openid-connect/token HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&amp;
+client_id=actor-app&amp;
+client_secret=XXXXX</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For admin delegation, the actor token is the administrator&#8217;s own access token, obtained through whichever flow they normally log in with.</p>
+</div>
+<div class="paragraph">
+<p>The actor then sends both tokens: the subject&#8217;s token as the <code>subject_token</code> and its own token as the <code>actor_token</code>. The actor client is confidential, so it authenticates itself on this request as well. The following example uses <code>client_secret_post</code>, but the other client authentication methods work too.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-http" data-lang="http">POST /realms/myrealm/protocol/openid-connect/token HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange&amp;
+client_id=actor-app&amp;
+client_secret=XXXXX&amp;
+subject_token=eyJhbGci[...redacted...]&amp;
+subject_token_type=urn:ietf:params:oauth:token-type:access_token&amp;
+actor_token=eyJhbGci[...redacted...]&amp;
+actor_token_type=urn:ietf:params:oauth:token-type:access_token</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The delegation flow uses the following parameters:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Parameter</th>
+<th class="tableblock halign-left valign-top">Requirement</th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grant_type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Required</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>urn:ietf:params:oauth:grant-type:token-exchange</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>subject_token</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Required</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The subject&#8217;s access token, carrying the <code>may_act</code> claim</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>subject_token_type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Required</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>urn:ietf:params:oauth:token-type:access_token</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>actor_token</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Required</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The actor&#8217;s own access token. Its presence is what selects the delegation flow</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>actor_token_type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Required</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>urn:ietf:params:oauth:token-type:access_token</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>requested_token_type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Optional</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>urn:ietf:params:oauth:token-type:access_token</code>, which is both the default and the only supported value</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Without the <code>actor_token</code> parameter, the request is handled as a standard token exchange, which rejects any subject token carrying a <code>may_act</code> or <code>act</code> claim.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Keycloak then validates both tokens following the <a href="https://datatracker.ietf.org/doc/html/rfc8693#section-4.1">delegation semantics of RFC 8693</a>. Unless stated otherwise, a failed check returns <code>400 Bad Request</code> with the <code>invalid_request</code> error and a description of what failed.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Check</th>
+<th class="tableblock halign-left valign-top">Fails when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The actor token is valid</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>actor_token</code> cannot be verified, or <code>actor_token_type</code> is not an access token type</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The requesting client is entitled to each token</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">For either token, the requesting client is neither the client the token was issued for nor within its audience. This check returns <code>403 Forbidden</code> with the <code>access_denied</code> error</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The subject and the actor differ</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>actor_token</code> resolves to the same user as the <code>subject_token</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The subject token carries <code>may_act</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The claim is missing, or is not an object</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>may_act.iss</code> matches the realm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The claim carries an <code>iss</code> that is not this realm&#8217;s issuer</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>may_act.sub</code> names the actor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The claim has no <code>sub</code>, or its <code>sub</code> is not the user resolved from the <code>actor_token</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>may_act.client_id</code> matches, when present</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The claim&#8217;s <code>client_id</code> is not the client the <code>actor_token</code> was issued for, or is not the client making the request</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The delegated token is issued in a transient session, so no refresh token is returned and the token carries no session identifier. It contains the <code>act</code> claim built from the subject token&#8217;s <code>may_act</code> claim.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_restricting_the_may_act_claim_with_a_client_policy"><a class="anchor" href="#_restricting_the_may_act_claim_with_a_client_policy"></a>Restricting the <code>may_act</code> claim with a client policy</h3>
+<div class="paragraph">
+<p>The delegation client scopes enforce the permission check and the user consent before adding a <code>may_act</code> claim. A claim with that name can reach a token by other routes though, such as a <strong>Hardcoded claim</strong> protocol mapper set directly on a client. That claim never passed either check, yet the exchange endpoint would honor it.</p>
+</div>
+<div class="paragraph">
+<p>The <code>may-act</code> client policy executor closes this gap. It re-validates any <code>may_act</code> claim it finds in a token response, whatever produced it: the issuer must match the realm, the <code>sub</code> must be an existing enabled user other than the token&#8217;s own user, that user must hold the <code>delegate</code> permission, and the matching delegation scope must have been consented. Tokens without a <code>may_act</code> claim are untouched, and tokens that fail are rejected with <code>invalid_request</code>.</p>
+</div>
+<div class="paragraph">
+<p>Configure it under <strong>Realm settings</strong> &#8594; <strong>Client policies</strong> by adding the <strong>may-act</strong> executor to a profile and attaching that profile to a policy. All three options are off by default:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Effect when switched on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Reject any may_act claim</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rejects every token carrying a <code>may_act</code> claim, for clients that must never take part in delegation</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Avoid permission check</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Skips the revalidation of the <code>delegate</code> FGAP permission. The <code>may_act</code> validity checks on <code>iss</code> and <code>sub</code> still apply</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Avoid consent check</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The user&#8217;s login consent is still enforced by the normal flows. What is dropped is catching a <code>may_act</code> that a protocol mapper added without the user ever consenting to that delegation</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The executor runs on the token response of every grant type, but only acts when that response carries a <code>may_act</code> claim. That is the login and refresh responses where the claim is minted, not the exchange itself, since the delegated token carries <code>act</code> and not <code>may_act</code>. Combine it with the <strong>grant-type</strong> condition to narrow it further.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h3>
+<div class="paragraph">
+<p>Delegation scopes fail safe. If the actor is not authorized, the scope is dropped during scope resolution and the login still succeeds, only without a <code>may_act</code> claim in the token.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Symptom</th>
+<th class="tableblock halign-left valign-top">Likely cause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Login succeeds, but the token has no <code>may_act</code> claim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The actor lacks the <code>delegate</code> permission, the username or client ID is misspelled, or the actor client has no service account</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The authorization request fails with <code>invalid_scope</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The requesting client does not have <strong>Consent required</strong> enabled</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The exchange fails with <code>invalid_request</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The actor does not match <code>may_act</code>, or the <code>may_act</code> claim is missing or malformed in the subject token</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The exchange fails with <code>access_denied</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The requesting client is outside the audience of the subject token or of the actor token</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>A dropped scope is always logged on the server at the <code>WARN</code> level, with the reason:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Invalid scope parameter for 'delegation:client': Client 'actor-app' does not have service accounts enabled in realm 'myrealm'</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Two constraints are easy to miss: <code>delegation:user</code> cannot name a service account, so use <code>delegation:client</code> for those, and neither scope can be requested twice with different values in the same request.</p>
 </div>
 </div>
 </div>
