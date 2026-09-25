@@ -122,7 +122,7 @@ gtag('config', 'G-0J2P9316N6');
 <p>Realm and authorization data continues to be cached locally in each Keycloak node for fast reads. Within a cluster, JGroups handles immediate cache invalidation when realm data changes. Between clusters, a database outbox pattern propagates invalidation messages via polling, with a default interval of 100 milliseconds.</p>
 </div>
 <div class="paragraph">
-<p>No Infinispan traffic is involved during OIDC or SAML request processing, eliminating transient failures if a node fails unexpectedly. JGroups is still used for intra-cluster realm cache coordination, but it is not touched during authentication flows.</p>
+<p>No Infinispan traffic happens between nodes during OIDC or SAML request processing, eliminating transient failures if a node fails unexpectedly. JGroups is still used for intra-cluster realm cache coordination, but it is not touched during authentication flows.</p>
 </div>
 </div>
 </div>
@@ -165,7 +165,7 @@ gtag('config', 'G-0J2P9316N6');
 <p><strong>Environment-agnostic</strong>: The architecture is not tied to Kubernetes or a specific cloud provider.</p>
 </li>
 <li>
-<p><strong>Automatic failover</strong>: During a site failure, the load balancer redirects traffic to the surviving site with no data loss, assuming the setup was not degraded from previous failures.</p>
+<p><strong>Automatic failover</strong>: A load balancer can detect site failures and redirect traffic to the surviving site. If database failover is required, a short downtime might occur until the new writer instance becomes available.</p>
 </li>
 <li>
 <p><strong>Prerequisite:</strong> A synchronously replicated database and a low-latency network between sites (less than 5 ms suggested, below 10 ms required for database round-trip).</p>
@@ -173,7 +173,7 @@ gtag('config', 'G-0J2P9316N6');
 </ul>
 </div>
 <div class="paragraph">
-<p>The new <code>stateless</code> feature prioritizes consistency over availability. Every write is synchronously replicated, so no data is lost during failover at the cost of requiring a low-latency network between sites.</p>
+<p>All user and realm data is replicated synchronously, so persistent data is not lost during failover. Session data is replicated asynchronously by default if the database supports it to reduce request latency.</p>
 </div>
 </div>
 </div>
@@ -236,11 +236,14 @@ gtag('config', 'G-0J2P9316N6');
 <h2 id="_migrating_existing_installations"><a class="anchor" href="#_migrating_existing_installations"></a>Migrating existing installations</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>If you are running a multi-site v1 deployment, migrating to v2 is straightforward: enable the <code>stateless</code> feature flag, then remove the external Infinispan cluster, its configuration, the AWS Lambda, and the Prometheus monitoring and alerts.</p>
+<p>If you are running a multi-cluster v1 deployment, migrating to v2 is straightforward: enable the <code>stateless</code> feature flag, then remove the external Infinispan cluster, its configuration, the AWS Lambda, and the Prometheus monitoring and alerts that triggered the AWS lambda.</p>
 </div>
 <div class="paragraph">
-<p>As all user sessions are stored in the database already in v1, users will still be logged in after the migration to v2.
+<p>As all user sessions are stored in the database already in multi-cluster v1 mode, users will still be logged in after the migration to multi-cluster v2.
 Information about in-progress logins and login failure counters is lost during the upgrade.</p>
+</div>
+<div class="paragraph">
+<p>Single-cluster deployments can be upgraded to stateless mode by enabling the <code>stateless</code> feature flag and adding the cluster name parameter in a similar way. If you have persistent user sessions enabled (which is the default for single clusters), users will still be logged in when migrating to multi-cluster v2.</p>
 </div>
 </div>
 </div>

@@ -727,7 +727,7 @@ Whether you want to discuss a challenge from your own Keycloak environment, exch
 &lt;p&gt;Realm and authorization data continues to be cached locally in each Keycloak node for fast reads. Within a cluster, JGroups handles immediate cache invalidation when realm data changes. Between clusters, a database outbox pattern propagates invalidation messages via polling, with a default interval of 100 milliseconds.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;No Infinispan traffic is involved during OIDC or SAML request processing, eliminating transient failures if a node fails unexpectedly. JGroups is still used for intra-cluster realm cache coordination, but it is not touched during authentication flows.&lt;/p&gt;
+&lt;p&gt;No Infinispan traffic happens between nodes during OIDC or SAML request processing, eliminating transient failures if a node fails unexpectedly. JGroups is still used for intra-cluster realm cache coordination, but it is not touched during authentication flows.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
@@ -770,7 +770,7 @@ Whether you want to discuss a challenge from your own Keycloak environment, exch
 &lt;p&gt;&lt;strong&gt;Environment-agnostic&lt;/strong&gt;: The architecture is not tied to Kubernetes or a specific cloud provider.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;&lt;strong&gt;Automatic failover&lt;/strong&gt;: During a site failure, the load balancer redirects traffic to the surviving site with no data loss, assuming the setup was not degraded from previous failures.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Automatic failover&lt;/strong&gt;: A load balancer can detect site failures and redirect traffic to the surviving site. If database failover is required, a short downtime might occur until the new writer instance becomes available.&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;&lt;strong&gt;Prerequisite:&lt;/strong&gt; A synchronously replicated database and a low-latency network between sites (less than 5 ms suggested, below 10 ms required for database round-trip).&lt;/p&gt;
@@ -778,7 +778,7 @@ Whether you want to discuss a challenge from your own Keycloak environment, exch
 &lt;/ul&gt;
 &lt;/div&gt;
 &lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;The new &lt;code&gt;stateless&lt;/code&gt; feature prioritizes consistency over availability. Every write is synchronously replicated, so no data is lost during failover at the cost of requiring a low-latency network between sites.&lt;/p&gt;
+&lt;p&gt;All user and realm data is replicated synchronously, so persistent data is not lost during failover. Session data is replicated asynchronously by default if the database supports it to reduce request latency.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
@@ -841,11 +841,14 @@ Whether you want to discuss a challenge from your own Keycloak environment, exch
 &lt;h2 id=&quot;_migrating_existing_installations&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_migrating_existing_installations&quot;&gt;&lt;/a&gt;Migrating existing installations&lt;/h2&gt;
 &lt;div class=&quot;sectionbody&quot;&gt;
 &lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;If you are running a multi-site v1 deployment, migrating to v2 is straightforward: enable the &lt;code&gt;stateless&lt;/code&gt; feature flag, then remove the external Infinispan cluster, its configuration, the AWS Lambda, and the Prometheus monitoring and alerts.&lt;/p&gt;
+&lt;p&gt;If you are running a multi-cluster v1 deployment, migrating to v2 is straightforward: enable the &lt;code&gt;stateless&lt;/code&gt; feature flag, then remove the external Infinispan cluster, its configuration, the AWS Lambda, and the Prometheus monitoring and alerts that triggered the AWS lambda.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div class=&quot;paragraph&quot;&gt;
-&lt;p&gt;As all user sessions are stored in the database already in v1, users will still be logged in after the migration to v2.
+&lt;p&gt;As all user sessions are stored in the database already in multi-cluster v1 mode, users will still be logged in after the migration to multi-cluster v2.
 Information about in-progress logins and login failure counters is lost during the upgrade.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Single-cluster deployments can be upgraded to stateless mode by enabling the &lt;code&gt;stateless&lt;/code&gt; feature flag and adding the cluster name parameter in a similar way. If you have persistent user sessions enabled (which is the default for single clusters), users will still be logged in when migrating to multi-cluster v2.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
