@@ -95,7 +95,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/admin-api/querying" selected="selected">Nightly</option>
-                        <option value="https://www.keycloak.org/admin-api/querying" >26.7.4</option>
+                        <option value="https://www.keycloak.org/admin-api/querying" >26.7.5</option>
                     </select>
                 </div>
 
@@ -212,6 +212,18 @@ For the full syntax reference, including operator precedence and detailed exampl
 </div>
 </div>
 <div class="sect2">
+<h3 id="_fields_without_a_value"><a class="anchor" href="#_fields_without_a_value"></a>Fields without a value</h3>
+<div class="paragraph">
+<p>A comparison with a field that has no value is never true, and for every searchable field except <code>roles</code> the negated comparison is not true either.
+For example, neither <code>auth.method ne "client-secret"</code> nor <code>not (auth.method eq "client-secret")</code> returns SAML clients or public clients, because they have no authentication method. Use <code>not auth.method pr</code> to find them.
+The <code>roles</code> field is multi-valued: <code>roles ne "admin"</code> does not return clients without roles, but <code>not (roles eq "admin")</code> does, as described in <a href="#_collection_field_matching">Collection field matching</a>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>eq</code> and <code>ne</code> operators accept the <code>null</code> literal, but a comparison such as <code>description eq null</code> never matches any client, so it cannot be used to find clients where the field is absent.
+For details, see <a href="https://www.keycloak.org/docs/latest/server_admin/#_scim_filtering_null_values">Attributes without a value</a> in the Server Administration Guide.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_queryable_fields"><a class="anchor" href="#_queryable_fields"></a>Queryable fields</h3>
 <div class="paragraph">
 <p>Only the fields listed below can be used in filter expressions.
@@ -286,8 +298,8 @@ Using an unsearchable or unknown field returns HTTP 400, unlike the SCIM API whi
 <h4 id="_oidc_specific_fields"><a class="anchor" href="#_oidc_specific_fields"></a>OIDC-specific fields</h4>
 <div class="paragraph">
 <p>These fields are available only for <code>openid-connect</code> clients.
-They resolve to <code>null</code> for SAML clients, so value-based comparisons like <code>eq</code>, <code>co</code>, or <code>sw</code> will not match.
-However, <code>eq null</code> and <code>not &#8230;&#8203; pr</code> will match because the field is genuinely absent.</p>
+They resolve to <code>null</code> for SAML clients, so value-based comparisons like <code>eq</code>, <code>ne</code>, <code>co</code>, or <code>sw</code> do not match SAML clients.
+See <a href="#_fields_without_a_value">Fields without a value</a>.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -328,8 +340,10 @@ However, <code>eq null</code> and <code>not &#8230;&#8203; pr</code> will match 
 </ul>
 </div>
 <div class="paragraph">
-<p>The <code>ne</code> operator is the logical negation of <code>eq</code>: it matches if <strong>no</strong> element in the collection equals the value.
-For example, <code>roles ne "admin"</code> matches clients that do not have a role named <code>admin</code>.</p>
+<p>The <code>ne</code> operator matches if <strong>any</strong> element in the collection differs from the value.
+For example, <code>roles ne "admin"</code> matches clients that have at least one role other than <code>admin</code>, and it does not match clients without roles.
+To find clients that do not have a given role, negate the equality instead: <code>not (roles eq "admin")</code>.
+This form also matches clients without roles.</p>
 </div>
 <div class="paragraph">
 <p>To match clients that have multiple values, combine conditions with <code>and</code>:</p>
@@ -414,6 +428,9 @@ The filter evaluates against the full representation before projection is applie
 </li>
 <li>
 <p>The filter uses an unsupported operator (e.g. <code>gt</code>, <code>ge</code>, <code>lt</code>, <code>le</code>).</p>
+</li>
+<li>
+<p>The filter uses <code>null</code> with an operator other than <code>eq</code> or <code>ne</code>.</p>
 </li>
 </ul>
 </div>
