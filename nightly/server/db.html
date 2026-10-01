@@ -95,7 +95,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/server/db" selected="selected">Nightly</option>
-                        <option value="https://www.keycloak.org/server/db" >26.7.5</option>
+                        <option value="https://www.keycloak.org/server/db" >26.8.0</option>
                     </select>
                 </div>
 
@@ -630,6 +630,30 @@ When using the original PostgreSQL driver, Keycloak sets the <code>targetServerT
 </td>
 </tr>
 </table>
+</div>
+<div class="sect3">
+<h4 id="_using_pgbouncer"><a class="anchor" href="#_using_pgbouncer"></a>Using PgBouncer</h4>
+<div class="paragraph">
+<p>When Keycloak connects to PostgreSQL through PgBouncer, connections can fail after a failover or switchover.
+PgBouncer caches the <code>in_hot_standby</code> value it reports to new client connections, and it can keep reporting <code>in_hot_standby=on</code> after the switch.
+Because <code>targetServerType</code> is set to <code>primary</code>, the PostgreSQL JDBC driver then treats the connection as a reader instance and refuses it with the error <code>Could not find a server with specified targetServerType: primary</code>.</p>
+</div>
+<div class="paragraph">
+<p>This is a known PgBouncer issue, tracked in <a href="https://github.com/pgbouncer/pgbouncer/issues/859">pgbouncer/pgbouncer#859</a>.
+Reloading PgBouncer after a failover or switchover makes it report the current value again.</p>
+</div>
+<div class="paragraph">
+<p>Setting <code>targetServerType</code> to <code>any</code> avoids the error, but it also removes the protection described above, so Keycloak might connect to a reader instance.
+Only use it if your routing in PgBouncer sends database connections exclusively to the writable primary database.</p>
+</div>
+<div class="paragraph">
+<p>Set <code>targetServerType=any</code> via <code>db-url-properties</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">bin/kc.[sh|bat] start --db postgres --db-url-properties='?targetServerType=any'</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect2">

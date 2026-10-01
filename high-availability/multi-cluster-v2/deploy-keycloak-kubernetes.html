@@ -90,7 +90,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/high-availability/multi-cluster-v2/deploy-keycloak-kubernetes" >Nightly</option>
-                        <option value="https://www.keycloak.org/high-availability/multi-cluster-v2/deploy-keycloak-kubernetes" selected="selected">26.7.5</option>
+                        <option value="https://www.keycloak.org/high-availability/multi-cluster-v2/deploy-keycloak-kubernetes" selected="selected">26.8.0</option>
                     </select>
                 </div>
 
@@ -103,24 +103,12 @@ gtag('config', 'G-0J2P9316N6');
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-This guide is describing a feature which is currently in preview.
-Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/50640">joining this discussion</a> while we’re continuing to work on this.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>This guide describes advanced Keycloak configurations for Kubernetes which are load tested and will recover from single Pod failures or site failures.</p>
 </div>
 <div class="paragraph">
-<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/high-availability/multi-cluster-v2/concepts">Concepts for multi-cluster deployments (v2)</a> guide.</p>
+<p>These instructions are intended for use with the setup described in the <a href="https://www.keycloak.org/high-availability/multi-cluster-v2/concepts">Concepts for multi-cluster deployments (v2)</a> guide.
+Ensure that the <a href="https://www.keycloak.org/high-availability/multi-cluster-v2/introduction#multi-cluster-v2-infrastructure-requirements">Multi-cluster deployments (v2)</a> infrastructure requirements are met before proceeding.</p>
 </div>
 <div class="paragraph">
 <p>While this blueprint uses Kubernetes, the concepts are not limited to Kubernetes.</p>
@@ -136,10 +124,14 @@ Please provide your feedback by <a href="https://github.com/keycloak/keycloak/di
 <p>Kubernetes clusters running. Each Kubernetes cluster should have its own internal load balancing to leverage the startup, liveness and readiness probes of the Keycloak Pods.</p>
 </li>
 <li>
-<p>A load balancer in front of the clusters that is probing the URL <code>/lb-check</code> of the Keycloak clusters.</p>
+<p>A load balancer in front of the clusters.
+Each Kubernetes cluster&#8217;s ingress routes traffic to Keycloak Pods based on the <code>/health/ready</code> readiness probe, while the external load balancer probes <code>/lb-check</code> on each cluster to detect site-level failures.</p>
 </li>
 <li>
-<p>A highly available database deployed with synchronous replication across sites, reachable from all Keycloak nodes in all clusters. The following example assumes a PostgreSQL database. Any database supported by Keycloak will work.</p>
+<p>A highly available database deployed with synchronous replication across sites, reachable from all Keycloak nodes in all clusters.
+The following example assumes a PostgreSQL database.
+Any Keycloak supported database may be used provided that the selected database deployment can satisfy the required high-availability, synchronous-replication, consistency and latency characteristics. Database HA design and failover behavior are outside Keycloak and must be validated with the database vendor.
+How to configure the database for high availability is out of scope for this guide.</p>
 </li>
 <li>
 <p>Understanding of a <a href="https://www.keycloak.org/operator/basic-deployment">Basic Keycloak deployment</a> of Keycloak with the Keycloak Operator.</p>
@@ -167,7 +159,7 @@ For this setup, you might see approximately twice the CPU usage and write IOPS o
 <p>Install the Keycloak Operator as described in the <a href="https://www.keycloak.org/operator/installation">Keycloak Operator Installation</a> guide.</p>
 </li>
 <li>
-<p>Secure the database connection by creating a <code>ConfigMap</code> with the database certificate bundle:</p>
+<p>For a production-grade deployment, secure the database connection by creating a <code>ConfigMap</code> with the database certificate bundle:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak create configmap keycloak-db-rootcert --from-file db-ca.pem=/path/to/certificate.pem</code></pre>
@@ -215,7 +207,7 @@ spec:
     enabled:
       - stateless <i class="conum" data-value="4"></i><b>(4)</b>
   additionalOptions:
-    - name: spi-cache-embedded--default--cluster-name
+    - name: cache-embedded-cluster-name
       value: &lt;CLUSTER_NAME_HERE&gt; <i class="conum" data-value="5"></i><b>(5)</b>
     - name: log-console-output
       value: json
@@ -243,7 +235,7 @@ spec:
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
 <td>The database connection pool initial, max and min size should be identical to allow statement caching for the database.
-Adjust this number to meet the needs of your system.
+The values shown are a starting point for production deployments; adjust to meet the needs of your system.
 With the <code>stateless</code> feature, authentication sessions and action tokens are stored in the database, which increases database load compared to setups with an external Infinispan cluster. Adjust the pool size accordingly.
 See the <a href="https://www.keycloak.org/high-availability/multi-cluster/concepts-database-connections">Concepts for database connection pools</a> guide for details.</td>
 </tr>
@@ -266,7 +258,7 @@ This option is only available if the <code>stateless</code> feature is enabled.<
 </tr>
 <tr>
 <td><i class="conum" data-value="7"></i><b>7</b></td>
-<td>Secure the database connection.</td>
+<td>Secure the database connection. For non-production-grade environments without database TLS, set <code>db-tls-mode</code> to <code>disabled</code> in <code>additionalOptions</code> and omit the <code>truststores</code> block and the <code>keycloak-db-rootcert</code> <code>ConfigMap</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="8"></i><b>8</b></td>
@@ -277,6 +269,20 @@ The Operator will automatically mount the file in the directory <code>/opt/keycl
 </div>
 </li>
 </ol>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Set <code>spec.hostname.hostname</code> to the same public URL on every site, and use either the same TLS certificate, or the same subject alternative name in the certificate.
+This URL is the external load balancer&#8217;s address that clients use to access Keycloak.
+If the public URL uses a port other than 443, include the port in the hostname value (for example, <code>https://auth.example.com:8443</code>).
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -293,7 +299,18 @@ kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keyc
 </div>
 </div>
 <div class="paragraph">
-<p>Afterward, verify that the external load balancer routes traffic to both clusters.</p>
+<p>To verify the hostname configuration, confirm that the OIDC issuer is identical on every site by querying each cluster&#8217;s internal load balancer:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -sk https://&lt;SITE_LB_HOSTNAME&gt;/realms/master/.well-known/openid-configuration | jq .issuer</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Afterward, verify that the external load balancer routes traffic to both clusters.
+The external load balancer should probe <code>GET /lb-check</code> on each cluster and expect an HTTP <code>200 OK</code> response to determine if a site is healthy.
+When a site&#8217;s Keycloak nodes are all unavailable, <code>/lb-check</code> will not return <code>200 OK</code>, and the load balancer should stop routing traffic to that site.
+Kubernetes probes each Pod&#8217;s <code>/health/ready</code> endpoint on management port 9000 and removes unready Pods from the Service endpoints, allowing the cluster ingress to avoid nodes affected by failures such as split-brain or loss of database connectivity.</p>
 </div>
 </div>
 </div>
@@ -301,8 +318,10 @@ kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keyc
 <h2 id="multi-cluster-v2-sticky-sessions"><a class="anchor" href="#multi-cluster-v2-sticky-sessions"></a>Optional: Disable sticky sessions</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>When running on OpenShift and the default passthrough Ingress setup as provided by the Keycloak Operator, the load balancing done by HAProxy is done by using sticky sessions based on the IP address of the source.
-When running load tests, or when having a reverse proxy in front of HAProxy, you might want to disable this setup to avoid receiving all requests on a single Keycloak Pod.</p>
+<p>When running on OpenShift and the default passthrough Ingress setup as provided by the Keycloak Operator, the load balancing done by HAProxy is done by using sticky sessions based on the IP address of the source.</p>
+</div>
+<div class="paragraph">
+<p>The recommended way to run Keycloak behind a load balancer is to disable sticky session to allow for an even distribution of requests across all nodes.</p>
 </div>
 <div class="paragraph">
 <p>Add the following supplementary configuration under the <code>spec</code> in the Keycloak Custom Resource to disable sticky sessions.</p>

@@ -89,7 +89,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/admin-api/protocol-mappers" >Nightly</option>
-                        <option value="https://www.keycloak.org/admin-api/protocol-mappers" selected="selected">26.7.5</option>
+                        <option value="https://www.keycloak.org/admin-api/protocol-mappers" selected="selected">26.8.0</option>
                     </select>
                 </div>
 
@@ -238,12 +238,20 @@ grouped by the associated protocol.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Calculates a pairwise subject identifier using a salted sha-256 hash and adds it to the 'sub' claim. See OpenID Connect specification for more info about pairwise subject identifiers.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#oidc-parameterized-scope-audience-mapper">oidc-parameterized-scope-audience-mapper</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Adds the parameterized scope parameter value as an audience (aud) to the token.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#oidc-parameterized-scope-client-sub-mapper">oidc-parameterized-scope-client-sub-mapper</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Resolves a client from the parameterized scope parameter (client ID), obtains its service account user, and maps the user ID to the token claim.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#oidc-parameterized-scope-mapper">oidc-parameterized-scope-mapper</a></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Maps the parameter value from a parameterized scope directly to a token claim.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#oidc-parameterized-scope-user-property-mapper">oidc-parameterized-scope-user-property-mapper</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Resolves a user from a parameterized scope parameter (username) and maps a user attribute or property to a token claim.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Resolves a user from a parameterized scope parameter (username, or email when the realm allows login with email) and maps a user attribute or property to a token claim.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#oidc-role-name-mapper">oidc-role-name-mapper</a></p></td>
@@ -806,7 +814,7 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>full.path</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Include full path to group i.e. /top/level1/level2, false will just specify the group name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Include full path to group i.e. /top/level1/level2, false will just specify the group name. Make sure to enable this setting if your realm has a group hierarchy with duplicated group names.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Add to ID token</p></td>
@@ -1204,6 +1212,120 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 </table>
 </div>
 <div class="sect2">
+<h3 id="oidc-parameterized-scope-audience-mapper"><a class="anchor" href="#oidc-parameterized-scope-audience-mapper"></a>Parameterized Scope Audience</h3>
+<div class="paragraph">
+<p>Adds the parameterized scope parameter value as an audience (aud) to the token.</p>
+</div>
+<div class="paragraph">
+<p><strong>ID</strong>: <code>oidc-parameterized-scope-audience-mapper</code></p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 33.3336%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Add to ID token</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>id.token.claim</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should the claim be added to the ID token?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Add to access token</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>access.token.claim</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should the claim be added to the access token?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Add to lightweight access token</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>lightweight.claim</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should the claim be added to the lightweight access token?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Add to token introspection</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>introspection.token.claim</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should the claim be added to the token introspection?</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="oidc-parameterized-scope-client-sub-mapper"><a class="anchor" href="#oidc-parameterized-scope-client-sub-mapper"></a>Parameterized Scope Client Sub</h3>
+<div class="paragraph">
+<p>Resolves a client from the parameterized scope parameter (client ID), obtains its service account user, and maps the user ID to the token claim.</p>
+</div>
+<div class="paragraph">
+<p><strong>ID</strong>: <code>oidc-parameterized-scope-client-sub-mapper</code></p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 33.3336%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Add to ID token</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>id.token.claim</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should the claim be added to the ID token?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Add to access token</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>access.token.claim</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should the claim be added to the access token?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Add to lightweight access token</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>lightweight.claim</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should the claim be added to the lightweight access token?</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Add to token introspection</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>introspection.token.claim</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Should the claim be added to the token introspection?</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
 <h3 id="oidc-parameterized-scope-mapper"><a class="anchor" href="#oidc-parameterized-scope-mapper"></a>Parameterized Scope Parameter</h3>
 <div class="paragraph">
 <p>Maps the parameter value from a parameterized scope directly to a token claim.</p>
@@ -1277,7 +1399,7 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <div class="sect2">
 <h3 id="oidc-parameterized-scope-user-property-mapper"><a class="anchor" href="#oidc-parameterized-scope-user-property-mapper"></a>Parameterized Scope User Property</h3>
 <div class="paragraph">
-<p>Resolves a user from a parameterized scope parameter (username) and maps a user attribute or property to a token claim.</p>
+<p>Resolves a user from a parameterized scope parameter (username, or email when the realm allows login with email) and maps a user attribute or property to a token claim.</p>
 </div>
 <div class="paragraph">
 <p><strong>ID</strong>: <code>oidc-parameterized-scope-user-property-mapper</code></p>
@@ -2196,6 +2318,13 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock">Display metadata for wallet applications to show user-friendly claim names. Provide display entries with name and locale for internationalization support.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mDoc Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mdoc.namespace</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for mso_mdoc claims. Used only when issuing mso_mdoc credentials.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Verifiable Credentials Context</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>context</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
@@ -2244,6 +2373,13 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>ClaimDisplay</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Display metadata for wallet applications to show user-friendly claim names. Provide display entries with name and locale for internationalization support.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mDoc Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mdoc.namespace</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for mso_mdoc claims. Used only when issuing mso_mdoc credentials.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Verifiable Credential Type</p></td>
@@ -2296,6 +2432,13 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock">Display metadata for wallet applications to show user-friendly claim names. Provide display entries with name and locale for internationalization support.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mDoc Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mdoc.namespace</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for mso_mdoc claims. Used only when issuing mso_mdoc credentials.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Token Claim Name</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>claim.name</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
@@ -2306,7 +2449,7 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock">User attribute</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>userAttribute</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>List</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>did</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>username</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The name of the user attribute that maps to the subject id.</p></td>
 </tr>
 </tbody>
@@ -2351,6 +2494,13 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>ClaimDisplay</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Display metadata for wallet applications to show user-friendly claim names. Provide display entries with name and locale for internationalization support.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mDoc Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mdoc.namespace</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for mso_mdoc claims. Used only when issuing mso_mdoc credentials.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ID Property Name</p></td>
@@ -2401,6 +2551,13 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>ClaimDisplay</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Display metadata for wallet applications to show user-friendly claim names. Provide display entries with name and locale for internationalization support.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mDoc Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mdoc.namespace</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for mso_mdoc claims. Used only when issuing mso_mdoc credentials.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Time Claim Name</p></td>
@@ -2467,6 +2624,13 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock">Display metadata for wallet applications to show user-friendly claim names. Provide display entries with name and locale for internationalization support.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mDoc Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mdoc.namespace</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for mso_mdoc claims. Used only when issuing mso_mdoc credentials.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Static Claim Property Name</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>claim.name</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
@@ -2524,6 +2688,13 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock">Display metadata for wallet applications to show user-friendly claim names. Provide display entries with name and locale for internationalization support.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mDoc Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mdoc.namespace</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for mso_mdoc claims. Used only when issuing mso_mdoc credentials.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Client ID</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>clientId</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
@@ -2572,6 +2743,13 @@ implementation we provide the "ID" of the <code>ProtocolMapper</code> and a tabl
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>ClaimDisplay</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Display metadata for wallet applications to show user-friendly claim names. Provide display entries with name and locale for internationalization support.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mDoc Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mdoc.namespace</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>None</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for mso_mdoc claims. Used only when issuing mso_mdoc credentials.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Token Claim Name</p></td>

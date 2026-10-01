@@ -89,7 +89,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/operator/managing-clients" >Nightly</option>
-                        <option value="https://www.keycloak.org/operator/managing-clients" selected="selected">26.7.5</option>
+                        <option value="https://www.keycloak.org/operator/managing-clients" selected="selected">26.8.0</option>
                     </select>
                 </div>
 
@@ -100,8 +100,7 @@ gtag('config', 'G-0J2P9316N6');
 
 
             <div class="kc-asciidoc" id="guide-body">
-<div class="sect1">
-<h2 id="_managing_oidc_and_saml_clients_with_the_operator"><a class="anchor" href="#_managing_oidc_and_saml_clients_with_the_operator"></a>Managing OIDC and SAML clients with the Operator</h2>
+<div id="preamble">
 <div class="sectionbody">
 <div class="admonitionblock warning">
 <table>
@@ -110,14 +109,17 @@ gtag('config', 'G-0J2P9316N6');
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-This feature is <strong>experimental</strong> and may introduce breaking changes in future versions of Keycloak. Do not use this feature in production environments.
+This guide is describing a feature which is currently in preview.
+Please provide your feedback while we’re continuing to work on this.
 </td>
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>To provide feedback, use the <a href="https://github.com/keycloak/keycloak/discussions/50186">Client Admin API v2</a> GitHub Discussion.</p>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_managing_oidc_and_saml_clients_with_the_operator"><a class="anchor" href="#_managing_oidc_and_saml_clients_with_the_operator"></a>Managing OIDC and SAML clients with the Operator</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>The Keycloak Operator can manage OIDC and SAML clients declaratively through Custom Resources.
 The operator creates, updates, and deletes clients on the Keycloak server to match the desired state defined in the CR.</p>
@@ -273,6 +275,8 @@ spec:
 kind: Secret
 metadata:
   name: my-app-credentials
+  labels:
+    operator.keycloak.org/kind: KeycloakOIDCClient <i class="conum" data-value="1"></i><b>(1)</b>
 stringData:
   client-secret-key: "my-secret"</code></pre>
 </div>
@@ -290,18 +294,22 @@ spec:
     auth:
       method: client-secret
       secretRef:
-        name: my-app-credentials <i class="conum" data-value="1"></i><b>(1)</b>
-        key: client-secret-key <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+        name: my-app-credentials <i class="conum" data-value="2"></i><b>(2)</b>
+        key: client-secret-key <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Name of the Kubernetes Secret in the same namespace.</td>
+<td>Required label for the Secret to be usable by an KeycloakOIDCClient</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Name of the Kubernetes Secret in the same namespace.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Key within the Secret that holds the client secret value.</td>
 </tr>
 </table>
@@ -389,7 +397,7 @@ The operator detects changes and updates the client on the Keycloak server.</p>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Anyone with the ability to create or edit KeycloakOIDCClient or KeycloakSAMLClient CRs should be a namespace-level admin.</p>
+<p>Anyone with the ability to create or edit KeycloakOIDCClient or KeycloakSAMLClient CRs will have the full ability to create or edit clients that the admin credentials provide.</p>
 </div>
 </td>
 </tr>

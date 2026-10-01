@@ -90,7 +90,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/high-availability/multi-cluster-v2/concepts" >Nightly</option>
-                        <option value="https://www.keycloak.org/high-availability/multi-cluster-v2/concepts" selected="selected">26.7.5</option>
+                        <option value="https://www.keycloak.org/high-availability/multi-cluster-v2/concepts" selected="selected">26.8.0</option>
                     </select>
                 </div>
 
@@ -103,19 +103,6 @@ gtag('config', 'G-0J2P9316N6');
             <div class="kc-asciidoc" id="guide-body">
 <div id="preamble">
 <div class="sectionbody">
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-This guide is describing a feature which is currently in preview.
-Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/50640">joining this discussion</a> while we’re continuing to work on this.
-</td>
-</tr>
-</table>
-</div>
 <div class="paragraph">
 <p>This topic describes a highly available multi-cluster setup and the behavior to expect.
 It outlines the requirements of the high availability architecture and describes the benefits and tradeoffs.
@@ -130,8 +117,11 @@ See <a href="https://www.keycloak.org/high-availability/multi-cluster-v2/introdu
 <p>Use this setup to provide Keycloak deployments that are able to tolerate cluster failures, reducing the likelihood of downtime.</p>
 </div>
 <div class="paragraph">
-<p>Unlike the standard <a href="https://www.keycloak.org/high-availability/multi-cluster/concepts">Concepts for multi-cluster deployments</a>, this setup does not require an external Infinispan cluster.
-This simplifies the deployment architecture and removes the need for an external monitoring solution that reconfigures the external Infinispan on failover. It also eliminates operational procedures on failback.</p>
+<p>Multiple Keycloak clusters share a synchronously replicated database.</p>
+</div>
+<div class="paragraph">
+<p>Unlike the standard <a href="https://www.keycloak.org/high-availability/multi-cluster/concepts">Concepts for multi-cluster (v1) deployments</a>, this setup does not require an external Infinispan cluster.
+This simplifies the deployment architecture and removes the need for an external monitoring solution that reconfigures the external Infinispan on failover. It also reduces operational procedures on failback.</p>
 </div>
 </div>
 </div>
@@ -142,10 +132,9 @@ This simplifies the deployment architecture and removes the need for an external
 <p>Two or more independent Keycloak deployments running in different sites.</p>
 </div>
 <div class="paragraph">
-<p>Users, realms, clients, sessions, and other entities are stored in a database that is replicated synchronously across all sites.</p>
-</div>
-<div class="paragraph">
-<p>Realm data (including clients and groups) and authorization data are cached in the Keycloak embedded Infinispan caches as local caches.</p>
+<p>Users, realms, clients, user sessions, authentication sessions and other persisted entities are stored in a database that is replicated synchronously across all sites.
+Keycloak still maintains local in-memory caches for performance. Frequently read realm and authorization metadata, such as realm, client and group configuration, is cached in the embedded caches of each Keycloak cluster.
+Within a local Keycloak cluster, cache invalidations still use the embedded work caches. Between independent clusters, cache invalidations are propagated through the database-backed outbox mechanism.</p>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -156,6 +145,22 @@ This simplifies the deployment architecture and removes the need for an external
 <h3 id="_background_jobs"><a class="anchor" href="#_background_jobs"></a>Background jobs</h3>
 <div class="paragraph">
 <p>Background jobs will run only in one of the active clusters and will be automatically redistributed to another cluster on a cluster failure.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_health_check_endpoints"><a class="anchor" href="#_health_check_endpoints"></a>Health check endpoints</h3>
+<div class="paragraph">
+<p>Keycloak exposes two health check endpoints for different purposes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>/health/ready</code> on the management port indicates whether an individual node is ready to serve traffic. Use this for the internal load balancer or Kubernetes readiness probes.</p>
+</li>
+<li>
+<p><code>/lb-check</code> indicates whether a site as a whole is available. Use this for the external load balancer that routes traffic between sites.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
@@ -192,8 +197,9 @@ This allows callers in regular operations to ensure that all nodes have received
 <p>Invalidation messages are queued for up to 60 seconds, which is in line with the cluster membership mechanism, which updates its information in the database every 30–45 seconds.</p>
 </div>
 <div class="paragraph">
-<p>To handle edge cases and to avoid permanently out-of-sync caches, any cached realm information expires by default after one hour.
-The data is then fetched again from the database on the next call that requires it.</p>
+<p>When a Keycloak instance temporarily loses its database connection, it may miss cache invalidation messages sent by other clusters during the outage.
+Once the database connection is restored, all local caches are cleared automatically to ensure consistency.
+As an additional safeguard, any cached realm information expires by default after one hour so that stale entries do not persist indefinitely.</p>
 </div>
 </div>
 </div>
@@ -214,7 +220,8 @@ The data is then fetched again from the database on the next call that requires 
 </li>
 <li>
 <p>Degraded setups can lead to service or data loss if additional components fail.
-Monitoring is necessary to detect degraded setups.</p>
+Monitoring is necessary to detect degraded setups.
+Without monitoring, a degraded state may go unnoticed until a subsequent failure causes a full outage or data loss.</p>
 </li>
 </ul>
 </div>
@@ -233,7 +240,7 @@ Monitoring is necessary to detect degraded setups.</p>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Failure</th>
-<th class="tableblock halign-left valign-top">Recovery</th>
+<th class="tableblock halign-left valign-top">Expected behavior</th>
 <th class="tableblock halign-left valign-top">RPO<sup>1</sup></th>
 <th class="tableblock halign-left valign-top">RT<sup>2</sup></th>
 </tr>
@@ -242,14 +249,14 @@ Monitoring is necessary to detect degraded setups.</p>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Database node</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">If the writer instance fails, the database can promote a reader instance in the same or other site to be the new writer.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No data loss</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No data loss<sup>3</sup></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Seconds to minutes (depending on the database)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Keycloak node</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Multiple Keycloak instances run in each site.
 If one instance fails, some incoming requests might receive an error message or be delayed for some seconds until the load balancer takes the node out of rotation.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No data loss</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No data loss<sup>3</sup></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Seconds to minutes (depending on the load balancer)</p></td>
 </tr>
 <tr>
@@ -258,14 +265,14 @@ If one instance fails, some incoming requests might receive an error message or 
 Some requests might receive an error message or be delayed for a few seconds.
 Manual operations might be necessary depending on the database.
 Keycloak instances that have access to a writable database instance will continue to serve traffic, while other nodes will mark themselves as not ready to the load balancer.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No data loss</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No data loss<sup>3</sup></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Seconds to minutes (depending on the database and load balancer)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Site failure</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">If none of the Keycloak nodes are available, the load balancer will detect the outage and redirect the traffic to the other site.
 Some requests might receive an error message until the load balancer detects the failure.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No data loss</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No data loss<sup>3</sup></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Seconds to minutes (depending on the load balancer)</p></td>
 </tr>
 </tbody>
@@ -273,10 +280,14 @@ Some requests might receive an error message until the load balancer detects the
 <div class="paragraph">
 <div class="title">Table footnotes:</div>
 <p><sup>1</sup> Tested Recovery Point Objective, assuming all parts of the setup were healthy at the time this occurred.<br>
-<sup>2</sup> Estimated Recovery Time.<br></p>
+<sup>2</sup> Estimated Recovery Time.<br>
+<sup>3</sup> The statement "No data loss" depends on the setup not being degraded from previous failures.</p>
 </div>
 <div class="paragraph">
-<p>The statement &#8220;No data loss&#8221; depends on the setup not being degraded from previous failures, which includes completing any pending manual operations to resynchronize the state between the sites.</p>
+<p>For performance, Keycloak uses optimized database commit for ephemeral data such as sessions and events when supported by the configured database.
+On a database crash, in-flight session data within a sub-second window may be lost, requiring affected users to re-authenticate.
+Persistent data such as users, realms, and credentials always uses durable commit and is not affected.
+To disable the optimization, set <code>--spi-connections-jpa--quarkus--async-commit=false</code>.</p>
 </div>
 <div class="paragraph">
 <p>To restore the service, restart any failed Keycloak node and restore its database connectivity. No other recovery operations are necessary for Keycloak.
@@ -312,7 +323,8 @@ It also ensures that the next request will not return stale data, independent of
 <dt class="hdlist1">Why is a low-latency network between sites needed?</dt>
 <dd>
 <p>Synchronous replication defers the response to the caller until the data is received at the other site.
-A low latency is necessary as each request can potentially involve multiple interactions between the sites when data is updated, which would amplify the latency.</p>
+A low latency is necessary as each request can potentially involve multiple interactions between the sites when data is updated, which would amplify the latency.
+See the <a href="https://www.keycloak.org/high-availability/multi-cluster-v2/introduction#multi-cluster-v2-infrastructure-requirements">Multi-cluster deployments (v2)</a> for specific latency thresholds.</p>
 </dd>
 <dt class="hdlist1">Is a synchronous cluster less stable than an asynchronous cluster?</dt>
 <dd>
@@ -342,7 +354,7 @@ This would include:</p>
 <h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Continue reading the blueprint at <a href="https://www.keycloak.org/high-availability/multi-cluster-v2/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator (v2)</a>.</p>
+<p>Continue reading the blueprints at <a href="https://www.keycloak.org/high-availability/multi-cluster-v2/deploy-keycloak-kubernetes">Deploying Keycloak for HA with the Operator (v2)</a> or <a href="https://www.keycloak.org/high-availability/multi-cluster-v2/deploy-keycloak-bare-metal">Deploying Keycloak for HA on bare-metal or virtual machines (v2)</a>.</p>
 </div>
 </div>
 </div>            </div>

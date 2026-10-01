@@ -95,7 +95,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/server/caching" selected="selected">Nightly</option>
-                        <option value="https://www.keycloak.org/server/caching" >26.7.5</option>
+                        <option value="https://www.keycloak.org/server/caching" >26.8.0</option>
                     </select>
                 </div>
 
@@ -318,52 +318,49 @@ You can see the applied Infinispan configuration in the logs by configuring <cod
 </div>
 </div>
 <div class="sect2">
-<h3 id="_user_session_caching_deprecated"><a class="anchor" href="#_user_session_caching_deprecated"></a>User session caching (deprecated)</h3>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-Caching of persistent user and offline sessions is deprecated since Keycloak 26.8 and will be removed in a future release.
-</td>
-</tr>
-</table>
-</div>
+<h3 id="_user_session_caching"><a class="anchor" href="#_user_session_caching"></a>User session caching</h3>
 <div class="paragraph">
 <p>A user session tracks an authenticated user across one or more applications (client sessions). Offline sessions are long-lived sessions backed by offline tokens.
-User sessions, client sessions, offline user sessions, and offline client sessions are stored in the database. The embedded Infinispan caches (<code>sessions</code>, <code>clientSessions</code>, <code>offlineSessions</code>, <code>offlineClientSessions</code>) exist but are not populated by default.</p>
+User sessions, client sessions, offline user sessions, and offline client sessions are stored in the database. The embedded Infinispan caches (<code>sessions</code>, <code>clientSessions</code>, <code>offlineSessions</code>, <code>offlineClientSessions</code>) are used to cache this data in memory.</p>
 </div>
 <div class="paragraph">
-<p>To temporarily re-enable session caching (for example, to reduce database load at the cost of increased memory usage and the risk of data loss on restart), set:</p>
+<p>By default, with persistent user sessions enabled, sessions are loaded on-demand from the database into the embedded caches.
+Cached sessions are available to any node in the cluster without a database round-trip.
+In-memory caches are limited to 10000 entries per node by default (configurable via <code>--cache-embedded-sessions-max-count</code> etc.)
+Cache entries use a single owner per entry.</p>
+</div>
+<div class="sect3">
+<h4 id="_disabling_session_caching"><a class="anchor" href="#_disabling_session_caching"></a>Disabling session caching</h4>
+<div class="paragraph">
+<p>This setting is only available when persistent user sessions are enabled.
+To disable session caching, set:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>spi-user-sessions--infinispan--use-caches=true</code></pre>
+<pre class="highlight"><code>spi-user-sessions--infinispan--use-caches=false</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>When enabled:</p>
+<p>Reasons to consider disabling session caching:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Sessions are loaded on-demand from the database into the embedded caches.</p>
+<p><strong>Reduced memory usage</strong> on each Keycloak node, as sessions are no longer held in the embedded cache.</p>
 </li>
 <li>
-<p>Cached sessions are available to any node in the cluster without a database round-trip.</p>
+<p><strong>Less network traffic between cluster nodes</strong>, as there is no cache synchronization overhead</p>
 </li>
 <li>
-<p>In-memory caches are limited to 10000 entries per node by default (configurable via <code>--cache-embedded-sessions-max-count</code> etc.).</p>
-</li>
-<li>
-<p>Cache entries use a single owner per entry.</p>
+<p><strong>Reduced impact on slow or stalling nodes</strong> when serving requests.</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>This option will be removed in a future release. Remove it from your configuration before upgrading to that release.</p>
+<p>When session caching is disabled, every session read goes directly to the database.
+This may increase database connection usage and CPU load, especially for workloads that rely heavily on token introspection or token exchange.
+For deployments that are already using persistent sessions, the database&#8217;s own caching layer should prevent any additional IOPS.</p>
+</div>
 </div>
 </div>
 <div class="sect2">
