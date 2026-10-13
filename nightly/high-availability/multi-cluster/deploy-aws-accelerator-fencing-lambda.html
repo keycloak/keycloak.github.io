@@ -23,6 +23,7 @@ gtag('config', 'G-0J2P9316N6');
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
 <link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-aws-accelerator-fencing-lambda">
 <meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-aws-accelerator-fencing-lambda">
 <link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
@@ -196,7 +197,7 @@ The logic in the AWS Lambda ensures that always one site entry remains in the lo
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl apply -f - &lt;&lt; EOF
+<pre class="rouge highlight"><code data-lang="bash">kubectl apply <span class="nt">-f</span> - <span class="o">&lt;&lt;</span> <span class="no">EOF</span><span class="sh">
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -207,8 +208,8 @@ data:
     alertmanager:
       enabled: true
       enableAlertmanagerConfig: true
-EOF
-kubectl -n openshift-user-workload-monitoring rollout status --watch statefulset.apps/alertmanager-user-workload</code></pre>
+</span><span class="no">EOF
+</span>kubectl <span class="nt">-n</span> openshift-user-workload-monitoring rollout status <span class="nt">--watch</span> statefulset.apps/alertmanager-user-workload</code></pre>
 </div>
 </div>
 </li>
@@ -217,10 +218,10 @@ kubectl -n openshift-user-workload-monitoring rollout status --watch statefulset
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws secretsmanager create-secret \
-  --name webhook-password \ <i class="conum" data-value="1"></i><b>(1)</b>
-  --secret-string changeme \ <i class="conum" data-value="2"></i><b>(2)</b>
-  --region eu-west-1 <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+<pre class="rouge highlight"><code data-lang="bash">aws secretsmanager create-secret <span class="se">\</span>
+  <span class="nt">--name</span> webhook-password <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="nt">--secret-string</span> changeme <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="nt">--region</span> eu-west-1 <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -245,11 +246,11 @@ kubectl -n openshift-user-workload-monitoring rollout status --watch statefulset
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">FUNCTION_NAME= <i class="conum" data-value="1"></i><b>(1)</b>
-ROLE_ARN=$(aws iam create-role \
-  --role-name ${FUNCTION_NAME} \
-  --assume-role-policy-document \
-  '{
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">FUNCTION_NAME</span><span class="o">=</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<span class="nv">ROLE_ARN</span><span class="o">=</span><span class="si">$(</span>aws iam create-role <span class="se">\</span>
+  <span class="nt">--role-name</span> <span class="k">${</span><span class="nv">FUNCTION_NAME</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--assume-role-policy-document</span> <span class="se">\</span>
+  <span class="s1">'{
     "Version": "2012-10-17",
     "Statement": [
       {
@@ -260,11 +261,11 @@ ROLE_ARN=$(aws iam create-role \
         "Action": "sts:AssumeRole"
       }
     ]
-  }' \
-  --query 'Role.Arn' \
-  --region eu-west-1 \ <i class="conum" data-value="2"></i><b>(2)</b>
-  --output text
-)</code></pre>
+  }'</span> <span class="se">\</span>
+  <span class="nt">--query</span> <span class="s1">'Role.Arn'</span> <span class="se">\</span>
+  <span class="nt">--region</span> eu-west-1 <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="nt">--output</span> text
+<span class="si">)</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -285,10 +286,10 @@ ROLE_ARN=$(aws iam create-role \
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">POLICY_ARN=$(aws iam create-policy \
-  --policy-name LambdaSecretManager \
-  --policy-document \
-  '{
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">POLICY_ARN</span><span class="o">=</span><span class="si">$(</span>aws iam create-policy <span class="se">\</span>
+  <span class="nt">--policy-name</span> LambdaSecretManager <span class="se">\</span>
+  <span class="nt">--policy-document</span> <span class="se">\</span>
+  <span class="s1">'{
       "Version": "2012-10-17",
       "Statement": [
           {
@@ -299,13 +300,13 @@ ROLE_ARN=$(aws iam create-role \
               "Resource": "*"
           }
       ]
-  }' \
-  --query 'Policy.Arn' \
-  --output text
-)
-aws iam attach-role-policy \
-  --role-name ${FUNCTION_NAME} \
-  --policy-arn ${POLICY_ARN}</code></pre>
+  }'</span> <span class="se">\</span>
+  <span class="nt">--query</span> <span class="s1">'Policy.Arn'</span> <span class="se">\</span>
+  <span class="nt">--output</span> text
+<span class="si">)</span>
+aws iam attach-role-policy <span class="se">\</span>
+  <span class="nt">--role-name</span> <span class="k">${</span><span class="nv">FUNCTION_NAME</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--policy-arn</span> <span class="k">${</span><span class="nv">POLICY_ARN</span><span class="k">}</span></code></pre>
 </div>
 </div>
 </li>
@@ -314,9 +315,9 @@ aws iam attach-role-policy \
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws iam attach-role-policy \
-  --role-name ${FUNCTION_NAME} \
-  --policy-arn arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">aws iam attach-role-policy <span class="se">\</span>
+  <span class="nt">--role-name</span> <span class="k">${</span><span class="nv">FUNCTION_NAME</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--policy-arn</span> arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly</code></pre>
 </div>
 </div>
 </li>
@@ -325,9 +326,9 @@ aws iam attach-role-policy \
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws iam attach-role-policy \
-  --role-name ${FUNCTION_NAME} \
-  --policy-arn arn:aws:iam::aws:policy/GlobalAcceleratorFullAccess</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">aws iam attach-role-policy <span class="se">\</span>
+  <span class="nt">--role-name</span> <span class="k">${</span><span class="nv">FUNCTION_NAME</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--policy-arn</span> arn:aws:iam::aws:policy/GlobalAcceleratorFullAccess</code></pre>
 </div>
 </div>
 </li>
@@ -336,8 +337,8 @@ aws iam attach-role-policy \
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">LAMBDA_ZIP=/tmp/lambda.zip
-cat &lt;&lt; EOF &gt; /tmp/lambda.py
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">LAMBDA_ZIP</span><span class="o">=</span>/tmp/lambda.zip
+<span class="nb">cat</span> <span class="o">&lt;&lt;</span> <span class="no">EOF</span><span class="sh"> &gt; /tmp/lambda.py
 
 from urllib.error import HTTPError
 
@@ -510,9 +511,9 @@ INFINISPAN_SITE_ENDPOINTS = env('INFINISPAN_SITE_ENDPOINTS')
 SECRETS_REGION = env('SECRETS_REGION')
 WEBHOOK_USER = env('WEBHOOK_USER')
 WEBHOOK_USER_SECRET = env('WEBHOOK_USER_SECRET')
-
+</span><span class="no">
 EOF
-zip -FS --junk-paths ${LAMBDA_ZIP} /tmp/lambda.py</code></pre>
+</span>zip <span class="nt">-FS</span> <span class="nt">--junk-paths</span> <span class="k">${</span><span class="nv">LAMBDA_ZIP</span><span class="k">}</span> /tmp/lambda.py</code></pre>
 </div>
 </div>
 </li>
@@ -521,13 +522,13 @@ zip -FS --junk-paths ${LAMBDA_ZIP} /tmp/lambda.py</code></pre>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws lambda create-function \
-  --function-name ${FUNCTION_NAME} \
-  --zip-file fileb://${LAMBDA_ZIP} \
-  --handler lambda.handler \
-  --runtime python3.12 \
-  --role ${ROLE_ARN} \
-  --region eu-west-1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+<pre class="rouge highlight"><code data-lang="bash">aws lambda create-function <span class="se">\</span>
+  <span class="nt">--function-name</span> <span class="k">${</span><span class="nv">FUNCTION_NAME</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--zip-file</span> fileb://<span class="k">${</span><span class="nv">LAMBDA_ZIP</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--handler</span> lambda.handler <span class="se">\</span>
+  <span class="nt">--runtime</span> python3.12 <span class="se">\</span>
+  <span class="nt">--role</span> <span class="k">${</span><span class="nv">ROLE_ARN</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--region</span> eu-west-1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -544,10 +545,10 @@ zip -FS --junk-paths ${LAMBDA_ZIP} /tmp/lambda.py</code></pre>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws lambda create-function-url-config \
-  --function-name ${FUNCTION_NAME} \
-  --auth-type NONE \
-  --region eu-west-1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+<pre class="rouge highlight"><code data-lang="bash">aws lambda create-function-url-config <span class="se">\</span>
+  <span class="nt">--function-name</span> <span class="k">${</span><span class="nv">FUNCTION_NAME</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--auth-type</span> NONE <span class="se">\</span>
+  <span class="nt">--region</span> eu-west-1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -564,13 +565,13 @@ zip -FS --junk-paths ${LAMBDA_ZIP} /tmp/lambda.py</code></pre>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws lambda add-permission \
-  --action "lambda:InvokeFunctionUrl" \
-  --function-name ${FUNCTION_NAME} \
-  --principal "*" \
-  --statement-id FunctionURLAllowPublicAccess \
-  --function-url-auth-type NONE \
-  --region eu-west-1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+<pre class="rouge highlight"><code data-lang="bash">aws lambda add-permission <span class="se">\</span>
+  <span class="nt">--action</span> <span class="s2">"lambda:InvokeFunctionUrl"</span> <span class="se">\</span>
+  <span class="nt">--function-name</span> <span class="k">${</span><span class="nv">FUNCTION_NAME</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--principal</span> <span class="s2">"*"</span> <span class="se">\</span>
+  <span class="nt">--statement-id</span> FunctionURLAllowPublicAccess <span class="se">\</span>
+  <span class="nt">--function-url-auth-type</span> NONE <span class="se">\</span>
+  <span class="nt">--region</span> eu-west-1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -590,7 +591,7 @@ zip -FS --junk-paths ${LAMBDA_ZIP} /tmp/lambda.py</code></pre>
 <p>In each Kubernetes cluster, retrieve the exposed Infinispan URL endpoint:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n ${NAMESPACE} get route infinispan-external -o jsonpath='{.status.ingress[].host}' <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> <span class="k">${</span><span class="nv">NAMESPACE</span><span class="k">}</span> get route infinispan-external <span class="nt">-o</span> <span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.status.ingress[].host}'</span> <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -606,31 +607,31 @@ zip -FS --junk-paths ${LAMBDA_ZIP} /tmp/lambda.py</code></pre>
 <p>Upload the desired Environment variables</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">ACCELERATOR_NAME= <i class="conum" data-value="1"></i><b>(1)</b>
-LAMBDA_REGION= <i class="conum" data-value="2"></i><b>(2)</b>
-CLUSTER_1_NAME= <i class="conum" data-value="3"></i><b>(3)</b>
-CLUSTER_1_ISPN_ENDPOINT= <i class="conum" data-value="4"></i><b>(4)</b>
-CLUSTER_2_NAME= <i class="conum" data-value="5"></i><b>(5)</b>
-CLUSTER_2_ISPN_ENDPOINT= <i class="conum" data-value="6"></i><b>(6)</b>
-INFINISPAN_USER= <i class="conum" data-value="7"></i><b>(7)</b>
-INFINISPAN_USER_SECRET= <i class="conum" data-value="8"></i><b>(8)</b>
-WEBHOOK_USER= <i class="conum" data-value="9"></i><b>(9)</b>
-WEBHOOK_USER_SECRET= <i class="conum" data-value="10"></i><b>(10)</b>
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">ACCELERATOR_NAME</span><span class="o">=</span> <i class="conum" data-value="1"></i><b>(1)</b>
+<span class="nv">LAMBDA_REGION</span><span class="o">=</span> <i class="conum" data-value="2"></i><b>(2)</b>
+<span class="nv">CLUSTER_1_NAME</span><span class="o">=</span> <i class="conum" data-value="3"></i><b>(3)</b>
+<span class="nv">CLUSTER_1_ISPN_ENDPOINT</span><span class="o">=</span> <i class="conum" data-value="4"></i><b>(4)</b>
+<span class="nv">CLUSTER_2_NAME</span><span class="o">=</span> <i class="conum" data-value="5"></i><b>(5)</b>
+<span class="nv">CLUSTER_2_ISPN_ENDPOINT</span><span class="o">=</span> <i class="conum" data-value="6"></i><b>(6)</b>
+<span class="nv">INFINISPAN_USER</span><span class="o">=</span> <i class="conum" data-value="7"></i><b>(7)</b>
+<span class="nv">INFINISPAN_USER_SECRET</span><span class="o">=</span> <i class="conum" data-value="8"></i><b>(8)</b>
+<span class="nv">WEBHOOK_USER</span><span class="o">=</span> <i class="conum" data-value="9"></i><b>(9)</b>
+<span class="nv">WEBHOOK_USER_SECRET</span><span class="o">=</span> <i class="conum" data-value="10"></i><b>(10)</b>
 
-INFINISPAN_SITE_ENDPOINTS=$(echo "{\"${CLUSTER_NAME_1}\":\"${CLUSTER_1_ISPN_ENDPOINT}\",\"${CLUSTER_2_NAME}\":\"${CLUSTER_2_ISPN_ENDPOINT\"}" | jq tostring)
+<span class="nv">INFINISPAN_SITE_ENDPOINTS</span><span class="o">=</span><span class="si">$(</span><span class="nb">echo</span> <span class="s2">"{</span><span class="se">\"</span><span class="k">${</span><span class="nv">CLUSTER_NAME_1</span><span class="k">}</span><span class="se">\"</span><span class="s2">:</span><span class="se">\"</span><span class="k">${</span><span class="nv">CLUSTER_1_ISPN_ENDPOINT</span><span class="k">}</span><span class="se">\"</span><span class="s2">,</span><span class="se">\"</span><span class="k">${</span><span class="nv">CLUSTER_2_NAME</span><span class="k">}</span><span class="se">\"</span><span class="s2">:</span><span class="se">\"</span><span class="k">${</span><span class="nv">CLUSTER_2_ISPN_ENDPOINT</span><span class="p">\</span><span class="s2">"}"</span><span class="p"> | jq tostring)
 aws lambda update-function-configuration \
-    --function-name ${ACCELERATOR_NAME} \
-    --region ${LAMBDA_REGION} \
-    --environment "{
-      \"Variables\": {
-        \"INFINISPAN_USER\" : \"${INFINISPAN_USER}\",
-        \"INFINISPAN_USER_SECRET\" : \"${INFINISPAN_USER_SECRET}\",
-        \"INFINISPAN_SITE_ENDPOINTS\" : ${INFINISPAN_SITE_ENDPOINTS},
-        \"WEBHOOK_USER\" : \"${WEBHOOK_USER}\",
-        \"WEBHOOK_USER_SECRET\" : \"${WEBHOOK_USER_SECERT}\",
-        \"SECRETS_REGION\" : \"eu-central-1\"
+    --function-name </span><span class="k">${</span><span class="nv">ACCELERATOR_NAME</span><span class="k">}</span><span class="p"> \
+    --region </span><span class="k">${</span><span class="nv">LAMBDA_REGION</span><span class="k">}</span><span class="p"> \
+    --environment </span><span class="s2">"{
+      </span><span class="se">\"</span><span class="s2">Variables</span><span class="se">\"</span><span class="s2">: {
+        </span><span class="se">\"</span><span class="s2">INFINISPAN_USER</span><span class="se">\"</span><span class="s2"> : </span><span class="se">\"</span><span class="k">${</span><span class="nv">INFINISPAN_USER</span><span class="k">}</span><span class="se">\"</span><span class="s2">,
+        </span><span class="se">\"</span><span class="s2">INFINISPAN_USER_SECRET</span><span class="se">\"</span><span class="s2"> : </span><span class="se">\"</span><span class="k">${</span><span class="nv">INFINISPAN_USER_SECRET</span><span class="k">}</span><span class="se">\"</span><span class="s2">,
+        </span><span class="se">\"</span><span class="s2">INFINISPAN_SITE_ENDPOINTS</span><span class="se">\"</span><span class="s2"> : </span><span class="k">${</span><span class="nv">INFINISPAN_SITE_ENDPOINTS</span><span class="k">}</span><span class="s2">,
+        </span><span class="se">\"</span><span class="s2">WEBHOOK_USER</span><span class="se">\"</span><span class="s2"> : </span><span class="se">\"</span><span class="k">${</span><span class="nv">WEBHOOK_USER</span><span class="k">}</span><span class="se">\"</span><span class="s2">,
+        </span><span class="se">\"</span><span class="s2">WEBHOOK_USER_SECRET</span><span class="se">\"</span><span class="s2"> : </span><span class="se">\"</span><span class="k">${</span><span class="nv">WEBHOOK_USER_SECERT</span><span class="k">}</span><span class="se">\"</span><span class="s2">,
+        </span><span class="se">\"</span><span class="s2">SECRETS_REGION</span><span class="se">\"</span><span class="s2"> : </span><span class="se">\"</span><span class="s2">eu-central-1</span><span class="se">\"</span><span class="s2">
       }
-    }"</code></pre>
+    }"</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -686,11 +687,11 @@ aws lambda update-function-configuration \
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws lambda get-function-url-config \
-  --function-name ${FUNCTION_NAME} \
-  --query "FunctionUrl" \
-  --region eu-west-1 \<i class="conum" data-value="1"></i><b>(1)</b>
-  --output text</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">aws lambda get-function-url-config <span class="se">\</span>
+  <span class="nt">--function-name</span> <span class="k">${</span><span class="nv">FUNCTION_NAME</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--query</span> <span class="s2">"FunctionUrl"</span> <span class="se">\</span>
+  <span class="nt">--region</span> eu-west-1 <span class="se">\</span><i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="nt">--output</span> text</code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -704,7 +705,7 @@ aws lambda update-function-configuration \
 <div class="listingblock">
 <div class="title">Output:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">https://tjqr2vgc664b6noj6vugprakoq0oausj.lambda-url.eu-west-1.on.aws</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">https://tjqr2vgc664b6noj6vugprakoq0oausj.lambda-url.eu-west-1.on.aws</code></pre>
 </div>
 </div>
 </li>
@@ -713,8 +714,8 @@ aws lambda update-function-configuration \
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">NAMESPACE= # The namespace containing your deployments
-kubectl apply -n ${NAMESPACE} -f - &lt;&lt; EOF
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">NAMESPACE</span><span class="o">=</span> <span class="c"># The namespace containing your deployments</span>
+kubectl apply <span class="nt">-n</span> <span class="k">${</span><span class="nv">NAMESPACE</span><span class="k">}</span> <span class="nt">-f</span> - <span class="o">&lt;&lt;</span> <span class="no">EOF</span><span class="sh">
 apiVersion: v1
 kind: Secret
 type: kubernetes.io/basic-auth
@@ -767,7 +768,8 @@ spec:
           labels:
             severity: critical
             reporter: site-a <i class="conum" data-value="5"></i><b>(5)</b>
-            accelerator: a3da6a6cbd4e27b02.awsglobalaccelerator.com <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+            accelerator: a3da6a6cbd4e27b02.awsglobalaccelerator.com <i class="conum" data-value="6"></i><b>(6)</b>
+</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -817,10 +819,10 @@ by <code>spec.service.sites.locations[0].name</code> in your Infinispan CR</td>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n openshift-operators scale --replicas=0 deployment/infinispan-operator-controller-manager <i class="conum" data-value="1"></i><b>(1)</b>
-kubectl -n openshift-operators rollout status -w deployment/infinispan-operator-controller-manager
-kubectl -n ${NAMESPACE} scale --replicas=0 deployment/infinispan-router <i class="conum" data-value="2"></i><b>(2)</b>
-kubectl -n ${NAMESPACE} rollout status -w deployment/infinispan-router</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> openshift-operators scale <span class="nt">--replicas</span><span class="o">=</span>0 deployment/infinispan-operator-controller-manager <i class="conum" data-value="1"></i><b>(1)</b>
+kubectl <span class="nt">-n</span> openshift-operators rollout status <span class="nt">-w</span> deployment/infinispan-operator-controller-manager
+kubectl <span class="nt">-n</span> <span class="k">${</span><span class="nv">NAMESPACE</span><span class="k">}</span> scale <span class="nt">--replicas</span><span class="o">=</span>0 deployment/infinispan-router <i class="conum" data-value="2"></i><b>(2)</b>
+kubectl <span class="nt">-n</span> <span class="k">${</span><span class="nv">NAMESPACE</span><span class="k">}</span> rollout status <span class="nt">-w</span> deployment/infinispan-router</code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -848,10 +850,10 @@ console</p>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n openshift-operators scale --replicas=1 deployment/infinispan-operator-controller-manager
-kubectl -n openshift-operators rollout status -w deployment/infinispan-operator-controller-manager
-kubectl -n ${NAMESPACE} scale --replicas=1 deployment/infinispan-router <i class="conum" data-value="1"></i><b>(1)</b>
-kubectl -n ${NAMESPACE} rollout status -w deployment/infinispan-router</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> openshift-operators scale <span class="nt">--replicas</span><span class="o">=</span>1 deployment/infinispan-operator-controller-manager
+kubectl <span class="nt">-n</span> openshift-operators rollout status <span class="nt">-w</span> deployment/infinispan-operator-controller-manager
+kubectl <span class="nt">-n</span> <span class="k">${</span><span class="nv">NAMESPACE</span><span class="k">}</span> scale <span class="nt">--replicas</span><span class="o">=</span>1 deployment/infinispan-router <i class="conum" data-value="1"></i><b>(1)</b>
+kubectl <span class="nt">-n</span> <span class="k">${</span><span class="nv">NAMESPACE</span><span class="k">}</span> rollout status <span class="nt">-w</span> deployment/infinispan-router</code></pre>
 </div>
 </div>
 <div class="colist arabic">

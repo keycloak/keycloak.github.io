@@ -22,6 +22,7 @@ gtag('config', 'G-0J2P9316N6');
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
 <link rel="canonical" href="https://www.keycloak.org/high-availability/multi-cluster/health-checks">
 <meta property="og:url" content="https://www.keycloak.org/high-availability/multi-cluster/health-checks">
 <link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
@@ -170,7 +171,7 @@ In a Kubernetes setup, the sub-status <code>health/ready</code> is checked perio
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">curl -s https://keycloak:managementport/health</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">curl <span class="nt">-s</span> https://keycloak:managementport/health</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -178,7 +179,7 @@ In a Kubernetes setup, the sub-status <code>health/ready</code> is checked perio
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">curl -s https://keycloak-load-balancer-url/lb-check</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">curl <span class="nt">-s</span> https://keycloak-load-balancer-url/lb-check</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -186,8 +187,8 @@ In a Kubernetes setup, the sub-status <code>health/ready</code> is checked perio
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">curl -s https://keycloak_site_a_url/lb-check
-curl -s https://keycloak_site_b_url/lb-check</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">curl <span class="nt">-s</span> https://keycloak_site_a_url/lb-check
+curl <span class="nt">-s</span> https://keycloak_site_b_url/lb-check</code></pre>
 </div>
 </div>
 </div>
@@ -203,7 +204,7 @@ as Infinispan is often used for distributed caching and session clustering in Ke
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">curl -s https://infinispan_rest_url/rest/v2/cache-managers/default/health/status</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">curl <span class="nt">-s</span> https://infinispan_rest_url/rest/v2/cache-managers/default/health/status</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -211,8 +212,8 @@ as Infinispan is often used for distributed caching and session clustering in Ke
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">curl -u &lt;infinispan_user&gt;:&lt;infinispan_pwd&gt; -s https://infinispan_rest_url/rest/v2/cache-managers/default/health \
- | jq 'if .cluster_health.health_status == "HEALTHY" and (all(.cache_health[].status; . == "HEALTHY")) then "HEALTHY" else "UNHEALTHY" end'</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">curl <span class="nt">-u</span> &lt;infinispan_user&gt;:&lt;infinispan_pwd&gt; <span class="nt">-s</span> https://infinispan_rest_url/rest/v2/cache-managers/default/health <span class="se">\</span>
+ | jq <span class="s1">'if .cluster_health.health_status == "HEALTHY" and (all(.cache_health[].status; . == "HEALTHY")) then "HEALTHY" else "UNHEALTHY" end'</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -230,8 +231,8 @@ You can also choose to run the above command without the <code>jq</code> filter 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">curl &lt;infinispan_user&gt;:&lt;infinispan_pwd&gt; -s https://infinispan_rest_url/rest/v2/cluster\?action\=distribution \
- | jq --argjson expectedCount 3 'if map(select(.node_addresses | length &gt; 0)) | length == $expectedCount then "HEALTHY" else "UNHEALTHY" end'</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">curl &lt;infinispan_user&gt;:&lt;infinispan_pwd&gt; <span class="nt">-s</span> https://infinispan_rest_url/rest/v2/cluster<span class="se">\?</span>action<span class="se">\=</span>distribution <span class="se">\</span>
+ | jq <span class="nt">--argjson</span> expectedCount 3 <span class="s1">'if map(select(.node_addresses | length &gt; 0)) | length == $expectedCount then "HEALTHY" else "UNHEALTHY" end'</span></code></pre>
 </div>
 </div>
 </div>
@@ -242,10 +243,10 @@ You can also choose to run the above command without the <code>jq</code> filter 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get infinispan -n &lt;NAMESPACE&gt; -o json  \
-| jq '.items[].status.conditions' \
-| jq 'map({(.type): .status})' \
-| jq 'reduce .[] as $item ([]; . + [keys[] | select($item[.] != "True")]) | if length == 0 then "HEALTHY" else "UNHEALTHY: " + (join(", ")) end'</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl get infinispan <span class="nt">-n</span> &lt;NAMESPACE&gt; <span class="nt">-o</span> json  <span class="se">\</span>
+| jq <span class="s1">'.items[].status.conditions'</span> <span class="se">\</span>
+| jq <span class="s1">'map({(.type): .status})'</span> <span class="se">\</span>
+| jq <span class="s1">'reduce .[] as $item ([]; . + [keys[] | select($item[.] != "True")]) | if length == 0 then "HEALTHY" else "UNHEALTHY: " + (join(", ")) end'</span></code></pre>
 </div>
 </div>
 </div>
@@ -257,8 +258,8 @@ ensuring that the Keycloak instances are fully operational and not undergoing up
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl wait --for=condition=Ready --timeout=10s keycloaks.k8s.keycloak.org/keycloak -n &lt;NAMESPACE&gt;
-kubectl wait --for=condition=RollingUpdate=False --timeout=10s keycloaks.k8s.keycloak.org/keycloak -n &lt;NAMESPACE&gt;</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nb">wait</span> <span class="nt">--for</span><span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready <span class="nt">--timeout</span><span class="o">=</span>10s keycloaks.k8s.keycloak.org/keycloak <span class="nt">-n</span> &lt;NAMESPACE&gt;
+kubectl <span class="nb">wait</span> <span class="nt">--for</span><span class="o">=</span><span class="nv">condition</span><span class="o">=</span><span class="nv">RollingUpdate</span><span class="o">=</span>False <span class="nt">--timeout</span><span class="o">=</span>10s keycloaks.k8s.keycloak.org/keycloak <span class="nt">-n</span> &lt;NAMESPACE&gt;</code></pre>
 </div>
 </div>
 </div>

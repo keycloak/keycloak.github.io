@@ -22,6 +22,7 @@ gtag('config', 'G-0J2P9316N6');
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
 <link rel="canonical" href="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg-recovery">
 <meta property="og:url" content="https://www.keycloak.org/high-availability/single-cluster/deploy-cnpg-recovery">
 <link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
@@ -174,50 +175,50 @@ Instead of using <code>bootstrap.initdb</code> to create a fresh database, the <
 <div class="listingblock">
 <div class="title">Cluster recovery resource:</div>
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: cnpg-keycloak
-spec:
-  instances: 3 <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">postgresql.cnpg.io/v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Cluster</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">cnpg-keycloak</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">instances</span><span class="pi">:</span> <span class="s">3</span> <i class="conum" data-value="1"></i><b>(1)</b>
 
-  storage:
-    size: 8Gi <i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="na">storage</span><span class="pi">:</span>
+    <span class="na">size</span><span class="pi">:</span> <span class="s">8Gi</span> <i class="conum" data-value="2"></i><b>(2)</b>
 
-  affinity: <i class="conum" data-value="3"></i><b>(3)</b>
-    podAntiAffinityType: required
-    topologyKey: topology.kubernetes.io/zone
+  <span class="na">affinity</span><span class="pi">:</span> <i class="conum" data-value="3"></i><b>(3)</b>
+    <span class="na">podAntiAffinityType</span><span class="pi">:</span> <span class="s">required</span>
+    <span class="na">topologyKey</span><span class="pi">:</span> <span class="s">topology.kubernetes.io/zone</span>
 
-  postgresql:
-    synchronous: <i class="conum" data-value="4"></i><b>(4)</b>
-      method: any
-      number: 1
-      dataDurability: required
-    parameters:
-      max_connections: "100" <i class="conum" data-value="5"></i><b>(5)</b>
+  <span class="na">postgresql</span><span class="pi">:</span>
+    <span class="na">synchronous</span><span class="pi">:</span> <i class="conum" data-value="4"></i><b>(4)</b>
+      <span class="na">method</span><span class="pi">:</span> <span class="s">any</span>
+      <span class="na">number</span><span class="pi">:</span> <span class="m">1</span>
+      <span class="na">dataDurability</span><span class="pi">:</span> <span class="s">required</span>
+    <span class="na">parameters</span><span class="pi">:</span>
+      <span class="na">max_connections</span><span class="pi">:</span> <span class="s2">"</span><span class="s">100"</span> <i class="conum" data-value="5"></i><b>(5)</b>
 
-  bootstrap:
-    recovery: <i class="conum" data-value="6"></i><b>(6)</b>
-      source: source
+  <span class="na">bootstrap</span><span class="pi">:</span>
+    <span class="na">recovery</span><span class="pi">:</span> <i class="conum" data-value="6"></i><b>(6)</b>
+      <span class="na">source</span><span class="pi">:</span> <span class="s">source</span>
 
-  managed:
-    services:
-      disabledDefaultServices: ["ro", "r"] <i class="conum" data-value="7"></i><b>(7)</b>
+  <span class="na">managed</span><span class="pi">:</span>
+    <span class="na">services</span><span class="pi">:</span>
+      <span class="na">disabledDefaultServices</span><span class="pi">:</span> <span class="pi">[</span><span class="s2">"</span><span class="s">ro"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">r"</span><span class="pi">]</span> <i class="conum" data-value="7"></i><b>(7)</b>
 
-  plugins: <i class="conum" data-value="8"></i><b>(8)</b>
-  - name: barman-cloud.cloudnative-pg.io
-    isWALArchiver: true
-    parameters:
-      barmanObjectName: cnpg-store
-      serverName: cnpg-keycloak-recovery <i class="conum" data-value="9"></i><b>(9)</b>
+  <span class="na">plugins</span><span class="pi">:</span> <i class="conum" data-value="8"></i><b>(8)</b>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">barman-cloud.cloudnative-pg.io</span>
+    <span class="na">isWALArchiver</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="na">parameters</span><span class="pi">:</span>
+      <span class="na">barmanObjectName</span><span class="pi">:</span> <span class="s">cnpg-store</span>
+      <span class="na">serverName</span><span class="pi">:</span> <span class="s">cnpg-keycloak-recovery</span> <i class="conum" data-value="9"></i><b>(9)</b>
 
-  externalClusters: <i class="conum" data-value="10"></i><b>(10)</b>
-  - name: source
-    plugin:
-      name: barman-cloud.cloudnative-pg.io
-      parameters:
-        barmanObjectName: cnpg-store
-        serverName: cnpg-keycloak <i class="conum" data-value="11"></i><b>(11)</b></code></pre>
+  <span class="na">externalClusters</span><span class="pi">:</span> <i class="conum" data-value="10"></i><b>(10)</b>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">source</span>
+    <span class="na">plugin</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">barman-cloud.cloudnative-pg.io</span>
+      <span class="na">parameters</span><span class="pi">:</span>
+        <span class="na">barmanObjectName</span><span class="pi">:</span> <span class="s">cnpg-store</span>
+        <span class="na">serverName</span><span class="pi">:</span> <span class="s">cnpg-keycloak</span> <i class="conum" data-value="11"></i><b>(11)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -279,7 +280,7 @@ Since Keycloak requires read-write access, it only connects to the <code>-rw</co
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak apply -f cluster-recovery.yaml</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> cnpg-keycloak apply <span class="nt">-f</span> cluster-recovery.yaml</code></pre>
 </div>
 </div>
 </li>
@@ -288,13 +289,13 @@ Since Keycloak requires read-write access, it only connects to the <code>-rw</co
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak wait --for condition=Ready --timeout=300s cluster cnpg-keycloak</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> cnpg-keycloak <span class="nb">wait</span> <span class="nt">--for</span> <span class="nv">condition</span><span class="o">=</span>Ready <span class="nt">--timeout</span><span class="o">=</span>300s cluster cnpg-keycloak</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">Output:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">cluster.postgresql.cnpg.io/cnpg-keycloak condition met</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">cluster.postgresql.cnpg.io/cnpg-keycloak condition met</code></pre>
 </div>
 </div>
 </li>
@@ -303,13 +304,13 @@ Since Keycloak requires read-write access, it only connects to the <code>-rw</co
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak get pods -L role</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> cnpg-keycloak get pods <span class="nt">-L</span> role</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">Example output:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">NAME              READY   STATUS    RESTARTS   AGE   ROLE
+<pre class="rouge highlight"><code data-lang="bash">NAME              READY   STATUS    RESTARTS   AGE   ROLE
 cnpg-keycloak-1   1/1     Running   0          10m   primary
 cnpg-keycloak-2   1/1     Running   0          10m   replica
 cnpg-keycloak-3   1/1     Running   0          10m   replica</code></pre>
@@ -347,7 +348,7 @@ The timestamp can be obtained by running:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">date -u +"%Y-%m-%dT%H:%M:%SZ"</code></pre>
+<pre class="rouge highlight"><code data-lang="bash"><span class="nb">date</span> <span class="nt">-u</span> +<span class="s2">"%Y-%m-%dT%H:%M:%SZ"</span></code></pre>
 </div>
 </div>
 </td>
@@ -365,52 +366,52 @@ The following example recovers the cluster to a specific timestamp:</p>
 <div class="listingblock">
 <div class="title">Cluster PITR resource:</div>
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: cnpg-keycloak
-spec:
-  instances: 3
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">postgresql.cnpg.io/v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Cluster</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">cnpg-keycloak</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">instances</span><span class="pi">:</span> <span class="m">3</span>
 
-  storage:
-    size: 8Gi
+  <span class="na">storage</span><span class="pi">:</span>
+    <span class="na">size</span><span class="pi">:</span> <span class="s">8Gi</span>
 
-  affinity:
-    podAntiAffinityType: required
-    topologyKey: topology.kubernetes.io/zone
+  <span class="na">affinity</span><span class="pi">:</span>
+    <span class="na">podAntiAffinityType</span><span class="pi">:</span> <span class="s">required</span>
+    <span class="na">topologyKey</span><span class="pi">:</span> <span class="s">topology.kubernetes.io/zone</span>
 
-  postgresql:
-    synchronous:
-      method: any
-      number: 1
-      dataDurability: required
-    parameters:
-      max_connections: "100"
+  <span class="na">postgresql</span><span class="pi">:</span>
+    <span class="na">synchronous</span><span class="pi">:</span>
+      <span class="na">method</span><span class="pi">:</span> <span class="s">any</span>
+      <span class="na">number</span><span class="pi">:</span> <span class="m">1</span>
+      <span class="na">dataDurability</span><span class="pi">:</span> <span class="s">required</span>
+    <span class="na">parameters</span><span class="pi">:</span>
+      <span class="na">max_connections</span><span class="pi">:</span> <span class="s2">"</span><span class="s">100"</span>
 
-  bootstrap:
-    recovery:
-      source: source
-      recoveryTarget: <i class="conum" data-value="1"></i><b>(1)</b>
-        targetTime: "2026-03-30T10:00:00Z" <i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="na">bootstrap</span><span class="pi">:</span>
+    <span class="na">recovery</span><span class="pi">:</span>
+      <span class="na">source</span><span class="pi">:</span> <span class="s">source</span>
+      <span class="na">recoveryTarget</span><span class="pi">:</span> <i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="na">targetTime</span><span class="pi">:</span> <span class="s2">"</span><span class="s">2026-03-30T10:00:00Z"</span> <i class="conum" data-value="2"></i><b>(2)</b>
 
-  managed:
-    services:
-      disabledDefaultServices: ["ro", "r"]
+  <span class="na">managed</span><span class="pi">:</span>
+    <span class="na">services</span><span class="pi">:</span>
+      <span class="na">disabledDefaultServices</span><span class="pi">:</span> <span class="pi">[</span><span class="s2">"</span><span class="s">ro"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">r"</span><span class="pi">]</span>
 
-  plugins:
-  - name: barman-cloud.cloudnative-pg.io
-    isWALArchiver: true
-    parameters:
-      barmanObjectName: cnpg-store
-      serverName: cnpg-keycloak-pitr <i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="na">plugins</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">barman-cloud.cloudnative-pg.io</span>
+    <span class="na">isWALArchiver</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="na">parameters</span><span class="pi">:</span>
+      <span class="na">barmanObjectName</span><span class="pi">:</span> <span class="s">cnpg-store</span>
+      <span class="na">serverName</span><span class="pi">:</span> <span class="s">cnpg-keycloak-pitr</span> <i class="conum" data-value="3"></i><b>(3)</b>
 
-  externalClusters:
-  - name: source
-    plugin:
-      name: barman-cloud.cloudnative-pg.io
-      parameters:
-        barmanObjectName: cnpg-store
-        serverName: cnpg-keycloak</code></pre>
+  <span class="na">externalClusters</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">source</span>
+    <span class="na">plugin</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">barman-cloud.cloudnative-pg.io</span>
+      <span class="na">parameters</span><span class="pi">:</span>
+        <span class="na">barmanObjectName</span><span class="pi">:</span> <span class="s">cnpg-store</span>
+        <span class="na">serverName</span><span class="pi">:</span> <span class="s">cnpg-keycloak</span></code></pre>
 </div>
 </div>
 </li>
@@ -477,7 +478,7 @@ Only one option can be used at a time:</p>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak apply -f cluster-recovery-pitr.yaml</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> cnpg-keycloak apply <span class="nt">-f</span> cluster-recovery-pitr.yaml</code></pre>
 </div>
 </div>
 </li>
@@ -486,13 +487,13 @@ Only one option can be used at a time:</p>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n cnpg-keycloak wait --for condition=Ready --timeout=300s cluster cnpg-keycloak</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> cnpg-keycloak <span class="nb">wait</span> <span class="nt">--for</span> <span class="nv">condition</span><span class="o">=</span>Ready <span class="nt">--timeout</span><span class="o">=</span>300s cluster cnpg-keycloak</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">Output:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">cluster.postgresql.cnpg.io/cnpg-keycloak condition met</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">cluster.postgresql.cnpg.io/cnpg-keycloak condition met</code></pre>
 </div>
 </div>
 </li>
@@ -526,7 +527,7 @@ This causes Keycloak to attempt to reach those instances during startup, resulti
 <div class="listingblock">
 <div class="title">SQL:</div>
 <div class="content">
-<pre class="highlight"><code class="language-sql" data-lang="sql">TRUNCATE jgroups_ping;</code></pre>
+<pre class="rouge highlight"><code data-lang="sql"><span class="k">TRUNCATE</span> <span class="n">jgroups_ping</span><span class="p">;</span></code></pre>
 </div>
 </div>
 </div>
@@ -562,8 +563,8 @@ Administrators should evaluate the impact based on their application&#8217;s sec
 <div class="listingblock">
 <div class="title">SQL:</div>
 <div class="content">
-<pre class="highlight"><code class="language-sql" data-lang="sql">TRUNCATE offline_client_session;
-TRUNCATE offline_user_session;</code></pre>
+<pre class="rouge highlight"><code data-lang="sql"><span class="k">TRUNCATE</span> <span class="n">offline_client_session</span><span class="p">;</span>
+<span class="k">TRUNCATE</span> <span class="n">offline_user_session</span><span class="p">;</span></code></pre>
 </div>
 </div>
 </li>
@@ -572,8 +573,8 @@ TRUNCATE offline_user_session;</code></pre>
 <div class="listingblock">
 <div class="title">SQL:</div>
 <div class="content">
-<pre class="highlight"><code class="language-sql" data-lang="sql">DELETE FROM offline_client_session WHERE offline_flag = '0';
-DELETE FROM offline_user_session WHERE offline_flag = '0';</code></pre>
+<pre class="rouge highlight"><code data-lang="sql"><span class="k">DELETE</span> <span class="k">FROM</span> <span class="n">offline_client_session</span> <span class="k">WHERE</span> <span class="n">offline_flag</span> <span class="o">=</span> <span class="s1">'0'</span><span class="p">;</span>
+<span class="k">DELETE</span> <span class="k">FROM</span> <span class="n">offline_user_session</span> <span class="k">WHERE</span> <span class="n">offline_flag</span> <span class="o">=</span> <span class="s1">'0'</span><span class="p">;</span></code></pre>
 </div>
 </div>
 </li>

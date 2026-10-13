@@ -23,6 +23,7 @@ gtag('config', 'G-0J2P9316N6');
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
 <link rel="canonical" href="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer">
 <meta property="og:url" content="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer">
 <link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
@@ -200,13 +201,13 @@ when both clusters are healthy.</p>
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">cat &lt;&lt;EOF | kubectl apply -n $NAMESPACE -f - <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="rouge highlight"><code data-lang="bash"><span class="nb">cat</span> <span class="o">&lt;&lt;</span><span class="no">EOF</span><span class="sh"> | kubectl apply -n </span><span class="nv">$NAMESPACE</span><span class="sh"> -f - <i class="conum" data-value="1"></i><b>(1)</b>
   apiVersion: v1
   kind: Service
   metadata:
     name: accelerator-loadbalancer
     annotations:
-      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: accelerator=${ACCELERATOR_NAME},site=${CLUSTER_NAME},namespace=${NAMESPACE} <i class="conum" data-value="2"></i><b>(2)</b>
+      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: accelerator=</span><span class="k">${</span><span class="nv">ACCELERATOR_NAME</span><span class="k">}</span><span class="sh">,site=</span><span class="k">${</span><span class="nv">CLUSTER_NAME</span><span class="k">}</span><span class="sh">,namespace=</span><span class="k">${</span><span class="nv">NAMESPACE</span><span class="k">}</span><span class="sh"> <i class="conum" data-value="2"></i><b>(2)</b>
       service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/lb-check"
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "https"
@@ -225,7 +226,7 @@ when both clusters are healthy.</p>
       app.kubernetes.io/managed-by: keycloak-operator
     sessionAffinity: None
     type: LoadBalancer
-EOF</code></pre>
+EOF</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -259,13 +260,13 @@ the name of the Global Accelerator created in subsequent steps and <code>CLUSTER
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl -n $NAMESPACE get svc accelerator-loadbalancer --template="{{range .status.loadBalancer.ingress}}{{.hostname}}{{end}}"</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> <span class="nv">$NAMESPACE</span> get svc accelerator-loadbalancer <span class="nt">--template</span><span class="o">=</span><span class="s2">"{{range .status.loadBalancer.ingress}}{{.hostname}}{{end}}"</span></code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">Output:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">abab80a363ce8479ea9c4349d116bce2-6b65e8b4272fa4b5.elb.eu-west-1.amazonaws.com</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">abab80a363ce8479ea9c4349d116bce2-6b65e8b4272fa4b5.elb.eu-west-1.amazonaws.com</code></pre>
 </div>
 </div>
 </li>
@@ -277,10 +278,10 @@ the name of the Global Accelerator created in subsequent steps and <code>CLUSTER
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws globalaccelerator create-accelerator \
-  --name example-accelerator \ <i class="conum" data-value="1"></i><b>(1)</b>
-  --ip-address-type DUAL_STACK \ <i class="conum" data-value="2"></i><b>(2)</b>
-  --region us-west-2 <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+<pre class="rouge highlight"><code data-lang="bash">aws globalaccelerator create-accelerator <span class="se">\</span>
+  <span class="nt">--name</span> example-accelerator <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="nt">--ip-address-type</span> DUAL_STACK <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="nt">--region</span> us-west-2 <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -302,37 +303,38 @@ the name of the Global Accelerator created in subsequent steps and <code>CLUSTER
 <div class="listingblock">
 <div class="title">Output:</div>
 <div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-    "Accelerator": {
-        "AcceleratorArn": "arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71", <i class="conum" data-value="1"></i><b>(1)</b>
-        "Name": "example-accelerator",
-        "IpAddressType": "DUAL_STACK",
-        "Enabled": true,
-        "IpSets": [
-            {
-                "IpFamily": "IPv4",
-                "IpAddresses": [
-                    "75.2.42.125",
-                    "99.83.132.135"
-                ],
-                "IpAddressFamily": "IPv4"
-            },
-            {
-                "IpFamily": "IPv6",
-                "IpAddresses": [
-                    "2600:9000:a400:4092:88f3:82e2:e5b2:e686",
-                    "2600:9000:a516:b4ef:157e:4cbd:7b48:20f1"
-                ],
-                "IpAddressFamily": "IPv6"
-            }
-        ],
-        "DnsName": "a099f799900e5b10d.awsglobalaccelerator.com", <i class="conum" data-value="2"></i><b>(2)</b>
-        "Status": "IN_PROGRESS",
-        "CreatedTime": "2023-11-13T15:46:40+00:00",
-        "LastModifiedTime": "2023-11-13T15:46:42+00:00",
-        "DualStackDnsName": "ac86191ca5121e885.dualstack.awsglobalaccelerator.com" <i class="conum" data-value="3"></i><b>(3)</b>
-    }
-}</code></pre>
+<pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
+    </span><span class="nl">"Accelerator"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"AcceleratorArn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71"</span><span class="p">,</span><span class="w"> <i class="conum" data-value="1"></i><b>(1)</b>
+        </span><span class="nl">"Name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"example-accelerator"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"IpAddressType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DUAL_STACK"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"Enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"IpSets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"IpFamily"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IPv4"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"IpAddresses"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+                    </span><span class="s2">"75.2.42.125"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"99.83.132.135"</span><span class="w">
+                </span><span class="p">],</span><span class="w">
+                </span><span class="nl">"IpAddressFamily"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IPv4"</span><span class="w">
+            </span><span class="p">},</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"IpFamily"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IPv6"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"IpAddresses"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+                    </span><span class="s2">"2600:9000:a400:4092:88f3:82e2:e5b2:e686"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"2600:9000:a516:b4ef:157e:4cbd:7b48:20f1"</span><span class="w">
+                </span><span class="p">],</span><span class="w">
+                </span><span class="nl">"IpAddressFamily"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IPv6"</span><span class="w">
+            </span><span class="p">}</span><span class="w">
+        </span><span class="p">],</span><span class="w">
+        </span><span class="nl">"DnsName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"a099f799900e5b10d.awsglobalaccelerator.com"</span><span class="p">,</span><span class="w"> <i class="conum" data-value="2"></i><b>(2)</b>
+        </span><span class="nl">"Status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IN_PROGRESS"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"CreatedTime"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2023-11-13T15:46:40+00:00"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"LastModifiedTime"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2023-11-13T15:46:42+00:00"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"DualStackDnsName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ac86191ca5121e885.dualstack.awsglobalaccelerator.com"</span><span class="w"> <i class="conum" data-value="3"></i><b>(3)</b>
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -357,29 +359,29 @@ the name of the Global Accelerator created in subsequent steps and <code>CLUSTER
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">aws globalaccelerator create-listener \
-  --accelerator-arn 'arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71' \
-  --port-ranges '[{"FromPort":443,"ToPort":443}]' \
-  --protocol TCP \
-  --region us-west-2</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">aws globalaccelerator create-listener <span class="se">\</span>
+  <span class="nt">--accelerator-arn</span> <span class="s1">'arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71'</span> <span class="se">\</span>
+  <span class="nt">--port-ranges</span> <span class="s1">'[{"FromPort":443,"ToPort":443}]'</span> <span class="se">\</span>
+  <span class="nt">--protocol</span> TCP <span class="se">\</span>
+  <span class="nt">--region</span> us-west-2</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">Output:</div>
 <div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-    "Listener": {
-        "ListenerArn": "arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71/listener/1f396d40",
-        "PortRanges": [
-            {
-                "FromPort": 443,
-                "ToPort": 443
-            }
-        ],
-        "Protocol": "TCP",
-        "ClientAffinity": "NONE"
-    }
-}</code></pre>
+<pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
+    </span><span class="nl">"Listener"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"ListenerArn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71/listener/1f396d40"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"PortRanges"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"FromPort"</span><span class="p">:</span><span class="w"> </span><span class="mi">443</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"ToPort"</span><span class="p">:</span><span class="w"> </span><span class="mi">443</span><span class="w">
+            </span><span class="p">}</span><span class="w">
+        </span><span class="p">],</span><span class="w">
+        </span><span class="nl">"Protocol"</span><span class="p">:</span><span class="w"> </span><span class="s2">"TCP"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"ClientAffinity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NONE"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre>
 </div>
 </div>
 </li>
@@ -388,34 +390,34 @@ the name of the Global Accelerator created in subsequent steps and <code>CLUSTER
 <div class="listingblock">
 <div class="title">Command:</div>
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">CLUSTER_1_ENDPOINT_ARN=$(aws elbv2 describe-load-balancers \
-    --query "LoadBalancers[?DNSName=='abab80a363ce8479ea9c4349d116bce2-6b65e8b4272fa4b5.elb.eu-west-1.amazonaws.com'].LoadBalancerArn" \ <i class="conum" data-value="1"></i><b>(1)</b>
-    --region eu-west-1 \ <i class="conum" data-value="2"></i><b>(2)</b>
-    --output text
-)
-CLUSTER_2_ENDPOINT_ARN=$(aws elbv2 describe-load-balancers \
-    --query "LoadBalancers[?DNSName=='a1c76566e3c334e4ab7b762d9f8dcbcf-985941f9c8d108d4.elb.eu-west-1.amazonaws.com'].LoadBalancerArn" \ <i class="conum" data-value="1"></i><b>(1)</b>
-    --region eu-west-1 \ <i class="conum" data-value="2"></i><b>(2)</b>
-    --output text
-)
-ENDPOINTS='[
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">CLUSTER_1_ENDPOINT_ARN</span><span class="o">=</span><span class="si">$(</span>aws elbv2 describe-load-balancers <span class="se">\</span>
+    <span class="nt">--query</span> <span class="s2">"LoadBalancers[?DNSName=='abab80a363ce8479ea9c4349d116bce2-6b65e8b4272fa4b5.elb.eu-west-1.amazonaws.com'].LoadBalancerArn"</span> <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="nt">--region</span> eu-west-1 <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="nt">--output</span> text
+<span class="si">)</span>
+<span class="nv">CLUSTER_2_ENDPOINT_ARN</span><span class="o">=</span><span class="si">$(</span>aws elbv2 describe-load-balancers <span class="se">\</span>
+    <span class="nt">--query</span> <span class="s2">"LoadBalancers[?DNSName=='a1c76566e3c334e4ab7b762d9f8dcbcf-985941f9c8d108d4.elb.eu-west-1.amazonaws.com'].LoadBalancerArn"</span> <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="nt">--region</span> eu-west-1 <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="nt">--output</span> text
+<span class="si">)</span>
+<span class="nv">ENDPOINTS</span><span class="o">=</span><span class="s1">'[
   {
-    "EndpointId": "'${CLUSTER_1_ENDPOINT_ARN}'",
+    "EndpointId": "'</span><span class="k">${</span><span class="nv">CLUSTER_1_ENDPOINT_ARN</span><span class="k">}</span><span class="s1">'",
     "Weight": 128,
     "ClientIPPreservationEnabled": false
   },
   {
-    "EndpointId": "'${CLUSTER_2_ENDPOINT_ARN}'",
+    "EndpointId": "'</span><span class="k">${</span><span class="nv">CLUSTER_2_ENDPOINT_ARN</span><span class="k">}</span><span class="s1">'",
     "Weight": 128,
     "ClientIPPreservationEnabled": false
   }
-]'
-aws globalaccelerator create-endpoint-group \
-  --listener-arn 'arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71/listener/1f396d40' \ <i class="conum" data-value="2"></i><b>(2)</b>
-  --traffic-dial-percentage 100 \
-  --endpoint-configurations ${ENDPOINTS} \
-  --endpoint-group-region eu-west-1 \ <i class="conum" data-value="3"></i><b>(3)</b>
-  --region us-west-2</code></pre>
+]'</span>
+aws globalaccelerator create-endpoint-group <span class="se">\</span>
+  <span class="nt">--listener-arn</span> <span class="s1">'arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71/listener/1f396d40'</span> <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="nt">--traffic-dial-percentage</span> 100 <span class="se">\</span>
+  <span class="nt">--endpoint-configurations</span> <span class="k">${</span><span class="nv">ENDPOINTS</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--endpoint-group-region</span> eu-west-1 <span class="se">\ </span><i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="nt">--region</span> us-west-2</code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -437,32 +439,32 @@ aws globalaccelerator create-endpoint-group \
 <div class="listingblock">
 <div class="title">Output:</div>
 <div class="content">
-<pre class="highlight"><code class="language-json" data-lang="json">{
-    "EndpointGroup": {
-        "EndpointGroupArn": "arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71/listener/1f396d40/endpoint-group/2581af0dc700",
-        "EndpointGroupRegion": "eu-west-1",
-        "EndpointDescriptions": [
-            {
-                "EndpointId": "arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/abab80a363ce8479ea9c4349d116bce2/6b65e8b4272fa4b5",
-                "Weight": 128,
-                "HealthState": "HEALTHY",
-                "ClientIPPreservationEnabled": false
-            },
-            {
-                "EndpointId": "arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/a1c76566e3c334e4ab7b762d9f8dcbcf/985941f9c8d108d4",
-                "Weight": 128,
-                "HealthState": "HEALTHY",
-                "ClientIPPreservationEnabled": false
-            }
-        ],
-        "TrafficDialPercentage": 100.0,
-        "HealthCheckPort": 443,
-        "HealthCheckProtocol": "TCP",
-        "HealthCheckPath": "undefined",
-        "HealthCheckIntervalSeconds": 30,
-        "ThresholdCount": 3
-    }
-}</code></pre>
+<pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
+    </span><span class="nl">"EndpointGroup"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"EndpointGroupArn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71/listener/1f396d40/endpoint-group/2581af0dc700"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"EndpointGroupRegion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eu-west-1"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"EndpointDescriptions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"EndpointId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/abab80a363ce8479ea9c4349d116bce2/6b65e8b4272fa4b5"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"Weight"</span><span class="p">:</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"HealthState"</span><span class="p">:</span><span class="w"> </span><span class="s2">"HEALTHY"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"ClientIPPreservationEnabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+            </span><span class="p">},</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"EndpointId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/a1c76566e3c334e4ab7b762d9f8dcbcf/985941f9c8d108d4"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"Weight"</span><span class="p">:</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"HealthState"</span><span class="p">:</span><span class="w"> </span><span class="s2">"HEALTHY"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"ClientIPPreservationEnabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+            </span><span class="p">}</span><span class="w">
+        </span><span class="p">],</span><span class="w">
+        </span><span class="nl">"TrafficDialPercentage"</span><span class="p">:</span><span class="w"> </span><span class="mf">100.0</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"HealthCheckPort"</span><span class="p">:</span><span class="w"> </span><span class="mi">443</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"HealthCheckProtocol"</span><span class="p">:</span><span class="w"> </span><span class="s2">"TCP"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"HealthCheckPath"</span><span class="p">:</span><span class="w"> </span><span class="s2">"undefined"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"HealthCheckIntervalSeconds"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"ThresholdCount"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre>
 </div>
 </div>
 </li>
@@ -486,15 +488,15 @@ aws globalaccelerator create-endpoint-group \
 <p>Ensure the Keycloak CR has the following configuration</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2beta1
-kind: Keycloak
-metadata:
-  name: keycloak
-spec:
-  hostname:
-    hostname: $HOSTNAME <i class="conum" data-value="1"></i><b>(1)</b>
-  ingress:
-    enabled: false <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">k8s.keycloak.org/v2beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Keycloak</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">keycloak</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">hostname</span><span class="pi">:</span>
+    <span class="na">hostname</span><span class="pi">:</span> <span class="s">$HOSTNAME</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="na">ingress</span><span class="pi">:</span>
+    <span class="na">enabled</span><span class="pi">:</span> <span class="no">false</span> <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">

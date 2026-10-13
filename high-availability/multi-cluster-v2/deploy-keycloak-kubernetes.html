@@ -22,6 +22,7 @@ gtag('config', 'G-0J2P9316N6');
 <link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
 <link rel="canonical" href="https://www.keycloak.org/high-availability/multi-cluster-v2/deploy-keycloak-kubernetes">
 <meta property="og:url" content="https://www.keycloak.org/high-availability/multi-cluster-v2/deploy-keycloak-kubernetes">
 <link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
@@ -162,7 +163,7 @@ For this setup, you might see approximately twice the CPU usage and write IOPS o
 <p>For a production-grade deployment, secure the database connection by creating a <code>ConfigMap</code> with the database certificate bundle:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl --namespace keycloak create configmap keycloak-db-rootcert --from-file db-ca.pem=/path/to/certificate.pem</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">--namespace</span> keycloak create configmap keycloak-db-rootcert <span class="nt">--from-file</span> db-ca.pem<span class="o">=</span>/path/to/certificate.pem</code></pre>
 </div>
 </div>
 </li>
@@ -170,60 +171,60 @@ For this setup, you might see approximately twice the CPU usage and write IOPS o
 <p>Deploy the Keycloak CR with the following values, using the resource requests and limits calculated in the first step:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: k8s.keycloak.org/v2beta1
-kind: Keycloak
-metadata:
-  labels:
-    app: keycloak
-  name: keycloak
-  namespace: keycloak
-spec:
-  hostname:
-    hostname: &lt;KEYCLOAK_URL_HERE&gt;
-  resources:
-    requests:
-      cpu: "2"
-      memory: "1250M"
-    limits:
-      cpu: "6"
-      memory: "2250M"
-  db:
-    vendor: postgres
-    url: jdbc:postgresql://&lt;DATABASE_URL_HERE&gt;:5432/keycloak <i class="conum" data-value="1"></i><b>(1)</b>
-    poolMinSize: 30 <i class="conum" data-value="2"></i><b>(2)</b>
-    poolInitialSize: 30
-    poolMaxSize: 30
-    usernameSecret:
-      name: keycloak-db-secret
-      key: username
-    passwordSecret:
-      name: keycloak-db-secret
-      key: password
-  image: &lt;KEYCLOAK_IMAGE_HERE&gt; <i class="conum" data-value="3"></i><b>(3)</b>
-  startOptimized: false <i class="conum" data-value="3"></i><b>(3)</b>
-  update:
-    strategy: Auto
-  features:
-    enabled:
-      - stateless <i class="conum" data-value="4"></i><b>(4)</b>
-  additionalOptions:
-    - name: cache-embedded-cluster-name
-      value: &lt;CLUSTER_NAME_HERE&gt; <i class="conum" data-value="5"></i><b>(5)</b>
-    - name: log-console-output
-      value: json
-    - name: metrics-enabled <i class="conum" data-value="6"></i><b>(6)</b>
-      value: 'true'
-    - name: event-metrics-user-enabled
-      value: 'true'
-    - name: db-tls-mode <i class="conum" data-value="7"></i><b>(7)</b>
-      value: verify-server
-  http:
-    tlsSecret: keycloak-tls-secret
-  instances: 3
-  truststores:
-    db:
-      configMap:
-        name: keycloak-db-rootcert <i class="conum" data-value="8"></i><b>(8)</b></code></pre>
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">k8s.keycloak.org/v2beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Keycloak</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">labels</span><span class="pi">:</span>
+    <span class="na">app</span><span class="pi">:</span> <span class="s">keycloak</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">keycloak</span>
+  <span class="na">namespace</span><span class="pi">:</span> <span class="s">keycloak</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">hostname</span><span class="pi">:</span>
+    <span class="na">hostname</span><span class="pi">:</span> <span class="s">&lt;KEYCLOAK_URL_HERE&gt;</span>
+  <span class="na">resources</span><span class="pi">:</span>
+    <span class="na">requests</span><span class="pi">:</span>
+      <span class="na">cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">2"</span>
+      <span class="na">memory</span><span class="pi">:</span> <span class="s2">"</span><span class="s">1250M"</span>
+    <span class="na">limits</span><span class="pi">:</span>
+      <span class="na">cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">6"</span>
+      <span class="na">memory</span><span class="pi">:</span> <span class="s2">"</span><span class="s">2250M"</span>
+  <span class="na">db</span><span class="pi">:</span>
+    <span class="na">vendor</span><span class="pi">:</span> <span class="s">postgres</span>
+    <span class="na">url</span><span class="pi">:</span> <span class="s">jdbc:postgresql://&lt;DATABASE_URL_HERE&gt;:5432/keycloak</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="na">poolMinSize</span><span class="pi">:</span> <span class="s">30</span> <i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="na">poolInitialSize</span><span class="pi">:</span> <span class="m">30</span>
+    <span class="na">poolMaxSize</span><span class="pi">:</span> <span class="m">30</span>
+    <span class="na">usernameSecret</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">keycloak-db-secret</span>
+      <span class="na">key</span><span class="pi">:</span> <span class="s">username</span>
+    <span class="na">passwordSecret</span><span class="pi">:</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">keycloak-db-secret</span>
+      <span class="na">key</span><span class="pi">:</span> <span class="s">password</span>
+  <span class="na">image</span><span class="pi">:</span> <span class="s">&lt;KEYCLOAK_IMAGE_HERE&gt;</span> <i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="na">startOptimized</span><span class="pi">:</span> <span class="no">false</span> <i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="na">update</span><span class="pi">:</span>
+    <span class="na">strategy</span><span class="pi">:</span> <span class="s">Auto</span>
+  <span class="na">features</span><span class="pi">:</span>
+    <span class="na">enabled</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">stateless</span> <i class="conum" data-value="4"></i><b>(4)</b>
+  <span class="na">additionalOptions</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">cache-embedded-cluster-name</span>
+      <span class="na">value</span><span class="pi">:</span> <span class="s">&lt;CLUSTER_NAME_HERE&gt;</span> <i class="conum" data-value="5"></i><b>(5)</b>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">log-console-output</span>
+      <span class="na">value</span><span class="pi">:</span> <span class="s">json</span>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">metrics-enabled</span> <i class="conum" data-value="6"></i><b>(6)</b>
+      <span class="na">value</span><span class="pi">:</span> <span class="s1">'</span><span class="s">true'</span>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">event-metrics-user-enabled</span>
+      <span class="na">value</span><span class="pi">:</span> <span class="s1">'</span><span class="s">true'</span>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">db-tls-mode</span> <i class="conum" data-value="7"></i><b>(7)</b>
+      <span class="na">value</span><span class="pi">:</span> <span class="s">verify-server</span>
+  <span class="na">http</span><span class="pi">:</span>
+    <span class="na">tlsSecret</span><span class="pi">:</span> <span class="s">keycloak-tls-secret</span>
+  <span class="na">instances</span><span class="pi">:</span> <span class="m">3</span>
+  <span class="na">truststores</span><span class="pi">:</span>
+    <span class="na">db</span><span class="pi">:</span>
+      <span class="na">configMap</span><span class="pi">:</span>
+        <span class="na">name</span><span class="pi">:</span> <span class="s">keycloak-db-rootcert</span> <i class="conum" data-value="8"></i><b>(8)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -294,8 +295,8 @@ If the public URL uses a port other than 443, include the port in the hostname v
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl wait --for=condition=Ready keycloaks.k8s.keycloak.org/keycloak
-kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keycloak</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nb">wait</span> <span class="nt">--for</span><span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready keycloaks.k8s.keycloak.org/keycloak
+kubectl <span class="nb">wait</span> <span class="nt">--for</span><span class="o">=</span><span class="nv">condition</span><span class="o">=</span><span class="nv">RollingUpdate</span><span class="o">=</span>False keycloaks.k8s.keycloak.org/keycloak</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -303,7 +304,7 @@ kubectl wait --for=condition=RollingUpdate=False keycloaks.k8s.keycloak.org/keyc
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">curl -sk https://&lt;SITE_LB_HOSTNAME&gt;/realms/master/.well-known/openid-configuration | jq .issuer</code></pre>
+<pre class="rouge highlight"><code data-lang="bash">curl <span class="nt">-sk</span> https://&lt;SITE_LB_HOSTNAME&gt;/realms/master/.well-known/openid-configuration | jq .issuer</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -328,14 +329,14 @@ Kubernetes probes each Pod&#8217;s <code>/health/ready</code> endpoint on manage
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">spec:
-  ingress:
-    enabled: true
-    annotations:
-      # When running load tests, disable sticky sessions on the OpenShift HAProxy router
-      # to avoid receiving all requests on a single Keycloak Pod.
-      haproxy.router.openshift.io/balance: roundrobin
-      haproxy.router.openshift.io/disable_cookies: 'true'</code></pre>
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">spec</span><span class="pi">:</span>
+  <span class="na">ingress</span><span class="pi">:</span>
+    <span class="na">enabled</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="na">annotations</span><span class="pi">:</span>
+      <span class="c1"># When running load tests, disable sticky sessions on the OpenShift HAProxy router</span>
+      <span class="c1"># to avoid receiving all requests on a single Keycloak Pod.</span>
+      <span class="na">haproxy.router.openshift.io/balance</span><span class="pi">:</span> <span class="s">roundrobin</span>
+      <span class="na">haproxy.router.openshift.io/disable_cookies</span><span class="pi">:</span> <span class="s1">'</span><span class="s">true'</span></code></pre>
 </div>
 </div>
 </div>
