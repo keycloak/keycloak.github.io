@@ -95,7 +95,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
                     <select aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
                         <option value="https://www.keycloak.org/nightly/securing-apps/javascript-adapter" selected="selected">Nightly</option>
-                        <option value="https://www.keycloak.org/securing-apps/javascript-adapter" >26.8.0</option>
+                        <option value="https://www.keycloak.org/securing-apps/javascript-adapter" >26.8.1</option>
                     </select>
                 </div>
 
@@ -531,6 +531,159 @@ await keycloak.init({
 </div>
 <div class="paragraph">
 <p>Naturally you can also do this without TypeScript by omitting the type information, but ensuring implementing the interface properly will then be left entirely up to you.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_dpop"><a class="anchor" href="#_dpop"></a>Securing Clients with DPoP</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>DPoP is a mechanism that prevents token theft and replay attacks by generating sender-constrained access and refresh tokens. It allows a client to cryptographically prove possession of the private key bound to a token, provided the resource server supports the DPoP standard.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For more information on the DPoP standard, see the <a href="https://datatracker.ietf.org/doc/html/rfc9449">RFC 9449</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_key_storage_and_persistence"><a class="anchor" href="#_key_storage_and_persistence"></a>Key Storage and Persistence</h3>
+<div class="paragraph">
+<p>DPoP key pairs are persisted in IndexedDB, scoped to the specific issuer and client ID combination. This means keys survive page reloads and browser restarts, ensuring token continuity across sessions. If IndexedDB is unavailable, the adapter falls back to in-memory storage (keys will not survive page reloads). On logout, stored keys are automatically cleared.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_initializing_with_dpop"><a class="anchor" href="#_initializing_with_dpop"></a>Initializing with DPoP</h3>
+<div class="paragraph">
+<p>Enabling DPoP requires passing a <code>useDPoP</code> configuration object to the <code>init</code> method. The quickest and most straightforward way to enable DPoP is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-javascript" data-lang="javascript">await keycloak.init({
+    useDPoP: {
+        mode: 'auto'
+    }
+});</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+DPoP requires the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API">Web Crypto API</a>, which is only available in <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Secure_Contexts">secure contexts</a> (HTTPS).
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>When <code>mode</code> is set to <code>auto</code>, the adapter only uses DPoP if the authorization server advertises support for it in its OpenID configuration. If the server returns a non-DPoP token type, the adapter will log a warning and fall back to Bearer tokens for the remainder of the session. When <code>mode</code> is set to <code>strict</code>, the adapter will throw an error if the authorization server does not support DPoP or returns a non-DPoP token type.</p>
+</div>
+<div class="paragraph">
+<p>The adapter automatically generates DPoP proofs for token refresh requests, so no additional configuration is needed to maintain DPoP-bound tokens throughout the session lifecycle.</p>
+</div>
+<div class="paragraph">
+<p>Furthermore, you can specify which signing algorithm to use for DPoP keys. The supported algorithms are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>ES256</p>
+</li>
+<li>
+<p>ES384</p>
+</li>
+<li>
+<p>ES512</p>
+</li>
+<li>
+<p>EdDSA</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The default algorithm is ES256. Not all browsers support EdDSA keys — if a user&#8217;s browser does not support it, the adapter will automatically fall back to ES256.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Setting a preferred algorithm can be done by setting <code>alg</code> to one of the supported algorithms:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-javascript" data-lang="javascript">await keycloak.init({
+    useDPoP: {
+        mode: 'auto',
+        alg: 'EdDSA'
+    }
+});</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_securefetch"><a class="anchor" href="#_using_securefetch"></a>Using <code>secureFetch</code></h3>
+<div class="paragraph">
+<p>The <code>secureFetch</code> function is simply a wrapper around the global <code>fetch</code> function that also handles the nonce management required by DPoP secured resource servers.</p>
+</div>
+<div class="paragraph">
+<p>Migrating from making a HTTP request using <code>fetch</code> to <code>secureFetch</code> is as simple as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-javascript" data-lang="javascript">// Before migration with basic fetch
+const response = await fetch('/api/users', {
+    headers: {
+        accept: 'application/json',
+        authorization: `Bearer ${keycloak.token}`
+    }
+});
+
+// After migration with secureFetch
+const response = await keycloak.secureFetch('/api/users', {
+    headers: {
+        accept: 'application/json',
+        authorization: `Bearer ${keycloak.token}`
+    }
+});</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<code>secureFetch</code> requires you to set a <code>Bearer</code> Authorization header with the Keycloak-managed token. This is how it identifies which requests should be DPoP-protected — if the header is missing or does not match the adapter&#8217;s token, the request is passed through to <code>fetch</code> unchanged with no DPoP proof attached.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>When a matching <code>Bearer</code> Authorization header is found, <code>secureFetch</code> automatically replaces it with the <code>DPoP</code> scheme and attaches the required proof.</p>
+</div>
+<div class="paragraph">
+<p><code>secureFetch</code> handles nonce management internally. If a resource server responds with a <code>use_dpop_nonce</code> error, <code>secureFetch</code> will automatically retry the request once with the server-provided nonce. If the retry also fails, the error response is returned as-is. In all cases, <code>secureFetch</code> returns a standard <code>Response</code> object just like <code>fetch</code> would.</p>
+</div>
 </div>
 </div>
 </div>
