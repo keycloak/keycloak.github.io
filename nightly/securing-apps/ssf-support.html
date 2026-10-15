@@ -128,7 +128,7 @@ changed, an account was disabled, an assurance level changed etc. to other relyi
 are encoded as JWS-signed <a href="https://www.rfc-editor.org/rfc/rfc8417">Security Event Tokens (SETs)</a> whose payloads are described by
 profiles such as <a href="https://openid.net/specs/openid-caep-1_0-final.html">CAEP</a> (Continuous Access Evaluation Profile) and
 <a href="https://openid.net/specs/openid-risc-1_0-final.html">RISC</a> (Risk Incident Sharing and Coordination). Receivers verify
-each SET against the transmitter&#8217;s JWKS and act on it locally, e.g. for example, by terminating cached sessions when
+each SET against the transmitter&#8217;s JWKS and act on it locally, for example, by terminating cached sessions when
 Keycloak signals a logout.</p>
 </div>
 <div class="paragraph">
@@ -362,6 +362,11 @@ it comes online. Streams created this way are marked as <a href="#managed-by"><s
 <td class="tableblock halign-left valign-top"><p class="tableblock">Auto-subscribe the user as a subject the first time they log in via this receiver client.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Receiver subject add policy</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Which subjects the receiver may add through the subject management endpoint: <code>AUTHENTICATED</code> (default),
+<code>ANY</code>, or <code>NONE</code>. See <a href="#receiver-subject-add-policy">[receiver-subject-add-policy]</a>.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Allowed delivery methods</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Two checkboxes (<strong>Push delivery</strong>, <strong>Poll delivery</strong>) gating which delivery families this receiver may use.
 Empty means both are allowed.</p></td>
@@ -369,8 +374,8 @@ Empty means both are allowed.</p></td>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Valid push URLs</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>##</code>-separated allow-list of URL patterns the receiver may register as its push endpoint. Required when PUSH
-is allowed. Each entry is matched as either an exact URL or a trailing-<code><strong></code> suffix wildcard
-(e.g. <code>https://receiver.example.com/ssf/</strong></code>). Bare <code>*</code> is not honoured, this is the SSRF defence on outbound
+is allowed. Each entry is matched as either an exact URL or a trailing-<code>*</code> suffix wildcard
+(e.g. <code>https://receiver.example.com/ssf/*</code>). Bare <code>*</code> is not honored, this is the SSRF defense on outbound
 PUSH delivery.</p></td>
 </tr>
 <tr>
@@ -456,7 +461,7 @@ management API. A poll request carries <code>maxEvents</code>, optional <code>ac
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-HTTP long-polling (<code>returnImmediately=false</code>, <code>maxWait</code>) is parsed but not yet honoured. This means every poll
+HTTP long-polling (<code>returnImmediately=false</code>, <code>maxWait</code>) is parsed but not yet honored. This means every poll
 returns immediately. Receivers should configure their own polling cadence accordingly.
 </td>
 </tr>
@@ -650,6 +655,30 @@ POST /realms/{realm}/ssf/transmitter/subjects/remove</code></pre>
 remove, even when the supplied subject does not resolve to an existing user, so they do not act as an existence
 oracle for the realm&#8217;s user store.</p>
 </div>
+<div id="receiver-subject-add-policy" class="paragraph">
+<p>A receiver cannot subscribe itself to arbitrary users. The <strong>Receiver subject add policy</strong> on the <strong>Receiver</strong> sub-tab
+decides which <code>add</code> requests are honoured:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>AUTHENTICATED</code> (default): only users who have an active or offline session that includes the receiver client,
+or who granted consent to it. Organization subjects are rejected, because they cover every member.</p>
+</li>
+<li>
+<p><code>ANY</code>: any user or organization in the realm. Choose this only for receivers you trust to monitor the whole realm.</p>
+</li>
+<li>
+<p><code>NONE</code>: all receiver-driven <code>add</code> requests are rejected. Subjects are managed by administrators only.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Regardless of the policy, a receiver cannot add a subject that an administrator has explicitly ignored, and
+re-adding a subject that is already subscribed always succeeds. A rejected <code>add</code> returns <code>200 OK</code> like any other
+<code>add</code>; with verbose error responses enabled it returns <code>403 Forbidden</code>. The policy does not apply to <code>remove</code>
+or to subjects managed from the admin console.</p>
+</div>
 <div class="paragraph">
 <p>Administrators can manage subjects from the <strong>Subjects</strong> sub-tab in the admin console. The sub-tab also exposes
 an <strong>ignore</strong> operation that explicitly excludes a subject (distinct from removing them from the subscription
@@ -687,7 +716,7 @@ credentials, provided the service account holds the configured role.</p>
 </div>
 <div class="paragraph">
 <p>Stream-internal lifecycle event types (<code>stream-verification</code>, <code>stream-updated</code>) cannot be emitted, as they are
-reserved to the transmitter so external callers cannot forge transmitter behaviour towards a receiver.</p>
+reserved to the transmitter so external callers cannot forge transmitter behavior toward a receiver.</p>
 </div>
 </div>
 </div>
