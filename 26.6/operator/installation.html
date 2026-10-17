@@ -1,0 +1,410 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Keycloak Operator Installation - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Keycloak Operator Installation">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Install the Keycloak Operator on Kubernetes and OpenShift.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.6/operator/installation">
+<meta property="og:url" content="https://www.keycloak.org/26.6/operator/installation">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Operator">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides#operator">Operator</a></li>
+                        <li class="breadcrumb-item active">Keycloak Operator Installation</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.6</h4>
+                There will be no further community releases for the Keycloak 26.6 minor release branch.
+                These guides describe Keycloak 26.6.4.
+                For the latest community release, see the <a href="https://www.keycloak.org/operator/installation">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.6</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/operator/installation" >Nightly</option>
+            <option value="https://www.keycloak.org/operator/installation" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/operator/installation" >26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/operator/installation" selected="selected">26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Keycloak Operator Installation</h1>
+                    <span class="text-muted">Install the Keycloak Operator on Kubernetes and OpenShift.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div class="sect1">
+<h2 id="_installing_the_keycloak_operator"><a class="anchor" href="#_installing_the_keycloak_operator"></a>Installing the Keycloak Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide describes how to install the Keycloak Operator in a Kubernetes or OpenShift cluster.</p>
+</div>
+<div class="sect2">
+<h3 id="_installing_by_using_the_operator_lifecycle_manager"><a class="anchor" href="#_installing_by_using_the_operator_lifecycle_manager"></a>Installing by using the Operator Lifecycle Manager</h3>
+<div class="paragraph">
+<p>The recommended way to install the Keycloak Operator in Kubernetes environments is to use the Operator Lifecycle Manager (OLM).</p>
+</div>
+<div class="sect3">
+<h4 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Make sure OLM is installed in your environment. For details, see <a href="https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md#install-a-release">Installing OLM</a>.</p>
+</li>
+<li>
+<p>Be sure that you have cluster-admin permission or an equivalent level of permissions granted by an administrator.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_using_the_openshift_web_console"><a class="anchor" href="#_using_the_openshift_web_console"></a>Using the OpenShift web console</h4>
+<div class="paragraph">
+<p>The following procedure describes how to install the Keycloak Operator. However, for general instructions on installing Operators using OLM, see <a href="https://olm.operatorframework.io/docs/tasks/install-operator-with-olm/">Install your operator with OLM</a>. In the default Catalog, the Keycloak Operator is named <code>keycloak-operator</code>. Make sure to use the <code>fast</code> channel to find the operator.</p>
+</div>
+<div class="paragraph">
+<p>Perform this procedure on an OpenShift cluster.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Open the OpenShift Container Platform web console.</p>
+</li>
+<li>
+<p>In the left column, click <strong>Home</strong>, <strong>Operators</strong>, <strong>OperatorHub</strong>.</p>
+</li>
+<li>
+<p>Search for "keycloak" on the search input box.</p>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/26.6/select-operator.jpeg" alt="Select the Keycloak Operator in the UI">
+</div>
+</div>
+</li>
+<li>
+<p>Select the Keycloak Operator from the list of results.</p>
+</li>
+<li>
+<p>Follow the instructions on the screen.</p>
+<div class="paragraph">
+<p>Make sure you are installing from the <strong>fast</strong> channel:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/26.6/configure-operator.png" alt="Configure Keycloak Operator">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You may select to either have the Operator watch the namespace where it is installed, or to watch a single namespace of your choosing.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_configuring_manual_approval_for_olm_upgrades"><a class="anchor" href="#_configuring_manual_approval_for_olm_upgrades"></a>Configuring Manual Approval for OLM Upgrades</h4>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p><strong>Important: Automatic OLM Upgrades</strong></p>
+</div>
+<div class="paragraph">
+<p>By default, OLM automatically updates the Keycloak Operator when a new version is released. This can cause several significant issues:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>When using the default Keycloak image, the Operator uses a matching image of the corresponding Keycloak version, resulting in <strong>unintended Keycloak upgrades</strong> when the Operator is upgraded</p>
+</li>
+<li>
+<p><strong>Even when using custom images</strong>, major Operator upgrades can introduce significant compatibility issues with your existing Keycloak CR configuration, potentially requiring manual intervention</p>
+</li>
+<li>
+<p>New fields in Keycloak CR or behavioral changes could impact existing deployments</p>
+</li>
+<li>
+<p>No option to downgrade to the previous Keycloak version due to changes related to database migration</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Recommendation:</strong></p>
+</div>
+<div class="paragraph">
+<p><strong>We strongly recommend using manual approval mode for the Keycloak Operator.</strong> This ensures you can:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Review release notes and follow migration changes before approving upgrades</p>
+</li>
+<li>
+<p>Schedule maintenance windows for upgrades</p>
+</li>
+<li>
+<p>Test upgrades in a non-production environment first</p>
+</li>
+<li>
+<p>Back up the database to allow downgrading to the previous Keycloak in case of issues</p>
+</li>
+</ol>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To prevent automatic upgrades by OLM, set the approval strategy to <code>Manual</code> when installing the Operator:</p>
+</div>
+<div class="sect4">
+<h5 id="_using_the_openshift_web_console_2"><a class="anchor" href="#_using_the_openshift_web_console_2"></a>Using the OpenShift web console</h5>
+<div class="paragraph">
+<p>When installing the Operator, select <code>Manual</code> approval in the update approval strategy section:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/26.6/manual-approval-olm.png" alt="Configure manual approval in OLM">
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_using_the_cli"><a class="anchor" href="#_using_the_cli"></a>Using the CLI</h5>
+<div class="paragraph">
+<p>For command-line installation, create a Subscription with <code>installPlanApproval: Manual</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">operators.coreos.com/v1alpha1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Subscription</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">keycloak-operator</span>
+  <span class="na">namespace</span><span class="pi">:</span> <span class="s">&lt;target-namespace&gt;</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">channel</span><span class="pi">:</span> <span class="s">fast</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">keycloak-operator</span>
+  <span class="na">source</span><span class="pi">:</span> <span class="s">&lt;catalog-source&gt;</span>
+  <span class="na">sourceNamespace</span><span class="pi">:</span> <span class="s">&lt;catalog-namespace&gt;</span>
+  <span class="na">installPlanApproval</span><span class="pi">:</span> <span class="s">Manual</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After installation, any upgrade will require manual approval through the OLM interface or via the CLI.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_installing_by_using_kubectl_without_operator_lifecycle_manager"><a class="anchor" href="#_installing_by_using_kubectl_without_operator_lifecycle_manager"></a>Installing by using kubectl without Operator Lifecycle Manager</h3>
+<div class="paragraph">
+<p>You can install the Operator on a vanilla Kubernetes cluster by using <code>kubectl</code> commands:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install the CRDs by entering the following commands:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">kubectl apply <span class="nt">-f</span> https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.6.4/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
+kubectl apply <span class="nt">-f</span> https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.6.4/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the Keycloak Operator deployment in the <code>keycloak</code> namespace by executing the following commands:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">kubectl create namespace keycloak
+kubectl <span class="nt">-n</span> keycloak apply <span class="nt">-f</span> https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.6.4/kubernetes/kubernetes.yml</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The Operator will watch the namespace where it is installed. You may utilise a different namespace with the <code>-n</code> option,
+however you must also update the <code>ClusterRoleBinding</code> subject. For example, to install in the namespace <code>custom-namespace</code>,
+execute the following commands:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">kubectl create namespace custom-namespace
+kubectl <span class="nt">-n</span> custom-namespace apply <span class="nt">-f</span> https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.6.4/kubernetes/kubernetes.yml
+kubectl patch clusterrolebinding keycloak-operator-clusterrole-binding <span class="nt">--type</span><span class="o">=</span><span class="s1">'json'</span> <span class="nt">-p</span><span class="o">=</span><span class="s1">'[{"op": "replace", "path": "/subjects/0/namespace", "value":"custom-namespace"}]'</span>
+<span class="c"># if you have existing keycloaks, restart the operator after patching the clusterrolebinding</span>
+kubectl rollout restart <span class="nt">-n</span> custom-namespace Deployment/keycloak-operator</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_installing_multiple_operators"><a class="anchor" href="#_installing_multiple_operators"></a>Installing Multiple Operators</h3>
+<div class="paragraph">
+<p>It is currently not fully supported for the operator to watch multiple or all namespaces. In circumstances where you want to watch multiple namespaces, you can install multiple operators.</p>
+</div>
+<div class="paragraph">
+<p>If you do this please be aware:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>all Operators share the CRDs (Custom Resource Definitions) as they are installed cluster wide.</p>
+</li>
+<li>
+<p>CRD revisions from newer Operator versions won&#8217;t introduce breaking changes except for the eventual removal of fields that have been well deprecated. Thus newer CRDs are generally backward compatible.</p>
+</li>
+<li>
+<p>the CRDs installed last will be the ones in use. This applies to OLM installations as well where the Operator version, that is installed as the last, also installs and overrides the CRDs if they exists in the cluster already.</p>
+</li>
+<li>
+<p>older CRDs may not be forwards compatible with new fields used by newer operators. When using OLM it will check if your custom resources are compatible with the CRDs being installed, so the usage of new fields can prevent the simultaneous installation of older operator versions.</p>
+</li>
+<li>
+<p>fields introduced by newer CRDs will not be supported by older Operators. Older operators will fail to handle CRs that use such new fields with an error deserializing an unrecognized field.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>It is therefore recommended in a multiple Operator install scenario that you keep versions aligned as closely as possible to minimize the potential problems with different versions.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_upgrading_an_operator"><a class="anchor" href="#_upgrading_an_operator"></a>Upgrading an Operator</h3>
+<div class="paragraph">
+<p>While it generally expected that server custom image versions will match the operator version, this can be difficult to properly maintain during an operator upgrade.</p>
+</div>
+<div class="paragraph">
+<p>The recommended approach is to first update your CRs to custom images utilizing the new version. While the CR configuration will generally be compatible, be aware this may not hold for major version changes, and always consult the upgrade notes for all version changes.
+Once all the Keycloak instances managed by the operator are updated, then update the operator to the new target version.</p>
+</div>
+<div class="paragraph">
+<p>If due to a major version change or bug an old operator is not compatible with a new custom image version, then you will instead need to stop the old operator when updating the custom images, then bring up the new operator version once the Keycloak CRs are up-to-date.</p>
+</div>
+<div class="paragraph">
+<p>To stop an operator you uninstall it, or scale down the Deployment to 0 replicas:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">kubectl scale deployment/keycloak-operator <span class="nt">--replicas</span><span class="o">=</span>0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See <a href="https://www.keycloak.org/26.6/operator/rolling-updates">Avoiding downtime with rolling updates</a> to understand how the operator will treat server version changes.</p>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.6.4/docs/guides/operator/installation.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

@@ -1,0 +1,649 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Checking if rolling updates are possible - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Checking if rolling updates are possible">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Execute the update compatibility command to check if Keycloak supports a rolling update for a change in your deployment.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.6/server/update-compatibility">
+<meta property="og:url" content="https://www.keycloak.org/26.6/server/update-compatibility">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Server">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">Checking if rolling updates are possible</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.6</h4>
+                There will be no further community releases for the Keycloak 26.6 minor release branch.
+                These guides describe Keycloak 26.6.4.
+                For the latest community release, see the <a href="https://www.keycloak.org/server/update-compatibility">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.6</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/server/update-compatibility" >Nightly</option>
+            <option value="https://www.keycloak.org/server/update-compatibility" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/server/update-compatibility" >26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/server/update-compatibility" selected="selected">26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Checking if rolling updates are possible</h1>
+                    <span class="text-muted">Execute the update compatibility command to check if Keycloak supports a rolling update for a change in your deployment.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use the update compatibility command to determine if you can update your deployment with a rolling update strategy when enabling or disabling features or changing the Keycloak version, configurations or providers and themes.
+The outcome shows whether a rolling update is possible or if a recreate update is required.</p>
+</div>
+<div class="paragraph">
+<p>In its current version, it shows that a rolling update is possible when the Keycloak version is the same for the old and the new version.
+Future versions of Keycloak might change that behavior to use additional information from the configuration, the image and the version to determine if a rolling update is possible.</p>
+</div>
+<div class="paragraph">
+<p>This is fully scriptable, so your update procedure can use that information to perform a rolling or recreate strategy depending on the change performed.
+It is also GitOps friendly, as it allows storing the metadata of the previous configuration in a file. Use  this file in a CI/CD pipeline with the new configuration to determine if a rolling update is possible or if a recreate update is needed.</p>
+</div>
+<div class="paragraph">
+<p>If you are using the Keycloak Operator, continue to the <a href="https://www.keycloak.org/26.6/operator/rolling-updates">Avoiding downtime with rolling updates</a> guide and the <code>Auto</code> strategy for more information.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_supported_update_strategies"><a class="anchor" href="#_supported_update_strategies"></a>Supported update strategies</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Rolling Update</dt>
+<dd>
+<p>In this guide, a rolling update is an update that can be performed with zero downtime for your deployment, which consists of at least two nodes.
+Update your Keycloak one by one; shut down one of your old deployment nodes and start a new deployment node.
+Wait until the new node&#8217;s start-up probe returns success before proceeding to the next Keycloak node. See guide <a href="https://www.keycloak.org/26.6/observability/health">Tracking instance status with health checks</a> for details on how to enable and use the start-up probe.</p>
+</dd>
+<dt class="hdlist1">Recreate Update</dt>
+<dd>
+<p>A recreate update is not compatible with zero-downtime and requires downtime to be applied.
+Shut down all nodes of the cluster running the old version before starting the nodes with the new version.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_determining_the_update_strategy_for_an_updated_configuration"><a class="anchor" href="#_determining_the_update_strategy_for_an_updated_configuration"></a>Determining the update strategy for an updated configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To determine if a rolling update is possible:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Run the update compatibility command to generate the required metadata with the old configuration.</p>
+</li>
+<li>
+<p>Check the metadata with the new configuration to determine the update strategy.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you do not use <code>--optimized</code> keep in mind that an <code>update</code> command may implicitly create or update an optimized build for you - if you are running the command from the same machine as a server instance, this may impact the next start of your server.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Consumers of these commands should not rely on the internal behavior or the structure of the metadata file.
+Instead, they should rely only on the exit code of the <code>check</code> command to benefit from future enhancements on the internal logic to determine when a rolling update is possible.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_generating_the_metadata"><a class="anchor" href="#_generating_the_metadata"></a>Generating the Metadata</h3>
+<div class="paragraph">
+<p>To generate the metadata, execute the following command using the same Keycloak version and configuration options:</p>
+</div>
+<div class="listingblock">
+<div class="title">Generate and save the metadata from the current deployment.</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] update-compatibility metadata <span class="nt">--file</span><span class="o">=</span>/path/to/file.json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command accepts all options used by the <code>start</code> command.
+The command displays the metadata, in JSON format, in the console for debugging purposes.
+The <code>--file</code> parameter allows you to save the metadata to a file.
+Use this file with the subsequent <code>check</code> command.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Ensure that all configuration options, whether set via environment variables or CLI arguments, are included when running the above command.</p>
+</div>
+<div class="paragraph">
+<p>Omitting any configuration options results in incomplete metadata, and could lead to a wrong reported result in the next step.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_checking_the_metadata"><a class="anchor" href="#_checking_the_metadata"></a>Checking the Metadata</h3>
+<div class="paragraph">
+<p>This command checks the metadata generated by the previous command and compares it with the current configuration and Keycloak version.
+If you are updating to a new Keycloak version, this command must be executed with the new version.</p>
+</div>
+<div class="listingblock">
+<div class="title">Check the metadata from a previous deployment.</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] update-compatibility check <span class="nt">--file</span><span class="o">=</span>/path/to/file.json</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>Ensure that all configuration options, whether set via environment variables or CLI arguments, are included when running this command.</p>
+</li>
+<li>
+<p>Verify that the correct Keycloak version is used.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Failure to meet these requirements results in an incorrect outcome.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The command prints the result to the console.
+For example, if a rolling update is possible, it displays:</p>
+</div>
+<div class="listingblock">
+<div class="title">Rolling Update possible message</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="o">[</span>OK] Rolling Update is available.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If no rolling update is possible, the command provides details about the incompatibility:</p>
+</div>
+<div class="listingblock">
+<div class="title">Rolling Update not possible message</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="o">[</span>keycloak] Rolling Update is not available. <span class="s1">'keycloak.version'</span> is incompatible: 26.2.0 -&gt; 26.2.1 <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>In this example, the Keycloak version <code>26.2.0</code> is not compatible with version <code>26.2.1</code> and a rolling update is not possible.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><strong>Command exit code</strong></p>
+</div>
+<div class="paragraph">
+<p>Use the command&#8217;s exit code to determine the update type in your automation pipeline:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Exit Code</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Update is possible.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unexpected error occurred (such as the metadata file is missing or corrupted).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Invalid CLI option.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>3</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Update is not possible.
+The deployment must be shut down before applying the new configuration.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>4</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rolling Update is not possible.
+The feature <code>rolling-updates</code> is disabled.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_rolling_incompatible_changes"><a class="anchor" href="#_rolling_incompatible_changes"></a>Rolling incompatible changes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following configuration changes return a "Rolling Update is not possible" result code.</p>
+</div>
+<div class="sect2">
+<h3 id="_features"><a class="anchor" href="#_features"></a>Features</h3>
+<div class="sect3">
+<h4 id="_recreate_always"><a class="anchor" href="#_recreate_always"></a>Recreate always</h4>
+<div class="paragraph">
+<p>The enabling or disabling of the following features requires a recreate update:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name"><code>multi-site:v1</code></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">Multi-site support</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name"><code>persistent-user-sessions:v1</code></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">Persistent online user sessions across restarts and upgrades</span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_recreate_on_feature_version_change"><a class="anchor" href="#_recreate_on_feature_version_change"></a>Recreate on feature version change</h4>
+<div class="paragraph">
+<p>Changing the following features versions triggers a recreate update:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name"><code>login:v1</code></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">Legacy Login Theme</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name"><code>login:v2</code></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">New Login Theme</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-name"><code>passkeys-conditional-ui-authenticator:v1</code></span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="features-description">Passkeys conditional UI authenticator</span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_options"><a class="anchor" href="#_configuration_options"></a>Configuration options</h3>
+<div class="paragraph">
+<p>Changing the value of one of the following CLI options triggers a recreate update:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Cache</caption>
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>ispn</code> and <code>local</code> configurations are mutually exclusive, changing from one to another will lead to data loss.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-config-file</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Changing the configuration file could result in incompatible cache or transport configurations, resulting in clusters not forming as expected.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-stack</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Changing stack will result in the cluster not forming during rolling update and will lead to data loss.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-embedded-mtls-enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enabling/Disabling TLS will result in the cluster not forming during rolling update and will lead to data loss.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-remote-host</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Connecting to a new remote cache will cause previously cached data to be lost.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--cache-remote-port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Connecting to a new remote cache will cause previously cached data to be lost.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Keycloak does not verify changes to the content of the cache configuration file provided via <code>--cache-config-file</code>.
+If you change this file, you need to review and test your changes to ensure that nodes using the new configuration can form a cluster with the nodes running the old configuration.
+If a cluster cannot be formed, you should shut down Keycloak running the old configuration first before migrating to the new configuration.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Database</caption>
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration to a new database vendor should be applied to all cluster members to ensure data consistency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db-schema</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration to a new database schema should be applied to all cluster members to ensure data consistency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db-url-database</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration to a new database name should be applied to all cluster members to ensure data consistency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db-url-host</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All cluster members should be connecting to the same database to ensure data consistency.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db-url-port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All cluster members should be connecting to the same database to ensure data consistency.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="rolling-updates-for-patch-releases"><a class="anchor" href="#rolling-updates-for-patch-releases"></a>Rolling updates for patch releases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When upgrading to a newer patch version in the same <code>major.minor</code> release stream, Keycloak can perform zero-downtime rolling updates.</p>
+</div>
+<div class="paragraph">
+<p>To check compatibility for patch version upgrades, use the standard check command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] update-compatibility check <span class="nt">--file</span><span class="o">=</span>/path/to/file.json</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Recommended Configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Enable sticky sessions in your loadbalancer to avoid users bouncing between different versions of Keycloak as this could result in users needing to refresh their Account Console and Admin UI multiple times while the upgrade is progressing.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Supported functionality during rolling updates:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Users can log in and log out for OpenID Connect clients.</p>
+</li>
+<li>
+<p>OpenID Connect clients can perform all operations, for example, refreshing tokens and querying the user info endpoint.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Known limitations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If there have been changes to the Account Console or Admin UI in the patch release, and the user opened the Account Console or Admin UI before or during the upgrade, the user might see an error message and be asked to reload the application while navigating in browser during or after the upgrade.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_reading"><a class="anchor" href="#_further_reading"></a>Further reading</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak Operator uses the functionality described above to determine if a rolling update is possible. See the <a href="https://www.keycloak.org/26.6/operator/rolling-updates">Avoiding downtime with rolling updates</a> guide and the <code>Auto</code> strategy for more information.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>features</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables a set of one or more features.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--features</code><br>
+<strong>Env:</strong> <code>KC_FEATURES</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>account-api[:v1]</code>, <code>account[:v3]</code>, <code>admin-api[:v1]</code>, <code>admin-fine-grained-authz[:v1,v2]</code>, <code>admin[:v2]</code>, <code>authorization[:v1]</code>, <code>ciba[:v1]</code>, <code>cimd[:v1]</code>, <code>client-admin-api[:v2]</code>, <code>client-auth-federated[:v1]</code>, <code>client-policies[:v1]</code>, <code>client-secret-rotation[:v1]</code>, <code>client-types[:v1]</code>, <code>clusterless[:v1]</code>, <code>db-tidb[:v1]</code>, <code>declarative-ui[:v1]</code>, <code>device-flow[:v1]</code>, <code>docker[:v1]</code>, <code>dpop[:v1]</code>, <code>dynamic-scopes[:v1]</code>, <code>fips[:v1]</code>, <code>hostname[:v2]</code>, <code>http-optimized-serializers[:v1]</code>, <code>identity-brokering-api[:v1,v2]</code>, <code>impersonation[:v1]</code>, <code>instagram-broker[:v1]</code>, <code>ipa-tuura-federation[:v1]</code>, <code>jwt-authorization-grant[:v1]</code>, <code>kerberos[:v1]</code>, <code>kubernetes-service-accounts[:v1]</code>, <code>log-mdc[:v1]</code>, <code>login[:v2,v1]</code>, <code>logout-all-sessions[:v1]</code>, <code>multi-site[:v1]</code>, <code>oid4vc-vci-preauth-code[:v1]</code>, <code>oid4vc-vci[:v1]</code>, <code>openapi[:v1]</code>, <code>opentelemetry-logs[:v1]</code>, <code>opentelemetry-metrics[:v1]</code>, <code>opentelemetry[:v1]</code>, <code>organization[:v1]</code>, <code>par[:v1]</code>, <code>passkeys-conditional-ui-authenticator[:v1]</code>, <code>passkeys[:v1]</code>, <code>persistent-user-sessions[:v1]</code>, <code>preview</code>, <code>quick-theme[:v1]</code>, <code>recovery-codes[:v1]</code>, <code>resource-indicators[:v1]</code>, <code>rolling-updates[:v1,v2]</code>, <code>scim-api[:v1]</code>, <code>scripts[:v1]</code>, <code>spiffe[:v1]</code>, <code>step-up-authentication-saml[:v1]</code>, <code>step-up-authentication[:v1]</code>, <code>token-exchange-external-internal[:v2]</code>, <code>token-exchange-standard[:v2]</code>, <code>token-exchange[:v1]</code>, <code>transient-users[:v1]</code>, <code>update-email[:v1]</code>, <code>user-event-metrics[:v1]</code>, <code>web-authn[:v1]</code>, <code>workflows[:v1]</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>features-disabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Disables a set of one or more features.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--features-disabled</code><br>
+<strong>Env:</strong> <code>KC_FEATURES_DISABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>account</code>, <code>account-api</code>, <code>admin</code>, <code>admin-api</code>, <code>admin-fine-grained-authz</code>, <code>authorization</code>, <code>ciba</code>, <code>cimd</code>, <code>client-admin-api</code>, <code>client-auth-federated</code>, <code>client-policies</code>, <code>client-secret-rotation</code>, <code>client-types</code>, <code>clusterless</code>, <code>db-tidb</code>, <code>declarative-ui</code>, <code>device-flow</code>, <code>docker</code>, <code>dpop</code>, <code>dynamic-scopes</code>, <code>fips</code>, <code>http-optimized-serializers</code>, <code>identity-brokering-api</code>, <code>impersonation</code>, <code>instagram-broker</code>, <code>ipa-tuura-federation</code>, <code>jwt-authorization-grant</code>, <code>kerberos</code>, <code>kubernetes-service-accounts</code>, <code>log-mdc</code>, <code>login</code>, <code>logout-all-sessions</code>, <code>multi-site</code>, <code>oid4vc-vci</code>, <code>oid4vc-vci-preauth-code</code>, <code>openapi</code>, <code>opentelemetry</code>, <code>opentelemetry-logs</code>, <code>opentelemetry-metrics</code>, <code>organization</code>, <code>par</code>, <code>passkeys</code>, <code>passkeys-conditional-ui-authenticator</code>, <code>persistent-user-sessions</code>, <code>preview</code>, <code>quick-theme</code>, <code>recovery-codes</code>, <code>resource-indicators</code>, <code>scim-api</code>, <code>scripts</code>, <code>spiffe</code>, <code>step-up-authentication</code>, <code>step-up-authentication-saml</code>, <code>token-exchange</code>, <code>token-exchange-external-internal</code>, <code>token-exchange-standard</code>, <code>transient-users</code>, <code>update-email</code>, <code>user-event-metrics</code>, <code>web-authn</code>, <code>workflows</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.6.4/docs/guides/server/update-compatibility.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

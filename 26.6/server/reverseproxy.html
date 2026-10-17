@@ -1,0 +1,1111 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Configuring a reverse proxy - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Configuring a reverse proxy">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Configure Keycloak with a reverse proxy, API gateway, or load balancer.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.6/server/reverseproxy">
+<meta property="og:url" content="https://www.keycloak.org/26.6/server/reverseproxy">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Server">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">Configuring a reverse proxy</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.6</h4>
+                There will be no further community releases for the Keycloak 26.6 minor release branch.
+                These guides describe Keycloak 26.6.4.
+                For the latest community release, see the <a href="https://www.keycloak.org/server/reverseproxy">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.6</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/server/reverseproxy" >Nightly</option>
+            <option value="https://www.keycloak.org/server/reverseproxy" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/server/reverseproxy" >26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/server/reverseproxy" selected="selected">26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Configuring a reverse proxy</h1>
+                    <span class="text-muted">Configure Keycloak with a reverse proxy, API gateway, or load balancer.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Distributed environments frequently require the use of a reverse proxy. Keycloak offers several options to securely integrate with such environments.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_port_to_be_proxied"><a class="anchor" href="#_port_to_be_proxied"></a>Port to be proxied</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak runs on the following ports by default:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>8443</code> (<code>8080</code> when you enable HTTP explicitly by <code>--http-enabled=true</code>)</p>
+</li>
+<li>
+<p><code>9000</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The port <code>8443</code> (or <code>8080</code> if HTTP is enabled) is used for the Admin UI, Account Console, SAML and OIDC endpoints and the Admin REST API as described in the <a href="https://www.keycloak.org/26.6/server/hostname">Configuring the hostname (v2)</a> guide.</p>
+</div>
+<div class="paragraph">
+<p>The port <code>9000</code> is used for management, which includes endpoints for health checks and metrics as described in the  <a href="https://www.keycloak.org/26.6/server/management-interface">Configuring the Management Interface</a> guide.</p>
+</div>
+<div class="paragraph">
+<p>You only need to proxy port <code>8443</code> (or <code>8080</code>) even when you use different host names for frontend/backend and administration as described at <a href="https://www.keycloak.org/26.6/server/configuration-production">Configuring Keycloak for production</a>. You should not proxy port <code>9000</code> as health checks and metrics use those ports directly, and you do not want to expose this information to external callers.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configure_the_reverse_proxy_headers"><a class="anchor" href="#_configure_the_reverse_proxy_headers"></a>Configure the reverse proxy headers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak will parse the reverse proxy headers based on the <code>proxy-headers</code> option which accepts several values:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>By default if the option is not specified, no reverse proxy headers are parsed. This should be used when no proxy is in use or with https passthrough.</p>
+</li>
+<li>
+<p><code>forwarded</code> enables parsing of the <code>Forwarded</code> header as per <a href="https://www.rfc-editor.org/rfc/rfc7239.html">RFC 7239</a>.</p>
+</li>
+<li>
+<p><code>xforwarded</code> enables parsing of non-standard <code>X-Forwarded-*</code> headers, such as <code>X-Forwarded-For</code>, <code>X-Forwarded-Proto</code>, <code>X-Forwarded-Host</code>, <code>X-Forwarded-Port</code>, and <code>X-Forwarded-Prefix</code>.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you are using a reverse proxy for anything other than https passthrough and do not set the <code>proxy-headers</code> option, then by default you will see 403 Forbidden responses to requests via the proxy that perform origin checking.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--proxy-headers</span> forwarded</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+If either <code>forwarded</code> or <code>xforwarded</code> is selected, make sure your reverse proxy properly sets and overwrites the <code>Forwarded</code> or <code>X-Forwarded-*</code> headers respectively. To set these headers, consult the documentation for your reverse proxy. Do not use <code>forwarded</code> or <code>xforwarded</code> with https passthrough. Misconfiguration will leave Keycloak exposed to security vulnerabilities.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Take extra precautions to ensure that the client address is properly set by your reverse proxy via the <code>Forwarded</code> or <code>X-Forwarded-For</code> headers.
+If this header is incorrectly configured, rogue clients can set this header and trick Keycloak into thinking the client is connected from a different IP address than the actual address. This precaution can be more critical if you do any deny or allow listing of IP addresses.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When using the <code>xforwarded</code> setting, the <code>X-Forwarded-Port</code> takes precedence over any port included in the <code>X-Forwarded-Host</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If the TLS connection is terminated at the reverse proxy (edge termination), enabling HTTP through the <code>http-enabled</code> setting is required.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_different_context_path_on_reverse_proxy"><a class="anchor" href="#_different_context_path_on_reverse_proxy"></a>Different context path on reverse proxy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default Keycloak is exposed through the root context path (<code>/</code>). If the proxy is using a different context path than Keycloak, one of the following must be done:
+- Use a simple hostname for the <code>hostname</code> option, <code>xforwarded</code> for the <code>proxy-headers</code> option, and have the proxy set the <code>X-Forwarded-Prefix</code> header.
+- Use a full URL for the <code>hostname</code> option including the proxy context path, for example using <code>--hostname=https://my.keycloak.org/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>.
+- Change the context path of Keycloak itself to match the context path for the reverse proxy using the <code>http-relative-path</code> option.</p>
+</div>
+<div class="paragraph">
+<p>For more details on exposing Keycloak on different hostname or context path incl. Administration REST API and Console, see <a href="https://www.keycloak.org/26.6/server/hostname">Configuring the hostname (v2)</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_sticky_sessions"><a class="anchor" href="#_enable_sticky_sessions"></a>Enable sticky sessions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Typical cluster deployment consists of the load balancer (reverse proxy) and 2 or more Keycloak servers on private network.
+For performance purposes, it may be useful if load balancer forwards all requests related to particular browser session to the same Keycloak backend node.</p>
+</div>
+<div class="paragraph">
+<p>The reason is, that Keycloak is using Infinispan distributed cache under the covers for save data related to current authentication session and user session.
+The Infinispan distributed caches are configured with limited number of owners. That means that session related data are stored only in some cluster nodes and the other nodes need to lookup the data remotely if they want to access it.</p>
+</div>
+<div class="paragraph">
+<p>For example if authentication session with ID 123 is saved in the Infinispan cache on node1, and then node2 needs to lookup this session, it needs to send the request to node1 over the network to return the particular session entity.</p>
+</div>
+<div class="paragraph">
+<p>It is beneficial if particular session entity is always available locally, which can be done with the help of sticky sessions. The workflow in the cluster environment with the public frontend load balancer and two backend Keycloak nodes can be like this:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>User sends initial request to see the Keycloak login screen</p>
+</li>
+<li>
+<p>This request is served by the frontend load balancer, which forwards it to some random node (eg. node1). Strictly said, the node doesn&#8217;t need to be random, but can be chosen according to some other criteria (client IP address etc). It all depends on the implementation and configuration of underlying load balancer (reverse proxy).</p>
+</li>
+<li>
+<p>Keycloak creates authentication session with random ID (eg. 123) and saves it to the Infinispan cache.</p>
+</li>
+<li>
+<p>Infinispan distributed cache assigns the primary owner of the session based on the hash of session ID. See Infinispan documentation for more details around this. Let&#8217;s assume that Infinispan assigned node2 to be the owner of this session.</p>
+</li>
+<li>
+<p>Keycloak creates the cookie AUTH_SESSION_ID with the format like &lt;session-id&gt;.&lt;owner-node-id&gt; . In our example case, it will be 123.node2 .</p>
+</li>
+<li>
+<p>Response is returned to the user with the Keycloak login screen and the AUTH_SESSION_ID cookie in the browser</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>From this point, it is beneficial if load balancer forwards all the next requests to the node2 as this is the node, who is owner of the authentication session with ID 123 and hence Infinispan can lookup this session locally. After authentication is finished, the authentication session is converted to user session, which will be also saved on node2 because it has same ID 123 .</p>
+</div>
+<div class="paragraph">
+<p>The sticky session is not mandatory for the cluster setup, however it is good for performance for the reasons mentioned above. You need to configure your loadbalancer to stick over the AUTH_SESSION_ID cookie. The appropriate procedure to make this change depends on your loadbalancer.</p>
+</div>
+<div class="paragraph">
+<p>If your proxy supports session affinity without processing cookies from backend nodes, you should set the <code>spi-sticky-session-encoder--infinispan--should-attach-route</code> option
+to <code>false</code> in order to avoid attaching the node to cookies and just rely on the reverse proxy capabilities.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--spi-sticky-session-encoder--infinispan--should-attach-route</span><span class="o">=</span><span class="nb">false</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, the <code>spi-sticky-session-encoder--infinispan--should-attach-route</code> option value is <code>true</code> so that the node name is attached to
+cookies to indicate to the reverse proxy the node that subsequent requests should be sent to.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exposed_path_recommendations"><a class="anchor" href="#_exposed_path_recommendations"></a>Exposed path recommendations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When using a reverse proxy, Keycloak only requires certain paths to be exposed.
+The following table shows the recommended paths to expose.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Keycloak Path</th>
+<th class="tableblock halign-left valign-top">Reverse Proxy Path</th>
+<th class="tableblock halign-left valign-top">Exposed</th>
+<th class="tableblock halign-left valign-top">Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">When exposing all paths, admin paths are exposed unnecessarily.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/admin/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exposed admin paths lead to an unnecessary attack vector.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/realms/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/realms/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">This path is needed to work correctly, for example, for OIDC endpoints.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/resources/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/resources/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">This path is needed to serve assets correctly. It may be served from a CDN instead of the Keycloak path.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/.well-known/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/.well-known/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">This path is needed to resolve Authorization Server Metadata and other information via RFC 8414.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/metrics</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exposed metrics lead to an unnecessary attack vector.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/health</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exposed health checks lead to an unnecessary attack vector.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>We assume you run Keycloak on the root path <code>/</code> on your reverse proxy/gateway&#8217;s public API.
+If not, prefix the path with your desired one.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you configured a <code>http-relative-path</code> on the server, proceed as follows to use discovery with RFC 8414: Configure a reverse proxy to map the <code>/.well-known/</code> path without the prefix to the path with the prefix on the server.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trusted_proxies"><a class="anchor" href="#_trusted_proxies"></a>Trusted Proxies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To ensure that proxy headers are used only from proxies you trust, set the <code>proxy-trusted-addresses</code> option to a comma separated list of IP addresses (IPv4 or IPv6) or Classless Inter-Domain Routing (CIDR) notations.</p>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--proxy-headers</span> forwarded <span class="nt">--proxy-trusted-addresses</span><span class="o">=</span>192.168.0.32,127.0.0.0/8</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_proxy_protocol"><a class="anchor" href="#_proxy_protocol"></a>PROXY Protocol</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>proxy-protocol-enabled</code> option controls whether the server should use the HA PROXY protocol when serving requests from behind a proxy. When set to true, the remote address returned will be the one from the actual connecting client. The value cannot be <code>true</code> when using the <code>proxy-headers</code> option.</p>
+</div>
+<div class="paragraph">
+<p>This is useful when running behind a compatible https passthrough proxy because the request headers cannot be manipulated.</p>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--proxy-protocol-enabled</span> <span class="nb">true</span></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enabling_client_certificate_lookup"><a class="anchor" href="#_enabling_client_certificate_lookup"></a>Enabling client certificate lookup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When the proxy is configured as a TLS termination proxy the client certificate information can be forwarded to the server through specific HTTP request headers and then used to authenticate
+clients. You are able to configure how the server is going to retrieve client certificate information depending on the proxy you are using.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Client certificate lookup via a proxy header for X.509 authentication is considered security-sensitive. If misconfigured, a forged client certificate header can be used for authentication.
+<strong>Extra precautions need to be taken to ensure that the client certificate information can be trusted when passed via a proxy header.</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Double check your use case needs reencrypt or edge TLS termination which implies using a proxy header for client certificate lookup. TLS passthrough is recommended as a more secure option
+when X.509 authentication is desired as it does not require passing the certificate via a proxy header. Client certificate lookup from a proxy header is applicable only to reencrypt
+and edge TLS termination.</p>
+</li>
+<li>
+<p>If passthrough is not an option, implement the following security measures:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure your network so that Keycloak is isolated and can accept connections only from the proxy.</p>
+</li>
+<li>
+<p>Make sure that the proxy overwrites the header that is configured in <code>spi-x509cert-lookup--&lt;provider&gt;--ssl-client-cert</code> option.</p>
+</li>
+<li>
+<p>Pay extra attention to the <code>spi-x509cert-lookup--&lt;provider&gt;--trust-proxy-verification</code> setting. Make sure you enable it only if you can trust your proxy to verify the client certificate.
+Setting <code>spi-x509cert-lookup--&lt;provider&gt;--trust-proxy-verification=true</code> without the proxy verifying the client certificate chain will expose Keycloak to security vulnerability
+when a forged client certificate can be used for authentication.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The server supports some of the most commons TLS termination proxies such as:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Provider</th>
+<th class="tableblock halign-left valign-top">Proxies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">apache</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Apache HTTP Server</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">haproxy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HAProxy</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nginx</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NGINX</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">traefik</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Traefik (PassTLSClientCert middleware with <code>pem: true</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rfc9440</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Proxies that are compliant to <a href="https://datatracker.ietf.org/doc/rfc9440/">RFC 9440</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">envoy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Envoy</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>To configure how client certificates are retrieved from the requests you need to:</p>
+</div>
+<div class="listingblock">
+<div class="title">Enable the corresponding proxy provider</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] build <span class="nt">--spi-x509cert-lookup--provider</span><span class="o">=</span>&lt;provider&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Configure the HTTP headers</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--spi-x509cert-lookup--</span>&lt;provider&gt;--ssl-client-cert<span class="o">=</span>SSL_CLIENT_CERT <span class="nt">--spi-x509cert-lookup--</span>&lt;provider&gt;--ssl-cert-chain-prefix<span class="o">=</span>CERT_CHAIN <span class="nt">--spi-x509cert-lookup--</span>&lt;provider&gt;-certificate-chain-length<span class="o">=</span>10</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When configuring the HTTP headers, you need to make sure the values you are using correspond to the name of the headers
+forwarded by the proxy with the client certificate information.</p>
+</div>
+<div class="paragraph">
+<p>Common options for configuring providers are:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Supporting Providers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-client-cert</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the header holding the client certificate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">all but <code>traefik</code> and <code>envoy</code>, optional for <code>rfc9440</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain-prefix</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The prefix of the headers holding additional certificates in the chain and used to retrieve individual
+certificates accordingly to the length of the chain. For instance, a value <code>CERT_CHAIN</code> will tell the server
+to load additional certificates from headers <code>CERT_CHAIN_0</code> to <code>CERT_CHAIN_9</code> if <code>certificate-chain-length</code> is set to <code>10</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>apache</code>, <code>haproxy</code>, <code>nginx</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">certificate-chain-length</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The maximum length of the certificate chain beyond the client certificate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">all but <code>envoy</code> (defaults to 1)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_configuring_the_nginx_provider"><a class="anchor" href="#_configuring_the_nginx_provider"></a>Configuring the NGINX provider</h3>
+<div class="paragraph">
+<p>The NGINX SSL/TLS module does not expose the client certificate chain. Keycloak&#8217;s NGINX certificate lookup provider rebuilds it by using the Keycloak truststore.</p>
+</div>
+<div class="paragraph">
+<p>If you are using this provider, see <a href="https://www.keycloak.org/26.6/server/keycloak-truststore">Configuring trusted certificates</a> for how
+to configure a Keycloak Truststore. The options and defaults specific to <code>nginx</code> are as follows:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">trust-proxy-verification</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable trusting NGINX proxy certificate verification, instead of forwarding the certificate to Keycloak and verifying it in Keycloak.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cert-is-url-encoded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the forwarded certificate is url-encoded or not. In NGINX, this corresponds to the <code>$ssl_client_cert</code> and <code>$ssl_client_escaped_cert</code> variables.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_rfc9440_provider"><a class="anchor" href="#_configuring_the_rfc9440_provider"></a>Configuring the rfc9440 provider</h3>
+<div class="paragraph">
+<p>If you stick to the header names mentioned in RFC 9440, you do not need to configure any additional options after selecting the <code>rfc9440</code> provider.
+The options and defaults specific to <code>rfc9440</code> are as follows:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-client-cert</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the header holding the client certificate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client-Cert</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssl-cert-chain</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the header holding additional certificates in the chain. This is not a prefix but the full name of the header
+  because RFC 9440 mandates that the chain certificates are contained in one header.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client-Cert-Chain</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>If your certificate chain is longer than the given default, you must define the option with an appropriate number.
+Otherwise, the provider will discard the request.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_traefik_provider"><a class="anchor" href="#_configuring_the_traefik_provider"></a>Configuring the Traefik provider</h3>
+<div class="paragraph">
+<p>The Traefik provider handles certificates forwarded by Traefik&#8217;s <a href="https://doc.traefik.io/traefik/middlewares/http/passtlsclientcert/">PassTLSClientCert middleware</a> with <code>pem: true</code>.
+Traefik sends the client certificate and any intermediate CA certificates as PEM blocks in a single <code>X-Forwarded-Tls-Client-Cert</code> header, separated by commas.
+The <code>traefik</code> provider parses all certificates from this header.</p>
+</div>
+<div class="paragraph">
+<p>Other than possibly changing the <code>certificate-chain-length</code>, you do not need to configure additional options for the <code>traefik</code> provider.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_envoy_provider"><a class="anchor" href="#_configuring_the_envoy_provider"></a>Configuring the Envoy provider</h3>
+<div class="paragraph">
+<p>The Envoy provider will automatically retrieve the client certificate and optional certificate chain from the <code>x-forwarded-client-cert</code> header.
+You do not need to configure additional options for the <code>envoy</code> provider.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="graceful-http-shutdown"><a class="anchor" href="#graceful-http-shutdown"></a>Graceful HTTP shutdown</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When running Keycloak behind a reverse proxy or load balancer, graceful shutdown ensures that in-flight requests complete successfully during server termination, preventing connection errors for clients.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak enables graceful HTTP shutdown by default with configurable timeouts.</p>
+</div>
+<div class="sect2">
+<h3 id="_understanding_shutdown_phases"><a class="anchor" href="#_understanding_shutdown_phases"></a>Understanding shutdown phases</h3>
+<div class="paragraph">
+<p>The shutdown process consists of two phases:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>Pre-shutdown delay</strong></dt>
+<dd>
+<p>During this phase, Keycloak signals to load balancers and proxies that it is preparing to shut down.
+The server&#8217;s readiness endpoint returns a "not ready" status, allowing the load balancer to stop routing new requests to this instance.
+Existing TLS and HTTP keepalive connections are allowed to drain naturally.
+The server continues to process existing requests.</p>
+</dd>
+<dt class="hdlist1"><strong>Shutdown timeout</strong></dt>
+<dd>
+<p>After the pre-shutdown delay, Keycloak stops accepting new requests and waits for in-flight HTTP requests to complete.
+If requests are still running after the timeout expires, the server shuts down regardless.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_default_behavior"><a class="anchor" href="#_default_behavior"></a>Default behavior</h3>
+<div class="paragraph">
+<p>By default, Keycloak is configured with a 1-second pre-shutdown delay and a 1-second shutdown timeout.
+These defaults work well for most standard deployments where:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The load balancer reconfigures quickly (within 1 second)</p>
+</li>
+<li>
+<p>Most requests complete within 1 second</p>
+</li>
+<li>
+<p>The reverse proxy uses edge termination or re-encryption (not TLS passthrough)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_shutdown_timeouts"><a class="anchor" href="#_configuring_shutdown_timeouts"></a>Configuring shutdown timeouts</h3>
+<div class="paragraph">
+<p>Advanced users can adjust the shutdown timeouts using CLI options based on their deployment characteristics.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.sh start <span class="nt">--shutdown-delay</span><span class="o">=</span>&lt;duration&gt; <span class="nt">--shutdown-timeout</span><span class="o">=</span>&lt;duration&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Available options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--shutdown-delay</code></dt>
+<dd>
+<p>Length of the pre-shutdown phase during which the server prepares for shutdown.
+This period allows for load balancer reconfiguration and draining of TLS/HTTP keepalive connections.
+Default: <code>1s</code></p>
+</dd>
+<dt class="hdlist1"><code>--shutdown-timeout</code></dt>
+<dd>
+<p>The shutdown period waiting for currently running HTTP requests to finish.
+Default: <code>1s</code></p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Both values accept duration formats: <code>1s</code> (seconds), <code>500ms</code> (milliseconds), <code>2m</code> (minutes), etc.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_adjust_shutdown_timeouts"><a class="anchor" href="#_when_to_adjust_shutdown_timeouts"></a>When to adjust shutdown timeouts</h3>
+<div class="paragraph">
+<p>Consider adjusting these values based on your deployment configuration with the following example Scenarios:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Scenario</th>
+<th class="tableblock halign-right valign-top">Delay</th>
+<th class="tableblock halign-right valign-top">Timeout</th>
+<th class="tableblock halign-left valign-top">Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Load balancer polls readiness probe</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">16s</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Assumptions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>5s poll interval and a load balancer reconfiguring after two successive failed probes.</p>
+</li>
+<li>
+<p>1s for reconfiguring the proxy.</p>
+</li>
+<li>
+<p>Proxy using TLS re-encrypt or edge termination.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Calculation:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Allow three poll cycles for the load balancer to detect shutdown and the extra time for the load balancer to perform the reconfiguration:</p>
+<div class="paragraph">
+<p><code>shutdown delay = 3 * 5s + 1s</code></p>
+</div>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TLS passthrough configuration</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">10‑30s</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Longer delay allows keepalive connections to drain naturally and receive connection close signals.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Long-running admin API requests</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">10‑30s</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Admin operations may take longer than typical user requests.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Test environments / quick restarts</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">0s</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">500ms</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Minimize shutdown time when graceful draining is not needed.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment orchestration reconfigures the proxy and drains connections before Pod termination</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">0s</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>No pre-shutdown delay needed if proxy is already reconfigured</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Combined: TLS passthrough plus polled readiness</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">26‑56s</p></td>
+<td class="tableblock halign-right valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Delays add up: time for load balancer detection + connection draining</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="_example_configurations"><a class="anchor" href="#_example_configurations"></a>Example configurations</h4>
+<div class="paragraph">
+<p>For production with TLS passthrough:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--shutdown-delay</span><span class="o">=</span>30s <span class="nt">--shutdown-timeout</span><span class="o">=</span>1s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For load balancers that poll readiness:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--shutdown-delay</span><span class="o">=</span>16s <span class="nt">--shutdown-timeout</span><span class="o">=</span>1s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For test environments:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--shutdown-delay</span><span class="o">=</span>0s <span class="nt">--shutdown-timeout</span><span class="o">=</span>500ms</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The shutdown delay affects the minimum time required for a complete server restart.
+In Kubernetes environments, ensure your <code>terminationGracePeriodSeconds</code> is longer than the sum of <code>shutdown-delay</code> and <code>shutdown-timeout</code> to prevent forced termination.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>hostname</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Address at which is the server exposed.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Can be a full URL, or just a hostname. When only hostname is provided, scheme, port and context path are resolved from the request.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--hostname</code><br>
+<strong>Env:</strong> <code>KC_HOSTNAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when hostname:v2 feature is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>hostname-admin</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Address for accessing the administration console.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Use this option if you are exposing the administration console using a reverse proxy on a different address than specified in the <code>hostname</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--hostname-admin</code><br>
+<strong>Env:</strong> <code>KC_HOSTNAME_ADMIN</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when hostname:v2 feature is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-relative-path</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Set the path relative to <code>/</code> for serving resources.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The path must start with a <code>/</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-relative-path</code><br>
+<strong>Env:</strong> <code>KC_HTTP_RELATIVE_PATH</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>shutdown-delay</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Length of the pre-shutdown phase during which the server prepares for shutdown.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d]. This period allows for loadbalancer reconfiguration and draining of TLS/HTTP keepalive connections.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--shutdown-delay</code><br>
+<strong>Env:</strong> <code>KC_SHUTDOWN_DELAY</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1s</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>shutdown-timeout</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The shutdown period waiting for currently running HTTP requests to finish.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--shutdown-timeout</code><br>
+<strong>Env:</strong> <code>KC_SHUTDOWN_TIMEOUT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1s</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>proxy-headers</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The proxy headers that should be accepted by the server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Misconfiguration might leave the server exposed to security vulnerabilities. Takes precedence over the deprecated proxy option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--proxy-headers</code><br>
+<strong>Env:</strong> <code>KC_PROXY_HEADERS</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>forwarded</code>, <code>xforwarded</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>proxy-protocol-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Whether the server should use the HA PROXY protocol when serving requests from behind a proxy.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">When set to true, the remote address returned will be the one from the actual connecting client. Cannot be enabled when the <code>proxy-headers</code> is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--proxy-protocol-enabled</code><br>
+<strong>Env:</strong> <code>KC_PROXY_PROTOCOL_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>proxy-trusted-addresses</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">A comma separated list of trusted proxy addresses.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If set, then proxy headers from other addresses will be ignored. By default all addresses are trusted. A trusted proxy address is specified as an IP address (IPv4 or IPv6) or Classless Inter-Domain Routing (CIDR) notation. Available only when proxy-headers is set.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--proxy-trusted-addresses</code><br>
+<strong>Env:</strong> <code>KC_PROXY_TRUSTED_ADDRESSES</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>List</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.6.4/docs/guides/server/reverseproxy.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

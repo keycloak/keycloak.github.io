@@ -1,0 +1,623 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Configuring TLS - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Configuring TLS">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Configure Keycloak&#39;s https certificates for ingoing and outgoing requests.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.6/server/enabletls">
+<meta property="og:url" content="https://www.keycloak.org/26.6/server/enabletls">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Server">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">Configuring TLS</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.6</h4>
+                There will be no further community releases for the Keycloak 26.6 minor release branch.
+                These guides describe Keycloak 26.6.4.
+                For the latest community release, see the <a href="https://www.keycloak.org/server/enabletls">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.6</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/server/enabletls" >Nightly</option>
+            <option value="https://www.keycloak.org/server/enabletls" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/server/enabletls" >26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/server/enabletls" selected="selected">26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Configuring TLS</h1>
+                    <span class="text-muted">Configure Keycloak&#39;s https certificates for ingoing and outgoing requests.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Transport Layer Security (short: TLS) is crucial to exchange data over a secured channel.
+For production environments, you should never expose Keycloak endpoints through HTTP, as sensitive data is at the core of what Keycloak exchanges with other applications.
+In this guide, you will learn how to configure Keycloak to use HTTPS/TLS.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak can be configured to load the required certificate infrastructure using files in PEM format or from a Java Keystore.
+When both alternatives are configured, the PEM files takes precedence over the Java Keystores.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_providing_certificates_in_pem_format"><a class="anchor" href="#_providing_certificates_in_pem_format"></a>Providing certificates in PEM format</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When you use a pair of matching certificate and private key files in PEM format, you configure Keycloak to use them by running the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--https-certificate-file</span><span class="o">=</span>/path/to/certfile.pem <span class="nt">--https-certificate-key-file</span><span class="o">=</span>/path/to/keyfile.pem</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keycloak creates a keystore out of these files in memory and uses this keystore afterwards.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_providing_a_keystore"><a class="anchor" href="#_providing_a_keystore"></a>Providing a Keystore</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When no keystore file is explicitly configured, but <code>http-enabled</code> is set to false, Keycloak looks for a <code>conf/server.keystore</code> file.</p>
+</div>
+<div class="paragraph">
+<p>As an alternative, you can use an existing keystore by running the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--https-key-store-file</span><span class="o">=</span>/path/to/existing-keystore-file</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Recognized file extensions for a keystore:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>.p12</code>, <code>.pkcs12</code>, and <code>.pfx</code> for a pkcs12 file</p>
+</li>
+<li>
+<p><code>.jks</code>, and <code>.keystore</code> for a jks file</p>
+</li>
+<li>
+<p><code>.key</code>, <code>.crt</code>, and <code>.pem</code> for a pem file</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If your keystore does not have an extension matching its file type, you will also need to set the <code>https-key-store-type</code> option.</p>
+</div>
+<div class="sect2">
+<h3 id="_setting_the_keystore_password"><a class="anchor" href="#_setting_the_keystore_password"></a>Setting the Keystore password</h3>
+<div class="paragraph">
+<p>You can set a secure password for your keystore using the <code>https-key-store-password</code> option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--https-key-store-password</span><span class="o">=</span>&lt;value&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If no password is set, the default password <code>password</code> is used.</p>
+</div>
+<div class="sect3">
+<h4 id="_securing_credentials"><a class="anchor" href="#_securing_credentials"></a>Securing credentials</h4>
+<div class="paragraph">
+<p>Avoid setting a password in plaintext by using the CLI or adding it to <code>conf/keycloak.conf</code> file.
+Instead use good practices such as using a vault / mounted secret. For more detail, see <a href="https://www.keycloak.org/26.6/server/vault">Using a vault</a> and <a href="https://www.keycloak.org/26.6/server/configuration-production">Configuring Keycloak for production</a>.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_tls_protocols"><a class="anchor" href="#_configuring_tls_protocols"></a>Configuring TLS protocols</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, Keycloak does not enable deprecated TLS protocols.
+If your client supports only deprecated protocols, consider upgrading the client.
+However, as a temporary work-around, you can enable deprecated protocols by running the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--https-protocols</span><span class="o">=</span>&lt;protocol&gt;[,&lt;protocol&gt;]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For example to only enable TLSv1.3, use a command such as the following: <code>kc.sh start --https-protocols=TLSv1.3</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_switching_the_https_port"><a class="anchor" href="#_switching_the_https_port"></a>Switching the HTTPS port</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak listens for HTTPS traffic on port <code>8443</code>. To change this port, use the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--https-port</span><span class="o">=</span>&lt;port&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_certificate_and_key_reloading"><a class="anchor" href="#_certificate_and_key_reloading"></a>Certificate and Key Reloading</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default Keycloak will reload the certificates, keys, and keystores specified in <code>https-*</code> options every hour. For environments where your server keys may need frequent rotation, this allows that to happen without a server restart. You may override the default via the <code>https-certificates-reload-period</code> option. Interval on which to reload key store, trust store, and certificate files referenced by <code>https-*</code> options.
+The value may be a java.time.Duration value, an integer number of seconds, or an integer followed by one of the time units [<code>ms</code>, <code>h</code>, <code>m</code>, <code>s</code>, <code>d</code>]. Must be greater than 30 seconds. Use <code>-1</code> to disable.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables the HTTP listener.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Enabled by default in development mode. Typically not enabled in production unless the server is fronted by a TLS termination proxy.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-enabled</code><br>
+<strong>Env:</strong> <code>KC_HTTP_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-certificate-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a server certificate or certificate chain in PEM format.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-certificate-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CERTIFICATE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-certificate-key-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a private key in PEM format.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-certificate-key-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CERTIFICATE_KEY_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-certificates-reload-period</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Interval on which to reload key store, trust store, and certificate files referenced by https-* options.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d]. Must be greater than 30 seconds. Use -1 to disable.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-certificates-reload-period</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CERTIFICATES_RELOAD_PERIOD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1h</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-cipher-suites</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The cipher suites to use.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If none is given, a reasonable default is selected.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-cipher-suites</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_CIPHER_SUITES</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-key-store-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The key store which holds the certificate information instead of specifying separate files.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-key-store-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-key-store-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the key store file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-key-store-password</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>password</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-key-store-type</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The type of the key store file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the type is automatically detected based on the file extension. If <code>fips-mode</code> is set to <code>strict</code> and no value is set, it defaults to <code>BCFKS</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-key-store-type</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_TYPE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The used HTTPS port.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-port</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_PORT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>8443</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-protocols</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The list of protocols to explicitly enable.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If a value is not supported by the JRE / security configuration, it will be silently ignored.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-protocols</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_PROTOCOLS</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TLSv1.3</code>, <code>TLSv1.2</code>, or any</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TLSv1.3,TLSv1.2</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_management_server"><a class="anchor" href="#_management_server"></a>Management server</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-management-certificate-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a server certificate or certificate chain in PEM format for the management server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from HTTP options. Relevant only when something is exposed on the management interface - see the guide for details.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-management-certificate-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_MANAGEMENT_CERTIFICATE_FILE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when http-management-scheme is inherited</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-management-certificate-key-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The file path to a private key in PEM format for the management server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from HTTP options. Relevant only when something is exposed on the management interface - see the guide for details.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-management-certificate-key-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_MANAGEMENT_CERTIFICATE_KEY_FILE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when http-management-scheme is inherited</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-management-certificates-reload-period</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Interval on which to reload key store, trust store, and certificate files referenced by https-management-* options for the management server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d]. Must be greater than 30 seconds. Use -1 to disable. If not given, the value is inherited from HTTP options. Relevant only when something is exposed on the management interface - see the guide for details.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-management-certificates-reload-period</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_MANAGEMENT_CERTIFICATES_RELOAD_PERIOD</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when http-management-scheme is inherited</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1h</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-management-key-store-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The key store which holds the certificate information instead of specifying separate files for the management server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from HTTP options. Relevant only when something is exposed on the management interface - see the guide for details.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-management-key-store-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_MANAGEMENT_KEY_STORE_FILE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when http-management-scheme is inherited</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-management-key-store-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the key store file for the management server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from HTTP options. Relevant only when something is exposed on the management interface - see the guide for details.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-management-key-store-password</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_MANAGEMENT_KEY_STORE_PASSWORD</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when http-management-scheme is inherited</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>password</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.6.4/docs/guides/server/enabletls.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

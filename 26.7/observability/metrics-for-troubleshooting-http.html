@@ -1,0 +1,411 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>HTTP metrics - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="HTTP metrics">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Use metrics to monitor the Keycloak HTTP requests processing.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.7/observability/metrics-for-troubleshooting-http">
+<meta property="og:url" content="https://www.keycloak.org/26.7/observability/metrics-for-troubleshooting-http">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Observability">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides#observability">Observability</a></li>
+                        <li class="breadcrumb-item active">HTTP metrics</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.7</h4>
+                There will be no further community releases for the Keycloak 26.7 minor release branch.
+                These guides describe Keycloak 26.7.5.
+                For the latest community release, see the <a href="https://www.keycloak.org/observability/metrics-for-troubleshooting-http">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.7</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/observability/metrics-for-troubleshooting-http" >Nightly</option>
+            <option value="https://www.keycloak.org/observability/metrics-for-troubleshooting-http" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/observability/metrics-for-troubleshooting-http" selected="selected">26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/observability/metrics-for-troubleshooting-http" >26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">HTTP metrics</h1>
+                    <span class="text-muted">Use metrics to monitor the Keycloak HTTP requests processing.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is part of the <a href="https://www.keycloak.org/26.7/observability/metrics-for-troubleshooting">Troubleshooting using metrics</a> guide.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Metrics need to be enabled for Keycloak. Follow the <a href="https://www.keycloak.org/26.7/observability/configuration-metrics">Gaining insights with metrics</a> guide for more details.</p>
+</li>
+<li>
+<p>A monitoring system collecting the metrics.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_metrics"><a class="anchor" href="#_metrics"></a>Metrics</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_processing_time"><a class="anchor" href="#_processing_time"></a>Processing time</h3>
+<div class="paragraph">
+<p>The processing time is exposed by these metrics, to monitor the Keycloak performance and how long it takes to processing the requests.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+On a healthy cluster, the average processing time will remain stable.
+Spikes or increases in the processing time may be an early sign that some node is under load.
+</td>
+</tr>
+</table>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Tags</strong></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>method</code></dt>
+<dd>
+<p>HTTP method.</p>
+</dd>
+<dt class="hdlist1"><code>outcome</code></dt>
+<dd>
+<p>A more general outcome tag.</p>
+</dd>
+<dt class="hdlist1"><code>status</code></dt>
+<dd>
+<p>The HTTP status code.</p>
+</dd>
+<dt class="hdlist1"><code>uri</code></dt>
+<dd>
+<p>The requested URI.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http_server_requests_seconds_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of requests processed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http_server_requests_seconds_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total duration for all the requests processed.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>You can enable histograms for this metric by setting <code>http-metrics-histograms-enabled</code> to <code>true</code>, and add additional buckets for service level objectives using the option <code>http-metrics-slos</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When histograms are enabled, the percentile buckets are available.
+Those are useful to create heat maps and analyze latencies, still collecting and exposing the percentile buckets will increase the load of to your monitoring system.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_active_requests"><a class="anchor" href="#_active_requests"></a>Active requests</h3>
+<div class="paragraph">
+<p>The current number of active requests is also available.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http_server_active_requests</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The current number of active requests</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_bandwidth"><a class="anchor" href="#_bandwidth"></a>Bandwidth</h3>
+<div class="paragraph">
+<p>The metrics below helps to monitor the bandwidth and consumed traffic used by Keycloak and consumed by the requests and responses received or sent.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http_server_bytes_written_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of responses sent.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http_server_bytes_written_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of bytes sent.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http_server_bytes_read_count</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of requests received.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http_server_bytes_read_sum</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The total number of bytes received.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When histograms are enabled, the percentile buckets are available.
+Those are useful to create heat maps and analyze latencies, still collecting and exposing the percentile buckets will increase the load of to your monitoring system.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Return back to the <a href="https://www.keycloak.org/26.7/observability/metrics-for-troubleshooting">Troubleshooting using metrics</a> or,</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>For single-cluster deployments, proceed to <a href="https://www.keycloak.org/26.7/observability/metrics-for-troubleshooting-clustering-and-network">Clustering metrics</a>,</p>
+</li>
+<li>
+<p>and for multi-cluster deployments, proceed to <a href="https://www.keycloak.org/26.7/observability/metrics-for-troubleshooting-embedded-caches-multi-cluster">Embedded Infinispan metrics for multi-cluster deployments</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-metrics-histograms-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables a histogram with default buckets for the duration of HTTP server requests.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-metrics-histograms-enabled</code><br>
+<strong>Env:</strong> <code>KC_HTTP_METRICS_HISTOGRAMS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>http-metrics-slos</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Service level objectives for HTTP server requests.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Use this instead of the default histogram, or use it in combination to add additional buckets. Specify a list of comma-separated values defined in milliseconds. Example with buckets from 5ms to 10s: 5,10,25,50,250,500,1000,2500,5000,10000</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--http-metrics-slos</code><br>
+<strong>Env:</strong> <code>KC_HTTP_METRICS_SLOS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.7.5/docs/guides/observability/metrics-for-troubleshooting-http.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

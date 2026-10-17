@@ -1,0 +1,1918 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Configuring distributed caches - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Configuring distributed caches">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Configure the caching layer to cluster multiple Keycloak instances and to increase performance.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.7/server/caching">
+<meta property="og:url" content="https://www.keycloak.org/26.7/server/caching">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Server">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">Configuring distributed caches</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.7</h4>
+                There will be no further community releases for the Keycloak 26.7 minor release branch.
+                These guides describe Keycloak 26.7.5.
+                For the latest community release, see the <a href="https://www.keycloak.org/server/caching">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.7</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/server/caching" >Nightly</option>
+            <option value="https://www.keycloak.org/server/caching" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/server/caching" selected="selected">26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/server/caching" >26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Configuring distributed caches</h1>
+                    <span class="text-muted">Configure the caching layer to cluster multiple Keycloak instances and to increase performance.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak is designed for high availability and multi-node clustered setups.
+The current distributed cache implementation is built on top of <a href="https://infinispan.org">Infinispan</a>, a high-performance, distributable in-memory data grid.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_distributed_caching"><a class="anchor" href="#_enable_distributed_caching"></a>Enable distributed caching</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When you start Keycloak in production mode, by using the <code>start</code> command, caching is enabled and all Keycloak nodes in your network are discovered.</p>
+</div>
+<div class="paragraph">
+<p>By default, caches use the <code>jdbc-ping</code> stack which is based upon a TCP transport and uses the configured database to track nodes joining the cluster.
+Keycloak allows you to either choose from a set of pre-defined default transport stacks, or to define your own custom stack, as you will see later in this guide.</p>
+</div>
+<div class="paragraph">
+<p>To explicitly enable distributed infinispan caching, enter this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--cache</span><span class="o">=</span>ispn</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you start Keycloak in development mode, by using the <code>start-dev</code> command, Keycloak uses only local caches and distributed caches are completely disabled by implicitly setting the <code>--cache=local</code> option.
+The <code>local</code> cache mode is intended only for development and testing purposes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_caches"><a class="anchor" href="#_configuring_caches"></a>Configuring caches</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides a regular <a href="https://infinispan.org/docs/stable/titles/configuring/configuring.html">Infinispan configuration file</a> located at <code>conf/cache-ispn.xml</code>.
+This file contains the default configuration used for the cache-container and JGroups transport.</p>
+</div>
+<div class="paragraph">
+<p>The following table gives an overview of the specific caches Keycloak uses:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Cache name</th>
+<th class="tableblock halign-left valign-top">Cache Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">realms</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted realm data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">users</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted user data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">authorization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted authorization data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">keys</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache external public keys</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">crl</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache for X.509 authenticator CRLs</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">work</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Replicated</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Propagate invalidation messages across nodes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">authenticationSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches authentication sessions, created/destroyed/expired during the authentication process</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted user session data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">clientSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted client session data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">offlineSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted offline user session data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">offlineClientSessions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cache persisted offline client session data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">loginFailures</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">keep track of failed logins, fraud detection</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">actionTokens</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Caches action Tokens</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_cache_types_and_defaults"><a class="anchor" href="#_cache_types_and_defaults"></a>Cache types and defaults</h3>
+<div class="paragraph">
+<div class="title">Local caches</div>
+<p>Keycloak caches persistent data locally to avoid unnecessary round-trips to the database.</p>
+</div>
+<div class="paragraph">
+<p>The following data is kept local to each node in the cluster using local caches:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>realms</strong> and related data like clients, roles, and groups.</p>
+</li>
+<li>
+<p><strong>users</strong> and related data like granted roles and group memberships.</p>
+</li>
+<li>
+<p><strong>authorization</strong> and related data like resources, permissions, and policies.</p>
+</li>
+<li>
+<p><strong>keys</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Local caches for realms, users, and authorization are configured to hold up to 10,000 entries per default.
+The local key cache can hold up to 1,000 entries per default and defaults to expire every one hour.
+Therefore, keys are forced to be periodically downloaded from external clients or identity providers.</p>
+</div>
+<div class="paragraph">
+<p>In order to achieve an optimal runtime and avoid additional round-trips to the database you should consider looking at
+the configuration for each cache to make sure the maximum number of entries is aligned with the size of your database. More entries
+you can cache, less often the server needs to fetch data from the database. You should evaluate the trade-offs between memory utilization and performance.</p>
+</div>
+<div class="paragraph">
+<div class="title">Invalidation of local caches</div>
+<p>Local caching improves performance, but adds a challenge in multi-node setups.</p>
+</div>
+<div class="paragraph">
+<p>When one Keycloak node updates data in the shared database, all other nodes need to be aware of it, so they invalidate that data from their caches.</p>
+</div>
+<div class="paragraph">
+<p>The <code>work</code> cache is a replicated cache and used for sending these invalidation messages. The entries/messages in this cache are very short-lived,
+and you should not expect this cache growing in size over time.</p>
+</div>
+<div class="paragraph">
+<div class="title">Authentication sessions</div>
+<p>Authentication sessions are created whenever a user tries to authenticate. They are automatically destroyed once the authentication process
+completes or due to reaching their expiration time.</p>
+</div>
+<div class="paragraph">
+<p>The <code>authenticationSessions</code> distributed cache is used to store authentication sessions and any other data associated with it
+during the authentication process.</p>
+</div>
+<div class="paragraph">
+<p>By relying on a distributable cache, authentication sessions are available to any node in the cluster so that users can be redirected
+to any node without losing their authentication state. However, production-ready deployments should always consider session affinity and favor redirecting users
+to the node where their sessions were initially created. By doing that, you are going to avoid unnecessary state transfer between nodes and improve
+CPU, memory, and network utilization.</p>
+</div>
+<div class="paragraph">
+<div class="title">User sessions</div>
+<p>Once the user is authenticated, a user session is created. The user session tracks your active users and their state so that they can seamlessly
+authenticate to any application without being asked for their credentials again. For each application, the user authenticates with a client session, so that the server can track the applications the user is authenticated with and their state on a per-application basis.</p>
+</div>
+<div class="paragraph">
+<p>User and client sessions are automatically destroyed whenever the user performs a logout, the client performs a token revocation, or due to reaching their expiration time.</p>
+</div>
+<div class="paragraph">
+<p>The session data are stored in the database by default and loaded on-demand to the following caches:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>sessions</code></p>
+</li>
+<li>
+<p><code>clientSessions</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By relying on a distributable cache, cached user and client sessions are available to any node in the cluster so that users can be redirected
+to any node without the need to load session data from the database. However, production-ready deployments should always consider session affinity and favor redirecting users
+to the node where their sessions were initially created. By doing that, you are going to avoid unnecessary state transfer between nodes and improve
+CPU, memory, and network utilization.</p>
+</div>
+<div class="paragraph">
+<p>These in-memory caches for user sessions and client sessions are limited to, by default, 10000 entries per node which reduces the overall memory usage of Keycloak for larger installations.
+The internal caches will run with only a single owner for each cache entry.</p>
+</div>
+<div class="paragraph">
+<div class="title">Offline user sessions</div>
+<p>As an OpenID Connect Provider, the server is capable of authenticating users and issuing offline tokens. When issuing an offline token after successful authentication, the server creates an offline user session and offline client session.</p>
+</div>
+<div class="paragraph">
+<p>The following caches are used to store offline sessions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>offlineSessions</p>
+</li>
+<li>
+<p>offlineClientSessions</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Like the user and client sessions caches, the offline user and client session caches are limited to 10000 entries per node by default. Items which are evicted from the memory will be loaded on-demand from the database when needed.</p>
+</div>
+<div class="paragraph">
+<div class="title">Password brute force detection</div>
+<p>The <code>loginFailures</code> distributed cache is used to track data about failed login attempts.
+This cache is needed for the Brute Force Protection feature to work in a multi-node Keycloak setup.</p>
+</div>
+<div class="paragraph">
+<div class="title">Action tokens</div>
+<p>Action tokens are used for scenarios when a user needs to confirm an action asynchronously, for example in the emails sent by the forgot password flow.
+The <code>actionTokens</code> distributed cache is used to track metadata about action tokens.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+You can see the applied Infinispan configuration in the logs by configuring <code>--log-level=info,org.keycloak.connections.infinispan.DefaultInfinispanConnectionProviderFactory:debug</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_volatile_user_sessions"><a class="anchor" href="#_volatile_user_sessions"></a>Volatile user sessions</h3>
+<div class="paragraph">
+<p>By default, regular user sessions are stored in the database and loaded on-demand to the cache.
+It is possible to configure Keycloak to store regular user sessions in the cache only and minimize calls to the database.</p>
+</div>
+<div class="paragraph">
+<p>Since all the sessions in this setup are stored in-memory, there are two side effects related to this:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Losing sessions when all Keycloak nodes restart.</p>
+</li>
+<li>
+<p>Increased memory consumption.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When using volatile user sessions, the cache is the source of truth for user and client sessions.
+Keycloak automatically adjusts the number of entries that can be stored in memory, and increases the number of copies to prevent data loss.</p>
+</div>
+<div class="paragraph">
+<p>Follow these steps to enable this setup:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Disable <code>persistent-user-sessions</code> feature using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre>bin/kc.sh start --features-disabled=persistent-user-sessions ...</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Disabling <code>persistent-user-sessions</code> is not possible when <code>multi-site</code> feature is enabled.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_stateless_instances"><a class="anchor" href="#_stateless_instances"></a>Stateless instances</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Stateless (stores authentication sessions, action tokens and login failure data in the database, allowing multiple clusters to be connected with just the database) is
+<strong>Preview</strong>
+and is not fully supported. This feature is disabled by default.</p>
+</div>
+<div class="paragraph">
+<p>To enable start the server with <code>--features=preview</code> or <code>--features=stateless</code></p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>When the feature <code>stateless</code> is enabled, Keycloak does not cache user entity data, and login failures, authentication sessions, and action tokens are persisted to the database. While realm and authorization data are still cached, session-related state is persisted and the database becomes the source of truth. The <code>work</code> cache is still used to invalidate realm and authorization data within the cluster.</p>
+</div>
+<div class="paragraph">
+<p>If you are running multiple independent Keycloak clusters against the same database, cache invalidation between clusters is performed via a database table (outbox). For that, each cluster needs to have a unique name specified via <code>--spi-cache-embedded--default--cluster-name</code>.</p>
+</div>
+<div class="paragraph">
+<p>This is the foundation for the multi-cluster (v2) setup that is covered in more detail in the high-availability guide at <a href="https://www.keycloak.org/26.7/high-availability/multi-cluster-v2/introduction">Multi-cluster deployments (v2)</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_cache_maximum_size"><a class="anchor" href="#_configuring_cache_maximum_size"></a>Configuring cache maximum size</h3>
+<div class="paragraph">
+<p>In order to reduce memory usage, it&#8217;s possible to place an upper bound on the number of entries which are stored in a given
+cache. To specify an upper bound of on a cache, you must provide the following command line argument
+<code>--cache-embedded-${CACHE_NAME}-max-count=</code>, with <code>${CACHE_NAME}</code> replaced with the name of the cache you would like to
+apply the upper bound to. For example, to apply an upper-bound of <code>1000</code> to the <code>offlineSessions</code> cache you would configure
+<code>--cache-embedded-offline-sessions-max-count=1000</code>. An upper bound can not be defined on the following caches:
+<code>actionToken</code>, <code>authenticationSessions</code>, <code>loginFailures</code>, <code>work</code>.</p>
+</div>
+<div class="paragraph">
+<p>Setting a maximum cache size for <code>sessions</code>, <code>clientSessions</code> is not supported when volatile sessions are enabled.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_specify_your_own_cache_configuration_file"><a class="anchor" href="#_specify_your_own_cache_configuration_file"></a>Specify your own cache configuration file</h3>
+<div class="paragraph">
+<p>To specify your own cache configuration file, enter this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--cache-config-file</span><span class="o">=</span>my-cache-file.xml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The configuration file can be an absolute path or path relative to the <code>conf/</code> directory.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_modifying_cache_configuration_defaults"><a class="anchor" href="#_modifying_cache_configuration_defaults"></a>Modifying cache configuration defaults</h3>
+<div class="paragraph">
+<p>Keycloak automatically creates all required caches with the expected configurations. You can add additional caches or override the default cache configurations in <code>conf/cache-ispn.xml</code> or in your own file provided via <code>--cache-config-file</code>.</p>
+</div>
+<div class="paragraph">
+<p>To see the applied Infinispan configuration in the logs, configure <code>--log-level=info,org.keycloak.connections.infinispan.DefaultInfinispanConnectionProviderFactory:debug</code>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>While overriding the default cache configurations via XML is technically possible, it is not supported.
+This is only recommended for advanced use-cases where the default cache configurations are proven to be problematic.
+The only supported way to change the default cache configurations is via the <code>cache-...</code> options.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In order to prevent a warning being logged when a modified default cache configuration is detected, add the following option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--cache-config-mutate</span><span class="o">=</span><span class="nb">true</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cli_options_for_remote_server"><a class="anchor" href="#_cli_options_for_remote_server"></a>CLI options for remote server</h3>
+<div class="paragraph">
+<p>For configuration of Keycloak server for high availability and multi-node clustered setup there was introduced following CLI options <code>cache-remote-host</code>, <code>cache-remote-port</code>, <code>cache-remote-username</code> and <code>cache-remote-password</code> simplifying configuration within the XML file.
+Once any of the declared CLI parameters are present, it is expected there is no configuration related to remote store present in the XML file.</p>
+</div>
+<div class="sect3">
+<h4 id="_connecting_to_an_insecure_infinispan_server"><a class="anchor" href="#_connecting_to_an_insecure_infinispan_server"></a>Connecting to an insecure Infinispan server</h4>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Disabling security is not recommended in production!
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In a development or test environment, it is easier to start an unsecured Infinispan server.
+For these use case, the CLI options <code>cache-remote-tls-enabled</code> disables the encryption (TLS) between Keycloak and Infinispan.
+Keycloak will fail to start if the Infinispan server is configured to accept only encrypted connections.</p>
+</div>
+<div class="paragraph">
+<p>The CLI options <code>cache-remote-username</code> and <code>cache-remote-password</code> are optional and, if not set, Keycloak will connect to the Infinispan server without presenting any credentials.
+If the Infinispan server has authentication enabled, Keycloak will fail to start.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cluster_identification"><a class="anchor" href="#_cluster_identification"></a>Cluster identification</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following options allow you to identify the cluster and its nodes:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Cluster name (experimental)</dt>
+<dd>
+<p>Defines the name of the cluster.
+Only nodes with the same cluster name can discover each other and form a cluster.
+Because Keycloak uses the database for node discovery via <code>jdbc-ping</code> by default, clusters that share the same database but should remain separate will merge unless they have distinct cluster names.
+The default cluster name is <code>ISPN</code>.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded--default--cluster-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__CLUSTER_NAME</code>).</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded--default--cluster-name=my-cluster</code></p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+As invalidation of caches between clusters with distinct names will not work, this will lead to stale caches and incorrect behavior. Do not use in production environments. Use only together with the <code>stateless</code> feature.
+</td>
+</tr>
+</table>
+</div>
+</dd>
+<dt class="hdlist1">Node name</dt>
+<dd>
+<p>Sets a human-readable name for the current node, used in log messages and management tools.
+By default, a random name is generated on each start, which makes it difficult to correlate metrics and logs across restarts.
+Set this option to assign a stable name, which is especially useful for observability tools such as Grafana dashboards and log aggregation.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded--default--node-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__NODE_NAME</code>).</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded--default--node-name=node-1</code></p>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="cache-topology"><a class="anchor" href="#cache-topology"></a>Topology aware data distribution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Configuring Keycloak to be aware of your network topology, increases data availability in the presence of hardware failures, as Infinispan is able to ensure that data is distributed correctly.
+For example, if <code>num_owners=2</code> is configured for a cache, it will ensure that the two owners are not stored on the same node when possible.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>By default, user and client sessions are safely stored in the database, and they are not affected by these settings.
+The remaining distributed caches are affected by this configuration.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following topology information is available to configure:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Site name</dt>
+<dd>
+<p>If your Keycloak cluster is deployed between different datacenters, use this option to ensure the data replicas are stored in a different datacenter.
+It prevents data loss if a datacenter goes offline or fails.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded--default--site-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__SITE_NAME</code>).
+The value itself is not important, but each datacenter must have a unique value.</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded--default--site-name=site-1</code></p>
+</div>
+</dd>
+<dt class="hdlist1">Rack name</dt>
+<dd>
+<p>If your Keycloak cluster is running in different racks on your datacenter, set this option to ensure the data replicas are stored in a different physical rack.
+It prevents data loss if a rack is suddenly disconnected or fails.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded--default--rack-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__RACK_NAME</code>).
+The value itself is not important, but each rack must have a unique value.</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded--default--rack-name=rack-1</code></p>
+</div>
+</dd>
+<dt class="hdlist1">Machine name</dt>
+<dd>
+<p>If you have multiple Keycloak instances running on the same physical machine (using virtual machines or containers for example), use this option to ensure the data replicas are stored in different physical machines.
+It prevents data loss against a physical machine failure.</p>
+<div class="paragraph">
+<p>Use the SPI option <code>spi-cache-embedded--default--machine-name</code> (or environment variable <code>KC_SPI_CACHE_EMBEDDED__DEFAULT__MACHINE_NAME</code>).
+The value itself is not important, but each machine must have a unique value.</p>
+</div>
+<div class="paragraph">
+<p>For example: <code>--spi-cache-embedded--default--machine-name=machine-1</code></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The Keycloak Operator automatically configure the machine name based on the Kubernetes node.
+It ensures that if multiple pods are scheduled on the same node, data replicas are still replicated across distinct nodes when possible.
+We recommend to set up anti-affinity rules and/or topology spread constraints to prevent multiple Pods from being scheduled on the same node, further reducing the risk of a single node failure causing data loss.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_transport_stacks"><a class="anchor" href="#_transport_stacks"></a>Transport stacks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Transport stacks ensure that Keycloak nodes in a cluster communicate in a reliable fashion.
+Keycloak supports a wide range of transport stacks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>jdbc-ping</code></p>
+</li>
+<li>
+<p><code>kubernetes</code>   (deprecated)</p>
+</li>
+<li>
+<p><code>jdbc-ping-udp</code>   (deprecated)</p>
+</li>
+<li>
+<p><code>tcp</code>   (deprecated)</p>
+</li>
+<li>
+<p><code>udp</code>   (deprecated)</p>
+</li>
+<li>
+<p><code>ec2</code>   (deprecated)</p>
+</li>
+<li>
+<p><code>azure</code>   (deprecated)</p>
+</li>
+<li>
+<p><code>google</code>   (deprecated)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To apply a specific cache stack, enter this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--cache-stack</span><span class="o">=</span>&lt;stack&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The default stack is set to <code>jdbc-ping</code> when distributed caches are enabled, which is backwards compatible with the defaults in the 26.x release stream of Keycloak.</p>
+</div>
+<div class="sect2">
+<h3 id="_available_transport_stacks"><a class="anchor" href="#_available_transport_stacks"></a>Available transport stacks</h3>
+<div class="paragraph">
+<p>The following table shows transport stacks that are available without any further configuration than using the <code>--cache-stack</code> runtime option:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Stack name</th>
+<th class="tableblock halign-left valign-top">Transport protocol</th>
+<th class="tableblock halign-left valign-top">Discovery</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database registry using the JGroups <code>JDBC_PING2</code> protocol.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping-udp</code> (deprecated)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database registry using the JGroups <code>JDBC_PING2</code> protocol.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The following table shows transport stacks that are available using the <code>--cache-stack</code> runtime option and a minimum configuration:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Stack name</th>
+<th class="tableblock halign-left valign-top">Transport protocol</th>
+<th class="tableblock halign-left valign-top">Discovery</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>kubernetes</code> (deprecated)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DNS resolution using the JGroups <code>DNS_PING</code> protocol. It requires to set <code>jgroups.dns.query</code> to the headless service FQDN.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tcp</code> (deprecated)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IP multicast using the JGroups <code>MPING</code> protocol. See below on how to configure a unique <code>jgroups.mcast_addr</code> or <code>jgroups.mcast_port</code> for each cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>udp</code> (deprecated)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IP multicast using the JGroups <code>PING</code> protocol. See below on how to configure a unique <code>jgroups.mcast_addr</code> or <code>jgroups.mcast_port</code> for each cluster.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>When using the <code>tcp</code>, <code>udp</code> or <code>jdbc-ping-udp</code> stack, each cluster must use a different multicast address and/or port so that their nodes form distinct clusters.
+By default, Keycloak uses <code>239.6.7.8</code> as multicast address for <code>jgroups.mcast_addr</code> and <code>46655</code> for the multicast port <code>jgroups.mcast_port</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Use <code>-D&lt;property&gt;=&lt;value&gt;</code> to pass the properties via the <code>JAVA_OPTS_APPEND</code> environment variable or in the CLI command.
+</td>
+</tr>
+</table>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Additional Stacks</strong></p>
+</div>
+<div class="paragraph">
+<p>It is recommended to use one of the stacks available above.
+Additional stacks are provided by Infinispan, but it is outside the scope of this guide how to configure them.
+Please refer to <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#cluster-transport">Setting up Infinispan cluster transport</a> and <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#customizing-jgroups-stacks_cluster-transport">Customizing JGroups stacks</a> for further documentation.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_securing_transport_stacks"><a class="anchor" href="#_securing_transport_stacks"></a>Securing transport stacks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Encryption using TLS is enabled by default for TCP-based transport stacks, which is also the default configuration.
+No additional CLI options or modifications of the cache XML are required as long as you are using a TCP-based transport stack.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you are using a transport stack based on <code>UDP</code> or <code>TCP_NIO2</code>, proceed as follows to configure the encryption of the transport stack:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Set the option <code>cache-embedded-mtls-enabled</code> to <code>false</code>.</p>
+</li>
+<li>
+<p>Follow the documentation in <a href="http://jgroups.org/manual5/index.html#ENCRYPT">JGroups Encryption documentation</a> and <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#secure-cluster-transport">Encrypting cluster transport</a>.</p>
+</li>
+</ol>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>With TLS enabled, Keycloak auto-generates a self-signed RSA 2048 bit certificate to secure the connection and uses TLS 1.3 to secure the communication.
+The keys and the certificate are stored in the database so they are available to all nodes.
+By default, the certificate is valid for 60 days and is rotated at runtime every 30 days.
+Use the option <code>cache-embedded-mtls-rotation-interval-days</code> to change this.</p>
+</div>
+<div class="sect2">
+<h3 id="_running_inside_a_service_mesh"><a class="anchor" href="#_running_inside_a_service_mesh"></a>Running inside a service mesh</h3>
+<div class="paragraph">
+<p>When using a service mesh like Istio, you might need to allow a direct mTLS communication between the Keycloak Pods to allow for the mutual authentication to work.
+Otherwise, you might see error messages like <code>JGRP000006: failed accepting connection from peer SSLSocket</code> that indicate that a wrong certificate was presented, and the cluster will not form correctly.</p>
+</div>
+<div class="paragraph">
+<p>You then have the option to allow direct mTLS communication between the Keycloak Pods, or rely on the service mesh transport security to encrypt the communication and to authenticate peers.</p>
+</div>
+<div class="paragraph">
+<p>To allow direct mTLS communication for Keycloak when using Istio:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Apply the following configuration to allow direct communication.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">security.istio.io/v1beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">PeerAuthentication</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">infinispan-allow-nomtls</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">selector</span><span class="pi">:</span>
+    <span class="na">matchLabels</span><span class="pi">:</span>
+      <span class="na">app</span><span class="pi">:</span> <span class="s">keycloak</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="na">portLevelMtls</span><span class="pi">:</span>
+    <span class="s2">"</span><span class="s">7800"</span><span class="err">:</span> <i class="conum" data-value="2"></i><b>(2)</b>
+      <span class="na">mode</span><span class="pi">:</span> <span class="s">PERMISSIVE</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Update the labels to match your Keycloak deployment.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Port 7800 is the default. Adjust it if you change the data transmission port.</td>
+</tr>
+</table>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>As an alternative, to disable the mTLS communication, and rely on the service mesh to encrypt the traffic:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Set the option <code>cache-embedded-mtls-enabled</code> to <code>false</code>.</p>
+</li>
+<li>
+<p>Configure your service mesh to authorize only traffic from other Keycloak Pods for the data transmission port (default: 7800).</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_providing_your_own_keys_and_certificates"><a class="anchor" href="#_providing_your_own_keys_and_certificates"></a>Providing your own keys and certificates</h3>
+<div class="paragraph">
+<p>Although not recommended for standard setups, if it is essential in a specific setup, you can configure the keystore with the certificate for the transport stack manually. <code>cache-embedded-mtls-key-store-file</code> sets the path to the keystore, and <code>cache-embedded-mtls-key-store-password</code> sets the password to decrypt it.
+The truststore contains the valid certificates to accept connection from, and it can be configured with <code>cache-embedded-mtls-trust-store-file</code> (path to the truststore), and <code>cache-embedded-mtls-trust-store-password</code> (password to decrypt it).
+To restrict unauthorized access, always use a self-signed certificate for each Keycloak deployment.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="network-ports"><a class="anchor" href="#network-ports"></a>Network Ports</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To ensure a healthy Keycloak clustering, some network ports need to be open.
+The table below shows the TCP ports that need to be open for the <code>jdbc-ping</code> stack, and a description of the traffic that goes through it.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>7800</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache-embedded-network-bind-port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.bind.port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unicast data transmission.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>57800</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jgroups.fd.port-offset</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Failure detection by protocol <code>FD_SOCK2</code>.
+It listens to the abrupt closing of a socket to suspect a Keycloak server failure.
+The <code>jgroups.fd.port-offset</code> property defines the offset from the <code>cache-embedded-network-bind-port</code> option or <code>jgroups.bind.port</code> property.
+By default, the offset is set to 50000, making the failure detection port 57800.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If an option is not available for the port you require, configure it using a system property <code>-D&lt;property&gt;=&lt;value&gt;</code>
+in your <code>JAVA_OPTS_APPEND</code> environment variable or in your CLI command.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="network-bind-address"><a class="anchor" href="#network-bind-address"></a>Network bind address</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To ensure a healthy Keycloak clustering, the network port must be bound on an interface that is accessible from all other nodes of the cluster.</p>
+</div>
+<div class="paragraph">
+<p>By default, it picks a site local (non-routable) IP address, for example, from the 192.168.0.0/16 or 10.0.0.0/8 address range.</p>
+</div>
+<div class="paragraph">
+<p>To override the address, set the option <code>cache-embedded-network-bind-address=&lt;IP&gt;</code>.</p>
+</div>
+<div class="paragraph">
+<p>The following special values are also recognized:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Value</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>GLOBAL</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Picks a global IP address if available.
+If not available, it falls back to <code>SITE_LOCAL</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>SITE_LOCAL</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Picks a site-local (non-routable) IP address (for example, from the 192.168.0.0 or 10.0.0.0 address ranges).
+This is the default value.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LINK_LOCAL</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Picks a link-local IP address from 169.254.1.0 through 169.254.254.255.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NON_LOOPBACK</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Picks any non-loopback address.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LOOPBACK</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Picks a loopback address (for example, 127.0.0.1).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>match-interface:&lt;regex&gt;</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Picks an address that matches a pattern against the interface name.
+For example, <code>match-interface:tun0</code> or <code>match-interface:eth.\*</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>match-address:&lt;regex&gt;</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Picks an address that matches a pattern against the host address.
+For example, <code>match-address:192.168.\*</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>match-host:&lt;regex&gt;</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Picks an address that matches a pattern against the host name.
+For example, <code>match-host:linux.\*</code>.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>To set up for IPv6 only and have Keycloak pick the bind address automatically, use the following settings:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nb">export </span><span class="nv">JAVA_OPTS_APPEND</span><span class="o">=</span><span class="s2">"-Djava.net.preferIPv4Stack=false -Djava.net.preferIPv6Addresses=true"</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more details about JGroups transport, check the <a href="http://jgroups.org/manual5/index.html#Transport">JGroups documentation page</a> or the <a href="https://infinispan.org/docs/stable/titles/embedding/embedding.html#cluster-transport">Infinispan documentation page</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_running_instances_on_different_networks"><a class="anchor" href="#_running_instances_on_different_networks"></a>Running instances on different networks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you run Keycloak instances on different networks, for example behind firewalls or in containers, the different instances will not be able to reach each other by their local IP address.
+In such a case, set up a port forwarding rule (sometimes called &#8220;virtual server&#8221;) to their local IP address.</p>
+</div>
+<div class="paragraph">
+<p>When using port forwarding, use the following options so each node correctly advertises its external address to the other nodes:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache-embedded-network-external-port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Port that other instances in the Keycloak cluster should use to contact this node.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cache-embedded-network-external-address</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IP address that other instances in the Keycloak should use to contact this node.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verify_cluster_and_network_health"><a class="anchor" href="#_verify_cluster_and_network_health"></a>Verify cluster and network health</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section provides methods to verify that your Keycloak cluster has formed correctly and that network communication between instances is functioning as expected.
+It is crucial to perform these checks after deployment to ensure high availability and data consistency.</p>
+</div>
+<div class="paragraph">
+<p>To verify if the cluster is formed properly, check one of these locations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Admin UI</p>
+<div class="paragraph">
+<p>Access the Keycloak Web UI, typically available at <code>https://&lt;your-host&gt;/admin/master/console/#/master/providers</code>.
+Under the <strong>Provider Info</strong> section, locate the <strong>connectionsInfinispan</strong> entry.
+Click on <strong>Show more</strong> to expand its details.
+You should find information about the cluster status and the health of individual caches.</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="https://www.keycloak.org/resources/images/guides/26.7/server/infinispan_info.png" alt="Infinispan Cluster Information in Web UI"></span></p>
+</div>
+</li>
+<li>
+<p>Logs</p>
+<div class="paragraph">
+<p>Infinispan logs a cluster view every time a new instance joins or leaves the cluster.
+Search for log entries with the ID <code>ISPN000094</code>.</p>
+</div>
+<div class="paragraph">
+<p>A healthy cluster view will show all expected nodes.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="text">ISPN000094: Received new cluster view for channel ISPN: [node1-26186|1] (2) [node1-26186, node2-37007]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This log entry indicates that the cluster named "ISPN" currently has 2 nodes: <code>node1-26186</code> and <code>node2-37007</code>.
+The <code>(2)</code> confirms the total number of nodes in the cluster.</p>
+</div>
+</li>
+<li>
+<p>Metrics</p>
+<div class="paragraph">
+<p>Keycloak exposes Infinispan metrics via a Prometheus endpoint, which can be visualized in tools like Grafana.
+The metric <code>vendor_cluster_size</code> shows the current number of instances in the cluster.
+You should verify that this metric matches the expected number of running instances configured in your cluster.</p>
+</div>
+<div class="paragraph">
+<p>Refer to <a href="https://www.keycloak.org/26.7/observability/metrics-for-troubleshooting-clustering-and-network#_cluster_size">Clustering metrics</a> for more information.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exposing_metrics_from_caches"><a class="anchor" href="#_exposing_metrics_from_caches"></a>Exposing metrics from caches</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Metrics from caches are automatically exposed when the metrics are enabled.</p>
+</div>
+<div class="paragraph">
+<p>To enable histograms for the cache metrics, set <code>cache-metrics-histograms-enabled</code> to <code>true</code>.
+While these metrics provide more insights into the latency distribution, collecting them might have a performance impact, so you should be cautious to activate them in an already saturated system.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--metrics-enabled</span><span class="o">=</span><span class="nb">true</span> <span class="nt">--cache-metrics-histograms-enabled</span><span class="o">=</span><span class="nb">true</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more details about how to enable metrics, see <a href="https://www.keycloak.org/26.7/observability/configuration-metrics">Gaining insights with metrics</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Defines the cache mechanism for high-availability.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">By default in production mode, a <code>ispn</code> cache is used to create a cluster between multiple server nodes. By default in development mode, a <code>local</code> cache disables clustering and is intended for development and testing purposes.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache</code><br>
+<strong>Env:</strong> <code>KC_CACHE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ispn</code>, <code>local</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-config-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Defines the file from which cache configuration should be loaded from.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The configuration file is relative to the <code>conf/</code> directory.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-config-file</code><br>
+<strong>Env:</strong> <code>KC_CACHE_CONFIG_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-config-mutate</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Determines whether changes to the default cache configurations are allowed.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">This is only recommended for advanced use-cases where the default cache configurations are proven to be problematic. The only supported way to change the default cache configurations is via the other <code>cache-&#8230;&#8203;</code> options.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-config-mutate</code><br>
+<strong>Env:</strong> <code>KC_CACHE_CONFIG_MUTATE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-metrics-histograms-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enable histograms for metrics for the embedded caches.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-metrics-histograms-enabled</code><br>
+<strong>Env:</strong> <code>KC_CACHE_METRICS_HISTOGRAMS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-stack</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Define the default stack to use for cluster communication and node discovery.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Defaults to <code>jdbc-ping</code> if not set.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-stack</code><br>
+<strong>Env:</strong> <code>KC_CACHE_STACK</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when 'cache' type is set to 'ispn'</p>
+</div>
+<div class="paragraph">
+<p>Use 'jdbc-ping' instead by leaving it unset
+<strong>Deprecated values: <code>azure</code>, <code>ec2</code>, <code>google</code>, <code>jdbc-ping-udp</code>, <code>kubernetes</code>, <code>tcp</code>, <code>udp</code></strong></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping</code>, <code>kubernetes</code> (deprecated), <code>jdbc-ping-udp</code> (deprecated), <code>tcp</code> (deprecated), <code>udp</code> (deprecated), <code>ec2</code> (deprecated), <code>azure</code> (deprecated), <code>google</code> (deprecated), or any</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_embedded_cache"><a class="anchor" href="#_embedded_cache"></a>Embedded Cache</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-authorization-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the authorization cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-authorization-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_AUTHORIZATION_MAX_COUNT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-client-sessions-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the clientSessions cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-client-sessions-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_CLIENT_SESSIONS_MAX_COUNT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when embedded Infinispan clusters configured</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-crl-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the crl cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-crl-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_CRL_MAX_COUNT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-keys-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the keys cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-keys-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_KEYS_MAX_COUNT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Encrypts the network communication between Keycloak servers.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If no additional parameters about a keystore and truststore are provided, ephemeral key pairs and certificates are created and rotated automatically, which is recommended for standard setups.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-enabled</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when a TCP based cache-stack is used</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-key-store-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The Keystore file path.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The Keystore must contain the certificate to use by the TLS protocol. By default, it looks up <code>cache-mtls-keystore.p12</code> under conf/ directory.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-key-store-file</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_KEY_STORE_FILE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-key-store-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password to access the Keystore.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-key-store-password</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_KEY_STORE_PASSWORD</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-rotation-interval-days</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Rotation period in days of automatic JGroups MTLS certificates.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-rotation-interval-days</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_ROTATION_INTERVAL_DAYS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>30</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-trust-store-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The Truststore file path.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It should contain the trusted certificates or the Certificate Authority that signed the certificates. By default, it lookup <code>cache-mtls-truststore.p12</code> under conf/ directory.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-trust-store-file</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_TRUST_STORE_FILE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-mtls-trust-store-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password to access the Truststore.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-mtls-trust-store-password</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_MTLS_TRUST_STORE_PASSWORD</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when property 'cache-embedded-mtls-enabled' is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-bind-address</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">IP address used by clustering transport.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">By default, SITE_LOCAL is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-bind-address</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_BIND_ADDRESS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-bind-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The Port the clustering transport will bind to.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">By default, port 7800 is used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-bind-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_BIND_PORT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-external-address</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">IP address that other instances in the cluster should use to contact this node.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Set only if it is different to cache-embedded-network-bind-address, for example when this instance is behind a firewall.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-external-address</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_EXTERNAL_ADDRESS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-network-external-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Port that other instances in the cluster should use to contact this node.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Set only if it is different to cache-embedded-network-bind-port, for example when this instance is behind a firewall</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-network-external-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_NETWORK_EXTERNAL_PORT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Infinispan clustered embedded is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-offline-client-sessions-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the offlineClientSessions cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-offline-client-sessions-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_OFFLINE_CLIENT_SESSIONS_MAX_COUNT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when embedded Infinispan clusters configured</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-offline-sessions-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the offlineSessions cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-offline-sessions-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_OFFLINE_SESSIONS_MAX_COUNT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when embedded Infinispan clusters configured</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-realms-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the realms cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-realms-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_REALMS_MAX_COUNT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-sessions-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the sessions cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-sessions-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_SESSIONS_MAX_COUNT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when embedded Infinispan clusters configured</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-embedded-users-max-count</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum number of entries that can be stored in-memory by the users cache.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-embedded-users-max-count</code><br>
+<strong>Env:</strong> <code>KC_CACHE_EMBEDDED_USERS_MAX_COUNT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_remote_cache"><a class="anchor" href="#_remote_cache"></a>Remote Cache</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-backup-sites</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Configures a list of backup sites names to where the external Infinispan cluster backups the Keycloak data.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-backup-sites</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_BACKUP_SITES</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>List</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-host</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The hostname of the external Infinispan cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Available only when feature <code>multi-site</code> or <code>clusterless</code> is set.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-host</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_HOST</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password for the authentication to the external Infinispan cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It is optional if connecting to an unsecure external Infinispan cluster. If the option is specified, <code>cache-remote-username</code> is required as well.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-password</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PASSWORD</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The port of the external Infinispan cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-port</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_PORT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>11222</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-tls-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enable TLS support to communicate with a secured remote Infinispan server.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Recommended to be enabled in production.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-tls-enabled</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_TLS_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>cache-remote-username</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The username for the authentication to the external Infinispan cluster.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">It is optional if connecting to an unsecure external Infinispan cluster. If the option is specified, <code>cache-remote-password</code> is required as well.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--cache-remote-username</code><br>
+<strong>Env:</strong> <code>KC_CACHE_REMOTE_USERNAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when remote host is set</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.7.5/docs/guides/server/caching.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

@@ -1,0 +1,427 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Tracking instance status with health checks - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Tracking instance status with health checks">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Check if an instance has finished its start up and is ready to serve requests by calling its health REST endpoints.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.7/observability/health">
+<meta property="og:url" content="https://www.keycloak.org/26.7/observability/health">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Observability">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides#observability">Observability</a></li>
+                        <li class="breadcrumb-item active">Tracking instance status with health checks</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.7</h4>
+                There will be no further community releases for the Keycloak 26.7 minor release branch.
+                These guides describe Keycloak 26.7.5.
+                For the latest community release, see the <a href="https://www.keycloak.org/observability/health">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.7</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/observability/health" >Nightly</option>
+            <option value="https://www.keycloak.org/observability/health" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/observability/health" selected="selected">26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/observability/health" >26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Tracking instance status with health checks</h1>
+                    <span class="text-muted">Check if an instance has finished its start up and is ready to serve requests by calling its health REST endpoints.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak has built in support for health checks. This guide describes how to enable and use the Keycloak health checks.
+The Keycloak health checks are exposed on the management port <code>9000</code> by default. For more details, see <a href="https://www.keycloak.org/26.7/server/management-interface">Configuring the Management Interface</a></p>
+</div>
+<div class="paragraph">
+<p>When the <code>http-management-health-enabled</code> option is <code>false</code> the health endpoints will remain on the main HTTP(S) ports, rather than being exposed on the management port.
+When this option is <code>false</code> you should block unwanted external traffic to <code>/health</code> at your proxy.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_keycloak_health_check_endpoints"><a class="anchor" href="#_keycloak_health_check_endpoints"></a>Keycloak health check endpoints</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak exposes 4 health endpoints:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>/health/started</code> - Startup probe used for initial startup of Keycloak before the liveness probe takes over.</p>
+</li>
+<li>
+<p><code>/health/live</code> - Check if Keycloak is running. If this fails the application should be discarded (terminated, shutdown) and started again.</p>
+</li>
+<li>
+<p><code>/health/ready</code> - Checks if Keycloak is ready to process requests or not. Only direct traffic to a newly started instance once the readiness probe succeeds. If this procedure fails, the application is temporarily unavailable to serve new requests, and traffic should be directed elsewhere.</p>
+</li>
+<li>
+<p><code>/health</code> - accumulates all health check procedures in the application.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These endpoints respond with HTTP status <code>200 OK</code> on success or <code>503 Service Unavailable</code> on failure, and a JSON object like the following:</p>
+</div>
+<div class="listingblock">
+<div class="title">Successful response for endpoints without additional per-check information:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
+    </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UP"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"checks"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+</span><span class="p">}</span></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Successful response for endpoints with additional per-check information:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
+    </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UP"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"checks"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Keycloak Initialized"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UP"</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Graceful Shutdown"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UP"</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Keycloak cluster health check"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UP"</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Keycloak database connections async health check"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UP"</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://github.com/microprofile/microprofile-health/blob/main/spec/src/main/asciidoc/protocol-wireformat.asciidoc">wire format</a> for a more detailed description.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enabling_the_health_checks"><a class="anchor" href="#_enabling_the_health_checks"></a>Enabling the health checks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>It is possible to enable the health checks using the build time option <code>health-enabled</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] build <span class="nt">--health-enabled</span><span class="o">=</span><span class="nb">true</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the health endpoints are enabled, async server bootstrap is also enabled by default, resulting in the HTTP ports being open while bootstrapping is in progress. See <a href="https://www.keycloak.org/26.7/server/configuration-production#server-bootstrap-behavior">Configuring Keycloak for production</a> for more details.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_the_health_checks"><a class="anchor" href="#_using_the_health_checks"></a>Using the health checks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Due to security measures that remove <code>curl</code> and other packages from the Keycloak container image, you are not able to run checks against HTTPS endpoints from within the container.</p>
+</div>
+<div class="paragraph">
+<p>If you are not using Keycloak in a container, or if you are running the health checks outside of the container, use any tool to access the health check endpoints.</p>
+</div>
+<div class="sect2">
+<h3 id="_curl"><a class="anchor" href="#_curl"></a>curl</h3>
+<div class="paragraph">
+<p>You may use a simple HTTP HEAD request to determine the <code>live</code> or <code>ready</code> state of Keycloak. <code>curl</code> is a good HTTP client for this purpose.</p>
+</div>
+<div class="paragraph">
+<p>If Keycloak is deployed in a container, you must use a custom image or run this command from outside it due to the previously mentioned security measures. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">curl <span class="nt">--head</span> <span class="nt">-fsS</span> http://localhost:9000/health/ready</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the command returns with status 0, then Keycloak is <code>live</code> or <code>ready</code>, depending on which endpoint you called. Otherwise there is a problem.</p>
+</div>
+<div class="paragraph">
+<p>If HTTPS is configured for the default Keycloak server, no content appears from this command. Use this command instead:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">curl <span class="nt">--head</span> <span class="nt">-fsS</span> https://localhost:9000/health/ready</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_kubernetes"><a class="anchor" href="#_kubernetes"></a>Kubernetes</h3>
+<div class="paragraph">
+<p>Define a <a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#http-probes">HTTP Probe</a> so that Kubernetes may externally monitor the health endpoints. Do not use a liveness command.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you configure mTLS with <code>https-client-auth</code> set to <code>required</code>, this configuration is inherited by the management interface. If you have not otherwise configured the usage of HTTP for the health endpoints, you will likely want to set <code>https-management-client-auth</code> to <code>request</code> or <code>none</code> so that a valid client certificate is not required for probe requests.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_healthcheck"><a class="anchor" href="#_healthcheck"></a>HEALTHCHECK</h3>
+<div class="paragraph">
+<p>The Containerfile <code>HEALTHCHECK</code> instruction defines a command that will be periodically executed inside the container as it runs. While the Keycloak container does not have any CLI HTTP clients installed, it is possible to leverage BASH support for redirects to TCP sockets and craft a simple HTTP request to the healthcheck endpoint:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="o">{</span> <span class="nb">printf</span> <span class="s1">'HEAD /health/ready HTTP/1.0\r\n\r\n'</span> <span class="o">&gt;</span>&amp;0<span class="p">;</span> <span class="nb">grep</span> <span class="s1">'HTTP/1.0 200'</span><span class="p">;</span> <span class="o">}</span> 0&lt;<span class="o">&gt;</span>/dev/tcp/localhost/9000</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The above code depends on the values of the Keycloak options such as <code>http-relative-path</code> (<code>http-management-relative-path</code>) and <code>http-management-port</code>. In case those are changed the code needs to be modified accordingly.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+the <code>HEALTHCHECK</code> shown is based upon the ready endpoint. This is appropriate for informational purposes or to determine if the container should receive requests. It should not be used to determine if the container needs restarted.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If you enable TLS as shown in <a href="https://www.keycloak.org/26.7/server/enabletls">Configuring TLS</a>, the management interface will also use TLS. Depending upon how the management interface endpoints are intended to be used you can still have plain HTTP health checks if:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the management interface uses HTTP, not HTTPS, by setting <code>http-management-scheme</code> to <code>http</code>.</p>
+</li>
+<li>
+<p>or the health checks are enabled for the main interface by setting <code>http-management-health-enabled</code> to <code>false</code> and accessible via HTTP with setting <code>http-enabled</code> to <code>true</code>. In this scenario external traffic to the HTTP port (defaults to 8080) or to the health endpoints (defaults to /health) should not be allowed by your proxy.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_available_checks"><a class="anchor" href="#_available_checks"></a>Available Checks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The table below shows the available checks.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Check</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Requires Metrics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Returns the status of the database connection pool.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Returns the status of the cluster (network partitions).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Graceful shutdown</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Will start to return "DOWN" once the pre-shutdown phase started.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Keycloak Initialized</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Returns the status of the server initialization.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>For some checks, you&#8217;ll need to also enable metrics as indicated by the <strong>Requires Metrics</strong> column. To enable metrics
+use the <code>metrics-enabled</code> option as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] build <span class="nt">--health-enabled</span><span class="o">=</span><span class="nb">true</span> <span class="nt">--metrics-enabled</span><span class="o">=</span><span class="nb">true</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The cluster health check is only available for clustered setups when the cache transport stacks <code>jdbc-ping</code> or <code>jdbc-ping-udp</code> are used.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>health-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose health check endpoints.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If enabled, health checks are available at the <code>/health</code>, <code>/health/ready</code> and <code>/health/live</code> endpoints.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--health-enabled</code><br>
+<strong>Env:</strong> <code>KC_HEALTH_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.7.5/docs/guides/observability/health.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

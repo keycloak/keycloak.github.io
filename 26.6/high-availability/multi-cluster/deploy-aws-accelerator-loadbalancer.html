@@ -1,0 +1,583 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Deploying an AWS Global Accelerator load balancer - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Deploying an AWS Global Accelerator load balancer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Deploy an AWS Global Accelerator as the load-balancer building block in a multi-cluster deployment.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.6/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer">
+<meta property="og:url" content="https://www.keycloak.org/26.6/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:High availability">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides#high-availability">High availability</a></li>
+                          <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/high-availability/multi-cluster/introduction">Multi cluster</a></li>
+                        <li class="breadcrumb-item active">Deploying an AWS Global Accelerator load balancer</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.6</h4>
+                There will be no further community releases for the Keycloak 26.6 minor release branch.
+                These guides describe Keycloak 26.6.4.
+                For the latest community release, see the <a href="https://www.keycloak.org/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.6</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer" >Nightly</option>
+            <option value="https://www.keycloak.org/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer" >26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer" selected="selected">26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Deploying an AWS Global Accelerator load balancer</h1>
+                    <span class="text-muted">Deploy an AWS Global Accelerator as the load-balancer building block in a multi-cluster deployment.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This topic describes the procedure required to deploy an AWS Global Accelerator to route traffic between multi-cluster Keycloak deployments.</p>
+</div>
+<div class="paragraph">
+<p>This deployment is intended to be used with the setup described in the <a href="https://www.keycloak.org/26.6/high-availability/multi-cluster/concepts">Concepts for multi-cluster deployments</a> guide.
+Use this deployment with the other building blocks outlined in the <a href="https://www.keycloak.org/26.6/high-availability/multi-cluster/building-blocks">Building blocks multi-cluster deployments</a> guide.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+We provide these blueprints to show a minimal functionally complete example with a good baseline performance for regular installations.
+You would still need to adapt it to your environment and your organization&#8217;s standards and security best practices.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_audience"><a class="anchor" href="#_audience"></a>Audience</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide describes how to deploy an AWS Global Accelerator instance to handle Keycloak client connection failover for multiple
+availability-zone Keycloak deployments.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_architecture"><a class="anchor" href="#_architecture"></a>Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To ensure user requests are routed to each Keycloak site we need to utilise a load balancer. To prevent issues with
+DNS caching on the client-side, the implementation should use a static IP address that remains the same
+when routing clients to both availability-zones.</p>
+</div>
+<div class="paragraph">
+<p>In this guide we describe how to route all Keycloak client requests via an AWS Global Accelerator load balancer.
+In the event of a Keycloak site failing, the Accelerator ensures that all client requests are routed to the remaining
+healthy site. If both sites are marked as unhealthy, then the Accelerator will &#8220;fail-open&#8221; and forward requests to a site
+chosen at random.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/26.6/high-availability/accelerator-multi-az.dio.svg" alt="accelerator multi az.dio">
+</div>
+<div class="title">Figure 1. AWS Global Accelerator Failover</div>
+</div>
+<div class="paragraph">
+<p>An AWS Network Load Balancer (NLB) is created on both ROSA clusters in order to make the Keycloak
+pods available as Endpoints to an AWS Global Accelerator instance. Each cluster endpoint is assigned a weight of
+128 (half of the maximum weight 255) to ensure that accelerator traffic is routed equally to both availability-zones
+when both clusters are healthy.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>ROSA based Multi-AZ Keycloak deployment</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create Network Load Balancers</p>
+<div class="paragraph">
+<p>Perform the following on each of the Keycloak clusters:</p>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Login to the ROSA cluster</p>
+</li>
+<li>
+<p>Create a Kubernetes load balancer service</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nb">cat</span> <span class="o">&lt;&lt;</span><span class="no">EOF</span><span class="sh"> | kubectl apply -n </span><span class="nv">$NAMESPACE</span><span class="sh"> -f - <i class="conum" data-value="1"></i><b>(1)</b>
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: accelerator-loadbalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: accelerator=</span><span class="k">${</span><span class="nv">ACCELERATOR_NAME</span><span class="k">}</span><span class="sh">,site=</span><span class="k">${</span><span class="nv">CLUSTER_NAME</span><span class="k">}</span><span class="sh">,namespace=</span><span class="k">${</span><span class="nv">NAMESPACE</span><span class="k">}</span><span class="sh"> <i class="conum" data-value="2"></i><b>(2)</b>
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/lb-check"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "https"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10" <i class="conum" data-value="3"></i><b>(3)</b>
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "3" <i class="conum" data-value="4"></i><b>(4)</b>
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "3" <i class="conum" data-value="5"></i><b>(5)</b>
+  spec:
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 8443
+    selector:
+      app: keycloak
+      app.kubernetes.io/instance: keycloak
+      app.kubernetes.io/managed-by: keycloak-operator
+    sessionAffinity: None
+    type: LoadBalancer
+EOF</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td><code>$NAMESPACE</code> should be replaced with the namespace of your Keycloak deployment</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Add additional Tags to the resources created by AWS so that we can retrieve them later. <code>ACCELERATOR_NAME</code> should be
+the name of the Global Accelerator created in subsequent steps and <code>CLUSTER_NAME</code> should be the name of the current site.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>How frequently the healthcheck probe is executed in seconds</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>How many healthchecks must pass for the NLB to be considered healthy</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>How many healthchecks must fail for the NLB to be considered unhealthy</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Take note of the DNS hostname as this will be required later:</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">kubectl <span class="nt">-n</span> <span class="nv">$NAMESPACE</span> get svc accelerator-loadbalancer <span class="nt">--template</span><span class="o">=</span><span class="s2">"{{range .status.loadBalancer.ingress}}{{.hostname}}{{end}}"</span></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">abab80a363ce8479ea9c4349d116bce2-6b65e8b4272fa4b5.elb.eu-west-1.amazonaws.com</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Create a Global Accelerator instance</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">aws globalaccelerator create-accelerator <span class="se">\</span>
+  <span class="nt">--name</span> example-accelerator <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="nt">--ip-address-type</span> DUAL_STACK <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="nt">--region</span> us-west-2 <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The name of the accelerator to be created, update as required</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Can be 'DUAL_STACK' or 'IPV4'</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>All <code>globalaccelerator</code> commands must use the region 'us-west-2'</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
+    </span><span class="nl">"Accelerator"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"AcceleratorArn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71"</span><span class="p">,</span><span class="w"> <i class="conum" data-value="1"></i><b>(1)</b>
+        </span><span class="nl">"Name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"example-accelerator"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"IpAddressType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DUAL_STACK"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"Enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"IpSets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"IpFamily"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IPv4"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"IpAddresses"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+                    </span><span class="s2">"75.2.42.125"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"99.83.132.135"</span><span class="w">
+                </span><span class="p">],</span><span class="w">
+                </span><span class="nl">"IpAddressFamily"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IPv4"</span><span class="w">
+            </span><span class="p">},</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"IpFamily"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IPv6"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"IpAddresses"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+                    </span><span class="s2">"2600:9000:a400:4092:88f3:82e2:e5b2:e686"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"2600:9000:a516:b4ef:157e:4cbd:7b48:20f1"</span><span class="w">
+                </span><span class="p">],</span><span class="w">
+                </span><span class="nl">"IpAddressFamily"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IPv6"</span><span class="w">
+            </span><span class="p">}</span><span class="w">
+        </span><span class="p">],</span><span class="w">
+        </span><span class="nl">"DnsName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"a099f799900e5b10d.awsglobalaccelerator.com"</span><span class="p">,</span><span class="w"> <i class="conum" data-value="2"></i><b>(2)</b>
+        </span><span class="nl">"Status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IN_PROGRESS"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"CreatedTime"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2023-11-13T15:46:40+00:00"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"LastModifiedTime"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2023-11-13T15:46:42+00:00"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"DualStackDnsName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ac86191ca5121e885.dualstack.awsglobalaccelerator.com"</span><span class="w"> <i class="conum" data-value="3"></i><b>(3)</b>
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The ARN associated with the created Accelerator instance, this will be used in subsequent commands</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The DNS name which IPv4 Keycloak clients should connect to</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The DNS name which IPv6 Keycloak clients should connect to</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Create a Listener for the accelerator</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">aws globalaccelerator create-listener <span class="se">\</span>
+  <span class="nt">--accelerator-arn</span> <span class="s1">'arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71'</span> <span class="se">\</span>
+  <span class="nt">--port-ranges</span> <span class="s1">'[{"FromPort":443,"ToPort":443}]'</span> <span class="se">\</span>
+  <span class="nt">--protocol</span> TCP <span class="se">\</span>
+  <span class="nt">--region</span> us-west-2</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
+    </span><span class="nl">"Listener"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"ListenerArn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71/listener/1f396d40"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"PortRanges"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"FromPort"</span><span class="p">:</span><span class="w"> </span><span class="mi">443</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"ToPort"</span><span class="p">:</span><span class="w"> </span><span class="mi">443</span><span class="w">
+            </span><span class="p">}</span><span class="w">
+        </span><span class="p">],</span><span class="w">
+        </span><span class="nl">"Protocol"</span><span class="p">:</span><span class="w"> </span><span class="s2">"TCP"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"ClientAffinity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NONE"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create an Endpoint Group for the Listener</p>
+<div class="listingblock">
+<div class="title">Command:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nv">CLUSTER_1_ENDPOINT_ARN</span><span class="o">=</span><span class="si">$(</span>aws elbv2 describe-load-balancers <span class="se">\</span>
+    <span class="nt">--query</span> <span class="s2">"LoadBalancers[?DNSName=='abab80a363ce8479ea9c4349d116bce2-6b65e8b4272fa4b5.elb.eu-west-1.amazonaws.com'].LoadBalancerArn"</span> <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="nt">--region</span> eu-west-1 <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="nt">--output</span> text
+<span class="si">)</span>
+<span class="nv">CLUSTER_2_ENDPOINT_ARN</span><span class="o">=</span><span class="si">$(</span>aws elbv2 describe-load-balancers <span class="se">\</span>
+    <span class="nt">--query</span> <span class="s2">"LoadBalancers[?DNSName=='a1c76566e3c334e4ab7b762d9f8dcbcf-985941f9c8d108d4.elb.eu-west-1.amazonaws.com'].LoadBalancerArn"</span> <span class="se">\ </span><i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="nt">--region</span> eu-west-1 <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+    <span class="nt">--output</span> text
+<span class="si">)</span>
+<span class="nv">ENDPOINTS</span><span class="o">=</span><span class="s1">'[
+  {
+    "EndpointId": "'</span><span class="k">${</span><span class="nv">CLUSTER_1_ENDPOINT_ARN</span><span class="k">}</span><span class="s1">'",
+    "Weight": 128,
+    "ClientIPPreservationEnabled": false
+  },
+  {
+    "EndpointId": "'</span><span class="k">${</span><span class="nv">CLUSTER_2_ENDPOINT_ARN</span><span class="k">}</span><span class="s1">'",
+    "Weight": 128,
+    "ClientIPPreservationEnabled": false
+  }
+]'</span>
+aws globalaccelerator create-endpoint-group <span class="se">\</span>
+  <span class="nt">--listener-arn</span> <span class="s1">'arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71/listener/1f396d40'</span> <span class="se">\ </span><i class="conum" data-value="2"></i><b>(2)</b>
+  <span class="nt">--traffic-dial-percentage</span> 100 <span class="se">\</span>
+  <span class="nt">--endpoint-configurations</span> <span class="k">${</span><span class="nv">ENDPOINTS</span><span class="k">}</span> <span class="se">\</span>
+  <span class="nt">--endpoint-group-region</span> eu-west-1 <span class="se">\ </span><i class="conum" data-value="3"></i><b>(3)</b>
+  <span class="nt">--region</span> us-west-2</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The DNS hostname of the Cluster&#8217;s NLB</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The ARN of the Listener created in the previous step</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>This should be the AWS region that hosts the clusters</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Output:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
+    </span><span class="nl">"EndpointGroup"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"EndpointGroupArn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:globalaccelerator::606671647913:accelerator/e35a94dd-391f-4e3e-9a3d-d5ad22a78c71/listener/1f396d40/endpoint-group/2581af0dc700"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"EndpointGroupRegion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eu-west-1"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"EndpointDescriptions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"EndpointId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/abab80a363ce8479ea9c4349d116bce2/6b65e8b4272fa4b5"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"Weight"</span><span class="p">:</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"HealthState"</span><span class="p">:</span><span class="w"> </span><span class="s2">"HEALTHY"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"ClientIPPreservationEnabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+            </span><span class="p">},</span><span class="w">
+            </span><span class="p">{</span><span class="w">
+                </span><span class="nl">"EndpointId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:elasticloadbalancing:eu-west-1:606671647913:loadbalancer/net/a1c76566e3c334e4ab7b762d9f8dcbcf/985941f9c8d108d4"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"Weight"</span><span class="p">:</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"HealthState"</span><span class="p">:</span><span class="w"> </span><span class="s2">"HEALTHY"</span><span class="p">,</span><span class="w">
+                </span><span class="nl">"ClientIPPreservationEnabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+            </span><span class="p">}</span><span class="w">
+        </span><span class="p">],</span><span class="w">
+        </span><span class="nl">"TrafficDialPercentage"</span><span class="p">:</span><span class="w"> </span><span class="mf">100.0</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"HealthCheckPort"</span><span class="p">:</span><span class="w"> </span><span class="mi">443</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"HealthCheckProtocol"</span><span class="p">:</span><span class="w"> </span><span class="s2">"TCP"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"HealthCheckPath"</span><span class="p">:</span><span class="w"> </span><span class="s2">"undefined"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"HealthCheckIntervalSeconds"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"ThresholdCount"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Configure your custom domain</p>
+<div class="paragraph">
+<p>If you are using a custom domain, pointed your custom domain to the AWS Global Load Balancer by configuring an Alias or CNAME in your custom domain.</p>
+</div>
+</li>
+<li>
+<p>Create or update the Keycloak Deployment</p>
+<div class="paragraph">
+<p>Perform the following on each of the Keycloak clusters:</p>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Login to the ROSA cluster</p>
+</li>
+<li>
+<p>Ensure the Keycloak CR has the following configuration</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">k8s.keycloak.org/v2beta1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Keycloak</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">keycloak</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">hostname</span><span class="pi">:</span>
+    <span class="na">hostname</span><span class="pi">:</span> <span class="s">$HOSTNAME</span> <i class="conum" data-value="1"></i><b>(1)</b>
+  <span class="na">ingress</span><span class="pi">:</span>
+    <span class="na">enabled</span><span class="pi">:</span> <span class="no">false</span> <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The hostname clients use to connect to Keycloak</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Disable the default ingress as all Keycloak access should be via the provisioned NLB</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To ensure that request forwarding works as expected, it is necessary for the Keycloak CR to specify the hostname through
+which clients will access the Keycloak instances. This can either be the <code>DualStackDnsName</code> or <code>DnsName</code> hostname associated
+with the Global Accelerator. If you are using a custom domain, point your custom domain to the AWS Global Accelerator, and use your custom domain here.</p>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verify"><a class="anchor" href="#_verify"></a>Verify</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To verify that the Global Accelerator is correctly configured to connect to the clusters, navigate to hostname configured above, and you should be presented with the Keycloak admin console.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_reading"><a class="anchor" href="#_further_reading"></a>Further reading</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/26.6/high-availability/multi-cluster/operate-site-online">Bringing a site online</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/26.6/high-availability/multi-cluster/operate-site-offline">Taking a site offline</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.6.4/docs/guides/high-availability/multi-cluster/deploy-aws-accelerator-loadbalancer.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

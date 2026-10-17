@@ -1,0 +1,2341 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Configuring the database - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Configuring the database">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Configure a relational database for Keycloak to store user, client, and realm data.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.6/server/db">
+<meta property="og:url" content="https://www.keycloak.org/26.6/server/db">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Server">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">Configuring the database</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.6</h4>
+                There will be no further community releases for the Keycloak 26.6 minor release branch.
+                These guides describe Keycloak 26.6.4.
+                For the latest community release, see the <a href="https://www.keycloak.org/server/db">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.6</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/server/db" >Nightly</option>
+            <option value="https://www.keycloak.org/server/db" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/server/db" >26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/server/db" selected="selected">26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Configuring the database</h1>
+                    <span class="text-muted">Configure a relational database for Keycloak to store user, client, and realm data.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide explains how to configure the Keycloak server to store data in a relational database.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_supported_databases"><a class="anchor" href="#_supported_databases"></a>Supported databases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The server has built-in support for different databases. You can query the available databases by viewing the expected values for the <code>db</code> configuration option. The following table lists the supported databases and their tested versions.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Database</th>
+<th class="tableblock halign-left valign-top">Option value</th>
+<th class="tableblock halign-left valign-top">Tested Version</th>
+<th class="tableblock halign-left valign-top">Supported Versions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MariaDB Server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mariadb</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">11.8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">11.8 (LTS), 11.4 (LTS), 10.11 (LTS), 10.6 (LTS)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Microsoft SQL Server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mssql</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2022</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2022, 2019</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MySQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mysql</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8.4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8.4 (LTS), 8.0 (LTS)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oracle Database</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oracle</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">23.5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">23.x (i.e 23.5+), 19c (19.3+) (<strong>Note:</strong> Oracle RAC is also supported if using the same database engine version, e.g 23.5+, 19.3+)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">18</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">18.x, 17.x, 16.x, 15.x, 14.x</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">EnterpriseDB Advanced</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">18</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">18.x, 17.x</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Amazon Aurora PostgreSQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>postgres</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">17.5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">17.x, 16.x, 15.x</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Azure SQL Database</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mssql</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">latest</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">latest</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Azure SQL Managed Instance</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mssql</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">latest</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">latest</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+It is not a supported configuration if the underlying database specific Hibernate dialect allows the use of a version that differs from those shown.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>By default, the server uses the <code>dev-file</code> database. This is the default database that the server will use to persist data and
+only exists for development use-cases. The <code>dev-file</code> database is not suitable for production use-cases, and must be replaced before deploying to production.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_installing_a_database_driver"><a class="anchor" href="#_installing_a_database_driver"></a>Installing a database driver</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Database drivers are shipped as part of Keycloak except for the
+Oracle Database driver.</p>
+</div>
+<div class="paragraph">
+<p>Install the necessary missing driver manually if you want to connect to
+this database
+or skip this section if you want to connect to a different database for which the database driver is already included.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Overriding the built-in database drivers or supplying your own drivers is considered unsupported.
+The only supported exceptions are explicitly documented in this guide, such as the Oracle Database driver.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_installing_the_oracle_database_driver"><a class="anchor" href="#_installing_the_oracle_database_driver"></a>Installing the Oracle Database driver</h3>
+<div class="paragraph">
+<p>To install the Oracle Database driver for Keycloak:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Download the <code>ojdbc17</code> and <code>orai18n</code> JAR files from one of the following sources:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p><strong>Zipped JDBC driver and Companion Jars</strong> version 23.26.0.0.0 from the <a href="https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html">Oracle driver download page</a>.</p>
+</li>
+<li>
+<p>Maven Central via <code><a href="https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc17/23.26.0.0.0/ojdbc17-23.26.0.0.0.jar">ojdbc17</a></code> and <code><a href="https://repo1.maven.org/maven2/com/oracle/database/nls/orai18n/23.26.0.0.0/orai18n-23.26.0.0.0.jar">orai18n</a></code>.</p>
+</li>
+<li>
+<p>Installation media recommended by the database vendor for the specific database in use.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>When running the unzipped distribution: Place the <code>ojdbc17</code> and <code>orai18n</code> JAR files in Keycloak&#8217;s <code>providers</code> folder</p>
+</li>
+<li>
+<p>When running containers: Build a custom Keycloak image and add the JARs in the <code>providers</code> folder. When building a custom image for the Operator, those images need to be optimized images with all build-time options of Keycloak set.</p>
+<div class="paragraph">
+<p>A minimal Containerfile to build an image which can be used with the Keycloak Operator and includes Oracle Database JDBC drivers downloaded from Maven Central looks like the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="dockerfile"><span class="k">FROM</span><span class="s"> quay.io/keycloak/keycloak:latest</span>
+<span class="k">ADD</span><span class="s"> --chown=keycloak:keycloak --chmod=644 https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc17/23.26.0.0.0/ojdbc17-23.26.0.0.0.jar /opt/keycloak/providers/ojdbc17.jar</span>
+<span class="k">ADD</span><span class="s"> --chown=keycloak:keycloak --chmod=644 https://repo1.maven.org/maven2/com/oracle/database/nls/orai18n/23.26.0.0.0/orai18n-23.26.0.0.0.jar /opt/keycloak/providers/orai18n.jar</span>
+<span class="c"># Setting the build parameter for the database:</span>
+<span class="k">ENV</span><span class="s"> KC_DB=oracle</span>
+<span class="c"># Add all other build parameters needed, for example enable health and metrics:</span>
+<span class="k">ENV</span><span class="s"> KC_HEALTH_ENABLED=true</span>
+<span class="k">ENV</span><span class="s"> KC_METRICS_ENABLED=true</span>
+<span class="c"># To be able to use the image with the Keycloak Operator, it needs to be optimized, which requires Keycloak's build step:</span>
+<span class="k">RUN </span>/opt/keycloak/bin/kc.sh build</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/26.6/server/containers">Running Keycloak in a container</a> guide for details on how to build optimized images.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Then continue configuring the database as described in the next section.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_a_database"><a class="anchor" href="#_configuring_a_database"></a>Configuring a database</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For each supported database, the server provides some opinionated defaults to simplify database configuration. You complete the configuration by providing some key settings such as the database host and credentials.</p>
+</div>
+<div class="paragraph">
+<p>The configuration can be set during a <code>build</code> command OR a <code>start</code> command:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Using a <code>build</code> command followed by an optimized <code>start</code> command (recommended)</p>
+<div class="paragraph">
+<p>First, the minimum settings needed to connect to the database can be specified in <code>conf/keycloak.conf</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># The database vendor.
+db=postgres
+
+# The username of the database user.
+db-username=keycloak
+
+# The password of the database user.
+db-password=change_me
+
+# Sets the hostname of the default JDBC URL of the chosen vendor
+db-url-host=keycloak-postgres</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then, the following commands create a new and optimized server image based on the configuration options and start the server.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>bin/kc.[sh|bat] build
+bin/kc.[sh|bat] start --optimized</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Using <strong>only a <code>start</code></strong> command (without <code>--optimized</code>)</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--db</span> postgres <span class="nt">--db-url-host</span> keycloak-postgres <span class="nt">--db-username</span> keycloak <span class="nt">--db-password</span> change_me</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The examples above include the minimum settings needed to connect to the database but it exposes the database password and is not recommended. Use the <code>conf/keycloak.conf</code> as shown above, environment variables, or keystore for at least the password.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If your database password contains <code>$</code> or <code>$\{&#8230;&#8203;}</code> characters, use the <code>KCRAW_DB_PASSWORD</code> environment variable instead of <code>KC_DB_PASSWORD</code>. The <code>KCRAW_</code> prefix ensures <code>$</code> characters are preserved as-is. See the <em>Preserving literal values with the KCRAW</em> prefix_ section in <a href="https://www.keycloak.org/26.6/server/configuration">Configuring Keycloak</a> for details.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>By default, no schema is explicitly set and Keycloak uses the default schema of the chosen database.
+You can override this by using the <code>db-schema</code> configuration option.</p>
+</div>
+<div class="paragraph">
+<p>It is also possible to configure the database when <a href="https://www.keycloak.org/26.6/server/importExport">Importing and exporting realms</a> or <a href="https://www.keycloak.org/26.6/server/bootstrap-admin-recovery">Bootstrapping and recovering an admin account</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>bin/kc.[sh|bat] import --help
+bin/kc.[sh|bat] export --help
+bin/kc.[sh|bat] bootstrap-admin --help</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://www.keycloak.org/26.6/server/configuration">Configuring Keycloak</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_overriding_default_connection_settings"><a class="anchor" href="#_overriding_default_connection_settings"></a>Overriding default connection settings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The server uses JDBC as the underlying technology to communicate with the database. If the default connection settings are insufficient, you can specify a JDBC URL using the <code>db-url</code> configuration option.</p>
+</div>
+<div class="paragraph">
+<p>The following is a sample command for a PostgreSQL database.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--db</span> postgres <span class="nt">--db-url</span> jdbc:postgresql://mypostgres/mydatabase</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Be aware that you need to escape characters when invoking commands containing special shell characters such as <code>;</code> using the CLI, so you might want to set it in the configuration file instead.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_unicode_support_for_the_database"><a class="anchor" href="#_configuring_unicode_support_for_the_database"></a>Configuring Unicode support for the database</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Unicode support for all fields depends on whether the database allows VARCHAR and CHAR fields to use the Unicode character set.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If these fields can be set, Unicode is likely to work, usually at the expense of field length.</p>
+</li>
+<li>
+<p>If the database only supports Unicode in the NVARCHAR and NCHAR fields, Unicode support for all text fields is unlikely to work because the server schema uses VARCHAR and CHAR fields extensively.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The database schema provides support for Unicode strings only for the following special fields:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Realms</strong>: display name, HTML display name, localization texts (keys and values)</p>
+</li>
+<li>
+<p><strong>Federation</strong> Providers: display name</p>
+</li>
+<li>
+<p><strong>Users</strong>: username, given name, last name, attribute names and values</p>
+</li>
+<li>
+<p><strong>Groups</strong>: name, attribute names and values</p>
+</li>
+<li>
+<p><strong>Roles</strong>: name</p>
+</li>
+<li>
+<p>Descriptions of objects</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Otherwise, characters are limited to those contained in database encoding, which is often 8-bit.
+However, for some database systems, you can enable UTF-8 encoding of Unicode characters and use the full Unicode character set in all text fields.
+For a given database, this choice might result in a shorter maximum string length than the maximum string length supported by 8-bit encodings.</p>
+</div>
+<div class="paragraph">
+<p>The recommended character set to use is summarized in the table below, as most recent versions of these databases already use it by default.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Vendor</th>
+<th class="tableblock halign-left valign-top">Recommended Character Set</th>
+<th class="tableblock halign-left valign-top">Example Database Creation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oracle</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>AL32UTF8</code></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><span class="k">CREATE</span> <span class="k">DATABASE</span> <span class="n">keycloak</span>
+  <span class="nb">CHARACTER</span> <span class="k">SET</span> <span class="n">AL32UTF8</span>
+  <span class="nb">NATIONAL</span> <span class="nb">CHARACTER</span> <span class="k">SET</span> <span class="n">AL16UTF16</span><span class="p">;</span></code></pre>
+</div>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Microsoft SQL Server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UTF-8 collation<br>
+(ending with <code>_UTF8</code>)</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><span class="k">CREATE</span> <span class="k">DATABASE</span> <span class="n">keycloak</span>
+  <span class="k">COLLATE</span> <span class="n">Latin1_General_100_CI_AS_SC_UTF8</span><span class="p">;</span></code></pre>
+</div>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MySQL/MariaDB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>utf8mb4</code></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><span class="k">CREATE</span> <span class="k">DATABASE</span> <span class="n">keycloak</span>
+  <span class="nb">CHARACTER</span> <span class="k">SET</span> <span class="n">utf8mb4</span>
+  <span class="k">COLLATE</span> <span class="n">utf8mb4_unicode_ci</span><span class="p">;</span></code></pre>
+</div>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>UTF8</code></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><span class="k">CREATE</span> <span class="k">DATABASE</span> <span class="n">keycloak</span>
+  <span class="k">ENCODING</span> <span class="s1">'UTF8'</span>
+  <span class="n">LC_COLLATE</span> <span class="s1">'en_US.utf8'</span>
+  <span class="n">LC_CTYPE</span> <span class="s1">'en_US.utf8'</span><span class="p">;</span></code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_database_default_charset_and_collation_considerations_for_mysql_and_mariadb"><a class="anchor" href="#_database_default_charset_and_collation_considerations_for_mysql_and_mariadb"></a>Database default charset and collation considerations for MySQL and MariaDB</h3>
+<div class="paragraph">
+<p>Different MySQL and MariaDB versions may have different default settings for character sets and collations. Keycloak uses the database default charset and collation when creating new tables and columns. This design allows you to manage your own data lifecycle by defining the charset and collation that best fits your requirements.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Before migrating Keycloak to a new version, ensure that your database has a consistent charset and collation configuration. Inconsistent settings between existing tables can cause foreign key constraint errors during migration.</p>
+</div>
+<div class="paragraph">
+<p>To avoid potential mismatches:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Set your desired charset and collation as the database default <strong>before</strong> installing or upgrading Keycloak.</p>
+</li>
+<li>
+<p>Ensure all existing Keycloak tables use the same charset and collation.</p>
+</li>
+<li>
+<p>When upgrading, Keycloak will align new tables and columns with your database default settings.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>By relying on the database default, Keycloak respects your intent and allows you to maintain control over your database configuration throughout its lifecycle.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_unicode_support_for_a_microsoft_sql_server_database"><a class="anchor" href="#_configuring_unicode_support_for_a_microsoft_sql_server_database"></a>Configuring Unicode support for a Microsoft SQL Server database</h3>
+<div class="paragraph">
+<p>Unicode characters are supported only for the special fields for a Microsoft SQL Server database.
+The database requires no special settings.</p>
+</div>
+<div class="paragraph">
+<p>By default, Keycloak sets the <code>sendStringParametersAsUnicode</code> JDBC driver property to <code>false</code> when using Microsoft SQL Server.
+This can improve performance and query plan efficiency, as Microsoft SQL Server may be unable to use indexes when string parameters are sent as Unicode.</p>
+</div>
+<div class="paragraph">
+<p>If you need to override this setting, set <code>sendStringParametersAsUnicode</code> explicitly in the JDBC URL (using <code>db-url</code>) or via <code>db-url-properties</code>.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--db</span> mssql <span class="nt">--db-url-properties</span><span class="o">=</span><span class="s1">';sendStringParametersAsUnicode=true'</span></code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_database_connection_and_login_timeout"><a class="anchor" href="#_database_connection_and_login_timeout"></a>Database connection and login timeout</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When Keycloak connects to the database, network problems can occur, especially during failovers or switchovers.
+To improve failover behavior and startup resilience during network issues, Keycloak sets a default connection timeout of 10s for all supported database vendors when using the standard JDBC driver.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>db-connect-timeout</code></dt>
+<dd>
+<p>Sets the JDBC driver connection timeout and login timeout.
+Default: <code>10s</code>.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_preparing_for_postgresql"><a class="anchor" href="#_preparing_for_postgresql"></a>Preparing for PostgreSQL</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_writer_and_reader_instances"><a class="anchor" href="#_writer_and_reader_instances"></a>Writer and reader instances</h3>
+<div class="paragraph">
+<p>When running PostgreSQL reader and writer instances, Keycloak needs to always connect to the writer instance to do its work.
+When using the original PostgreSQL driver, Keycloak sets the <code>targetServerType</code> property of the PostgreSQL JDBC driver to <code>primary</code> to ensure that it always connects to a writable primary instance and never connects to a secondary reader instance in failover or switchover scenarios.</p>
+</div>
+<div class="paragraph">
+<p>You can override this behavior by setting your own value for <code>targetServerType</code> in the DB URL or additional properties.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>targetServerType</code> is only applied automatically to the primary datasource, as requirements might be different for additional datasources.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_permissions_of_the_database_user"><a class="anchor" href="#_permissions_of_the_database_user"></a>Permissions of the database user</h3>
+<div class="paragraph">
+<p>Ensure that the database user has <code>SELECT</code> permissions to the following tables to ensure an efficient upgrade: <code>pg_class</code>, <code>pg_namespace</code>.</p>
+</div>
+<div class="paragraph">
+<p>This is used during upgrades of Keycloak to determine an estimated number of rows in a table.
+If Keycloak does not have permissions to access these tables, it will log a warning and proceed with the less efficient <code>SELECT COUNT(*) ...</code> operation during the upgrade to determine the number of rows in tables affected by schema changes.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_secure_your_connection"><a class="anchor" href="#_secure_your_connection"></a>Secure your connection</h3>
+<div class="paragraph">
+<p>To secure your database connection, configure your PostgreSQL server to use TLS and perform full server certificate verification on the client side.</p>
+</div>
+<div class="paragraph">
+<p><strong>Server-side Configuration (Prerequisites):</strong>
+Before using the properties below, ensure your PostgreSQL server is configured for TLS.</p>
+</div>
+<div class="paragraph">
+<p><strong>Client-side Configuration:</strong>
+Secure the connection by adding the options:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>--db-tls-mode=verify-server --db-tls-trust-store-file=/path/to/certificate</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>db-tls-mode=verify-server</code>: Forces TLS and verifies the server&#8217;s identity against the trusted certificate.</p>
+</li>
+<li>
+<p><code>db-tls-trust-store-file=/path/to/certificate</code>: The path to the server&#8217;s public certificate file on the client machine.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="preparing-keycloak-for-amazon-aurora-postgresql"><a class="anchor" href="#preparing-keycloak-for-amazon-aurora-postgresql"></a>Preparing for Amazon Aurora PostgreSQL</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When using Amazon Aurora PostgreSQL, the <a href="https://github.com/awslabs/aws-advanced-jdbc-wrapper">Amazon Web Services JDBC Driver</a> offers additional features like transfer of database connections when a writer instance changes in a Multi-AZ setup.
+This driver is not part of the distribution and needs to be installed before it can be used.</p>
+</div>
+<div class="paragraph">
+<p>To install this driver, apply the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>When running the unzipped distribution: Download the JAR file from the <a href="https://github.com/awslabs/aws-advanced-jdbc-wrapper/releases/">Amazon Web Services JDBC Driver releases page</a> and place it in Keycloak&#8217;s <code>providers</code> folder.</p>
+</li>
+<li>
+<p>When running containers: Build a custom Keycloak image and add the JAR in the <code>providers</code> folder.</p>
+<div class="paragraph">
+<p>A minimal Containerfile to build an image which can be used with the Keycloak Operator looks like the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="dockerfile"><span class="k">FROM</span><span class="s"> quay.io/keycloak/keycloak:latest</span>
+<span class="k">ADD</span><span class="s"> --chmod=0666 https://github.com/awslabs/aws-advanced-jdbc-wrapper/releases/download/2.5.6/aws-advanced-jdbc-wrapper-2.5.6.jar /opt/keycloak/providers/aws-advanced-jdbc-wrapper.jar</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See the <a href="https://www.keycloak.org/26.6/server/containers">Running Keycloak in a container</a> guide for details on how to build optimized images, and the <a href="https://www.keycloak.org/26.6/operator/customizing-keycloak">Using custom Keycloak images</a> guide on how to run optimized and non-optimized images with the Keycloak Operator.</p>
+</div>
+</li>
+<li>
+<p>Configure Keycloak to run with the following parameters:</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>db-url</code></dt>
+<dd>
+<p>Insert <code>aws-wrapper</code> to the regular PostgreSQL JDBC URL resulting in a URL like <code>jdbc:aws-wrapper:postgresql://...</code>.</p>
+</dd>
+<dt class="hdlist1"><code>db-driver</code></dt>
+<dd>
+<p>Set to <code>software.amazon.jdbc.Driver</code> to use the AWS JDBC wrapper.</p>
+</dd>
+</dl>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When overriding the <code>wrapperPlugins</code> option of the AWS JDBC Driver, always include the <code>failover</code> or <code>failover2</code> plugin to ensure that Keycloak always connects to the writer instance even in failover or switchover scenarios.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="title">Secure Your Aurora PostgreSQL Connection</div>
+<div class="paragraph">
+<p>Amazon Aurora PostgreSQL 17.0 or later requires TLS connections by default.</p>
+</div>
+<div class="paragraph">
+<p>While this encrypts the connection, you must still perform a full server certificate verification.
+To do this download the <a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.SSL.html">certificate bundle</a> for your AWS region.</p>
+</div>
+<div class="paragraph">
+<p>Secure the connection by adding the options:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>--db-tls-mode=verify-server --db-tls-trust-store-file=/path/to/certificate</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>db-tls-mode=verify-server</code>: Forces TLS and verifies the server&#8217;s identity against the trusted certificate.</p>
+</li>
+<li>
+<p><code>db-tls-trust-store-file=/path/to/certificate</code>: The path to the server&#8217;s public certificate file on the client machine.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_preparing_for_mysql_server"><a class="anchor" href="#_preparing_for_mysql_server"></a>Preparing for MySQL server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Beginning with MySQL 8.0.30, MySQL supports generated invisible primary keys for any InnoDB table that is created without an explicit primary key (more information <a href="https://dev.mysql.com/doc/refman/8.0/en/create-table-gipks.html">here</a>).
+If this feature is enabled, the database schema initialization and also migrations will fail with the error message <code>Multiple primary key defined (1068)</code>.
+You then need to disable it by setting the parameter <code>sql_generate_invisible_primary_key</code> to <code>OFF</code> in your MySQL server configuration before installing or upgrading Keycloak.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_preparing_for_ms_sql_server"><a class="anchor" href="#_preparing_for_ms_sql_server"></a>Preparing for MS SQL server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>On MS SQL Server, the default transaction isolation level is <code>READ_COMMITTED</code>, which can lead to deadlocks during high load. Therefore, the recommended isolation level for Keycloak is <code>READ_COMMITTED_SNAPSHOT</code>. This isolation level is used by default on Azure SQL.</p>
+</div>
+<div class="paragraph">
+<p>However, on MS SQL Server, the database isolation level needs to be modified by executing the following command on your database:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="sql"><span class="k">ALTER</span> <span class="k">DATABASE</span> <span class="o">&lt;</span><span class="n">your</span><span class="o">-</span><span class="k">database</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span> <span class="k">SET</span> <span class="n">READ_COMMITTED_SNAPSHOT</span> <span class="k">ON</span><span class="p">;</span></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_database_vendors_with_xa_transaction_support"><a class="anchor" href="#_using_database_vendors_with_xa_transaction_support"></a>Using Database Vendors with XA transaction support</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak uses non-XA transactions and the appropriate database drivers by default.</p>
+</div>
+<div class="paragraph">
+<p>If you wish to use the XA transaction support offered by your driver, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] build <span class="nt">--db</span><span class="o">=</span>&lt;vendor&gt; <span class="nt">--transaction-xa-enabled</span><span class="o">=</span><span class="nb">true</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keycloak automatically chooses the appropriate JDBC driver for your vendor.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Certain vendors, such as Azure SQL and MariaDB Galera, do not support or rely on the XA transaction mechanism.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>XA recovery defaults to enabled and will use the file system location <code>KEYCLOAK_HOME/data/transaction-logs</code> to store transaction logs.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Enabling XA transactions in a containerized environment does not fully support XA recovery unless stable storage is available at that path.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_transaction_timeouts"><a class="anchor" href="#_configuring_transaction_timeouts"></a>Configuring transaction timeouts</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak provides two CLI options to control transaction timeout behavior:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>transaction-default-timeout</code></dt>
+<dd>
+<p>Controls the transaction timeout for regular transactions.
+The default value is 5 minutes.</p>
+<div class="paragraph">
+<p>To configure a different timeout, for example 10 minutes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--transaction-default-timeout</span><span class="o">=</span>10m</code></pre>
+</div>
+</div>
+</dd>
+<dt class="hdlist1"><code>transaction-setup-timeout</code></dt>
+<dd>
+<p>Controls the timeout for transactions used by database schema migration, import, and export commands.
+The default value is 30 minutes, as these operations may take a while to complete for large datasets.</p>
+<div class="paragraph">
+<p>To configure a different timeout, for example 1 hour:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--transaction-setup-timeout</span><span class="o">=</span>1h</code></pre>
+</div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Both options accept values as an ISO 8601 duration, an integer number of seconds, or an integer followed by one of <code>ms</code> (milliseconds), <code>s</code> (seconds), <code>m</code> (minutes), <code>h</code> (hours), or <code>d</code> (days).
+These options can be configured via CLI, environment variables, or the <code>conf/keycloak.conf</code> configuration file.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>transaction-default-timeout</code> option takes precedence over the unsupported <code>quarkus.transaction-manager.default-transaction-timeout</code> Quarkus property.
+If you are using the Quarkus property, migrate to the supported <code>transaction-default-timeout</code> option and remove the Quarkus property from your configuration.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_secure_the_database_connection"><a class="anchor" href="#_secure_the_database_connection"></a>Secure the database connection</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Encrypting the traffic between Keycloak and the database is recommended for increased security, as it prevents third parties from examining the network traffic.</p>
+</div>
+<div class="paragraph">
+<p>It is recommended to go a step further and enable certificate verification to prevent more complex attacks such as DNS poisoning and address hijacking, whereby Keycloak could be directed to a different server than intended.
+To perform the certificate validation, the database certificate, or the Certificate Authority (CA) certificate, must be added to the Keycloak truststore.</p>
+</div>
+<div class="paragraph">
+<p>This section provides guidance on how to enable these settings in Keycloak and configure the JDBC driver properly.
+Configuring the database server with the private keys and certificates is outside the scope of this section.
+Consult your vendor documentation on how to do it.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak provides unified CLI options to configure database TLS settings across different database vendors.
+These options simplify the configuration by abstracting vendor-specific JDBC properties and providing a consistent interface.</p>
+</div>
+<div class="paragraph">
+<p>The following options are available:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>db-tls-mode</code></dt>
+<dd>
+<p>Sets the TLS mode for the database connection.
+Valid values are <code>disabled</code> and <code>verify-server</code>.
+When set to <code>verify-server</code>, it enables encryption and server identity verification.
+Default: <code>disabled</code></p>
+</dd>
+<dt class="hdlist1"><code>db-tls-trust-store-file</code></dt>
+<dd>
+<p>The path to the truststore file containing the database server certificates or Certificate Authority (CA) certificates used to verify the database server&#8217;s identity.</p>
+</dd>
+<dt class="hdlist1"><code>db-tls-trust-store-password</code></dt>
+<dd>
+<p>The password to access the truststore file (if required and supported by the JDBC driver).</p>
+</dd>
+<dt class="hdlist1"><code>db-tls-trust-store-type</code></dt>
+<dd>
+<p>The type of the truststore file.
+Common values include <code>JKS</code> (Java KeyStore) and <code>PKCS12</code>.
+If not specified, the driver&#8217;s default truststore type is used.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+These unified CLI options are the recommended approach for configuring database TLS.
+Keycloak automatically translates these options to the appropriate vendor-specific JDBC properties.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following example demonstrates how to configure database TLS using these options for a PostgreSQL database.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--db</span><span class="o">=</span>postgres <span class="nt">--db-tls-mode</span><span class="o">=</span>verify-server <span class="nt">--db-tls-trust-store-file</span><span class="o">=</span>/path/to/certificate.pem</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, you can use <code>--truststore-paths</code> instead of the <code>db-tls-trust-store-*</code> options to add your certificate to the Java truststore.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--db</span><span class="o">=</span>postgres <span class="nt">--db-tls-mode</span><span class="o">=</span>verify-server <span class="nt">--truststore-paths</span><span class="o">=</span>/path/to/certificate.pem</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="encrypting-data-at-rest"><a class="anchor" href="#encrypting-data-at-rest"></a>Encrypting data at rest</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak stores sensitive information in the database. This includes hashed user passwords, client credentials and realm keys that are used to sign tokens.</p>
+</div>
+<div class="paragraph">
+<p>Enabling encryption at rest for your database is recommended to protect this data from unauthorized access in the event of physical media theft or improper storage decommissioning.</p>
+</div>
+<div class="sect2">
+<h3 id="_transparent_data_encryption"><a class="anchor" href="#_transparent_data_encryption"></a>Transparent Data Encryption</h3>
+<div class="paragraph">
+<p>Several database vendors support Transparent Data Encryption (TDE).
+With TDE, the database engine transparently encrypts data before writing it to disk and decrypts it when reading.
+Consult your vendor documentation for instructions on enabling TDE:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Oracle</strong>: <a href="https://docs.oracle.com/en/database/oracle/oracle-database/23/dbtde/index.html">Transparent Data Encryption (TDE)</a></p>
+</li>
+<li>
+<p><strong>Microsoft SQL Server</strong>: <a href="https://learn.microsoft.com/en-us/sql/relational-databases/security/encryption/transparent-data-encryption">Transparent Data Encryption (TDE)</a></p>
+</li>
+<li>
+<p><strong>MySQL</strong>: <a href="https://dev.mysql.com/doc/refman/8.4/en/innodb-data-encryption.html">InnoDB Data-at-Rest Encryption</a></p>
+</li>
+<li>
+<p><strong>MariaDB</strong>: <a href="https://mariadb.com/kb/en/data-at-rest-encryption-overview/">Data-at-Rest Encryption</a></p>
+</li>
+<li>
+<p><strong>EDB</strong>: <a href="https://www.enterprisedb.com/docs/tde/latest/">Transparent Data Encryption</a></p>
+</li>
+<li>
+<p><strong>PostgreSQL</strong>: While native PostgreSQL does not include TDE by default, some distributions include it.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For databases that do not offer built-in Transparent Data Encryption, use filesystem-level encryption instead.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Most cloud-managed database services, such as AWS RDS, Azure SQL, and GCP Cloud SQL, enable encryption at rest by default.
+Consult your cloud provider documentation to verify this is enabled and to understand the key management options available.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_filesystem_encryption"><a class="anchor" href="#_filesystem_encryption"></a>Filesystem encryption</h3>
+<div class="paragraph">
+<p>As an alternative or complement to TDE, you can encrypt the filesystem or block device where the database stores its data files.
+This approach works with any database vendor and is the primary recommendation for databases without built-in TDE support.
+Options include LUKS/dm-crypt on Linux, BitLocker on Windows, or cloud-provider volume encryption such as AWS EBS encryption and Azure Disk Encryption.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_write_ahead_logs_and_backups"><a class="anchor" href="#_write_ahead_logs_and_backups"></a>Write-ahead logs and backups</h3>
+<div class="paragraph">
+<p>Encryption must also cover write-ahead logs (WAL), redo logs, and database backups, as these contain the same sensitive data as the main data files.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Encrypting the main database data files alone is not sufficient.
+Write-ahead logs and backups can expose sensitive data if left unencrypted.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Ensure that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Write-ahead logs (WAL) or redo logs are encrypted or stored on encrypted storage.</p>
+</li>
+<li>
+<p>All database backups are encrypted, whether at the filesystem level or by using your backup tool&#8217;s built-in encryption capabilities.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setting_jpa_provider_configuration_option_for_migrationstrategy"><a class="anchor" href="#_setting_jpa_provider_configuration_option_for_migrationstrategy"></a>Setting JPA provider configuration option for migrationStrategy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To setup the JPA migrationStrategy (manual/update/validate) you should setup JPA provider as follows:</p>
+</div>
+<div class="listingblock">
+<div class="title">Setting the <code>migration-strategy</code> for the <code>quarkus</code> provider of the <code>connections-jpa</code> SPI</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--spi-connections-jpa--quarkus--migration-strategy</span><span class="o">=</span>manual</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you want to get a SQL file for DB initialization, too, you have to add this additional SPI initializeEmpty (true/false):</p>
+</div>
+<div class="listingblock">
+<div class="title">Setting the <code>initialize-empty</code> for the <code>quarkus</code> provider of the <code>connections-jpa</code> SPI</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--spi-connections-jpa--quarkus--initialize-empty</span><span class="o">=</span><span class="nb">false</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the same way the migrationExport to point to a specific file and location:</p>
+</div>
+<div class="listingblock">
+<div class="title">Setting the <code>migration-export</code> for the <code>quarkus</code> provider of the <code>connections-jpa</code> SPI</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--spi-connections-jpa--quarkus--migration-export</span><span class="o">=</span>&lt;path&gt;/&lt;file.sql&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, check the <a href="https://www.keycloak.org/docs/26.6.4/upgrading/#_migrate_db">Migrating the database</a> documentation.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_connection_pool"><a class="anchor" href="#_configuring_the_connection_pool"></a>Configuring the connection pool</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_mysql_and_mariadb"><a class="anchor" href="#_mysql_and_mariadb"></a>MySQL and MariaDB</h3>
+<div class="paragraph">
+<p>In order to prevent 'No operations allowed after connection closed' exceptions from being thrown, it is necessary to ensure
+that Keycloak&#8217;s connection pool has a connection maximum lifetime that is less than the server&#8217;s configured <code>wait_timeout</code>.
+When using the MySQL and MariaDB database, Keycloak configures a default max lifetime of 7 hours and 50 minutes, as
+this is less than the default server value of 8 hours.</p>
+</div>
+<div class="paragraph">
+<p>If you are explicitly configuring the <code>wait_timeout</code> in your database, it is necessary to ensure that you configure a
+<code>db-pool-max-lifetime</code> value that is less than the <code>wait_timeout</code>. The recommended best practice, is to define this value
+to be your <code>wait_timeout</code> minus a few minutes. Failure to correctly configure the <code>db-pool-max-lifetime</code> will result in
+Keycloak logging a warning on startup.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="multiple-datasources"><a class="anchor" href="#multiple-datasources"></a>Configure multiple datasources</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak allows you to specify additional datasources in case you need to access another database from your extensions. This is useful when using the main Keycloak datasource is not a viable option for storing custom data, like users.</p>
+</div>
+<div class="paragraph">
+<p>You can find more details on how to connect to your own users database in the <a href="https://www.keycloak.org/docs/26.6.4/server_development/#_user-storage-spi">User Storage SPI</a> documentation.</p>
+</div>
+<div class="paragraph">
+<p>Defining multiple datasources works like defining a single datasource, with one important change - you have to specify a name for each datasource as part of the config option name.</p>
+</div>
+<div class="sect2">
+<h3 id="_required_configuration"><a class="anchor" href="#_required_configuration"></a>Required configuration</h3>
+<div class="paragraph">
+<p>In order to enable an additional datasource, you need to set up 2 things - the JPA <code>persistence.xml</code> file and Keycloak configuration.
+The <code>persistence.xml</code> file serves to specify persistence units as part of the Jakarta Persistence API standard, and is required for proper configuration propagation to the Hibernate ORM framework.
+When you complete the part with the <code>persistence.xml</code> file, you need to set up Keycloak configuration accordingly.</p>
+</div>
+<div class="paragraph">
+<p>The additional datasource properties might be specified via the standard config sources like CLI, <code>keycloak.conf</code>, or environment variables.</p>
+</div>
+<div class="paragraph">
+<p>The additional datasources can be configured in a similar way as the main datasource.
+This is achieved by using analogous names for config options, which additionally include the name of the additional datasource.
+For example, when the main datasource uses the <code>db-username</code>, the additional one would be <code>db-username-&lt;datasource&gt;</code>.
+See the Relevant options chapter for the complete list of them.</p>
+</div>
+<div class="sect3">
+<h4 id="_1_jpa_persistence_xml_file"><a class="anchor" href="#_1_jpa_persistence_xml_file"></a>1. JPA <code>persistence.xml</code> file</h4>
+<div class="paragraph">
+<p>The <code>persistence.xml</code> provides configuration for Jakarta Persistence API (JPA) such as what entities it should manage, the datasource name, JDBC settings, JPA/Hibernate custom settings, and more.
+The file needs to be placed in the <code>META-INF/persistence.xml</code> folder of your custom Keycloak extension.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Be aware that Quarkus provides the ability to set up the JPA persistence unit via Hibernate ORM properties instead of using the <code>persistence.xml</code> file.
+However, the supported way for Keycloak is using the <code>persistence.xml</code> file, and if the file is present, the Quarkus properties are ignored.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In Keycloak, most of the configuration is automatic, and you just need to provide fundamental configuration details - the datasource name and transaction type.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak requires setting the transaction type for the additional datasource to <code>JTA</code>.
+You can set the transaction type and datasource name as follows for this minimal <code>persistence.xml</code> file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="xml"><span class="nt">&lt;persistence</span> <span class="na">xmlns=</span><span class="s">"https://jakarta.ee/xml/ns/persistence"</span>
+                         <span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
+                         <span class="na">xsi:schemaLocation=</span><span class="s">"https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"</span>
+                         <span class="na">version=</span><span class="s">"3.0"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;persistence-unit</span> <span class="na">name=</span><span class="s">"user-store-pu"</span> <span class="na">transaction-type=</span><span class="s">"JTA"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;class&gt;</span>org.your.extension.UserEntity<span class="nt">&lt;/class&gt;</span>
+        <span class="nt">&lt;properties&gt;</span>
+            <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">"jakarta.persistence.jtaDataSource"</span> <span class="na">value=</span><span class="s">"user-store"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;/properties&gt;</span>
+    <span class="nt">&lt;/persistence-unit&gt;</span>
+<span class="nt">&lt;/persistence&gt;</span></code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+To properly set the datasource name, you should set the <code>jakarta.persistence.jtaDataSource</code> property.
+If it is not set, the persistence unit name will be used as the datasource name instead (so <code>user-store-pu</code> in this case).
+In the example above, the resulting datasource name is <code>user-store</code>. The datasource name can be the same as the persistence unit name.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In order to use your own JPA entities, you need to provide the <code>&lt;class&gt;</code> properties that mark JPA entities that will be managed by this persistence unit, directed to a specific datasource.
+In the example above, the <code>org.your.extension.UserEntity</code> JPA entity will be managed by the persistence unit <code>user-store-pu</code>, directed to the <code>user-store</code> datasource.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_2_required_properties"><a class="anchor" href="#_2_required_properties"></a>2. Required properties</h4>
+<div class="paragraph">
+<p>Once you have set up your <code>persistence.xml</code>, the minimal configuration on the Keycloak side is the setup of the DB kind/vendor for the specified datasource.
+You need to specify the build time option <code>db-kind-&lt;name&gt;</code>, where the <code>&lt;name&gt;</code> is the name of your datasource and must be the <strong>same</strong> as specified in the <code>persistence.xml</code> file.</p>
+</div>
+<div class="paragraph">
+<p>Therefore, you can enable the additional datasource <code>user-store</code> as follows (<code>postgres</code> as an example):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--db-kind-user-store</span><span class="o">=</span>postgres</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After specifying the db-kind for the datasource, all database-kind–specific defaults (such as the driver and dialect) are automatically applied, just like for the main datasource.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_via_environment_variables"><a class="anchor" href="#_configuration_via_environment_variables"></a>Configuration via environment variables</h3>
+<div class="paragraph">
+<p>If you do not want to configure the datasource via CLI or <code>keycloak.conf</code> properties, you can use the environment variables.</p>
+</div>
+<div class="paragraph">
+<p>You can set the DB kind via environment variables (for the <code>user-store</code> datasource) as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nb">export </span><span class="nv">KC_DB_KIND_USER_STORE</span><span class="o">=</span>postgres
+<span class="nb">export </span><span class="nv">KC_DB_USERNAME_USER_STORE</span><span class="o">=</span>my-username</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It maps to the <code>db-kind-user-store</code> and <code>db-username-user-store</code> Keycloak properties due to the default mapping of the <code>_</code> (underscore) to the <code>-</code> (dash) for environment variables.
+However, sometimes, the name of the datasource might contain some special characters like <code>_</code>, <code>$</code> or <code>.</code></p>
+</div>
+<div class="paragraph">
+<p>In order to have it properly configured via the Keycloak environment variables, you need to explicitly say what the key for the datasource should look like.
+You can use a pair of unique Keycloak environment variables with a special case of the <code>KCKEY_</code>.</p>
+</div>
+<div class="paragraph">
+<p>For instance, for a datasource with the name <em>user_store$marketing</em>, you can set environment variables as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="nb">export </span><span class="nv">KC_USER_STORE_DB_KIND</span><span class="o">=</span>mariadb
+<span class="nb">export </span><span class="nv">KCKEY_USER_STORE_DB_KIND</span><span class="o">=</span>db-kind-user_store<span class="nv">$marketing</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can find more information in the guide <a href="https://www.keycloak.org/26.6/server/configuration">Configuring Keycloak</a>, in subsection <em>Formats for environment variable keys with special characters</em>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_backward_compatibility_for_the_quarkus_properties"><a class="anchor" href="#_backward_compatibility_for_the_quarkus_properties"></a>Backward compatibility for the <code>quarkus.properties</code></h3>
+<div class="paragraph">
+<p>In the past, we instructed users to use raw Quarkus properties to configure additional datasources in some places.
+However, as using Quarkus properties in the <code>conf/quarkus.properties</code> file is considered <strong>unsupported</strong>, it is strongly recommended to use the dedicated additional datasources options as described above.</p>
+</div>
+<div class="paragraph">
+<p>Before you are able to migrate to the dedicated options, you can still specify the datasource settings via the Quarkus properties as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="properties"><span class="py">quarkus.datasource.user-store.db-kind</span><span class="p">=</span><span class="s">h2</span>
+<span class="py">quarkus.datasource.user-store.username</span><span class="p">=</span><span class="s">sa</span>
+<span class="py">quarkus.datasource.user-store.jdbc.url</span><span class="p">=</span><span class="s">jdbc:h2:mem:user-store;DB_CLOSE_DELAY=-1</span>
+<span class="py">quarkus.datasource.user-store.jdbc.transactions</span><span class="p">=</span><span class="s">xa</span></code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Use Quarkus properties <strong>without quotation</strong> for the datasource name, as properties with the quoted datasource name clash with the new datasource options mapping.
+Therefore, use <code>quarkus.datasource.user-store.db-kind=h2</code>, instead of <code>quarkus.datasource."user-store".db-kind=h2</code> to prevent any issues.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The database vendor.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">In production mode the default value of <code>dev-file</code> is deprecated, you should explicitly specify the db instead.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-kind-&lt;datasource&gt;</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db</code><br>
+<strong>Env:</strong> <code>KC_DB</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code>, <code>dev-mem</code>, <code>mariadb</code>, <code>mssql</code>, <code>mysql</code>, <code>oracle</code>, <code>postgres</code>, <code>tidb</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-connect-timeout</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the JDBC driver connection timeout and login timeout.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-connect-timeout</code><br>
+<strong>Env:</strong> <code>KC_DB_CONNECT_TIMEOUT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10s</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-debug-jpql</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Add JPQL information as comments to SQL statements to debug JPA SQL statement generation.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-debug-jpql-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-debug-jpql</code><br>
+<strong>Env:</strong> <code>KC_DB_DEBUG_JPQL</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-driver</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The fully qualified class name of the JDBC driver.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not set, a default driver is set accordingly to the chosen database.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-driver-&lt;datasource&gt;</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-driver</code><br>
+<strong>Env:</strong> <code>KC_DB_DRIVER</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-log-slow-queries-threshold</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Log SQL statements slower than the configured threshold with logger org.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">hibernate.SQL_SLOW and log-level info.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-log-slow-queries-threshold-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-log-slow-queries-threshold</code><br>
+<strong>Env:</strong> <code>KC_DB_LOG_SLOW_QUERIES_THRESHOLD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10000</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the database user.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-password-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-password</code><br>
+<strong>Env:</strong> <code>KC_DB_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-pool-initial-size</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The initial size of the connection pool.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-pool-initial-size-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-pool-initial-size</code><br>
+<strong>Env:</strong> <code>KC_DB_POOL_INITIAL_SIZE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-pool-max-lifetime</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum time a connection remains in the pool, after which it will be closed upon return and replaced as necessary.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-pool-max-lifetime</code><br>
+<strong>Env:</strong> <code>KC_DB_POOL_MAX_LIFETIME</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-pool-max-size</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The maximum size of the connection pool.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-pool-max-size-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-pool-max-size</code><br>
+<strong>Env:</strong> <code>KC_DB_POOL_MAX_SIZE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>100</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-pool-min-size</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The minimal size of the connection pool.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-pool-min-size-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-pool-min-size</code><br>
+<strong>Env:</strong> <code>KC_DB_POOL_MIN_SIZE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-schema</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The database schema to be used.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-schema-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-schema</code><br>
+<strong>Env:</strong> <code>KC_DB_SCHEMA</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-tls-mode</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the TLS mode for the database connection.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If disabled, it uses the driver&#8217;s default value. When set to verify-server, it enables encryption and server identity verification. The database server certificate or Certificate Authority (CA) certificate is required.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-tls-mode-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-tls-mode</code><br>
+<strong>Env:</strong> <code>KC_DB_TLS_MODE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>disabled</code>, <code>verify-server</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>disabled</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-tls-trust-store-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The path to the truststore file containing the database server certificates or Certificate Authority (CA) certificates used to verify the database server&#8217;s identity.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-tls-trust-store-file-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-tls-trust-store-file</code><br>
+<strong>Env:</strong> <code>KC_DB_TLS_TRUST_STORE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-tls-trust-store-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password to access the truststore file specified in db-tls-trust-store-file (if required and supported by the JDBC driver).</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-tls-trust-store-password-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-tls-trust-store-password</code><br>
+<strong>Env:</strong> <code>KC_DB_TLS_TRUST_STORE_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-tls-trust-store-type</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The type of the truststore file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Common values include <code>JKS</code> (Java KeyStore) and <code>PKCS12</code>. If not specified, it uses the driver&#8217;s default.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-tls-trust-store-type-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-tls-trust-store-type</code><br>
+<strong>Env:</strong> <code>KC_DB_TLS_TRUST_STORE_TYPE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The full database JDBC URL.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not provided, a default URL is set based on the selected database vendor. For instance, if using <code>postgres</code>, the default JDBC URL would be <code>jdbc:postgresql://localhost/keycloak</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-url-full-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url</code><br>
+<strong>Env:</strong> <code>KC_DB_URL</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url-database</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the database name of the default JDBC URL of the chosen vendor.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>db-url</code> option is set, this option is ignored.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-url-database-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url-database</code><br>
+<strong>Env:</strong> <code>KC_DB_URL_DATABASE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url-host</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the hostname of the default JDBC URL of the chosen vendor.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>db-url</code> option is set, this option is ignored.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-url-host-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url-host</code><br>
+<strong>Env:</strong> <code>KC_DB_URL_HOST</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url-port</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the port of the default JDBC URL of the chosen vendor.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>db-url</code> option is set, this option is ignored.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-url-port-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url-port</code><br>
+<strong>Env:</strong> <code>KC_DB_URL_PORT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url-properties</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Sets the properties of the default JDBC URL of the chosen vendor.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Make sure to set the properties accordingly to the format expected by the database vendor, as well as appending the right character at the beginning of this property value. If the <code>db-url</code> option is set, this option is ignored.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-url-properties-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url-properties</code><br>
+<strong>Env:</strong> <code>KC_DB_URL_PROPERTIES</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-username</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The username of the database user.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-username-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-username</code><br>
+<strong>Env:</strong> <code>KC_DB_USERNAME</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>transaction-default-timeout</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The default transaction timeout.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--transaction-default-timeout</code><br>
+<strong>Env:</strong> <code>KC_TRANSACTION_DEFAULT_TIMEOUT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>5m</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>transaction-setup-timeout</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The transaction timeout for database migration/import/export transactions.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">May be an ISO 8601 duration value, an integer number of seconds, or an integer followed by one of [ms, h, m, s, d].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--transaction-setup-timeout</code><br>
+<strong>Env:</strong> <code>KC_TRANSACTION_SETUP_TIMEOUT</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>30m</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>transaction-xa-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If set to true, XA datasources will be used.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>transaction-xa-enabled-&lt;datasource&gt;</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--transaction-xa-enabled</code><br>
+<strong>Env:</strong> <code>KC_TRANSACTION_XA_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_additional_datasources_options"><a class="anchor" href="#_additional_datasources_options"></a>Additional datasources options</h3>
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-debug-jpql-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Add JPQL information as comments to SQL statements to debug JPA SQL statement generation.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-debug-jpql-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_DEBUG_JPQL_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-driver-&lt;datasource&gt;</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The fully qualified class name of the JDBC driver. If not set, a default driver is set accordingly to the chosen database.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-driver-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_DRIVER_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-enabled-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the named datasource &lt;datasource&gt; should be enabled at runtime.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-enabled-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_ENABLED_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-kind-&lt;datasource&gt;</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The database vendor. In production mode the default value of <code>dev-file</code> is deprecated, you should explicitly specify the db instead.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-kind-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_KIND_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code>, <code>dev-mem</code>, <code>mariadb</code>, <code>mssql</code>, <code>mysql</code>, <code>oracle</code>, <code>postgres</code>, <code>tidb</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-log-slow-queries-threshold-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Log SQL statements slower than the configured threshold with logger org.hibernate.SQL_SLOW and log-level info.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-log-slow-queries-threshold-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_LOG_SLOW_QUERIES_THRESHOLD_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>10000</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-password-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The password of the database user.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-password-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_PASSWORD_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-pool-initial-size-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The initial size of the connection pool.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-pool-initial-size-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_POOL_INITIAL_SIZE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-pool-max-size-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The maximum size of the connection pool.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-pool-max-size-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_POOL_MAX_SIZE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>100</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-pool-min-size-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The minimal size of the connection pool.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-pool-min-size-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_POOL_MIN_SIZE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-schema-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The database schema to be used.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-schema-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_SCHEMA_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-tls-mode-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Sets the TLS mode for the database connection. If disabled, it uses the driver&#8217;s default value. When set to verify-server, it enables encryption and server identity verification. The database server certificate or Certificate Authority (CA) certificate is required.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-tls-mode-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_TLS_MODE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>disabled</code>, <code>verify-server</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>disabled</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-tls-trust-store-file-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The path to the truststore file containing the database server certificates or Certificate Authority (CA) certificates used to verify the database server&#8217;s identity.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-tls-trust-store-file-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_TLS_TRUST_STORE_FILE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-tls-trust-store-password-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The password to access the truststore file specified in db-tls-trust-store-file (if required and supported by the JDBC driver).</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-tls-trust-store-password-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_TLS_TRUST_STORE_PASSWORD_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-tls-trust-store-type-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The type of the truststore file. Common values include <code>JKS</code> (Java KeyStore) and <code>PKCS12</code>. If not specified, it uses the driver&#8217;s default.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-tls-trust-store-type-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_TLS_TRUST_STORE_TYPE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url-database-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Sets the database name of the default JDBC URL of the chosen vendor. If the <code>db-url</code> option is set, this option is ignored.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url-database-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_URL_DATABASE_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url-full-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The full database JDBC URL. If not provided, a default URL is set based on the selected database vendor. For instance, if using <code>postgres</code>, the default JDBC URL would be <code>jdbc:postgresql://localhost/keycloak</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url-full-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_URL_FULL_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url-host-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Sets the hostname of the default JDBC URL of the chosen vendor. If the <code>db-url</code> option is set, this option is ignored.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url-host-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_URL_HOST_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url-port-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Sets the port of the default JDBC URL of the chosen vendor. If the <code>db-url</code> option is set, this option is ignored.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url-port-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_URL_PORT_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Integer</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url-properties-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Sets the properties of the default JDBC URL of the chosen vendor. Make sure to set the properties accordingly to the format expected by the database vendor, as well as appending the right character at the beginning of this property value. If the <code>db-url</code> option is set, this option is ignored.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url-properties-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_URL_PROPERTIES_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-username-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Used for named &lt;datasource&gt;.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">The username of the database user.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-username-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_DB_USERNAME_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>transaction-xa-enabled-&lt;datasource&gt;</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If set to true, XA for &lt;datasource&gt; datasource will be used.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--transaction-xa-enabled-&lt;datasource&gt;</code><br>
+<strong>Env:</strong> <code>KC_TRANSACTION_XA_ENABLED_&lt;DATASOURCE&gt;</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.6.4/docs/guides/server/db.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

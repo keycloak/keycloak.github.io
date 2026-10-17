@@ -1,0 +1,829 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Running Keycloak in a container - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Running Keycloak in a container">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Run Keycloak from a container image.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.7/server/containers">
+<meta property="og:url" content="https://www.keycloak.org/26.7/server/containers">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Server">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">Running Keycloak in a container</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.7</h4>
+                There will be no further community releases for the Keycloak 26.7 minor release branch.
+                These guides describe Keycloak 26.7.5.
+                For the latest community release, see the <a href="https://www.keycloak.org/server/containers">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.7</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/server/containers" >Nightly</option>
+            <option value="https://www.keycloak.org/server/containers" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/server/containers" selected="selected">26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/server/containers" >26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Running Keycloak in a container</h1>
+                    <span class="text-muted">Run Keycloak from a container image.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide describes how to optimize and run the Keycloak container image to provide the best experience running a container.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_a_customized_and_optimized_container_image"><a class="anchor" href="#_creating_a_customized_and_optimized_container_image"></a>Creating a customized and optimized container image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The default Keycloak container image ships ready to be configured and optimized.</p>
+</div>
+<div class="paragraph">
+<p>For the best start up of your Keycloak container, build an image by running the <code>build</code> step during the container build.
+This step will save time in every subsequent start phase of the container image.</p>
+</div>
+<div class="sect2">
+<h3 id="_writing_your_optimized_keycloak_containerfile"><a class="anchor" href="#_writing_your_optimized_keycloak_containerfile"></a>Writing your optimized Keycloak Containerfile</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>A Containerfile is functionally identical to a Dockerfile and uses the same syntax.
+The term "Containerfile" is used to be more tool-agnostic, especially in non-Docker environments like Podman or Buildah.
+When using Docker, you have two options: either name your file <code>Dockerfile</code> (which Docker expects by default), or keep the name <code>Containerfile</code> and specify it explicitly using the <code>-f</code> flag:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>docker build -f Containerfile -t mykeycloak .</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following <code>Containerfile</code> creates a pre-configured Keycloak image that enables the health and metrics endpoints, enables the token exchange feature, and uses a PostgreSQL database.</p>
+</div>
+<div class="listingblock">
+<div class="title">Containerfile:</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="dockerfile"><span class="k">FROM</span><span class="w"> </span><span class="s">quay.io/keycloak/keycloak:latest</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">builder</span>
+
+<span class="c"># Enable health and metrics support</span>
+<span class="k">ENV</span><span class="s"> KC_HEALTH_ENABLED=true</span>
+<span class="k">ENV</span><span class="s"> KC_METRICS_ENABLED=true</span>
+
+<span class="c"># Configure a database vendor</span>
+<span class="k">ENV</span><span class="s"> KC_DB=postgres</span>
+
+<span class="k">WORKDIR</span><span class="s"> /opt/keycloak</span>
+<span class="c"># for demonstration purposes only, please make sure to use proper certificates in production instead</span>
+<span class="k">RUN </span>keytool <span class="nt">-genkeypair</span> <span class="nt">-storepass</span> password <span class="nt">-storetype</span> PKCS12 <span class="nt">-keyalg</span> RSA <span class="nt">-keysize</span> 2048 <span class="nt">-dname</span> <span class="s2">"CN=server"</span> <span class="nt">-alias</span> server <span class="nt">-ext</span> <span class="s2">"SAN:c=DNS:localhost,IP:127.0.0.1"</span> <span class="nt">-keystore</span> conf/server.keystore
+<span class="k">RUN </span>/opt/keycloak/bin/kc.sh build
+
+<span class="k">FROM</span><span class="s"> quay.io/keycloak/keycloak:latest</span>
+<span class="k">COPY</span><span class="s"> --from=builder /opt/keycloak/ /opt/keycloak/</span>
+
+<span class="c"># change these values to point to a running postgres instance</span>
+<span class="k">ENV</span><span class="s"> KC_DB=postgres</span>
+<span class="k">ENV</span><span class="s"> KC_DB_URL=&lt;DBURL&gt;</span>
+<span class="k">ENV</span><span class="s"> KC_DB_USERNAME=&lt;DBUSERNAME&gt;</span>
+<span class="k">ENV</span><span class="s"> KC_DB_PASSWORD=&lt;DBPASSWORD&gt;</span>
+<span class="k">ENV</span><span class="s"> KC_HOSTNAME=localhost</span>
+<span class="k">ENTRYPOINT</span><span class="s"> ["/opt/keycloak/bin/kc.sh"]</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The build process includes multiple stages:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Run the <code>build</code> command to set server build options to create an optimized image.</p>
+</li>
+<li>
+<p>The files generated by the <code>build</code> stage are copied into a new image.</p>
+</li>
+<li>
+<p>In the final image, additional configuration options for the hostname and database are set so that you don&#8217;t need to set them again when running the container.</p>
+</li>
+<li>
+<p>In the entrypoint, the <code>kc.sh</code> enables access to all the distribution sub-commands.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To install custom providers, you just need to define a step to include the JAR file(s) into the <code>/opt/keycloak/providers</code> directory.
+This step must be placed before the line that <code>RUNs</code> the <code>build</code> command, as below:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="dockerfile"><span class="c"># A example build step that downloads a JAR file from a URL and adds it to the providers directory</span>
+<span class="k">FROM</span><span class="w"> </span><span class="s">quay.io/keycloak/keycloak:latest</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="s">builder</span>
+
+...
+
+# Add the provider JAR file to the providers directory
+<span class="k">ADD</span><span class="s"> --chown=keycloak:keycloak --chmod=644 &lt;MY_PROVIDER_JAR_URL&gt; /opt/keycloak/providers/myprovider.jar</span>
+
+...
+
+# Context: RUN the build command
+<span class="k">RUN </span>/opt/keycloak/bin/kc.sh build</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_installing_additional_rpm_packages"><a class="anchor" href="#_installing_additional_rpm_packages"></a>Installing additional RPM packages</h3>
+<div class="paragraph">
+<p>If you try to install new software in a stage <code>FROM quay.io/keycloak/keycloak</code>, you will notice that <code>microdnf</code>, <code>dnf</code>, and even <code>rpm</code> are not installed. Also, very few packages are available, only enough for a <code>bash</code> shell, and to run Keycloak itself. This is due to security hardening measures, which reduce the attack surface of the Keycloak container.</p>
+</div>
+<div class="paragraph">
+<p>First, consider if your use case can be implemented in a different way, and so avoid installing new RPMs into the final container:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A <code>RUN curl</code> instruction in your Containerfile can be replaced with <code>ADD</code>, since that instruction natively supports remote URLs.</p>
+</li>
+<li>
+<p>Some common CLI tools can be replaced by creative use of the Linux filesystem. For example, <code>ip addr show tap0</code> becomes <code>cat /sys/class/net/tap0/address</code></p>
+</li>
+<li>
+<p>Tasks that need RPMs can be moved to a former stage of an image build, and the results copied across instead.</p>
+</li>
+<li>
+<p>The Kerberos features of Keycloak do not require the binary parts of <code>krb5-libs</code> to be installed. Instead you can <code>ADD</code> just the relevant text configuration files, e.g. <code>/etc/krb5.conf</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Here is an example. Running <code>update-ca-trust</code> in a former build stage, then copying the result forward:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="dockerfile"><span class="k">FROM</span><span class="w"> </span><span class="s">registry.access.redhat.com/ubi9</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">ubi-micro-build</span>
+<span class="k">COPY</span><span class="s"> mycertificate.crt /etc/pki/ca-trust/source/anchors/mycertificate.crt</span>
+<span class="k">RUN </span>update-ca-trust
+
+<span class="k">FROM</span><span class="s"> quay.io/keycloak/keycloak</span>
+<span class="k">COPY</span><span class="s"> --from=ubi-micro-build /etc/pki /etc/pki</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is possible to install new RPMs if absolutely required, following this two-stage pattern established by ubi-micro:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="dockerfile"><span class="k">FROM</span><span class="w"> </span><span class="s">registry.access.redhat.com/ubi9</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">ubi-micro-build</span>
+<span class="k">RUN </span><span class="nb">mkdir</span> <span class="nt">-p</span> /mnt/rootfs
+<span class="k">RUN </span>dnf <span class="nb">install</span> <span class="nt">--installroot</span> /mnt/rootfs &lt;package names go here&gt; <span class="nt">--releasever</span> 9 <span class="nt">--setopt</span> <span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="nt">--nodocs</span> <span class="nt">-y</span> <span class="o">&amp;&amp;</span> <span class="se">\
+</span>    dnf <span class="nt">--installroot</span> /mnt/rootfs clean all <span class="o">&amp;&amp;</span> <span class="se">\
+</span>    rpm <span class="nt">--root</span> /mnt/rootfs <span class="nt">-e</span> <span class="nt">--nodeps</span> setup
+
+<span class="k">FROM</span><span class="s"> quay.io/keycloak/keycloak</span>
+<span class="k">COPY</span><span class="s"> --from=ubi-micro-build /mnt/rootfs /</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This approach uses a chroot, <code>/mnt/rootfs</code>, so that only the packages you specify and their dependencies are installed, and so can be easily copied into the second stage without guesswork.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Some packages have a large tree of dependencies. By installing new RPMs you may unintentionally increase the container&#8217;s attack surface. Check the list of installed packages carefully.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="custom-entrypoint-shell-scripts"><a class="anchor" href="#custom-entrypoint-shell-scripts"></a>Custom ENTRYPOINT shell scripts</h3>
+<div class="paragraph">
+<p>If you use a custom entry point script, start Keycloak with <code>exec</code> so it can receive termination signals that are essential for a graceful shutdown.</p>
+</div>
+<div class="listingblock">
+<div class="title">Correct approach for an ENTRYPOINT shell script</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="c">#!/bin/bash</span>
+
+<span class="c"># (add your custom logic here)</span>
+
+<span class="c"># Run the 'exec' command as the last step of the script.</span>
+<span class="c"># As it replaces the current shell process, no additional shell commands will run after the 'exec' command.</span>
+<span class="nb">exec</span> /opt/keycloak/bin/kc.sh start <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span></code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Without <code>exec</code>, the shell script remains PID 1 in the container and blocks signals like <code>SIGTERM</code> from reaching Keycloak.
+This prevents a graceful shutdown and can lead to cache inconsistencies or data loss.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To check if Keycloak shuts down gracefully, check the log file of the node shutting down for the following log entry.
+If it shows, the shutdown was graceful.
+If it is missing, it did not shut down gracefully, possibly because it did not receive the signal from the container runtime.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>INFO  [io.quarkus] (Shutdown thread) Keycloak stopped in ...s</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_building_the_container_image"><a class="anchor" href="#_building_the_container_image"></a>Building the container image</h3>
+<div class="paragraph">
+<p>To build the actual container image, run the following command from the directory containing your Containerfile:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">podman|docker build <span class="nb">.</span> <span class="nt">-t</span> mykeycloak <span class="nt">-f</span> Containerfile</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_starting_the_optimized_keycloak_container_image"><a class="anchor" href="#_starting_the_optimized_keycloak_container_image"></a>Starting the optimized Keycloak container image</h3>
+<div class="paragraph">
+<p>To start the image, run:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">podman|docker run <span class="nt">--name</span> mykeycloak <span class="nt">-p</span> 8443:8443 <span class="nt">-p</span> 9000:9000 <span class="se">\</span>
+        <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_USERNAME</span><span class="o">=</span>admin <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_PASSWORD</span><span class="o">=</span>change_me <span class="se">\</span>
+        mykeycloak <span class="se">\</span>
+        start <span class="nt">--optimized</span> <span class="nt">--hostname</span><span class="o">=</span>localhost</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keycloak starts in production mode, using only secured HTTPS communication, and is available on <code><a href="https://localhost:8443" class="bare">https://localhost:8443</a></code>.</p>
+</div>
+<div class="paragraph">
+<p>Health check endpoints are available at <code><a href="https://localhost:9000/health" class="bare">https://localhost:9000/health</a></code>, <code><a href="https://localhost:9000/health/ready" class="bare">https://localhost:9000/health/ready</a></code> and <code><a href="https://localhost:9000/health/live" class="bare">https://localhost:9000/health/live</a></code>.</p>
+</div>
+<div class="paragraph">
+<p>Opening up <code><a href="https://localhost:9000/metrics" class="bare">https://localhost:9000/metrics</a></code> leads to a page containing operational metrics that could be used by your monitoring solution.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_known_issues_with_docker"><a class="anchor" href="#_known_issues_with_docker"></a>Known issues with Docker</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>If a <code>RUN dnf install</code> command seems to be taking an excessive amount of time, then likely your Docker systemd service has the file limit setting <code>LimitNOFILE</code> configured incorrectly.
+Either update the service configuration to use a better value, such as 1024000, or use <code>--ulimit</code> in the <a href="https://docs.docker.com/reference/cli/docker/buildx/build/#ulimit">docker build command</a>, e.g. <code>--ulimit nofile=1024000</code>.</p>
+</li>
+<li>
+<p>If you are including provider JARs and your container fails a <code>start --optimized</code> with a notification that a provider JAR has changed, this is due to Docker truncating
+or otherwise modifying file modification timestamps from what the <code>build</code> command recorded to what is seen at runtime.
+  In this case you will need to force the image to use a known timestamp of your choosing with a <code>touch</code> command prior to running a <code>build</code>:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="dockerfile">...
+# ADD or copy one or more provider jars
+<span class="k">ADD</span><span class="s"> --chown=keycloak:keycloak --chmod=644 some-jar.jar /opt/keycloak/providers/</span>
+...
+<span class="k">RUN </span><span class="nb">touch</span> <span class="nt">-m</span> <span class="nt">--date</span><span class="o">=</span>@1743465600 /opt/keycloak/providers/<span class="k">*</span>
+<span class="k">RUN </span>/opt/keycloak/bin/kc.sh build
+...</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_exposing_the_container_to_a_different_port"><a class="anchor" href="#_exposing_the_container_to_a_different_port"></a>Exposing the container to a different port</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the server is listening for <code>http</code> and <code>https</code> requests using the ports <code>8080</code> and <code>8443</code>, respectively.</p>
+</div>
+<div class="paragraph">
+<p>If you want to expose the container using a different port, you need to set the <code>hostname</code> accordingly:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Exposing the container using a port other than the default ports</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>podman|docker run --name mykeycloak -p 3000:8443 \
+        -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=change_me \
+        mykeycloak \
+        start --optimized --hostname=https://localhost:3000</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By setting the <code>hostname</code> option to a full url you can now access the server at <code><a href="https://localhost:3000" class="bare">https://localhost:3000</a></code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trying_keycloak_in_development_mode"><a class="anchor" href="#_trying_keycloak_in_development_mode"></a>Trying Keycloak in development mode</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The easiest way to try Keycloak from a container for development or testing purposes is to use the Development mode.
+You use the <code>start-dev</code> command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">podman|docker run <span class="nt">--name</span> mykeycloak <span class="nt">-p</span> 127.0.0.1:8080:8080 <span class="se">\</span>
+        <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_USERNAME</span><span class="o">=</span>admin <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_PASSWORD</span><span class="o">=</span>change_me <span class="se">\</span>
+        quay.io/keycloak/keycloak:latest <span class="se">\</span>
+        start-dev</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Invoking this command starts the Keycloak server in development mode.</p>
+</div>
+<div class="paragraph">
+<p>This mode should be strictly avoided in production environments because it has insecure defaults.
+For more information about running Keycloak in production, see <a href="https://www.keycloak.org/26.7/server/configuration-production">Configuring Keycloak for production</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_running_a_standard_keycloak_container"><a class="anchor" href="#_running_a_standard_keycloak_container"></a>Running a standard Keycloak container</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In keeping with concepts such as immutable infrastructure, containers need to be re-provisioned routinely.
+In these environments, you need containers that start fast, therefore you need to create an optimized image as described in the preceding section.
+However, if your environment has different requirements, you can run a standard Keycloak image by just running the <code>start</code> command.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">podman|docker run <span class="nt">--name</span> mykeycloak <span class="nt">-p</span> 127.0.0.1:8080:8080 <span class="se">\</span>
+        <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_USERNAME</span><span class="o">=</span>admin <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_PASSWORD</span><span class="o">=</span>change_me <span class="se">\</span>
+        quay.io/keycloak/keycloak:latest <span class="se">\</span>
+        start <span class="se">\</span>
+        <span class="nt">--hostname</span><span class="o">=</span>localhost <span class="nt">--http-enabled</span><span class="o">=</span><span class="nb">true</span>
+        <span class="nt">--db</span><span class="o">=</span>postgres <span class="nt">--features</span><span class="o">=</span>token-exchange <span class="se">\</span>
+        <span class="nt">--db-url</span><span class="o">=</span>&lt;JDBC-URL&gt; <span class="nt">--db-username</span><span class="o">=</span>&lt;DB-USER&gt; <span class="nt">--db-password</span><span class="o">=</span>&lt;DB-PASSWORD&gt; <span class="se">\</span>
+        <span class="nt">--https-key-store-file</span><span class="o">=</span>&lt;file&gt; <span class="nt">--https-key-store-password</span><span class="o">=</span>&lt;password&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Running this command starts a Keycloak server that detects and applies the build options first.
+In the example, the line  <code>--db=postgres --features=token-exchange</code> sets the database vendor to PostgreSQL and enables the token exchange feature.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak then starts up and applies the configuration for the specific environment.
+This approach significantly increases startup time and creates an image that is mutable, which is not the best practice.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_provide_initial_admin_credentials_when_running_in_a_container"><a class="anchor" href="#_provide_initial_admin_credentials_when_running_in_a_container"></a>Provide initial admin credentials when running in a container</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak only allows to create the initial admin user from a local network connection. This is not the case when running in a container, so you have to provide the following environment variables when you run the image:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="c"># setting the admin username</span>
+<span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_USERNAME</span><span class="o">=</span>&lt;admin-user-name&gt;
+
+<span class="c"># setting the initial password</span>
+<span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_PASSWORD</span><span class="o">=</span>change_me</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_importing_a_realm_on_startup"><a class="anchor" href="#_importing_a_realm_on_startup"></a>Importing A Realm On Startup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak containers have a directory <code>/opt/keycloak/data/import</code>. If you put one or more import files in that directory via a volume mount or other means and add the startup argument <code>--import-realm</code>, the Keycloak container will import that data on startup! This may only make sense to do in Dev mode.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">podman|docker run <span class="nt">--name</span> keycloak_unoptimized <span class="nt">-p</span> 127.0.0.1:8080:8080 <span class="se">\</span>
+        <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_USERNAME</span><span class="o">=</span>admin <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_PASSWORD</span><span class="o">=</span>change_me <span class="se">\</span>
+        <span class="nt">-v</span> /path/to/realm/data:/opt/keycloak/data/import <span class="se">\</span>
+        quay.io/keycloak/keycloak:latest <span class="se">\</span>
+        start-dev <span class="nt">--import-realm</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Feel free to join the open <a href="https://github.com/keycloak/keycloak/discussions/8549">GitHub Discussion</a> around enhancements of the admin bootstrapping process.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_specifying_different_memory_settings"><a class="anchor" href="#_specifying_different_memory_settings"></a>Specifying different memory settings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Keycloak container, instead of specifying hardcoded values for the initial and maximum heap size, uses relative values to the total memory of a container.
+This behavior is achieved by JVM options <code>-XX:MaxRAMPercentage=70</code>, and <code>-XX:InitialRAMPercentage=50</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>-XX:MaxRAMPercentage</code> option represents the maximum heap size as 70% of the total container memory.
+The <code>-XX:InitialRAMPercentage</code> option represents the initial heap size as 50% of the total container memory.
+These values were chosen based on a deeper analysis of Keycloak memory management.</p>
+</div>
+<div class="paragraph">
+<p>As the heap size is dynamically calculated based on the total container memory, you should <strong>always set the memory limit</strong> for the container.
+Previously, the maximum heap size was set to 512 MB, and in order to approach similar values, you should set the memory limit to at least 750 MB.
+For smaller production-ready deployments, the recommended memory limit is 2 GB.</p>
+</div>
+<div class="paragraph">
+<p>The JVM options related to the heap might be overridden by setting the environment variable <code>JAVA_OPTS_KC_HEAP</code>.
+You can find the default values of the <code>JAVA_OPTS_KC_HEAP</code> in the source code of the <code>kc.sh</code>, or <code>kc.bat</code> script.</p>
+</div>
+<div class="paragraph">
+<p>For example, you can specify the environment variable and memory limit as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">podman|docker run <span class="nt">--name</span> mykeycloak <span class="nt">-p</span> 127.0.0.1:8080:8080 <span class="nt">-m</span> 1g <span class="se">\</span>
+        <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_USERNAME</span><span class="o">=</span>admin <span class="nt">-e</span> <span class="nv">KC_BOOTSTRAP_ADMIN_PASSWORD</span><span class="o">=</span>change_me <span class="se">\</span>
+        <span class="nt">-e</span> <span class="nv">JAVA_OPTS_KC_HEAP</span><span class="o">=</span><span class="s2">"-XX:MaxHeapFreeRatio=30 -XX:MaxRAMPercentage=65"</span> <span class="se">\</span>
+        quay.io/keycloak/keycloak:latest <span class="se">\</span>
+        start-dev</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+If the memory limit is not set, the memory consumption rapidly increases as the heap size can grow up to 70% of the total container memory.
+Once the JVM allocates the memory, it is returned to the OS reluctantly with the current Keycloak GC settings.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The database vendor.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">In production mode the default value of <code>dev-file</code> is deprecated, you should explicitly specify the db instead.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-kind-&lt;datasource&gt;</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db</code><br>
+<strong>Env:</strong> <code>KC_DB</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code>, <code>dev-mem</code>, <code>mariadb</code>, <code>mssql</code>, <code>mysql</code>, <code>oracle</code>, <code>postgres</code>, <code>tidb</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dev-file</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the database user.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-password-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-password</code><br>
+<strong>Env:</strong> <code>KC_DB_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-url</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The full database JDBC URL.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not provided, a default URL is set based on the selected database vendor. For instance, if using <code>postgres</code>, the default JDBC URL would be <code>jdbc:postgresql://localhost/keycloak</code>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-url-full-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-url</code><br>
+<strong>Env:</strong> <code>KC_DB_URL</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>db-username</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The username of the database user.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>Named key:</strong> <span class="options-wildcard-key"><code>db-username-&lt;datasource&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--db-username</code><br>
+<strong>Env:</strong> <code>KC_DB_USERNAME</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>features</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables a set of one or more features.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--features</code><br>
+<strong>Env:</strong> <code>KC_FEATURES</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>account-api[:v1]</code>, <code>account[:v3]</code>, <code>admin-api[:v1]</code>, <code>admin-fine-grained-authz[:v1,v2]</code>, <code>admin[:v2]</code>, <code>authorization[:v1]</code>, <code>authzen[:v1]</code>, <code>ciba[:v1]</code>, <code>cimd[:v1]</code>, <code>client-admin-api[:v2]</code>, <code>client-auth-abca[:v1]</code>, <code>client-auth-federated[:v1]</code>, <code>client-policies[:v1]</code>, <code>client-secret-rotation[:v1]</code>, <code>client-types[:v1]</code>, <code>clusterless[:v1]</code>, <code>db-tidb[:v1]</code>, <code>declarative-ui[:v1]</code>, <code>device-flow[:v1]</code>, <code>docker[:v1]</code>, <code>dpop[:v1]</code>, <code>fips[:v1]</code>, <code>hostname[:v2]</code>, <code>http-optimized-serializers[:v1]</code>, <code>identity-assertion-jwt[:v1]</code>, <code>identity-brokering-api[:v1,v2]</code>, <code>impersonation[:v1]</code>, <code>instagram-broker[:v1]</code>, <code>ipa-tuura-federation[:v1]</code>, <code>jwt-authorization-grant[:v1]</code>, <code>kerberos[:v1]</code>, <code>kubernetes-service-accounts[:v1]</code>, <code>log-mdc[:v1]</code>, <code>login[:v2,v1]</code>, <code>logout-all-sessions[:v1]</code>, <code>multi-site[:v1]</code>, <code>oid4vc-vci-preauth-code[:v1]</code>, <code>oid4vc-vci-rest-credential-offer[:v1]</code>, <code>oid4vc-vci[:v1]</code>, <code>openapi[:v1]</code>, <code>opentelemetry-logs[:v1]</code>, <code>opentelemetry-metrics[:v1]</code>, <code>opentelemetry[:v1]</code>, <code>organization[:v1]</code>, <code>par[:v1]</code>, <code>parameterized-scopes[:v1]</code>, <code>passkeys-conditional-ui-authenticator[:v1]</code>, <code>passkeys[:v1]</code>, <code>persistent-user-sessions[:v1]</code>, <code>preview</code>, <code>quick-theme[:v1]</code>, <code>recovery-codes[:v1]</code>, <code>resource-indicators[:v1]</code>, <code>rolling-updates[:v1,v2]</code>, <code>scim-api[:v1]</code>, <code>scripts[:v1]</code>, <code>spiffe[:v1]</code>, <code>ssf[:v1]</code>, <code>stateless[:v1]</code>, <code>step-up-authentication-saml[:v1]</code>, <code>step-up-authentication[:v1]</code>, <code>token-exchange-delegation[:v1]</code>, <code>token-exchange-standard[:v2]</code>, <code>token-exchange[:v1]</code>, <code>transient-users[:v1]</code>, <code>twitter-broker[:v1]</code>, <code>update-email[:v1]</code>, <code>user-event-metrics[:v1]</code>, <code>web-authn[:v1]</code>, <code>workflows[:v1]</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>hostname</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Address at which is the server exposed.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Can be a full URL, or just a hostname. When only hostname is provided, scheme, port and context path are resolved from the request.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--hostname</code><br>
+<strong>Env:</strong> <code>KC_HOSTNAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when hostname:v2 feature is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-key-store-file</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The key store which holds the certificate information instead of specifying separate files.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-key-store-file</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_FILE</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>File</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>https-key-store-password</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The password of the key store file.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--https-key-store-password</code><br>
+<strong>Env:</strong> <code>KC_HTTPS_KEY_STORE_PASSWORD</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>password</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>health-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose health check endpoints.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If enabled, health checks are available at the <code>/health</code>, <code>/health/ready</code> and <code>/health/live</code> endpoints.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--health-enabled</code><br>
+<strong>Env:</strong> <code>KC_HEALTH_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>metrics-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose metrics.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If enabled, metrics are available at the <code>/metrics</code> endpoint.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--metrics-enabled</code><br>
+<strong>Env:</strong> <code>KC_METRICS_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.7.5/docs/guides/server/containers.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

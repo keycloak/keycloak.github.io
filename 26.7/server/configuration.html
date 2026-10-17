@@ -1,0 +1,801 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Configuring Keycloak - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Configuring Keycloak">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Configure and start Keycloak.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.7/server/configuration">
+<meta property="og:url" content="https://www.keycloak.org/26.7/server/configuration">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Server">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">Configuring Keycloak</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.7</h4>
+                There will be no further community releases for the Keycloak 26.7 minor release branch.
+                These guides describe Keycloak 26.7.5.
+                For the latest community release, see the <a href="https://www.keycloak.org/server/configuration">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.7</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/server/configuration" >Nightly</option>
+            <option value="https://www.keycloak.org/server/configuration" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/server/configuration" selected="selected">26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/server/configuration" >26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Configuring Keycloak</h1>
+                    <span class="text-muted">Configure and start Keycloak.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide explains the configuration methods for Keycloak and how to start and apply the preferred configuration. It includes configuration guidelines for optimizing Keycloak for faster startup and low memory footprint.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_sources_for_keycloak"><a class="anchor" href="#_configuring_sources_for_keycloak"></a>Configuring sources for Keycloak</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak loads the configuration from four sources, which are listed here in order of application.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Command-line parameters</p>
+</li>
+<li>
+<p>Environment variables</p>
+</li>
+<li>
+<p>Options defined in the <code>conf/keycloak.conf</code> file, or in a user-created configuration file.</p>
+</li>
+<li>
+<p>Sensitive options defined in a user-created Java KeyStore file.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>When an option is set in more than one source, the one that comes first in the list determines the value for that option. For example, the value for an option set by a command-line parameter has a higher priority than an environment variable for the same option.</p>
+</div>
+<div class="sect2">
+<h3 id="_example_configuring_the_db_url_host_parameter"><a class="anchor" href="#_example_configuring_the_db_url_host_parameter"></a>Example: Configuring the db-url-host parameter</h3>
+<div class="paragraph">
+<p>The following example shows how the <code>db-url</code> value is set in four configuration sources:</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Source</th>
+<th class="tableblock halign-left valign-top">Format</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Command line parameters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--db-url=cliValue</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Environment variable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>KC_DB_URL=envVarValue</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Configuration file</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>db-url=confFileValue</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Java KeyStore file</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>kc.db-url=keystoreValue</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Based on the priority of application, the value that is used at startup is <code>cliValue</code>, because the command line is the highest priority.</p>
+</div>
+<div class="paragraph">
+<p>If <code>--db-url=cliValue</code> had not been used, the applied value would be <code>KC_DB_URL=envVarValue</code>. If the value were not applied by either the command line or an environment variable, <code>db-url=confFileValue</code> would be used. If none of the previous values were applied, the value <code>kc.db-url=keystoreValue</code> would be used due to the lowest priority among the available configuration sources.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak configuration options often map to lower-level Quarkus or spi options. We refer to these as first-class and second-class configuration respectively.
+There are startup warnings to indicate if you are using a second-class option. For example if you try to directly use <code>quarkus.http.port</code>, you will be warned to use <code>kc.http-port</code> instead.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_formats_for_configuration"><a class="anchor" href="#_formats_for_configuration"></a>Formats for configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The configuration uses a <em>unified-per-source</em> format, which simplifies translation of a key/value pair from one configuration source to another. Note that these formats apply to spi options as well.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Command-line parameter format</dt>
+<dd>
+<p>Values for the command-line use the <code>--<em>&lt;key-with-dashes&gt;</em>=<em>&lt;value&gt;</em></code> format. For some values, an <code>-<em>&lt;abbreviation&gt;</em>=<em>&lt;value&gt;</em></code> shorthand also exists.</p>
+</dd>
+<dt class="hdlist1">Environment variable format</dt>
+<dd>
+<p>Values for environment variables use the uppercased <code>KC_<em>&lt;key_with_underscores&gt;</em>=<em>&lt;value&gt;</em></code> format. Alternatively, the <code>KCRAW_</code> prefix can be used instead of <code>KC_</code> to preserve values containing <code>$</code> characters — see <a href="#kcraw-prefix">Preserving literal values with the KCRAW_ prefix</a>.</p>
+</dd>
+<dt class="hdlist1">Configuration file format</dt>
+<dd>
+<p>Values that go into the configuration file use the <code><em>&lt;key-with-dashes&gt;</em>=<em>&lt;value&gt;</em></code> format.</p>
+</dd>
+<dt class="hdlist1">KeyStore configuration file format</dt>
+<dd>
+<p>Values that go into the KeyStore configuration file use the <code>kc.<em>&lt;key-with-dashes&gt;</em></code> format. <code><em>&lt;value&gt;</em></code> is then a password stored in the KeyStore.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>At the end of each configuration guide, look for the <em>Relevant
+options</em> heading, which defines the applicable configuration
+formats. For all configuration options, see <a href="https://www.keycloak.org/26.7/server/all-config">All configuration</a>. Choose the configuration source and format that applies to your use case.</p>
+</div>
+<div class="sect2">
+<h3 id="_example_alternative_formats_based_on_configuration_source"><a class="anchor" href="#_example_alternative_formats_based_on_configuration_source"></a>Example - Alternative formats based on configuration source</h3>
+<div class="paragraph">
+<p>The following example shows the configuration format for <code>db-url-host</code> for three configuration sources:</p>
+</div>
+<div class="listingblock">
+<div class="title">command-line parameter</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--db-url-host</span><span class="o">=</span>mykeycloakdb</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">environment variable</div>
+<div class="content">
+<pre class="rouge highlight"><code>export KC_DB_URL_HOST=mykeycloakdb</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">conf/keycloak.conf</div>
+<div class="content">
+<pre class="rouge highlight"><code>db-url-host=mykeycloakdb</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_formats_for_command_line_parameters"><a class="anchor" href="#_formats_for_command_line_parameters"></a>Formats for command-line parameters</h3>
+<div class="paragraph">
+<p>Keycloak is packed with many command line parameters for configuration. To see the available configuration formats, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--help</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, see <a href="https://www.keycloak.org/26.7/server/all-config">All configuration</a> for all server options.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_format_for_referencing_environment_variables"><a class="anchor" href="#_format_for_referencing_environment_variables"></a>Format for referencing environment variables</h3>
+<div class="paragraph">
+<p>You can use placeholders to resolve an environment specific value from environment variables inside the <code>keycloak.conf</code> file by using the <code>${ENV_VAR}</code> syntax:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>db-url-host=${MY_DB_HOST}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In case the environment variable cannot be resolved, you can specify a fallback value. Use a <code>:</code> (colon) as shown here before <code>mydb</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">db-url-host<span class="o">=</span><span class="k">${</span><span class="nv">MY_DB_HOST</span>:mydb<span class="k">}</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_format_to_include_a_specific_configuration_file"><a class="anchor" href="#_format_to_include_a_specific_configuration_file"></a>Format to include a specific configuration file</h3>
+<div class="paragraph">
+<p>By default, the server always fetches configuration options from the <code>conf/keycloak.conf</code> file. For a new installation, this file holds only commented settings as an idea of what you want to set when running in production.</p>
+</div>
+<div class="paragraph">
+<p>You can also specify an explicit configuration file location using the <code>[-cf|--config-file]</code> option by entering the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] <span class="nt">--config-file</span><span class="o">=</span>/path/to/myconfig.conf start</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Setting that option makes Keycloak read configuration from the specified file instead of <code>conf/keycloak.conf</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_setting_sensitive_options_using_a_java_keystore_file"><a class="anchor" href="#_setting_sensitive_options_using_a_java_keystore_file"></a>Setting sensitive options using a Java KeyStore file</h3>
+<div class="paragraph">
+<p>Thanks to Keystore Configuration Source you can directly load properties from a Java KeyStore using the <code>[--config-keystore]</code> and <code>[--config-keystore-password]</code> options.
+Optionally, you can specify the KeyStore type using the <code>[--config-keystore-type]</code> option. By default, the KeyStore type is <code>PKCS12</code>.</p>
+</div>
+<div class="paragraph">
+<p>The secrets in a KeyStore need to be stored using the <code>PBE</code> (password-based encryption) key algorithm, where a key is derived from a KeyStore password.
+You can generate such a KeyStore using the following <code>keytool</code> command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">keytool <span class="nt">-importpass</span> <span class="nt">-alias</span> kc.db-password <span class="nt">-keystore</span> keystore.p12 <span class="nt">-storepass</span> keystorepass <span class="nt">-storetype</span> PKCS12 <span class="nt">-v</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After executing the command, you will be prompted to <strong>Enter the password to be stored</strong>, which represents a value of the <code>kc.db-password</code> property above.</p>
+</div>
+<div class="paragraph">
+<p>When the KeyStore is created, you can start the server using the following parameters:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--config-keystore</span><span class="o">=</span>/path/to/keystore.p12 <span class="nt">--config-keystore-password</span><span class="o">=</span>keystorepass <span class="nt">--config-keystore-type</span><span class="o">=</span>PKCS12</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_format_for_raw_quarkus_properties"><a class="anchor" href="#_format_for_raw_quarkus_properties"></a>Format for raw Quarkus properties</h3>
+<div class="paragraph">
+<p>In most cases, the available configuration options should suffice to configure the server.
+However, for a specific behavior or capability that is missing in the Keycloak configuration, you can use properties from the underlying Quarkus framework.</p>
+</div>
+<div class="paragraph">
+<p>If possible, avoid using properties directly from Quarkus, because they are unsupported by Keycloak. If your need is essential, consider opening an <a href="https://github.com/keycloak/keycloak/issues/new?assignees=&amp;labels=kind%2Fenhancement%2Cstatus%2Ftriage&amp;template=enhancement.yml">enhancement request</a> first. This approach helps us improve the configuration of Keycloak to fit your needs.</p>
+</div>
+<div class="paragraph">
+<p>If an enhancement request is not possible, you can configure the server using raw Quarkus properties:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a <code>quarkus.properties</code> file in the <code>conf</code> directory.</p>
+</li>
+<li>
+<p>Define the required properties in that file.</p>
+<div class="paragraph">
+<p>You can use only a <a href="https://github.com/keycloak/keycloak/blob/main/quarkus/runtime/pom.xml#L17">subset</a> of the Quarkus extensions that are defined in the <a href="https://quarkus.io/guides/all-config">Quarkus documentation</a>. Also, note these differences for Quarkus properties:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A lock icon for a Quarkus property in the <a href="https://quarkus.io/guides/all-config">Quarkus documentation</a> indicates a build time property. You run the <code>build</code> command to apply this property. For details about the build command, see the subsequent sections on optimizing Keycloak.</p>
+</li>
+<li>
+<p>No lock icon for a property in the Quarkus guide indicates a runtime property for Quarkus and Keycloak.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can also store Quarkus properties in a Java KeyStore.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_special_characters_in_values"><a class="anchor" href="#_using_special_characters_in_values"></a>Using special characters in values</h3>
+<div class="paragraph">
+<p>Keycloak depends upon Quarkus and MicroProfile for processing configuration values. Be aware that value expressions are supported. For example, <code>${some_key}</code> evaluates to the value of <code>some_key</code>.</p>
+</div>
+<div class="paragraph">
+<p>To disable expression evaluation, the <code>\</code> character functions as an escape character. In particular, it must be used to escape the usage of <code>$</code> characters when they appear to define an expression or are repeated. For example, if you want the configuration value <code>my$$password</code>, use <code>my\$\$password</code> instead.  Note that the <code>\</code> character requires additional escaping or quoting when using most unix shells, or when it appears in properties files.
+For example, bash single quotes preserve the single backslash <code>--db-password='my\$\$password'</code>. Also, with bash double quotes, you need an additional backslash <code>--db-password="my\\$\\$password"</code>. Similarly in a properties file, backslash characters must also be escaped: <code>kc.db-password=my\\$\\$password</code></p>
+</div>
+<div class="paragraph">
+<div class="title">Windows-specific considerations</div>
+<p>When specifying Windows file paths in configuration values, backslashes must also be escaped. For example, if you want to specify the path <code>C:\path\to\file</code>, you should write it as <code>C:\\path\\to\\file</code>. Alternatively, you can use forward slashes which don&#8217;t need escaping: <code>C:/path/to/file</code>.</p>
+</div>
+<div class="paragraph">
+<p>When using PowerShell and your values contain special characters like commas, use single quotes around double quotes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">.<span class="se">\k</span>c.bat start <span class="nt">--log-level</span><span class="o">=</span><span class="s1">'"INFO,org.hibernate:debug"'</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>PowerShell handles quotes differently. It interprets the quoted string before passing it to the <code>kc.bat</code> script, removing the outer quote characters. Therefore, an extra layer of quotes is needed to preserve the value structure. Otherwise, the comma would be interpreted as a delimiter. In Windows CMD, you can use double quotes directly.</p>
+</div>
+<div class="paragraph">
+<p>When manual escaping is not feasible (like when a password is injected by a secrets manager and you cannot control the value), use the <code>KCRAW_</code> prefix described in the next section.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="kcraw-prefix"><a class="anchor" href="#kcraw-prefix"></a>Preserving literal values with the KCRAW_ prefix</h3>
+<div class="paragraph">
+<p>When setting configuration values, Keycloak (via SmallRye Config) evaluates expressions such as <code>${some_key}</code> and collapses <code>$$</code> to <code>$</code>. This means passwords or secrets containing <code>$</code> characters may be silently modified. While the <code>\</code> escaping described above works for values you control directly, it is not always practical - for example, when a secrets manager or orchestration tool injects the value and you cannot add escape characters.</p>
+</div>
+<div class="paragraph">
+<p>In these cases, use the <code>KCRAW_</code> prefix instead of <code>KC_</code> for any environment variable whose value must be preserved exactly as written. Keycloak automatically escapes <code>$</code> characters in <code>KCRAW_</code> values so that expression evaluation preserves the original value.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Setting a database password containing special characters</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash"><span class="c"># Standard prefix — the value will be modified by expression evaluation:</span>
+<span class="nb">export </span><span class="nv">KC_DB_PASSWORD</span><span class="o">=</span><span class="s1">'my$$pa$\{vault}word'</span>
+<span class="c"># Result: "$$" is collapsed to "$" and "$\{vault}" is evaluated as an</span>
+<span class="c"># expression, producing "my$paword" or an error</span>
+
+<span class="c"># Raw prefix — the value is preserved exactly as written:</span>
+<span class="nb">export </span><span class="nv">KCRAW_DB_PASSWORD</span><span class="o">=</span><span class="s1">'my$$pa$\{vault}word'</span>
+<span class="c"># Result: the password is used as-is: my$$pa$\{vault}word</span></code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>KCRAW_</code> prefix applies only to environment variables, where shell quoting rules make escaping of <code>$</code> unreliable. Other configuration sources are subject to their own format escaping mechanisms and their values are still treated as expressions.</p>
+</li>
+<li>
+<p>You cannot set both <code>KC_&lt;KEY&gt;</code> and <code>KCRAW_&lt;KEY&gt;</code> for the same configuration key. If both are present, Keycloak will fail to start and report a configuration error.</p>
+</li>
+<li>
+<p>Apart from escaping <code>$</code> characters, <code>KCRAW_</code> variables behave identically to their <code>KC_</code> counterparts: the same key mapping and priority rules apply.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_formats_for_environment_variable_keys_with_special_characters"><a class="anchor" href="#_formats_for_environment_variable_keys_with_special_characters"></a>Formats for environment variable keys with special characters</h3>
+<div class="paragraph">
+<p>Non-alphanumeric characters in your configuration key must be converted to <code>_</code> in the corresponding environment variable key.</p>
+</div>
+<div class="paragraph">
+<p>Environment variables are converted back to normal option keys by lower-casing the name and replacing <code>_</code> with <code>-</code>. Logging wildcards are the exception as <code>_</code> in the category is replaced with <code>.</code> instead. Logging categories are commonly class / package names, which are more likely to use <code>.</code> rather than <code>-</code>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Automatic mapping of the environment variable key to option key may not preserve the intended key
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For example <code>kc.log-level-package.class_name</code> will become the environment variable key <code>KC_LOG_LEVEL_PACKAGE_CLASS_NAME</code>. That will automatically be mapped to <code>kc.log-level-package.class.name</code> because <code>_</code> in the logging category will be replaced by <code>.</code>. Unfortunately this does not match the intent of <code>kc.log-level-package.class_name</code>.</p>
+</div>
+<div class="paragraph">
+<p>You have a couple of options in this case:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>create an entry in your <code>keycloak.conf</code> file that references an environment variable of your choosing. e.g. <code>kc.log-level-package.class_name=${CLASS_NAME_LEVEL}</code>. See more on referencing environment variables in <a href="#_format_for_referencing_environment_variables">Format for referencing environment variables</a>.</p>
+</li>
+<li>
+<p>or in situations where modifying the <code>keycloak.conf</code> may not be easy, you can use a pair of environment variables <code>KC_UNIQUEIFIER=value</code> and <code>KCKEY_UNIQUEIFIER=key</code>, e.g. <code>KC_MYKEY=debug</code> and <code>KCKEY_MYKEY=log-level-package.class_name</code>, or <code>KC_LOG_LEVEL_PACKAGE_CLASS_NAME=debug</code> and <code>KCKEY_LOG_LEVEL_PACKAGE_CLASS_NAME=log-level-package.class_name</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_starting_keycloak"><a class="anchor" href="#_starting_keycloak"></a>Starting Keycloak</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can start Keycloak in <code>development mode</code> or <code>production mode</code>. Each mode offers different defaults for the intended environment.</p>
+</div>
+<div class="sect2">
+<h3 id="_starting_keycloak_in_development_mode"><a class="anchor" href="#_starting_keycloak_in_development_mode"></a>Starting Keycloak in development mode</h3>
+<div class="paragraph">
+<p>Use development mode to try out Keycloak for the first time to get it up and running quickly. This mode offers convenient defaults for developers, such as for developing a new Keycloak theme.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+By default, when you start Keycloak in development mode on Windows Subsystem For Linux, the server binds to all network addresses (<code>0.0.0.0</code>). This means your instance may be accessible from other machines on your network.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To start in development mode, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start-dev</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">Defaults</div>
+<p>Development mode sets the following default configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>HTTP is enabled</p>
+</li>
+<li>
+<p>Strict hostname resolution is disabled</p>
+</li>
+<li>
+<p>Cache is set to local (No distributed cache mechanism used for high availability)</p>
+</li>
+<li>
+<p>Theme-caching and template-caching is disabled</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_starting_keycloak_in_production_mode"><a class="anchor" href="#_starting_keycloak_in_production_mode"></a>Starting Keycloak in production mode</h3>
+<div class="paragraph">
+<p>Use production mode for deployments of Keycloak in production environments. This mode follows a <em>secure by default</em> principle.</p>
+</div>
+<div class="paragraph">
+<p>To start in production mode, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Without further configuration, this command will not start Keycloak and show you an error instead. This response is done on purpose, because Keycloak follows a <em>secure by default</em> principle. Production mode expects a hostname to be set up and an HTTPS/TLS setup to be available when started.</p>
+</div>
+<div class="paragraph">
+<div class="title">Defaults</div>
+<p>Production mode sets the following defaults:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>HTTP is disabled as transport layer security (HTTPS) is essential</p>
+</li>
+<li>
+<p>Hostname configuration is expected</p>
+</li>
+<li>
+<p>HTTPS/TLS configuration is expected</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Before deploying Keycloak in a production environment, make sure to follow the steps outlined in <a href="https://www.keycloak.org/26.7/server/configuration-production">Configuring Keycloak for production</a>.</p>
+</div>
+<div class="paragraph">
+<p>By default, example configuration options for the production mode are commented out in the default <code>conf/keycloak.conf</code> file. These options give you an idea about the main configuration to consider when running Keycloak in production.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_the_initial_admin_user"><a class="anchor" href="#_creating_the_initial_admin_user"></a>Creating the initial admin user</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can create the initial admin user by using the web frontend, which you access using a local connection (localhost). You can instead create this user by using environment variables. Set <code>KC_BOOTSTRAP_ADMIN_USERNAME=<em>&lt;username&gt;</em></code> for the initial admin username and <code>KC_BOOTSTRAP_ADMIN_PASSWORD=<em>&lt;password&gt;</em></code> for the initial admin password.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak parses these values at first startup to create an initial user with administrative rights.
+Once the first user with administrative rights exists, you can use the Admin Console or the command line tool <code>kcadm.[sh|bat]</code> to create additional users.</p>
+</div>
+<div class="paragraph">
+<p>If the initial administrator already exists and the environment variables are still present at startup, an error message stating the failed creation of the initial administrator is shown in the logs. Keycloak ignores the values and starts up correctly.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_optimize_the_keycloak_startup"><a class="anchor" href="#_optimize_the_keycloak_startup"></a>Optimize the Keycloak startup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We recommend optimizing Keycloak to provide faster startup and better memory consumption before deploying Keycloak in a production environment. This section describes how to apply Keycloak optimizations for the best performance and runtime behavior.</p>
+</div>
+<div class="sect2">
+<h3 id="_creating_an_optimized_keycloak_build"><a class="anchor" href="#_creating_an_optimized_keycloak_build"></a>Creating an optimized Keycloak build</h3>
+<div class="paragraph">
+<p>By default, when you use the <code>start</code> or <code>start-dev</code> command, Keycloak runs a <code>build</code> command under the covers for convenience reasons.</p>
+</div>
+<div class="paragraph">
+<p>This <code>build</code> command performs a set of optimizations for the startup and runtime behavior. The build process can take a few seconds. Especially when running Keycloak in containerized environments such as Kubernetes or OpenShift, startup time is important. To avoid losing that time, run a <code>build</code> explicitly before starting up, such as a separate step in a CI/CD pipeline.</p>
+</div>
+<div class="sect3">
+<h4 id="_first_step_run_a_build_explicitly"><a class="anchor" href="#_first_step_run_a_build_explicitly"></a>First step: Run a build explicitly</h4>
+<div class="paragraph">
+<p>To run a <code>build</code>, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] build &lt;build-options&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command shows <code>build options</code> that you enter. Keycloak distinguishes between <strong>build options</strong>, that are usable when running the <code>build</code> command, and <strong>configuration options</strong>, that are usable when starting up the server.</p>
+</div>
+<div class="paragraph">
+<p>For a non-optimized startup of Keycloak, this distinction has no effect. However, if you run a build before the startup, only a subset of options is available to the build command. The restriction is due to the build options getting persisted into an optimized Keycloak image. For example, configuration for credentials such as <code>db-password</code> (which is a configuration option) must not get persisted for security reasons.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+All build options are persisted in a plain text. Do not store any sensitive data as the build options. This applies across all the available configuration sources, including the KeyStore Config Source. Hence, we also do not recommend to store any build options in a Java keystore. Also, when it comes to the configuration options, we recommend to use the KeyStore Config Source primarily for storing sensitive data. For non-sensitive data you can use the remaining configuration sources.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Build options are marked in <a href="https://www.keycloak.org/26.7/server/all-config">All configuration</a> with a tool icon.
+To find available build options, see <a href="https://www.keycloak.org/server/all-config?f=build">All configuration page with build options selected</a> or enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] build <span class="nt">--help</span></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example: Run a <code>build</code> to set the database to PostgreSQL before startup</div>
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] build <span class="nt">--db</span><span class="o">=</span>postgres</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_second_step_start_keycloak_using_optimized"><a class="anchor" href="#_second_step_start_keycloak_using_optimized"></a>Second step: Start Keycloak using <code>--optimized</code></h4>
+<div class="paragraph">
+<p>After a successful build, you can start Keycloak and turn off the default startup behavior by entering the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--optimized</span> &lt;configuration-options&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>--optimized</code> parameter tells Keycloak to assume a pre-built, already optimized Keycloak image is used. As a result, Keycloak avoids checking for and running a build directly at startup, which saves time.</p>
+</div>
+<div class="paragraph">
+<p>You can enter all configuration options at startup; these options are the ones in <a href="https://www.keycloak.org/26.7/server/all-config">All configuration</a> that are <strong>not</strong> marked with a tool icon.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If a build option is found at startup with a value that is equal to the value used when entering the <code>build</code>, that option gets silently ignored when you use the <code>--optimized</code> parameter.</p>
+</li>
+<li>
+<p>If that option has a different value than the value used when a build was entered, an error occurs. For this value to take effect, run a new <code>build</code> before starting.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">Create an optimized build</div>
+<p>The following example shows the creation of an optimized build followed by the use of the <code>--optimized</code> parameter when starting Keycloak.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Set the build option for the PostgreSQL database vendor using the build command</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] build <span class="nt">--db</span><span class="o">=</span>postgres</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the runtime configuration options for postgres in the <code>conf/keycloak.conf</code> file.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code>db-url-host=keycloak-postgres
+db-username=keycloak
+db-password=change_me
+hostname=mykeycloak.acme.com
+https-certificate-file</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start the server with the optimized parameter</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--optimized</span></code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_system_variables_in_the_realm_configuration"><a class="anchor" href="#_using_system_variables_in_the_realm_configuration"></a>Using system variables in the realm configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Some of the realm capabilities allow administrators to reference system variables such as environment variables and system properties when configuring
+the realm and its components.</p>
+</div>
+<div class="paragraph">
+<p>By default, Keycloak disallow using system variables but only those explicitly specified through the <code>spi-admin--allowed-system-variables</code> configuration
+option. This option allows you to specify a comma-separated list of keys that will eventually resolve to values from system variables with the same key.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Start the server and expose a set of system variables to the server runtime</p>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--spi-admin--allowed-system-variables</span><span class="o">=</span>FOO,BAR</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>In future releases, this capability will be removed in favor of preventing any usage of system variables in the realm configuration.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_underlying_concepts"><a class="anchor" href="#_underlying_concepts"></a>Underlying concepts</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section gives an overview of the underlying concepts Keycloak uses, especially when it comes to optimizing the startup.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak uses the Quarkus framework and a re-augmentation/mutable-jar approach under the covers. This process is started when a <code>build</code> command is run.</p>
+</div>
+<div class="paragraph">
+<p>The following are some optimizations performed by the <code>build</code> command:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A new closed-world assumption about installed providers is created, meaning that no need exists to re-create the registry and initialize the factories at every Keycloak startup.</p>
+</li>
+<li>
+<p>Configuration files are pre-parsed to reduce I/O when starting the server.</p>
+</li>
+<li>
+<p>Database specific resources are configured and prepared to run against a certain database vendor.</p>
+</li>
+<li>
+<p>By persisting build options into the server image, the server does not perform any additional step to interpret configuration options and (re)configure itself.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You can read more at the specific <a href="https://quarkus.io/guides/reaugmentation">Quarkus guide</a></p>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.7.5/docs/guides/server/configuration.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

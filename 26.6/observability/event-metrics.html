@@ -1,0 +1,319 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Monitoring user activities with event metrics - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Monitoring user activities with event metrics">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Event metrics provide an aggregated view of user activities in a Keycloak instance.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.6/observability/event-metrics">
+<meta property="og:url" content="https://www.keycloak.org/26.6/observability/event-metrics">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Observability">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides#observability">Observability</a></li>
+                        <li class="breadcrumb-item active">Monitoring user activities with event metrics</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.6</h4>
+                There will be no further community releases for the Keycloak 26.6 minor release branch.
+                These guides describe Keycloak 26.6.4.
+                For the latest community release, see the <a href="https://www.keycloak.org/observability/event-metrics">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.6</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/observability/event-metrics" >Nightly</option>
+            <option value="https://www.keycloak.org/observability/event-metrics" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/observability/event-metrics" >26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/observability/event-metrics" selected="selected">26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Monitoring user activities with event metrics</h1>
+                    <span class="text-muted">Event metrics provide an aggregated view of user activities in a Keycloak instance.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>For now, only metrics for user events are captured.
+For example, you can monitor the number of logins, login failures, or token refreshes performed.</p>
+</div>
+<div class="paragraph">
+<p>The metrics are exposed using the standard metrics endpoint, and you can use it in your own metrics collection system to create dashboards and alerts.</p>
+</div>
+<div class="paragraph">
+<p>The metrics are reported as counters per Keycloak instance.
+The counters are reset on the restart of the instance.
+If you have multiple instances running in a cluster, you will need to collect the metrics from all instances and aggregate them to get per a cluster view.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_event_metrics"><a class="anchor" href="#_enable_event_metrics"></a>Enable event metrics</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To start collecting event metrics, enable metrics and enable the metrics for user events.</p>
+</div>
+<div class="paragraph">
+<p>The following shows the required startup parameters:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--metrics-enabled</span><span class="o">=</span><span class="nb">true</span> <span class="nt">--event-metrics-user-enabled</span><span class="o">=</span><span class="nb">true</span> ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, there is a separate metric for each realm.
+To break down the metric by client and identity provider, you can add those metrics dimension using the configuration option <code>event-metrics-user-tags</code>.
+This can be useful on installations with a small number of clients and IDPs.
+This is not recommended for installations with a large number of clients or IDPs as it will increase the memory usage of Keycloak and as it will increase the load on your monitoring system.</p>
+</div>
+<div class="paragraph">
+<p>The following shows how to configure Keycloak to break down the metrics by all three metrics dimensions:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start ... <span class="nt">--event-metrics-user-tags</span><span class="o">=</span>realm,idp,clientId ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can limit the events for which Keycloak will expose metrics.
+See the <a href="https://www.keycloak.org/docs/26.6.4/server_admin/#event-types">Server Administration Guide on event types</a> for an overview of the available events.</p>
+</div>
+<div class="paragraph">
+<p>The following example limits the events collected to <code>LOGIN</code> and <code>LOGOUT</code> events:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start ... <span class="nt">--event-metrics-user-events</span><span class="o">=</span>login,logout ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See <a href="https://www.keycloak.org/26.6/observability/metrics-for-troubleshooting-keycloak">Self-provided metrics</a> for a description of the metrics collected.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>metrics-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If the server should expose metrics.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If enabled, metrics are available at the <code>/metrics</code> endpoint.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--metrics-enabled</code><br>
+<strong>Env:</strong> <code>KC_METRICS_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>event-metrics-user-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Create metrics based on user events.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--event-metrics-user-enabled</code><br>
+<strong>Env:</strong> <code>KC_EVENT_METRICS_USER_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when metrics are enabled and feature user-event-metrics is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>event-metrics-user-events</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Comma-separated list of events to be collected for user event metrics.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">This option can be used to reduce the number of metrics created as by default all user events create a metric.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--event-metrics-user-events</code><br>
+<strong>Env:</strong> <code>KC_EVENT_METRICS_USER_EVENTS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when user event metrics are enabled</p>
+</div>
+<div class="paragraph">
+<p>Use <code>remove_credential</code> instead of <code>remove_totp</code>, and <code>update_credential</code> instead of <code>update_totp</code> and <code>update_password</code>.
+<strong>Deprecated values: <code>remove_totp</code>, <code>update_totp</code>, <code>update_password</code></strong></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>authreqid_to_token</code>, <code>client_delete</code>, <code>client_info</code>, <code>client_initiated_account_linking</code>, <code>client_login</code>, <code>client_register</code>, <code>client_update</code>, <code>code_to_token</code>, <code>custom_required_action</code>, <code>delete_account</code>, <code>execute_action_token</code>, <code>execute_actions</code>, <code>federated_identity_link</code>, <code>federated_identity_override_link</code>, <code>grant_consent</code>, <code>identity_provider_first_login</code>, <code>identity_provider_link_account</code>, <code>identity_provider_login</code>, <code>identity_provider_post_login</code>, <code>identity_provider_response</code>, <code>identity_provider_retrieve_token</code>, <code>impersonate</code>, <code>introspect_token</code>, <code>invalid_signature</code>, <code>invite_org</code>, <code>jwt_authorization_grant</code>, <code>login</code>, <code>logout</code>, <code>oauth2_device_auth</code>, <code>oauth2_device_code_to_token</code>, <code>oauth2_device_verify_user_code</code>, <code>oauth2_extension_grant</code>, <code>permission_token</code>, <code>pushed_authorization_request</code>, <code>refresh_token</code>, <code>register</code>, <code>register_node</code>, <code>remove_credential</code>, <code>remove_federated_identity</code>, <code>remove_totp</code> (deprecated), <code>reset_password</code>, <code>restart_authentication</code>, <code>revoke_grant</code>, <code>send_identity_provider_link</code>, <code>send_reset_password</code>, <code>send_verify_email</code>, <code>token_exchange</code>, <code>unregister_node</code>, <code>update_consent</code>, <code>update_credential</code>, <code>update_email</code>, <code>update_password</code> (deprecated), <code>update_profile</code>, <code>update_totp</code> (deprecated), <code>user_disabled_by_permanent_lockout</code>, <code>user_disabled_by_temporary_lockout</code>, <code>user_info_request</code>, <code>user_session_deleted</code>, <code>verifiable_credential_create_offer</code>, <code>verifiable_credential_nonce_request</code>, <code>verifiable_credential_offer_request</code>, <code>verifiable_credential_pre_authorized_grant</code>, <code>verifiable_credential_request</code>, <code>verify_email</code>, <code>verify_profile</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>event-metrics-user-tags</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Comma-separated list of tags to be collected for user event metrics.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">By default only <code>realm</code> is enabled to avoid a high metrics cardinality.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--event-metrics-user-tags</code><br>
+<strong>Env:</strong> <code>KC_EVENT_METRICS_USER_TAGS</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when user event metrics are enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>realm</code>, <code>idp</code>, <code>clientId</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>realm</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.6.4/docs/guides/observability/event-metrics.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

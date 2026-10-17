@@ -1,0 +1,367 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>High availability overview - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="High availability overview">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Explore the different Keycloak high-availability architectures">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.7/high-availability/introduction">
+<meta property="og:url" content="https://www.keycloak.org/26.7/high-availability/introduction">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:High availability">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides#high-availability">High availability</a></li>
+                        <li class="breadcrumb-item active">High availability overview</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.7</h4>
+                There will be no further community releases for the Keycloak 26.7 minor release branch.
+                These guides describe Keycloak 26.7.5.
+                For the latest community release, see the <a href="https://www.keycloak.org/high-availability/introduction">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.7</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/high-availability/introduction" >Nightly</option>
+            <option value="https://www.keycloak.org/high-availability/introduction" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/high-availability/introduction" selected="selected">26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/high-availability/introduction" >26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">High availability overview</h1>
+                    <span class="text-muted">Explore the different Keycloak high-availability architectures</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Keycloak can be deployed in a number of high-availability architectures, allowing system administrators to pick the deployment type most suitable
+for their needs. Ease of deployment, cost and fault-tolerance guarantees are important considerations when determining the correct architecture
+for your deployments.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_architectures"><a class="anchor" href="#_architectures"></a>Architectures</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This document describes the high availability architectures in which to deploy Keycloak.</p>
+</div>
+<div class="sect2">
+<h3 id="_single_cluster_deployments"><a class="anchor" href="#_single_cluster_deployments"></a>Single-cluster deployments</h3>
+<div class="paragraph">
+<p>Deploy Keycloak in a single cluster, optionally across multiple availability-zones or data centers with the required
+network latency and database configuration, using <a href="https://www.keycloak.org/26.7/high-availability/single-cluster/introduction">Single-cluster deployments</a>.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Advantages</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>No external dependencies</p>
+</li>
+<li>
+<p>Deployment in a single Kubernetes cluster or a set of virtual machines with transparent networking</p>
+</li>
+<li>
+<p>Tolerate availability-zone failure or data center failure, if deployed to multiple availability zones or data centers</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">Disadvantages</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Kubernetes cluster is a single point of failure:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Control-plane failures could impact all Keycloak pods</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_multi_cluster_deployments_v1"><a class="anchor" href="#_multi_cluster_deployments_v1"></a>Multi-cluster deployments (v1)</h3>
+<div class="paragraph">
+<p>Connect two Keycloak clusters deployed for example in different Kubernetes clusters in two availability zones
+or data centers with the required network latency and database configuration using <a href="https://www.keycloak.org/26.7/high-availability/multi-cluster/introduction">Multi-cluster deployments (v1)</a>.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Advantages</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Tolerate availability-zone failure</p>
+</li>
+<li>
+<p>Tolerate Kubernetes cluster failure</p>
+</li>
+<li>
+<p>Bridge two networks that do not offer transparent networking</p>
+</li>
+<li>
+<p>Regulatory compliance when distinct deployments are required</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">Disadvantages</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Complexity:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>External load-balancer required</p>
+</li>
+<li>
+<p>Separate Infinispan cluster required on each site</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Cost:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Additional load-balancer required</p>
+</li>
+<li>
+<p>Additional compute is required for external Infinispan clusters</p>
+</li>
+<li>
+<p>Two Kubernetes control-planes must be provisioned</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Not supported with three or more availability zones</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_multi_cluster_deployments_v2"><a class="anchor" href="#_multi_cluster_deployments_v2"></a>Multi-cluster deployments (v2)</h3>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This section is describing a feature which is currently in preview.
+Please provide your feedback by <a href="https://github.com/keycloak/keycloak/discussions/50640">joining this discussion</a> while we’re continuing to work on this.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Connect two or more Keycloak clusters without an external Infinispan cluster using <a href="https://www.keycloak.org/26.7/high-availability/multi-cluster-v2/introduction">Multi-cluster deployments (v2)</a>.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Advantages</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Tolerate availability-zone failure</p>
+</li>
+<li>
+<p>Tolerate cluster failure</p>
+</li>
+<li>
+<p>Simpler architecture: no external Infinispan cluster required</p>
+</li>
+<li>
+<p>No requirement for a specific environment such as Kubernetes or AWS</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">Disadvantages</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Complexity:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>External load-balancer required</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Cost:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Additional load-balancer required</p>
+</li>
+<li>
+<p>Two or more control-planes must be provisioned</p>
+</li>
+<li>
+<p>Higher database load as session data is stored in the database and less data is cached. You might see approximately twice the CPU usage and write IOPS on your database, though your results might vary based on your use case.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h3>
+<div class="paragraph">
+<p>To learn more about the different high-availability architectures and their supported configurations, please consult the individual guides.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.keycloak.org/26.7/high-availability/single-cluster/introduction">Single-cluster deployments</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/26.7/high-availability/multi-cluster/introduction">Multi-cluster deployments (v1)</a></p>
+</li>
+<li>
+<p><a href="https://www.keycloak.org/26.7/high-availability/multi-cluster-v2/introduction">Multi-cluster deployments (v2)</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.7.5/docs/guides/high-availability/introduction.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

@@ -1,0 +1,913 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Root cause analysis with tracing - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Root cause analysis with tracing">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Record information during the request lifecycle with OpenTelemetry tracing to identify root cases for latencies and errors in Keycloak and connected systems.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.6/observability/tracing">
+<meta property="og:url" content="https://www.keycloak.org/26.6/observability/tracing">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Observability">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides#observability">Observability</a></li>
+                        <li class="breadcrumb-item active">Root cause analysis with tracing</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.6</h4>
+                There will be no further community releases for the Keycloak 26.6 minor release branch.
+                These guides describe Keycloak 26.6.4.
+                For the latest community release, see the <a href="https://www.keycloak.org/observability/tracing">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.6</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/observability/tracing" >Nightly</option>
+            <option value="https://www.keycloak.org/observability/tracing" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/observability/tracing" >26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/observability/tracing" selected="selected">26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Root cause analysis with tracing</h1>
+                    <span class="text-muted">Record information during the request lifecycle with OpenTelemetry tracing to identify root cases for latencies and errors in Keycloak and connected systems.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide explains how you can enable and configure distributed tracing in Keycloak by utilizing <a href="https://opentelemetry.io/">OpenTelemetry</a> (OTel).
+Tracing allows for detailed monitoring of each request&#8217;s lifecycle, which helps quickly identify and diagnose issues, leading to more efficient debugging and maintenance.</p>
+</div>
+<div class="paragraph">
+<p>It provides valuable insights into performance bottlenecks and can help optimize the system&#8217;s overall efficiency and across system boundaries.
+Keycloak uses a supported <a href="https://quarkus.io/guides/opentelemetry-tracing">Quarkus OTel extension</a> that provides smooth integration and exposure of application traces.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_tracing"><a class="anchor" href="#_enable_tracing"></a>Enable tracing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>It is possible to enable exposing traces using the build time option <code>tracing-enabled</code> as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--tracing-enabled</span><span class="o">=</span><span class="nb">true</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, the trace exporters send out data in batches, using the <code>gRPC</code> protocol and endpoint <code>http://localhost:4317</code>.</p>
+</div>
+<div class="paragraph">
+<p>The default service name is <code>keycloak</code>, specified via the <code>tracing-service-name</code> property, which takes precedence over <code>service.name</code> defined in the <code>tracing-resource-attributes</code> property.</p>
+</div>
+<div class="paragraph">
+<p>For more information about resource attributes that can be provided via the <code>tracing-resource-attributes</code> property, see the <a href="https://quarkus.io/guides/opentelemetry#resource">Quarkus OpenTelemetry Resource</a> guide.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Properties <code>tracing-service-name</code> and <code>tracing-resource-attributes</code> are <strong>deprecated</strong>, and you should use the <code>telemetry-service-name</code> and <code>telemetry-resource-attributes</code>, respectively.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Tracing can be enabled only when the <code>opentelemetry</code> feature is <strong>enabled</strong> (by default).
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For more tracing settings, see all possible configurations below.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_development_setup"><a class="anchor" href="#_development_setup"></a>Development setup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In order to see the captured Keycloak traces, the basic setup with leveraging the <a href="https://www.jaegertracing.io/">Jaeger</a> tracing platform might be used.
+For development purposes, the Jaeger-all-in-one can be used to see traces as easily as possible.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Jaeger-all-in-one includes the Jaeger agent, an OTel collector, and the query service/UI.
+You do not need to install a separate collector, as you can directly send the trace data to Jaeger.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">podman|docker run <span class="nt">--name</span> jaeger <span class="se">\</span>
+<span class="nt">-p</span> 16686:16686 <span class="se">\</span>
+<span class="nt">-p</span> 4317:4317 <span class="se">\</span>
+<span class="nt">-p</span> 4318:4318 <span class="se">\</span>
+jaegertracing/all-in-one</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_exposed_ports"><a class="anchor" href="#_exposed_ports"></a>Exposed ports</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>16686</code></dt>
+<dd>
+<p>Jaeger UI</p>
+</dd>
+<dt class="hdlist1"><code>4317</code></dt>
+<dd>
+<p>OpenTelemetry Protocol gRPC receiver (default)</p>
+</dd>
+<dt class="hdlist1"><code>4318</code></dt>
+<dd>
+<p>OpenTelemetry Protocol HTTP receiver</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>You can visit the Jaeger UI on <code>http://localhost:16686/</code> to see the tracing information.
+The Jaeger UI might look like this with an arbitrary Keycloak trace:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/guides/26.6/jaeger-tracing.png" alt="Jaeger UI">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_information_in_traces"><a class="anchor" href="#_information_in_traces"></a>Information in traces</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_spans"><a class="anchor" href="#_spans"></a>Spans</h3>
+<div class="paragraph">
+<p>Keycloak creates spans for the following activities:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Incoming HTTP requests</p>
+</li>
+<li>
+<p>Outgoing Database including acquiring a database connections</p>
+</li>
+<li>
+<p>Outgoing LDAP requests including connecting to the LDAP server</p>
+</li>
+<li>
+<p>Outgoing HTTP requests including IdP brokerage</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tags"><a class="anchor" href="#_tags"></a>Tags</h3>
+<div class="paragraph">
+<p>Keycloak adds tags to traces depending on the type of the request. All tags are prefixed with <code>kc.</code>.</p>
+</div>
+<div class="paragraph">
+<p>Example tags are:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>kc.clientId</code></dt>
+<dd>
+<p>Client ID</p>
+</dd>
+<dt class="hdlist1"><code>kc.realmName</code></dt>
+<dd>
+<p>Realm name</p>
+</dd>
+<dt class="hdlist1"><code>kc.sessionId</code></dt>
+<dd>
+<p>User session ID</p>
+</dd>
+<dt class="hdlist1"><code>kc.token.id</code></dt>
+<dd>
+<p><code>id</code> as mentioned in the token</p>
+</dd>
+<dt class="hdlist1"><code>kc.token.issuer</code></dt>
+<dd>
+<p><code>issuer</code> as mentioned in the token</p>
+</dd>
+<dt class="hdlist1"><code>kc.token.sid</code></dt>
+<dd>
+<p><code>sid</code> as mentioned in the token</p>
+</dd>
+<dt class="hdlist1"><code>kc.authenticationSessionId</code></dt>
+<dd>
+<p>Authentication session ID</p>
+</dd>
+<dt class="hdlist1"><code>kc.authenticationTabId</code></dt>
+<dd>
+<p>Authentication Tab ID</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_logs"><a class="anchor" href="#_logs"></a>Logs</h3>
+<div class="paragraph">
+<p>If a trace is being sampled, it will contain any user events created during the request.
+This includes, for example, <code>LOGIN</code>, <code>LOGOUT</code> or <code>REFRESH_TOKEN</code> events with all details and IDs found in user events.</p>
+</div>
+<div class="paragraph">
+<p>LDAP communication errors are shown as log entries in recorded traces as well with a stack trace and details of the failed operation.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trace_ids_in_logs"><a class="anchor" href="#_trace_ids_in_logs"></a>Trace IDs in logs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When tracing is enabled, the trace IDs are included in the log messages of all enabled log handlers (see more in <a href="https://www.keycloak.org/26.6/server/logging">Configuring logging</a>).
+It can be useful for associating log events to request execution, which might provide better traceability and debugging.
+All log lines originating from the same request will have the same <code>traceId</code> in the log.</p>
+</div>
+<div class="paragraph">
+<p>The log message also contains a <code>sampled</code> flag, which relates to the sampling described below and indicates whether the span was sampled - sent to the collector.</p>
+</div>
+<div class="paragraph">
+<p>The format of the log records may start as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">2024-08-05 15:27:07,144 <span class="nv">traceId</span><span class="o">=</span>b636ac4c665ceb901f7fdc3fc7e80154, <span class="nv">parentId</span><span class="o">=</span>d59cea113d0c2549, <span class="nv">spanId</span><span class="o">=</span>d59cea113d0c2549, <span class="nv">sampled</span><span class="o">=</span><span class="nb">true </span>WARN  <span class="o">[</span>org.keycloak.events] ...</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hide_trace_ids_in_logs"><a class="anchor" href="#_hide_trace_ids_in_logs"></a>Hide trace IDs in logs</h3>
+<div class="paragraph">
+<p>You can hide trace IDs in specific log handlers by specifying their associated Keycloak option <code>log-&lt;handler-name&gt;-include-trace</code>, where <code>&lt;handler-name&gt;</code> is the name of the log handler.
+For instance, to disable trace info in the <code>console</code> log, you can turn it off as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--tracing-enabled</span><span class="o">=</span><span class="nb">true</span> <span class="nt">--log</span><span class="o">=</span>console <span class="nt">--log-console-include-trace</span><span class="o">=</span><span class="nb">false</span></code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When you explicitly override the log format for the particular log handlers, the <code>*-include-trace</code> options do not have any effect, and no tracing is included.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="sampling"><a class="anchor" href="#sampling"></a>Sampling</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The sampler decides whether a trace should be discarded or forwarded, effectively reducing overhead by limiting the number of collected traces sent to the collector.
+It helps manage resource consumption, which leads to avoiding the huge storage costs of tracing every single request and potential performance penalty.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+For a production-ready environment, sampling should be properly set to minimize infrastructure costs.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Keycloak supports several built-in OpenTelemetry samplers, such as:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>always_on</code></p>
+</li>
+<li>
+<p><code>always_off</code></p>
+</li>
+<li>
+<p><code>traceidratio</code>  (default)</p>
+</li>
+<li>
+<p><code>parentbased_always_on</code></p>
+</li>
+<li>
+<p><code>parentbased_always_off</code></p>
+</li>
+<li>
+<p><code>parentbased_traceidratio</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The used sampler can be changed via the <code>tracing-sampler-type</code> property.</p>
+</div>
+<div class="sect2">
+<h3 id="_default_sampler"><a class="anchor" href="#_default_sampler"></a>Default sampler</h3>
+<div class="paragraph">
+<p>The default sampler for Keycloak is <code>traceidratio</code>, which controls the rate of trace sampling based on a specified ratio configurable via the <code>tracing-sampler-ratio</code> property.</p>
+</div>
+<div class="sect3">
+<h4 id="_trace_ratio"><a class="anchor" href="#_trace_ratio"></a>Trace ratio</h4>
+<div class="paragraph">
+<p>The default trace ratio is <code>1.0</code>, which means all traces are sampled - sent to the collector.
+The ratio is a floating number in the range <code>[0,1]</code>.
+For instance, when the ratio is <code>0.1</code>, only 10% of the traces are sampled.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+For a production-ready environment, the trace ratio should be a smaller number to prevent the massive cost of trace store infrastructure and avoid performance overhead.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The ratio can be set to <code>0.0</code> to disable sampling entirely <em>at runtime</em>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_rationale"><a class="anchor" href="#_rationale"></a>Rationale</h4>
+<div class="paragraph">
+<p>The sampler makes its own sampling decisions based on the current ratio of sampled spans, regardless of the decision made on the parent span,
+as with using the <code>parentbased_traceidratio</code> sampler.</p>
+</div>
+<div class="paragraph">
+<p>The <code>parentbased_traceidratio</code> sampler could be the preferred default type as it ensures the sampling consistency between parent and child spans.
+Specifically, if a parent span is sampled, all its child spans will be sampled as well - the same sampling decision for all.
+It helps to keep all spans together and prevents storing incomplete traces.</p>
+</div>
+<div class="paragraph">
+<p>However, it might introduce certain security risks leading to DoS attacks.
+External callers can manipulate trace headers, parent spans can be injected, and the trace store can be overwhelmed.
+Proper HTTP headers (especially <code>tracestate</code>) filtering and adequate measures of caller trust would need to be assessed.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see the <a href="https://www.w3.org/TR/trace-context/#security-considerations">W3C Trace context</a> document.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tracing_in_kubernetes_environment"><a class="anchor" href="#_tracing_in_kubernetes_environment"></a>Tracing in Kubernetes environment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When the tracing is enabled when using the Keycloak Operator, certain information about the deployment is propagated to the underlying containers.</p>
+</div>
+<div class="sect2">
+<h3 id="_configuration_via_keycloak_cr"><a class="anchor" href="#_configuration_via_keycloak_cr"></a>Configuration via Keycloak CR</h3>
+<div class="paragraph">
+<p>You can change tracing configuration via Keycloak CR. For more information, see the <a href="https://www.keycloak.org/26.6/operator/advanced-configuration#_tracing_opentelemetry">Advanced configuration</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_filter_traces_based_on_kubernetes_attributes"><a class="anchor" href="#_filter_traces_based_on_kubernetes_attributes"></a>Filter traces based on Kubernetes attributes</h3>
+<div class="paragraph">
+<p>You can filter out the required traces in your tracing backend based on their tags:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>service.name</code> - Keycloak deployment name</p>
+</li>
+<li>
+<p><code>k8s.namespace.name</code> - Namespace</p>
+</li>
+<li>
+<p><code>host.name</code> - Pod name</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Keycloak Operator automatically sets the <code>KC_TRACING_SERVICE_NAME</code> and <code>KC_TRACING_RESOURCE_ATTRIBUTES</code> environment variables for each Keycloak container included in pods it manages.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>KC_TRACING_RESOURCE_ATTRIBUTES</code> variable always contains (if not overridden) the <code>k8s.namespace.name</code> attribute representing the current namespace.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_including_trace_information_in_freemarker_templates"><a class="anchor" href="#_including_trace_information_in_freemarker_templates"></a>Including trace information in Freemarker templates</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When tracing is enabled, you can include the trace ID in the Freemarker templates of the login theme by using the <code>traceId</code> variable.</p>
+</div>
+<div class="paragraph">
+<p>By default, the base login theme includes the trace ID in the <code>error.ftl</code> template.
+With the trace ID included in the error page, users can report it when they encounter an error, which can help you quickly identify and investigate additional recorded information for that operation.</p>
+</div>
+<div class="paragraph">
+<p>You will then find the trace ID in all logged messages for this request, and in your tracing system if this trace was sampled.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-console-include-trace</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include tracing information in the console log.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-console-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-console-include-trace</code><br>
+<strong>Env:</strong> <code>KC_LOG_CONSOLE_INCLUDE_TRACE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Console log handler and Tracing is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-file-include-trace</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include tracing information in the file log.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-file-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-file-include-trace</code><br>
+<strong>Env:</strong> <code>KC_LOG_FILE_INCLUDE_TRACE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when File log handler and Tracing is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>log-syslog-include-trace</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Include tracing information in the Syslog.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If the <code>log-syslog-format</code> option is specified, this option has no effect.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--log-syslog-include-trace</code><br>
+<strong>Env:</strong> <code>KC_LOG_SYSLOG_INCLUDE_TRACE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Syslog handler and Tracing is activated</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-compression</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry compression method used to compress payloads.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If unset, compression is disabled.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-compression</code><br>
+<strong>Env:</strong> <code>KC_TRACING_COMPRESSION</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>gzip</code>, <code>none</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables the OpenTelemetry tracing.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-enabled</code><br>
+<strong>Env:</strong> <code>KC_TRACING_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when 'opentelemetry' feature is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-endpoint</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry endpoint to connect to for traces.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from the <code>telemetry-endpoint</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-endpoint</code><br>
+<strong>Env:</strong> <code>KC_TRACING_ENDPOINT</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>http://localhost:4317</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-header-&lt;header&gt;</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry header that will be part of the exporter request (mainly useful for providing Authorization header).</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Check the documentation on how to set environment variables for headers containing special characters or custom case-sensitive headers.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-header-&lt;header&gt;</code><br>
+<strong>Env:</strong> <code>KC_TRACING_HEADER_&lt;HEADER&gt;</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-infinispan-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables the OpenTelemetry tracing for embedded Infinispan.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-infinispan-enabled</code><br>
+<strong>Env:</strong> <code>KC_TRACING_INFINISPAN_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when tracing and embedded Infinispan is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-jdbc-enabled</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">Enables the OpenTelemetry JDBC tracing.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-jdbc-enabled</code><br>
+<strong>Env:</strong> <code>KC_TRACING_JDBC_ENABLED</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-protocol</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry protocol used for the telemetry data.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">If not given, the value is inherited from the <code>telemetry-protocol</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-protocol</code><br>
+<strong>Env:</strong> <code>KC_TRACING_PROTOCOL</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grpc</code>, <code>http/protobuf</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grpc</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-resource-attributes</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry resource attributes present in the exported trace to characterize the telemetry producer.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Values in format <code>key1=val1,key2=val2</code>. If not given, the value is inherited from the <code>telemetry-resource-attributes</code> option. For more information, check the Tracing guide.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-resource-attributes</code><br>
+<strong>Env:</strong> <code>KC_TRACING_RESOURCE_ATTRIBUTES</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div>
+<div class="paragraph">
+<p><strong>DEPRECATED.</strong>
+Resource attributes are not directly related to Tracing and you should use the Telemetry option which takes precedence. Use: <code>telemetry-resource-attributes</code>.</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>List</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-sampler-ratio</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry sampler ratio.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Probability that a span will be sampled. Expected double value in interval [0,1].</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-sampler-ratio</code><br>
+<strong>Env:</strong> <code>KC_TRACING_SAMPLER_RATIO</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Double</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>1.0</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-sampler-type</code></span> <span class="none"><span class="icon options-build"><i class="fa fa-tools"></i></span></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry sampler to use for tracing.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-sampler-type</code><br>
+<strong>Env:</strong> <code>KC_TRACING_SAMPLER_TYPE</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>always_on</code>, <code>always_off</code>, <code>traceidratio</code>, <code>parentbased_always_on</code>, <code>parentbased_always_off</code>, <code>parentbased_traceidratio</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>traceidratio</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tracing-service-name</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">OpenTelemetry service name.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">Takes precedence over <code>service.name</code> defined in the <code>tracing-resource-attributes</code> property. If not given, the value is inherited from the <code>telemetry-service-name</code> option.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tracing-service-name</code><br>
+<strong>Env:</strong> <code>KC_TRACING_SERVICE_NAME</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Available only when Tracing is enabled</p>
+</div>
+<div class="paragraph">
+<p><strong>DEPRECATED.</strong>
+Service name is not directly related to Tracing and you should use the Telemetry option which takes precedence. Use: <code>telemetry-service-name</code>.</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>String</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>keycloak</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.6.4/docs/guides/observability/tracing.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

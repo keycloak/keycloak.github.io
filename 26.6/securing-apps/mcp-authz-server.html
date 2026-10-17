@@ -1,0 +1,709 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Integrating with Model Context Protocol (MCP) - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Integrating with Model Context Protocol (MCP)">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Using Keycloak as an authorization server for Model Context Protocol (MCP) servers.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.6/securing-apps/mcp-authz-server">
+<meta property="og:url" content="https://www.keycloak.org/26.6/securing-apps/mcp-authz-server">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Securing applications">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.6/guides#securing-apps">Securing applications</a></li>
+                        <li class="breadcrumb-item active">Integrating with Model Context Protocol (MCP)</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.6</h4>
+                There will be no further community releases for the Keycloak 26.6 minor release branch.
+                These guides describe Keycloak 26.6.4.
+                For the latest community release, see the <a href="https://www.keycloak.org/securing-apps/mcp-authz-server">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.6</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/securing-apps/mcp-authz-server" >Nightly</option>
+            <option value="https://www.keycloak.org/securing-apps/mcp-authz-server" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/securing-apps/mcp-authz-server" >26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/securing-apps/mcp-authz-server" selected="selected">26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Integrating with Model Context Protocol (MCP)</h1>
+                    <span class="text-muted">Using Keycloak as an authorization server for Model Context Protocol (MCP) servers.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are currently four versions of the Model Context Protocol (MCP) specification:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>2025-11-25 (latest version)</p>
+</li>
+<li>
+<p>2025-06-18</p>
+</li>
+<li>
+<p>2025-03-26</p>
+</li>
+<li>
+<p>2024-11-05 (initial version)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The initial version (2024-11-05) does not cover authorization, as such is not covered in this guide.</p>
+</div>
+<div class="paragraph">
+<p>This guide shows you the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Which MCP version Keycloak supports.</p>
+</li>
+<li>
+<p>How to set up Keycloak as an authorization server in MCP.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>However, the guide does not cover everything you need to know. Therefore, you are recommended to read the authorization section of the relevant MCP version as well.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_standards_compliance_mcp_requires"><a class="anchor" href="#_standards_compliance_mcp_requires"></a>Standards Compliance MCP requires</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>According to the <a href="https://modelcontextprotocol.io/specification/draft/basic/authorization#standards-compliance">MCP specification</a>, there are several standards regarding an authorization server in MCP. The following table shows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Which MCP version requires an authorization server to support which standards in which level (MUST, SHOULD, MAY).</p>
+</li>
+<li>
+<p>With which standards Keycloak complies.</p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Standard</th>
+<th class="tableblock halign-left valign-top">2025-11-25</th>
+<th class="tableblock halign-left valign-top">2025-06-18</th>
+<th class="tableblock halign-left valign-top">2025-03-26</th>
+<th class="tableblock halign-left valign-top">Keycloak</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-14">The OAuth 2.1 Authorization Framework (Internet Draft)</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MUST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MUST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MUST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/rfc8414">OAuth 2.0 Authorization Server Metadata (RFC 8414)</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MUST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MUST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MUST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/rfc8707">Resource Indicators for OAuth 2.0 (RFC 8707)</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MUST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MUST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not supported</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/rfc7591">OAuth 2.0 Dynamic Client Registration Protocol (RFC 7591)</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SHOULD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SHOULD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-00">OAuth Client ID Metadata Document (Internet Draft)</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SHOULD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The OAuth Client ID Metadata Document support in Keycloak is an experimental feature. It may introduce breaking changes in future versions of Keycloak.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The MCP specification adopts <a href="https://datatracker.ietf.org/doc/html/rfc9728">OAuth 2.0 Protected Resource Metadata (RFC 9728)</a>. The standard is for an MCP server and not for an authorization server like Keycloak. Therefore, it is not included in the above table.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mcp_version_compliance"><a class="anchor" href="#_mcp_version_compliance"></a>MCP version compliance</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide, as criteria for compliance, "Keycloak supports MCP" means that Keycloak meets all MUST and SHOULD requirements by MCP.</p>
+</div>
+<div class="paragraph">
+<p>According to these criteria, the following table shows which MCP version Keycloak supports.</p>
+</div>
+<table class="tableblock frame-all grid-all fit-content">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">MCP Version</th>
+<th class="tableblock halign-left valign-top">Conformance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization">2025-03-26</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization">2025-06-18</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Partially Supported without Resource Indicators for OAuth 2.0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization">2025-11-25</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Partially Supported without Resource Indicators for OAuth 2.0</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setup"><a class="anchor" href="#_setup"></a>Setup</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_for_mcp_2025_03_26"><a class="anchor" href="#_for_mcp_2025_03_26"></a>For MCP 2025-03-26</h3>
+<div class="paragraph">
+<p>No special setup is required.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_for_mcp_2025_06_18_and_2025_11_25"><a class="anchor" href="#_for_mcp_2025_06_18_and_2025_11_25"></a>For MCP 2025-06-18 and 2025-11-25</h3>
+<div class="sect3">
+<h4 id="_token_audience_binding_and_validation"><a class="anchor" href="#_token_audience_binding_and_validation"></a>Token Audience Binding and Validation</h4>
+<div class="paragraph">
+<p>To gain security benefit, the MCP specification requires an access token to be bound with its audience. In order to do so, the MCP specification requires the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An MCP client MUST include the <code>resource</code> parameter defined in <a href="https://datatracker.ietf.org/doc/html/rfc8707">Resource Indicators for OAuth 2.0 (RFC 8707)</a> in an authorization request and token request. The parameter&#8217;s value MUST identify an MCP server that the MCP client intends to use the token with.</p>
+</li>
+<li>
+<p>An MCP server MUST validate that tokens presented to them were specifically issued for their use.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The MCP specification does not describe how to do this binding. One method for the binding is to set a value of <code>resource</code> parameter to an <code>aud</code> claim in an access token. However, Keycloak cannot recognize <code>resource</code> parameter.</p>
+</div>
+<div class="paragraph">
+<p>The Keycloak community is planning to support Resource Indicators for OAuth 2.0 (RFC 8707) to Keycloak to make Keycloak recognize and process the <code>resource</code> parameter as the MCP specification expects. Until this support is completed, you can use OAuth 2.0&#8217;s <code>scope</code> parameter instead of the <code>resource</code> parameter. To show the binding, please consider the following situation:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An MCP server&#8217;s URL is <code>https://example.com/mcp</code></p>
+</li>
+<li>
+<p>The MCP supports the following three scopes: <code>mcp:tools</code>, <code>mcp:prompts</code> and  <code>mcp:resources</code>.</p>
+</li>
+<li>
+<p>To get an access token for accessing the MCP server, an MCP client sends to Keycloak an authorization request whose <code>resource</code> parameter value is <code>https://example.com/mcp</code> and <code>scope</code> parameter includes any combination of the three scopes.</p>
+</li>
+<li>
+<p>We want Keycloak to issue an access token whose <code>aud</code> claim&#8217;s value is MCP server&#8217;s URL, namely <code>https://example.com/mcp</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To make Keycloak issue such the access token, we could configure Keycloak as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Add a client scope <code>mcp:tools</code> whose type is <code>Optional</code>.</p>
+</li>
+<li>
+<p>Add to the client scope a new <code>Audience</code> mapper whose <code>Included Custom Audience</code> field is <code>https://example.com/mcp</code>.</p>
+</li>
+<li>
+<p>Add a client scope <code>mcp:prompts</code> whose type is <code>Optional</code>.</p>
+</li>
+<li>
+<p>Add to the client scope a new <code>Audience</code> mapper whose <code>Included Custom Audience</code> field is <code>https://example.com/mcp</code>.</p>
+</li>
+<li>
+<p>Add a client scope <code>mcp:resources</code> whose type is <code>Optional</code>.</p>
+</li>
+<li>
+<p>Add to the client scope a new <code>Audience</code> mapper whose <code>Included Custom Audience</code> field is <code>https://example.com/mcp</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Please not that the client scope&#8217;s <code>Included Custom Audience</code> field needs to be the same as the authorization request&#8217;s <code>resource</code> parameter value and the MCP server&#8217;s URL.</p>
+</div>
+<div class="paragraph">
+<p>With the configuration, if the MCP client send to Keycloak an authorization request whose <code>resource</code> parameter value is <code>https://example.com/mcp</code> and <code>scope</code> parameter includes <code>mcp:resources</code>, <code>mcp:tools</code> and <code>mcp:prompts</code>, Keycloak can issue the following access token:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="json"><span class="p">{</span><span class="w">
+  </span><span class="err">...</span><span class="w">
+  </span><span class="nl">"aud"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.com/mcp"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"scope"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mcp:resources mcp:tools mcp:prompts"</span><span class="w">
+  </span><span class="err">...</span><span class="w">
+</span><span class="p">}</span></code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_mcp_inspector_integration"><a class="anchor" href="#_mcp_inspector_integration"></a>MCP Inspector integration</h3>
+<div class="paragraph">
+<p>If you want to use <a href="https://github.com/modelcontextprotocol/inspector">MCP Inspector</a>, an official debugging tools for MCP server, with Keycloak as an authorization server, you need to do an appropriate setup regarding CORS on Keycloak&#8217;s' client registration endpoint because MCP Inspector executes JavaScript downloaded from the MCP Inspector&#8217;s backend server to register an MCP client dynamically to Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>You need to do an appropriate setup for Client Registration&#8217;s anonymous access policies as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Allowed Client Scopes: Needs to include scopes supported by an MCP server.</p>
+</li>
+<li>
+<p>Allowed Registration Web Origins: Needs to include web origin of MCP inspector&#8217;s backend server.</p>
+</li>
+<li>
+<p>Trusted Hosts: Needs to include hostname or IP address of the machine that sends a dynamic client registration request to Keycloak, namely the machine your browser runs on.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_for_mcp_2025_11_25"><a class="anchor" href="#_for_mcp_2025_11_25"></a>For MCP 2025-11-25</h3>
+<div class="sect3">
+<h4 id="_client_registration"><a class="anchor" href="#_client_registration"></a>Client Registration</h4>
+<div class="paragraph">
+<p>According to <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#client-registration-approaches">Client Registration Approaches</a> section of the MCP specification, the following three client registration mechanisms are supported and you can choose based on your scenario:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Client ID Metadata Documents: When client and server have no prior relationship (most common)</p>
+</li>
+<li>
+<p>Pre-registration: When client and server have an existing relationship</p>
+</li>
+<li>
+<p>Dynamic Client Registration: For backwards compatibility or specific requirements</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Keycloak supports OAuth Client ID Metadata Document. To use Client ID Metadata Documents, you need to enable the feature and set up a client policy so that Keycloak processes the <code>client_id</code> parameter formatted as a URL and fetches the client metadata from that URL.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The OAuth Client ID Metadata Document support is an experimental feature in Keycloak. As such, it may introduce breaking changes in future versions of Keycloak. To enable it, start Keycloak with <code>--features=cimd</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_setting_up_the_client_profile_for_oauth_client_id_metadata_document"><a class="anchor" href="#_setting_up_the_client_profile_for_oauth_client_id_metadata_document"></a>Setting up the client profile for OAuth Client ID Metadata Document</h5>
+<div class="paragraph">
+<p>To process an authorization request whose <code>client_id</code> metadata is a URL pointing to a Client ID Metadata Document, you need to create the profile including <code>client-id-metadata-document</code> executor.</p>
+</div>
+<div class="paragraph">
+<p>To configure the executor, create a client policy profile in the Keycloak Admin Console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Profiles</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client profile</strong>.</p>
+</li>
+<li>
+<p>Give the profile a name such as <code>cimd-profile</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add executor</strong> and select <code>client-id-metadata-document</code> from the list.</p>
+</li>
+<li>
+<p>Configure the executor with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Allow http scheme</strong>: If <code>ON</code>, allows <code>http</code> scheme for the Client ID URL and Client Metadata URLs (e.g., <code>client_uri</code>, <code>logo_uri</code>, <code>tos_uri</code>, <code>policy_uri</code>, <code>jwks_uri</code>). This should only be <code>ON</code> in a development environment and must be <code>OFF</code> in a production environment.</p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: A list of domain patterns (wildcard) that the executor accepts for the Client ID URL and Client Metadata URL properties. For example, use <code>*.example.org</code> to accept any subdomain of <code>example.org</code>. If empty, all domains are denied.</p>
+</li>
+<li>
+<p><strong>Restrict same domain</strong>: If <code>ON</code>, the executor verifies that the Client ID URL and Redirect URI in an authorization request, as well as URL-valued properties of the client metadata, are all under the same trusted domain.</p>
+</li>
+<li>
+<p><strong>Required properties</strong>: A list of client metadata properties that must be present in the Client ID Metadata Document. If the fetched document does not include all the listed properties, the request is rejected.</p>
+</li>
+<li>
+<p><strong>Only Allow Confidential Client</strong>: If <code>ON</code>, the executor only accepts a Client Metadata Document representing a confidential client. In this case, the client metadata must include either a <code>jwks</code> or <code>jwks_uri</code> property and must use <code>private_key_jwt</code> or <code>tls_client_auth</code> as the token endpoint authentication method.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_setting_up_the_client_policy_for_oauth_client_id_metadata_document"><a class="anchor" href="#_setting_up_the_client_policy_for_oauth_client_id_metadata_document"></a>Setting up the client policy for OAuth Client ID Metadata Document</h5>
+<div class="paragraph">
+<p>To trigger the profile created above when the <code>client_id</code> parameter in an authorization request is a URI matching a specified scheme (e.g., <code>https</code>), you need to create the policy including <code>client-id-uri</code> condition.</p>
+</div>
+<div class="paragraph">
+<p>To configure the condition, create a client policy in the Keycloak Admin Console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Policies</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client policy</strong>.</p>
+</li>
+<li>
+<p>Give the policy a name such as <code>cimd-policy</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Conditions</strong>, click <strong>Add condition</strong> and select <code>client-id-uri</code> from the list.</p>
+</li>
+<li>
+<p>Configure the condition with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>URI scheme</strong>: A list of URI schemes to match against the <code>client_id</code> parameter (e.g., <code>https</code>). In a production environment, only <code>https</code> should be used.</p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: A list of domain patterns (wildcard) that the condition accepts for the host part of the <code>client_id</code> URI. If domains are filled, the condition evaluates to true only when the host part of the <code>client_id</code> matches one of the domains. If not filled, the condition evaluates to false regardless. For example, use <code>*.example.org</code> to accept any subdomain of <code>example.org</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Associated client profiles</strong>, add the <code>cimd-profile</code> profile created in the previous step.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>With this configuration, when an MCP client sends an authorization request with a <code>client_id</code> value that is an <code>https</code> URL matching a trusted domain, Keycloak fetches the Client ID Metadata Document from that URL and uses the metadata to process the request.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_system_wide_settings_for_the_client_id_metadata_document_executor"><a class="anchor" href="#_system_wide_settings_for_the_client_id_metadata_document_executor"></a>System-wide settings for the Client ID Metadata Document executor</h5>
+<div class="paragraph">
+<p>The <code>client-id-metadata-document</code> executor has the following system-wide settings that control caching and metadata size limits. These settings cannot be configured through the Admin Console. Instead, they are configured as SPI options when starting Keycloak.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>min-cache-time</strong>: The minimum time (in seconds) that a fetched Client ID Metadata Document is cached. Default: <code>300</code> (5 minutes).</p>
+</li>
+<li>
+<p><strong>max-cache-time</strong>: The maximum time (in seconds) that a fetched Client ID Metadata Document is cached. Default: <code>259200</code> (3 days).</p>
+</li>
+<li>
+<p><strong>upper-limit-metadata-bytes</strong>: The maximum size (in bytes) of a Client ID Metadata Document that Keycloak accepts. Default: <code>5000</code> (5 KB).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To configure these settings, use the <code>--spi-client-policy-executor&#8212;&#8203;client-id-metadata-document--&lt;property&gt;=&lt;value&gt;</code> command-line option when starting Keycloak. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--spi-client-policy-executor--client-id-metadata-document--min-cache-time</span><span class="o">=</span>600 <span class="nt">--spi-client-policy-executor--client-id-metadata-document--max-cache-time</span><span class="o">=</span>86400 <span class="nt">--spi-client-policy-executor--client-id-metadata-document--upper-limit-metadata-bytes</span><span class="o">=</span>10000</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_visual_studio_code_desktop_integration"><a class="anchor" href="#_visual_studio_code_desktop_integration"></a>Visual Studio Code desktop integration</h3>
+<div class="paragraph">
+<p><a href="https://code.visualstudio.com/">Microsoft Visual Studio Code</a> (VS Code) desktop is an MCP client that supports OAuth Client ID Metadata Document. When VS Code desktop connects to an MCP server that requires authorization, it sends an authorization request with a <code>client_id</code> parameter that is an <code>https</code> URL hosted on <code>vscode.dev</code> (e.g., <code>https://vscode.dev/mcp-client</code>). Keycloak fetches the Client ID Metadata Document from this URL and uses the metadata to process the request.</p>
+</div>
+<div class="paragraph">
+<p>VS Code desktop uses localhost callbacks for the OAuth redirect. It starts a local HTTP server and uses a redirect URI such as <code>http://127.0.0.1:&lt;port&gt;/callback</code>. Because the redirect URI is on <code>127.0.0.1</code> rather than on the <code>vscode.dev</code> domain, the <strong>Restrict same domain</strong> option in the client profile executor must be set to <code>OFF</code>.</p>
+</div>
+<div class="paragraph">
+<p>To configure Keycloak for VS Code desktop&#8217;s MCP client, follow the steps below.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+VS Code desktop is a public client that uses PKCE (Proof Key for Code Exchange) for OAuth. It does not use a client secret.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_starting_keycloak_with_the_cimd_feature"><a class="anchor" href="#_starting_keycloak_with_the_cimd_feature"></a>Starting Keycloak with the CIMD feature</h4>
+<div class="paragraph">
+<p>Start Keycloak with the <code>cimd</code> feature flag enabled:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--features</span><span class="o">=</span>cimd</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_setting_up_the_client_profile_for_vs_code_desktop"><a class="anchor" href="#_setting_up_the_client_profile_for_vs_code_desktop"></a>Setting up the client profile for VS Code desktop</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Profiles</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client profile</strong>.</p>
+</li>
+<li>
+<p>Give the profile a name such as <code>vscode-cimd-profile</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add executor</strong> and select <code>client-id-metadata-document</code> from the list.</p>
+</li>
+<li>
+<p>Configure the executor with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Allow http scheme</strong>: <code>OFF</code></p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: <code>vscode.dev</code>, <code>127.0.0.1</code></p>
+</li>
+<li>
+<p><strong>Restrict same domain</strong>: <code>OFF</code> (VS Code desktop uses a localhost redirect URI such as <code>http://127.0.0.1:&lt;port&gt;/callback</code>, which is not on the same domain as <code>vscode.dev</code>)</p>
+</li>
+<li>
+<p><strong>Only Allow Confidential Client</strong>: <code>OFF</code> (VS Code desktop is a public client)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_setting_up_the_client_policy_for_vs_code_desktop"><a class="anchor" href="#_setting_up_the_client_policy_for_vs_code_desktop"></a>Setting up the client policy for VS Code desktop</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Realm Settings</strong> &#8594; <strong>Client Policies</strong> &#8594; <strong>Policies</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Create client policy</strong>.</p>
+</li>
+<li>
+<p>Give the policy a name such as <code>vscode-cimd-policy</code> and click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Conditions</strong>, click <strong>Add condition</strong> and select <code>client-id-uri</code> from the list.</p>
+</li>
+<li>
+<p>Configure the condition with the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>URI scheme</strong>: <code>https</code></p>
+</li>
+<li>
+<p><strong>Trusted domains</strong>: <code>vscode.dev</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Associated client profiles</strong>, add the <code>vscode-cimd-profile</code> profile created in the previous step.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>With this configuration, when VS Code desktop sends an authorization request, Keycloak recognizes the <code>client_id</code> as a URL on <code>vscode.dev</code>, fetches the Client ID Metadata Document, and uses a localhost callback to complete the OAuth flow.</p>
+</div>
+</div>
+</div>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.6.4/docs/guides/securing-apps/mcp-authz-server.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>

@@ -1,0 +1,341 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Configuring trusted certificates - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Configuring trusted certificates">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Configure the Keycloak Truststore to communicate through TLS.">
+<meta name="author" content="Keycloak Team">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<meta name="robots" content="noindex">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/rouge-github.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/26.7/server/keycloak-truststore">
+<meta property="og:url" content="https://www.keycloak.org/26.7/server/keycloak-truststore">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg"></head>
+<body>
+
+<div class="bg-primary text-center py-2 px-3" data-nosnippet>
+    <a class="link-light text-decoration-none small" href="https://www.keycloak.org/2026/09/keycloakcon-27-eu-call-for-papers">
+        Speak at <b>KeycloakCon Europe 2027</b> in Barcelona! CfP closes October 18 &middot; Save the date: March 15, 2027 &middot; <span class="fw-semibold text-decoration-underline">Submit Today &rarr;</span>
+    </a>
+</div>
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article">
+    <div class="row">
+        <div class="col-md-9 col-xl-10 col-sm-12" data-pagefind-body data-pagefind-filter="category:Server">
+            <div class="d-flex align-items-center mb-3" data-pagefind-ignore>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides">Guides</a></li>
+                        <li class="breadcrumb-item"><a href="https://www.keycloak.org/26.7/guides#server">Server</a></li>
+                        <li class="breadcrumb-item active">Configuring trusted certificates</li>
+                    </ol>
+                </nav>
+            </div>
+
+        <div class="mb-4 alert alert-warning" role="alert" data-pagefind-ignore>
+                <h4 class="no-top-margin">Archived release &mdash; Keycloak 26.7</h4>
+                There will be no further community releases for the Keycloak 26.7 minor release branch.
+                These guides describe Keycloak 26.7.5.
+                For the latest community release, see the <a href="https://www.keycloak.org/server/keycloak-truststore">current guides</a>.
+        </div>
+
+            <span data-pagefind-filter="version" hidden>26.7</span>
+            <div class="mb-4">
+                <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
+    <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
+            <option value="https://www.keycloak.org/nightly/server/keycloak-truststore" >Nightly</option>
+            <option value="https://www.keycloak.org/server/keycloak-truststore" >26.8.1</option>
+            <option value="https://www.keycloak.org/26.7/server/keycloak-truststore" selected="selected">26.7.5</option>
+            <option value="https://www.keycloak.org/26.6/server/keycloak-truststore" >26.6.4</option>
+    </select>
+                </div>
+
+                <h1 data-pagefind-meta="title">Configuring trusted certificates</h1>
+                    <span class="text-muted">Configure the Keycloak Truststore to communicate through TLS.</span>
+            </div>
+
+
+
+            <div class="kc-asciidoc" id="guide-body">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>When Keycloak communicates with external services or has an incoming connection through TLS, it has to validate the remote certificate in order to ensure it is connecting to a trusted server. This is necessary in order to prevent man-in-the-middle attacks.</p>
+</div>
+<div class="paragraph">
+<p>The certificates of these clients or servers, or the CA that signed these certificates, must be put in a truststore. This truststore is then configured for use by Keycloak.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_system_truststore"><a class="anchor" href="#_configuring_the_system_truststore"></a>Configuring the System Truststore</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The existing Java default truststore certs will always be trusted.  If you need additional certificates, which will be the case if you have self-signed or internal certificate authorities that are not recognized by the JRE, they can be included in the <code>conf/truststores</code> directory or subdirectories.  The certs may be in PEM files, or PKCS12 files with extension <code>.p12</code>, <code>.pfx</code>, or <code>.pkcs12</code>.  If in PKCS12, the certs must be unencrypted - meaning no password is expected.</p>
+</div>
+<div class="paragraph">
+<p>If you need an alternative path, use the <code>--truststore-paths</code> option to specify additional files or directories where PEM or PKCS12 files are located. Paths are relative to where you launched Keycloak, so absolute paths are recommended instead. If a directory is specified, it will be recursively scanned for truststore files.</p>
+</div>
+<div class="paragraph">
+<p>After all applicable certs are included, the truststore will be used as the system default truststore via the <code>javax.net.ssl</code> properties, and as the default for internal usage within Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--truststore-paths</span><span class="o">=</span>/opt/truststore/myTrustStore.pfx,/opt/other-truststore/myOtherTrustStore.pem</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is still possible to directly set your own <code>javax.net.ssl</code> truststore System properties, but it&#8217;s recommended to use the <code>--truststore-paths</code> instead.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cluster_ca_certificates_kubernetes_and_openshift"><a class="anchor" href="#_cluster_ca_certificates_kubernetes_and_openshift"></a>Cluster CA certificates (Kubernetes and OpenShift)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When running Keycloak on Kubernetes or OpenShift, the server will automatically include well-known cluster certificate authorities in the system truststore if they are present on the filesystem:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Kubernetes service account CA: <code>/var/run/secrets/kubernetes.io/serviceaccount/ca.crt</code></p>
+</li>
+<li>
+<p>OpenShift service CA: <code>/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This behavior is enabled by default and does not require the Operator. It can be controlled with the following option:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>--truststore-kubernetes-enabled=true|false</code> (default: <code>true</code>)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To disable automatically trusting the cluster CAs entirely:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">bin/kc.[sh|bat] start <span class="nt">--truststore-kubernetes-enabled</span><span class="o">=</span><span class="nb">false</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that if the corresponding files are not mounted into the container, they will not be included regardless of the option values.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+When <code>https-client-auth</code> is set to <code>required</code> or <code>request</code> without an explicit <code>https-trust-store-file</code>, mTLS client certificate validation falls back to the system truststore. With <code>truststore-kubernetes-enabled=true</code>, this means certificates signed by the Kubernetes cluster CA will be accepted as valid client certificates. If this is not desired, either set <code>https-trust-store-file</code> explicitly or disable <code>truststore-kubernetes-enabled</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hostname_verification_policy"><a class="anchor" href="#_hostname_verification_policy"></a>Hostname Verification Policy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You may refine how hostnames are verified by TLS connections with the <code>tls-hostname-verifier</code> property.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>DEFAULT</code> (the default) allows wildcards in subdomain names (e.g. *.foo.com) to match names with the same number of levels (e.g. a.foo.com, but not a.b.foo.com) - with rules and exclusions for public suffixes based upon <a href="https://publicsuffix.org/list/" class="bare">https://publicsuffix.org/list/</a></p>
+</li>
+<li>
+<p><code>ANY</code> means that the hostname is not verified - this mode should not be used in production.</p>
+</li>
+<li>
+<p><code>WILDCARD</code> (deprecated) allows wildcards in subdomain names (e.g. *.foo.com) to match anything, including multiple levels (e.g. a.b.foo.com). Use DEFAULT instead.</p>
+</li>
+<li>
+<p><code>STRICT</code> (deprecated) allows wildcards in subdomain names (e.g. *.foo.com) to match names with the same number of levels (e.g. a.foo.com, but not a.b.foo.com) - with some limited exclusions. Use DEFAULT instead.</p>
+<div class="paragraph">
+<p>Please note that this setting does not apply to LDAP secure connections, which require strict hostname checking.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_relevant_options"><a class="anchor" href="#_relevant_options"></a>Relevant options</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch options">
+<colgroup>
+<col style="width: 75%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top"><em>Type</em> or Values</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>tls-hostname-verifier</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">The TLS hostname verification policy for out-going HTTPS and SMTP requests.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">ANY should not be used in production.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--tls-hostname-verifier</code><br>
+<strong>Env:</strong> <code>KC_TLS_HOSTNAME_VERIFIER</code></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>STRICT and WILDCARD have been deprecated, use DEFAULT instead.
+<strong>Deprecated values: <code>STRICT</code>, <code>WILDCARD</code></strong></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ANY</code>, <code>WILDCARD</code> (deprecated), <code>STRICT</code> (deprecated), <code>DEFAULT</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DEFAULT</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>truststore-kubernetes-enabled</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">If enabled, the server will automatically include the default Kubernetes service account CA certificate from "/var/run/secrets/kubernetes.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><span class="options-description-extended">io/serviceaccount/ca.crt" and the OpenShift service CA certificate from "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt" when running in a container environment.</span></p>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--truststore-kubernetes-enabled</code><br>
+<strong>Env:</strong> <code>KC_TRUSTSTORE_KUBERNETES_ENABLED</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><span class="options-key"><code>truststore-paths</code></span></p>
+</div>
+<div class="paragraph">
+<p><span class="options-description">List of pkcs12 (p12, pfx, or pkcs12 file extensions), PEM files, or directories containing those files that will be used as a system truststore.</span></p>
+</div>
+<div class="openblock options-extended">
+<div class="content">
+<div class="paragraph">
+<p><strong>CLI:</strong> <code>--truststore-paths</code><br>
+<strong>Env:</strong> <code>KC_TRUSTSTORE_PATHS</code></p>
+</div>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>List</em></p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>            </div>
+        </div>
+
+        <div class="col-md-3 mt-4 col-xl-2 col-sm-12 bg-light">
+            <div class="sticky-top px-2 py-3">
+                <div class="mt-2 mb-2 fw-bold">On this page</div>
+                <div id="js-toc"></div>
+                <div class="mt-4">
+                    <a href="https://github.com/keycloak/keycloak/tree/26.7.5/docs/guides/server/keycloak-truststore.adoc" target="_blank"><i class="fa fa-edit"></i> Edit this guide</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.keycloak.org/resources/js/guide.js" type="text/javascript"></script>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="https://www.keycloak.org/resources/tocbot/dist/tocbot.min.js" type="text/javascript"></script>
+</body>
+</html>
