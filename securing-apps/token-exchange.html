@@ -84,7 +84,7 @@ gtag('config', 'G-0J2P9316N6');
                 <div data-nosnippet data-pagefind-ignore class="me-3 float-end">
     <select  data-nosnippet aria-label="Version" onchange="location = this.options[this.selectedIndex].value;" class="form-select">
             <option value="https://www.keycloak.org/nightly/securing-apps/token-exchange" >Nightly</option>
-            <option value="https://www.keycloak.org/securing-apps/token-exchange" selected="selected">26.8.1</option>
+            <option value="https://www.keycloak.org/securing-apps/token-exchange" selected="selected">26.8.2</option>
             <option value="https://www.keycloak.org/26.7/securing-apps/token-exchange" >26.7.5</option>
             <option value="https://www.keycloak.org/26.6/securing-apps/token-exchange" >26.6.4</option>
     </select>
@@ -290,7 +290,8 @@ because Keycloak does not support other types for the standard token exchange.</
 <dd>
 <p><em>OPTIONAL.</em> This parameter represents the type of token that the client wants to exchange for. In this version,  only oauth and OpenID Connect token types are supported. The default value for this
 is <code>urn:ietf:params:oauth:token-type:access_token</code>. Another possible value is <code>urn:ietf:params:oauth:token-type:id_token</code> if the ID token issued to <code>requester-client</code> is requested. The possible value might
-be also <code>urn:ietf:params:oauth:token-type:refresh_token</code>; in this case, you will receive both an access token and refresh token within the response. However, the refresh token is allowed if the <code>Allow refresh token in Standard Token Exchange</code> client configuration option is enabled as specified in the <a href="#_standard-token-exchange-details">standard token exchange</a> section.</p>
+be also <code>urn:ietf:params:oauth:token-type:refresh_token</code>; in this case, you will receive both an access token and refresh token within the response. However, the refresh token is allowed if the
+<code>Allow refresh token in Standard Token Exchange</code> client configuration option is enabled as specified in the <a href="#_standard-token-exchange-details">standard token exchange</a> section.</p>
 </dd>
 <dt class="hdlist1">scope</dt>
 <dd>
@@ -537,10 +538,43 @@ client <code>requester-client</code> sends the request with <code>scope=some-con
 for <code>client-scope</code>, <code>grant-type</code> and <code>client-roles</code>.</p>
 </li>
 <li>
+<p><a id="_standard-token-exchange-expiration"></a>The exchanged access token and ID token expire together with the subject token. Their expiration is capped by the <code>exp</code> claim of the <code>subject_token</code> and the
+<code>expires_in</code> value of the response is reduced accordingly, so that a client cannot use token exchange to extend the lifetime of the identity it was given. The switch <strong>Allow exchange token expiration
+after subject token expiration</strong>, available in the Admin Console in the <strong>Advanced</strong> tab of the OIDC client in the <strong>OpenID Connect Compatibility Modes</strong> section, makes the exchanged tokens expire according
+to the regular realm and client token lifespans instead. Keeping the switch off is recommended.</p>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+This applies to access and ID tokens only. Refresh tokens are governed by the separate switch described below, and when both switches are combined, with <strong>Allow exchange token expiration after
+subject token expiration</strong> off and <strong>Allow refresh token in Standard Token Exchange</strong> on, the expiration can still be increased indirectly: the requester client exchanges for a refresh token, which is not
+capped, and refreshes it for an access token with the regular lifespan.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
 <p>Requesting a refresh token is allowed only if the client has the switch <strong>Allow refresh token in Standard Token Exchange</strong> set to a value other than <code>No</code> (the default value). The switch is available in the
 Admin Console in the <strong>Advanced</strong> tab of the OIDC client in the <strong>OpenID Connect Compatibility Modes</strong> section. The other available value of the switch is <strong>Same session</strong>, which means that the refresh token is
 allowed only if the refresh token can use the same user session as the subject token. If that subject token is coming from a <a href="https://www.keycloak.org/docs/latest/server_admin/#_transient-session">Transient session</a> or from an
 <a href="https://www.keycloak.org/docs/latest/server_admin/#_offline-access">Offline session</a>, the requesting refresh token will not be allowed. Similarly it will not be allowed to request an offline token (using <code>scope=offline_access</code>).</p>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+A refresh token lets the requester client obtain new tokens on behalf of the user for as long as the user session lives, well beyond the expiration of the subject token. Consider carefully
+whether the requester client needs one, and prefer performing a new token exchange with a fresh subject token.
+</td>
+</tr>
+</table>
+</div>
 </li>
 </ul>
 </div>
