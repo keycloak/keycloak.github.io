@@ -772,7 +772,7 @@ The following table shows the recommended paths to expose.</p>
 </table>
 <div class="paragraph">
 <p>We assume you run Keycloak on the root path <code>/</code> on your reverse proxy/gateway&#8217;s public API.
-If not, prefix the path with your desired one.</p>
+If not, prefix the Reverse Proxy Path with your desired one. See <a href="#context-path-on-reverse-proxy">Context path on reverse proxy</a> for how the context path must be handled between the proxy and Keycloak.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -806,10 +806,27 @@ The following description assumes Keycloak&#8217;s default settings and that thi
 </div>
 </div>
 <div class="sect2">
-<h3 id="_different_context_path_on_reverse_proxy"><a class="anchor" href="#_different_context_path_on_reverse_proxy"></a>Different context path on reverse proxy</h3>
+<h3 id="context-path-on-reverse-proxy"><a class="anchor" href="#context-path-on-reverse-proxy"></a>Context path on reverse proxy</h3>
 <div class="paragraph">
 <p>By default, Keycloak is exposed through the root context path (<code>/</code>).
-If the proxy uses a different context path than Keycloak, one of the following must be done:</p>
+If the proxy exposes Keycloak under a context path, such as <code>/auth</code>, the proxy and Keycloak must agree on whether that path is part of the request URI that reaches the server. Choose one of the following approaches.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+A mismatch between the request URI sent by the reverse proxy and the one expected by Keycloak typically results in <code>404 Not Found</code> errors, or in redirects and links that point to the wrong location.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_proxy_removes_the_context_path"><a class="anchor" href="#_proxy_removes_the_context_path"></a>Proxy removes the context path</h4>
+<div class="paragraph">
+<p>The server keeps serving requests at the root context path, and the context path is only used by Keycloak to build the URLs it returns. To configure this, do one of the following:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -817,15 +834,22 @@ If the proxy uses a different context path than Keycloak, one of the following m
 <p>Use a simple hostname for the <code>hostname</code> option, <code>xforwarded</code> for the <code>proxy-headers</code> option, and have the proxy set the <code>X-Forwarded-Prefix</code> header.</p>
 </li>
 <li>
-<p>Use a full URL for the <code>hostname</code> option including the proxy context path, for example using <code>--hostname=https://my.keycloak.org/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>.</p>
-</li>
-<li>
-<p>Change the context path of Keycloak itself to match the context path for the reverse proxy using the <code>http-relative-path</code> option.</p>
+<p>Use a full URL for the <code>hostname</code> option including the proxy context path, for example using <code>--hostname=https://my.keycloak.org/auth</code> if Keycloak is exposed through the reverse proxy on <code>/auth</code>. The <code>proxy-headers</code> option must also be set, otherwise the server logs a likely misconfiguration warning because the path in <code>hostname</code> does not match <code>http-relative-path</code>.</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
+<p>In both cases, the reverse proxy must remove the context path from the request URI before forwarding the request to Keycloak. For example, a request to <code>/auth/realms/master</code> must be forwarded as <code>/realms/master</code>. Consult the documentation of your reverse proxy for how to rewrite or strip a path prefix.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_proxy_and_server_use_the_same_context_path"><a class="anchor" href="#_proxy_and_server_use_the_same_context_path"></a>Proxy and server use the same context path</h4>
+<div class="paragraph">
+<p>Set the <code>http-relative-path</code> option on Keycloak to the same context path the proxy exposes, for example <code>--http-relative-path=/auth</code>. The server then serves requests under that path, so the reverse proxy must forward the request URI unchanged.</p>
+</div>
+<div class="paragraph">
 <p>For more details on exposing Keycloak on a different hostname or context path, including the Administration REST API and Console, see <a href="https://www.keycloak.org/nightly/server/hostname">Configuring the hostname (v2)</a>.</p>
+</div>
 </div>
 </div>
 <div class="sect2">
