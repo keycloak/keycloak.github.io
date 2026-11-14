@@ -118,8 +118,7 @@ The current distributed cache implementation is built on top of <a href="https:/
 <p>When you start Keycloak in production mode, by using the <code>start</code> command, caching is enabled and all Keycloak nodes in your network are discovered.</p>
 </div>
 <div class="paragraph">
-<p>By default, caches use the <code>jdbc-ping</code> stack which is based upon a TCP transport and uses the configured database to track nodes joining the cluster.
-Keycloak allows you to either choose from a set of pre-defined default transport stacks, or to define your own custom stack, as you will see later in this guide.</p>
+<p>Cluster nodes communicate over TCP and use the configured database to discover other nodes.</p>
 </div>
 <div class="paragraph">
 <p>To explicitly enable distributed infinispan caching, enter this command:</p>
@@ -399,12 +398,12 @@ This means all user sessions are lost when all Keycloak nodes are restarted, and
 <p>In order to reduce memory usage, it&#8217;s possible to place an upper bound on the number of entries which are stored in a given
 cache. To specify an upper bound of on a cache, you must provide the following command line argument
 <code>--cache-embedded-${CACHE_NAME}-max-count=</code>, with <code>${CACHE_NAME}</code> replaced with the name of the cache you would like to
-apply the upper bound to. For example, to apply an upper-bound of <code>1000</code> to the <code>offlineSessions</code> cache you would configure
-<code>--cache-embedded-offline-sessions-max-count=1000</code>. An upper bound can not be defined on the following caches:
+apply the upper bound to. For example, to apply an upper-bound of <code>1000</code> to the <code>sessions</code> cache you would configure
+<code>--cache-embedded-sessions-max-count=1000</code>. An upper bound can not be defined on the following caches:
 <code>actionToken</code>, <code>authenticationSessions</code>, <code>loginFailures</code>, <code>work</code>.</p>
 </div>
 <div class="paragraph">
-<p>Setting a maximum cache size for <code>sessions</code>, <code>clientSessions</code> is not supported when the deprecated volatile sessions mode is used.</p>
+<p>When volatile user sessions are in use, limits on the <code>sessions</code> and <code>clientSessions</code> caches are ignored; only the offline session cache limits remain supported in that mode.</p>
 </div>
 </div>
 <div class="sect2">
@@ -499,7 +498,7 @@ If the Infinispan server has authentication enabled, Keycloak will fail to start
 <dd>
 <p>Defines the name of the cluster.
 Only nodes with the same cluster name can discover each other and form a cluster.
-Because Keycloak uses the database for node discovery via <code>jdbc-ping</code> by default, clusters that share the same database but should remain separate will merge unless they have distinct cluster names.
+Because Keycloak uses the database for node discovery, clusters that share the same database but should remain separate will merge unless they have distinct cluster names.
 The default cluster name is <code>ISPN</code>.</p>
 <div class="paragraph">
 <p>Use <code>--cache-embedded-cluster-name</code> (or environment variable <code>KC_CACHE_EMBEDDED_CLUSTER_NAME</code>).</p>
@@ -624,10 +623,10 @@ We recommend to set up anti-affinity rules and/or topology spread constraints to
 <div class="sectionbody">
 <div class="paragraph">
 <p>The transport stack ensures that Keycloak nodes in a cluster communicate in a reliable fashion.
-The only supported transport stack is <code>jdbc-ping</code>, which uses TCP for transport and the database for node discovery via the JGroups <code>JDBC_PING2</code> protocol.</p>
+Keycloak uses TCP for transport and the database for node discovery.</p>
 </div>
 <div class="paragraph">
-<p>Encryption using TLS is enabled by default for the TCP-based <code>jdbc-ping</code> transport stack.
+<p>Communication between nodes is encrypted using TLS by default.
 No additional CLI options or modifications of the cache XML are required.</p>
 </div>
 <div class="paragraph">
@@ -709,7 +708,7 @@ To restrict unauthorized access, always use a self-signed certificate for each K
 <div class="sectionbody">
 <div class="paragraph">
 <p>To ensure a healthy Keycloak clustering, some network ports need to be open.
-The table below shows the TCP ports that need to be open for the <code>jdbc-ping</code> stack, and a description of the traffic that goes through it.</p>
+The table below shows the TCP ports required for cluster communication, and a description of the traffic that goes through them.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -1052,30 +1051,6 @@ While these metrics provide more insights into the latency distribution, collect
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
 </tr>
-<tr>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><span class="options-key"><code>cache-stack</code></span></p>
-</div>
-<div class="paragraph">
-<p><span class="options-description">Define the default stack to use for cluster communication and node discovery.</span></p>
-</div>
-<div class="openblock options-extended">
-<div class="content">
-<div class="paragraph">
-<p><span class="options-description-extended">Defaults to <code>jdbc-ping</code> if not set.</span></p>
-</div>
-<div class="paragraph">
-<p><strong>CLI:</strong> <code>--cache-stack</code><br>
-<strong>Env:</strong> <code>KC_CACHE_STACK</code></p>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Available only when 'cache' type is set to 'ispn'</p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jdbc-ping</code>, or any</p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
 </tbody>
 </table>
 <div class="sect2">
@@ -1212,7 +1187,7 @@ While these metrics provide more insights into the latency distribution, collect
 </div>
 </div>
 <div class="paragraph">
-<p>Available only when a TCP based cache-stack is used</p>
+<p>Available only when the embedded cache uses TCP transport</p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code>, <code>false</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
