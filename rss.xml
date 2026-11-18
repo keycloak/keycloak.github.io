@@ -9,6 +9,256 @@
   <language>en-us</language>
   <category>Keycloak/SSO/Identity and Access Management</category>
       <item>
+        <title>Java4Shell: What Keycloak admins need to do (CVE-2026-114938)</title>
+        <link>https://www.keycloak.org/2026/11/java4shell-vulnerability-cve-2026-114938</link>
+        <description>&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;&lt;strong&gt;Last updated: 18 November 2026, 09:29 UTC&lt;/strong&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;If your organization uses Keycloak, please pass this post to the team that operates it, even if you do not run Keycloak yourself.
+They need to check the Java runtime and the CPU type used by every Keycloak instance.
+The issue is &lt;a href=&quot;https://access.redhat.com/security/vulnerabilities/RHSB-2026-018&quot;&gt;CVE-2026-114938&lt;/a&gt;, known as &lt;em&gt;Java4Shell&lt;/em&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The flaw is in OpenJDK&amp;#8217;s accelerated Base64 decoder, which Keycloak uses to process some requests.
+On affected systems, a malformed value that Keycloak decodes before authentication can corrupt the Java process&amp;#8217;s memory.
+The &lt;a href=&quot;https://calif.io/java4shell/&quot;&gt;researchers&lt;/a&gt; report that they demonstrated pre-authentication remote code execution against Keycloak.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_am_i_affected&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_am_i_affected&quot;&gt;&lt;/a&gt;Am I affected?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Treat a Keycloak instance as at risk when all of these apply:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;It runs an unpatched OpenJDK build from 17.0.6 onward, including unpatched OpenJDK 21 and 25 builds.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Its x86-64 host or virtual machine exposes the &lt;code&gt;avx512vbmi&lt;/code&gt; CPU feature to Java.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The running JVM has Base64 intrinsics enabled and has not been limited to AVX2 with &lt;code&gt;-XX:UseAVX=2&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;As checked on 18 November 2026, the x86-64 Keycloak container images tagged &lt;code&gt;26.8.2-1&lt;/code&gt; and &lt;code&gt;26.8.2-2&lt;/code&gt; bundle an affected OpenJDK 21.0.13 build.
+These image tags alone do not establish whether your deployment is exploitable: check the CPU feature and effective JVM flags as described below.
+A Keycloak ZIP or TAR.GZ distribution started directly on a host can also be affected; the conditions depend on its Java runtime and CPU, not on whether it runs in a container.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Keycloak processes Base64 data on requests that arrive before authentication, so administrators should not assume that a login requirement protects an affected instance.
+Check &lt;strong&gt;every&lt;/strong&gt; node or virtual machine that can run Keycloak, including failover nodes and nodes used during rolling updates.
+A check on your workstation does not establish the status of a production deployment.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;On the Keycloak host or virtual machine, check the CPU feature:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-m1&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&#39;^flags&#39;&lt;/span&gt; /proc/cpuinfo | &lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-qw&lt;/span&gt; avx512vbmi &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&#39;AVX-512 VBMI available&#39;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;If this prints nothing, that CPU does not expose AVX-512 VBMI and is not known to be affected by this flaw.
+On a container platform, run the check on the node that executes the Keycloak container.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Check the Java version that the deployment actually uses.
+For a ZIP or TAR.GZ installation, run &lt;code&gt;java -version&lt;/code&gt; with the Java executable used to start Keycloak; a system service may use a different Java installation from your interactive shell.
+For a container image, check its bundled runtime:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;docker &lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt; &amp;lt;keycloak-container&amp;gt; java &lt;span class=&quot;nt&quot;&gt;-version&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Or, on Kubernetes:&lt;/span&gt;
+kubectl &lt;span class=&quot;nb&quot;&gt;exec&lt;/span&gt; &amp;lt;keycloak-pod&amp;gt; &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; keycloak &lt;span class=&quot;nt&quot;&gt;--&lt;/span&gt; java &lt;span class=&quot;nt&quot;&gt;-version&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;These commands identify the bundled runtime; they start a separate Java process and do not tell you which flags the running Keycloak JVM uses.
+Check the live JVM flags in the verification section below.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_how_do_i_protect_keycloak_now&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_how_do_i_protect_keycloak_now&quot;&gt;&lt;/a&gt;How do I protect Keycloak now?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Start each affected Keycloak JVM with &lt;code&gt;-XX:-UseBASE64Intrinsics&lt;/code&gt; and restart every instance.
+This is &lt;a href=&quot;https://access.redhat.com/security/vulnerabilities/RHSB-2026-018&quot;&gt;Red Hat&amp;#8217;s preferred interim mitigation&lt;/a&gt;.
+It disables the vulnerable accelerated Base64 path while retaining other AVX-512 optimizations.
+If you already set &lt;code&gt;JAVA_OPTS_APPEND&lt;/code&gt;, add the flag to the existing value rather than replacing your other JVM options.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For a ZIP or TAR.GZ installation started from its distribution directory in a shell, use:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;JAVA_OPTS_APPEND&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;JAVA_OPTS_APPEND&lt;/span&gt;:+&lt;span class=&quot;nv&quot;&gt;$JAVA_OPTS_APPEND&lt;/span&gt;&lt;span class=&quot;p&quot;&gt; &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;-XX:-UseBASE64Intrinsics&quot;&lt;/span&gt;
+./bin/kc.sh start&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Keep the other options from your normal start command.
+If a service manager such as systemd starts Keycloak, set &lt;code&gt;JAVA_OPTS_APPEND&lt;/code&gt; in that service&amp;#8217;s environment instead and restart the service; exporting it in an interactive shell does not change an already running service.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For a Keycloak container started with Docker or Podman, add this environment variable to the existing run command:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nt&quot;&gt;-e&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;JAVA_OPTS_APPEND&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;-XX&lt;/span&gt;:-UseBASE64Intrinsics&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For Docker Compose, add it to the Keycloak service:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;environment&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;JAVA_OPTS_APPEND&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;-XX:-UseBASE64Intrinsics&quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For a Keycloak Operator deployment that uses a pod template, add the variable to the &lt;code&gt;keycloak&lt;/code&gt; container in the existing &lt;code&gt;Keycloak&lt;/code&gt; custom resource:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;apiVersion&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;k8s.keycloak.org/v2beta1&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;kind&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Keycloak&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;metadata&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;example-kc&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;spec&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;unsupported&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;podTemplate&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;spec&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;containers&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+          &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;keycloak&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;env&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+              &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;JAVA_OPTS_APPEND&lt;/span&gt;
+                &lt;span class=&quot;na&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;-XX:-UseBASE64Intrinsics&quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Merge the example into your existing resource, preserving its database, TLS, and other settings.
+This changes the Keycloak custom resource, not the Operator installation or image.
+The Operator also supports &lt;code&gt;spec.env&lt;/code&gt; for this variable if you do not already use a pod template.
+Make sure the Operator replaces or restarts every Keycloak pod so that each JVM receives the new flag.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_how_do_i_verify_the_mitigation&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_how_do_i_verify_the_mitigation&quot;&gt;&lt;/a&gt;How do I verify the mitigation?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Ask the &lt;strong&gt;running Keycloak JVM&lt;/strong&gt; for its effective flag value with &lt;code&gt;jcmd&lt;/code&gt;.
+The official Keycloak 26.8.2 container includes &lt;code&gt;jcmd&lt;/code&gt;.
+For an Operator-managed pod named &lt;code&gt;example-kc-0&lt;/code&gt;, run:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;kubectl &lt;span class=&quot;nb&quot;&gt;exec &lt;/span&gt;example-kc-0 &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; keycloak &lt;span class=&quot;nt&quot;&gt;--&lt;/span&gt; jcmd io.quarkus.bootstrap.runner.QuarkusEntryPoint VM.flags &lt;span class=&quot;nt&quot;&gt;-all&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-F&lt;/span&gt; UseBASE64Intrinsics&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The expected output is:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;text&quot;&gt;bool UseBASE64Intrinsics = false {product} {command line}&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The whitespace between fields may differ.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For a ZIP or TAR.GZ installation running directly on a host, run &lt;code&gt;jcmd -l&lt;/code&gt; on that host to find the Keycloak process ID, then query that process:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;jcmd &lt;span class=&quot;nt&quot;&gt;-l&lt;/span&gt;
+jcmd &amp;lt;keycloak-pid&amp;gt; VM.flags &lt;span class=&quot;nt&quot;&gt;-all&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-F&lt;/span&gt; UseBASE64Intrinsics&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For Docker or Podman, replace the &lt;code&gt;kubectl exec &amp;#8230;&amp;#8203; --&lt;/code&gt; part with &lt;code&gt;docker exec &amp;lt;keycloak-container&amp;gt;&lt;/code&gt; or &lt;code&gt;podman exec &amp;lt;keycloak-container&amp;gt;&lt;/code&gt;.
+If &lt;code&gt;jcmd&lt;/code&gt; cannot find the process by its main class, run &lt;code&gt;jcmd -l&lt;/code&gt; in the container and use the listed Keycloak PID.
+Repeat the check for every Keycloak process after restart or rollout, including every pod or container.
+Seeing the variable in a service or container&amp;#8217;s environment is not enough; the live JVM must report &lt;code&gt;UseBASE64Intrinsics = false&lt;/code&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_what_about_the_keycloak_operator_itself&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_what_about_the_keycloak_operator_itself&quot;&gt;&lt;/a&gt;What about the Keycloak Operator itself?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The Keycloak Operator runs in a separate Java process.
+The 26.8.2 &lt;a href=&quot;https://github.com/keycloak/keycloak/blob/26.8.2/operator/Dockerfile&quot;&gt;Operator image is built with OpenJDK 25&lt;/a&gt;, so its JVM can also have the vulnerable Base64 decoder when it runs an unpatched build on a host with AVX-512 VBMI.
+Unlike the Keycloak server, the Operator usually has no unauthenticated remote request path that passes attacker-controlled Base64 to this decoder.
+It normally receives configuration and Secrets through the authenticated Kubernetes API; we have not established an unauthenticated remote exploit path into the Operator itself.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;To mitigate its JVM, set &lt;code&gt;JDK_JAVA_OPTIONS&lt;/code&gt; on the &lt;strong&gt;Operator Deployment&lt;/strong&gt; and restart its pods:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;kubectl &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &amp;lt;operator-namespace&amp;gt; &lt;span class=&quot;nb&quot;&gt;set env &lt;/span&gt;deployment/keycloak-operator &lt;span class=&quot;nv&quot;&gt;JDK_JAVA_OPTIONS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;-XX&lt;/span&gt;:-UseBASE64Intrinsics&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;If Operator Lifecycle Manager (OLM) manages the Operator, set the variable in the Subscription&amp;#8217;s &lt;code&gt;spec.config.env&lt;/code&gt; so it is retained when OLM manages the Deployment:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;spec&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;env&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;JDK_JAVA_OPTIONS&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;-XX:-UseBASE64Intrinsics&quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Preserve any existing &lt;code&gt;JDK_JAVA_OPTIONS&lt;/code&gt; value by adding the flag to it.
+The Operator image starts &lt;code&gt;java&lt;/code&gt; directly, so &lt;code&gt;JAVA_OPTS_APPEND&lt;/code&gt; used by the Keycloak server startup script does not configure the Operator.
+After the Operator pod restarts, check its running JVM:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;kubectl &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &amp;lt;operator-namespace&amp;gt; &lt;span class=&quot;nb&quot;&gt;exec &lt;/span&gt;deployment/keycloak-operator &lt;span class=&quot;nt&quot;&gt;--&lt;/span&gt; jcmd 1 VM.flags &lt;span class=&quot;nt&quot;&gt;-all&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-F&lt;/span&gt; UseBASE64Intrinsics&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The result must report &lt;code&gt;UseBASE64Intrinsics = false&lt;/code&gt;.
+Configuring the Operator does not configure the Keycloak pods that it manages; apply the Keycloak custom resource mitigation above as well.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_what_about_a_permanent_fix&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_what_about_a_permanent_fix&quot;&gt;&lt;/a&gt;What about a permanent fix?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Install a Keycloak image or Java runtime whose vendor confirms that it fixes CVE-2026-114938, then redeploy and verify every instance.
+For custom images, rebuild them with the fixed Java base image or package.
+At the time of writing, we cannot recommend a specific fixed Keycloak image.
+We will release updated Keycloak and Keycloak Operator container images as soon as patched OpenJDK builds are available for them.
+We will update this post with the new image tags and verification details when those rebuilt images are ready.
+Do not use the Keycloak version number alone to determine whether a deployment is fixed: images can bundle different Java runtimes, and vendors can backport security fixes.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Follow the &lt;a href=&quot;https://access.redhat.com/security/vulnerabilities/RHSB-2026-018&quot;&gt;Red Hat security bulletin&lt;/a&gt; and &lt;a href=&quot;https://github.com/keycloak/keycloak/issues/55293&quot;&gt;Keycloak tracking issue&lt;/a&gt; for updates.
+Keep the mitigation in place until you have deployed and verified a vendor-confirmed fixed runtime.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description>
+        <guid>https://www.keycloak.org/2026/11/java4shell-vulnerability-cve-2026-114938</guid>
+        <pubDate>Wed, 18 Nov 2026 00:00:00 GMT</pubDate>
+        
+        <author>The Keycloak team</author>
+      </item>
+      <item>
         <title>Keycloak Client Libraries 26.0.13 released</title>
         <link>https://www.keycloak.org/2026/11/keycloak-client-26013-released</link>
         <description>
