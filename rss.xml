@@ -9,6 +9,590 @@
   <language>en-us</language>
   <category>Keycloak/SSO/Identity and Access Management</category>
       <item>
+        <title>Keycloak Workflows in Practice, Part 1: Automating Identity Lifecycle</title>
+        <link>https://www.keycloak.org/2026/11/workflows-part-1-automating-identity-lifecycle</link>
+        <description>
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;This is the first article in the &lt;strong&gt;Keycloak Workflows in Practice&lt;/strong&gt; series. Over the next few weeks, we will explore
+Keycloak&amp;#8217;s Workflow engine from the basics to advanced customization and integration with other features. Whether you
+are new to workflows or looking to push them further, this series will walk you through real-world scenarios that
+demonstrate what this feature can do for your identity management infrastructure.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In this article, we start with the fundamentals and build three practical workflows you can deploy today.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_why_workflows&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_why_workflows&quot;&gt;&lt;/a&gt;Why Workflows?&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Managing the lifecycle of users and clients in a realm often involves repetitive, error-prone administrative tasks:
+welcoming new users, tracking inactive accounts, revoking temporary access, enforcing password policies. When done
+manually, these tasks don&amp;#8217;t scale and are easy to forget.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Keycloak Workflows automate these tasks by letting you define event-driven automation rules in a simple YAML format.
+When something happens in your realm - a user is created, a role is granted, a group membership changes - a workflow
+can react automatically, executing a chain of actions on your behalf.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;This brings key Identity Governance and Administration (IGA) capabilities natively into Keycloak:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Automated onboarding and offboarding processes&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Just-In-Time and Least Privilege access enforcement&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Proactive inactivity management&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Recurring compliance checks&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Let&amp;#8217;s see how it works.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_meet_acme_corp&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_meet_acme_corp&quot;&gt;&lt;/a&gt;Meet Acme Corp&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Throughout this series, we will follow &lt;strong&gt;Acme Corp&lt;/strong&gt;, a growing SaaS company that uses Keycloak for managing employees
+and partners. Like many organizations, Acme Corp started with manual identity management and quickly discovered it
+doesn&amp;#8217;t scale. Workflows are their path to automation.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Today, Acme Corp&amp;#8217;s identity team faces three immediate challenges:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;olist arabic&quot;&gt;
+&lt;ol class=&quot;arabic&quot;&gt;
+&lt;li&gt;
+&lt;p&gt;New engineers join every week and need to be onboarded with the right roles, groups, and a welcome email.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Users go inactive for months, leaving dormant accounts that pose a security risk.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Temporary admin access is granted during incidents but rarely revoked after the fact.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Let&amp;#8217;s solve all three.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_anatomy_of_a_workflow&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_anatomy_of_a_workflow&quot;&gt;&lt;/a&gt;Anatomy of a Workflow&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Before we dive into the examples, let&amp;#8217;s understand the structure of a workflow definition. Workflows are defined in
+YAML and consist of a few key sections:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;My workflow&lt;/span&gt;             &lt;i class=&quot;conum&quot; data-value=&quot;1&quot;&gt;&lt;/i&gt;&lt;b&gt;(1)&lt;/b&gt;
+&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;user-created&lt;/span&gt;              &lt;i class=&quot;conum&quot; data-value=&quot;2&quot;&gt;&lt;/i&gt;&lt;b&gt;(2)&lt;/b&gt;
+&lt;span class=&quot;na&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;has-user-attribute(department=engineering)&lt;/span&gt; &lt;i class=&quot;conum&quot; data-value=&quot;3&quot;&gt;&lt;/i&gt;&lt;b&gt;(3)&lt;/b&gt;
+&lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;                        &lt;i class=&quot;conum&quot; data-value=&quot;4&quot;&gt;&lt;/i&gt;&lt;b&gt;(4)&lt;/b&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;notify-user&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Hello!&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;grant-role&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;after&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;1d&lt;/span&gt;                 &lt;i class=&quot;conum&quot; data-value=&quot;5&quot;&gt;&lt;/i&gt;&lt;b&gt;(5)&lt;/b&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;role&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;verified&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;colist arabic&quot;&gt;
+&lt;table&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;i class=&quot;conum&quot; data-value=&quot;1&quot;&gt;&lt;/i&gt;&lt;b&gt;1&lt;/b&gt;&lt;/td&gt;
+&lt;td&gt;A unique name that identifies the workflow in the realm.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;i class=&quot;conum&quot; data-value=&quot;2&quot;&gt;&lt;/i&gt;&lt;b&gt;2&lt;/b&gt;&lt;/td&gt;
+&lt;td&gt;The &lt;strong&gt;event&lt;/strong&gt; that triggers the workflow. Here, it fires when a new user is added to the realm.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;i class=&quot;conum&quot; data-value=&quot;3&quot;&gt;&lt;/i&gt;&lt;b&gt;3&lt;/b&gt;&lt;/td&gt;
+&lt;td&gt;An optional &lt;strong&gt;condition&lt;/strong&gt; that the resource must satisfy for the workflow to activate. In this case, only users with the &lt;code&gt;department&lt;/code&gt; attribute set to &lt;code&gt;engineering&lt;/code&gt; trigger the workflow.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;i class=&quot;conum&quot; data-value=&quot;4&quot;&gt;&lt;/i&gt;&lt;b&gt;4&lt;/b&gt;&lt;/td&gt;
+&lt;td&gt;The &lt;strong&gt;step chain&lt;/strong&gt; - one or more actions executed sequentially during the workflow&amp;#8217;s lifetime.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;i class=&quot;conum&quot; data-value=&quot;5&quot;&gt;&lt;/i&gt;&lt;b&gt;5&lt;/b&gt;&lt;/td&gt;
+&lt;td&gt;Steps can be &lt;strong&gt;scheduled&lt;/strong&gt; to execute after a delay. This step runs one day after the previous step completes.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;That&amp;#8217;s it. The event triggers the workflow, the condition filters which resources qualify, and the steps define what happens.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The diagram below shows this flow end to end:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/workflows/workflow-activation-flow.png&quot; alt=&quot;Sequence diagram showing a realm event being matched against a workflow&amp;#8217;s on expression, the if condition being evaluated, and a workflow execution being created and running its first step&quot;&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Now let&amp;#8217;s put this to work.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_workflow_1_onboarding_new_engineers&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_workflow_1_onboarding_new_engineers&quot;&gt;&lt;/a&gt;Workflow 1: Onboarding New Engineers&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;When a new engineer joins Acme Corp, the identity team needs to:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Send a welcome email with links to internal resources&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Grant the &lt;code&gt;developer&lt;/code&gt; role&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Add the user to the &lt;code&gt;/Engineering&lt;/code&gt; group&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Here&amp;#8217;s the workflow:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Onboarding new engineers&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;user-created&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;has-user-attribute(department=engineering)&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;notify-user&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;subject&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Welcome to Acme Corp Engineering!&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Hi ${user.firstName},&amp;lt;/p&amp;gt;&lt;/span&gt;
+
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Welcome to the engineering team at ${realm.displayName}!&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;Your accounts and access are being set up automatically.&amp;lt;/p&amp;gt;&lt;/span&gt;
+
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;You can find our internal documentation at&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;a href=&quot;https://docs.acme.example.com&quot;&amp;gt;docs.acme.example.com&amp;lt;/a&amp;gt;.&amp;lt;/p&amp;gt;&lt;/span&gt;
+
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Happy coding!&amp;lt;br/&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;The ${realm.displayName} Team&amp;lt;/p&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;grant-role&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;role&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;developer&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;join-group&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;/Engineering&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;When a new user is created with the attribute &lt;code&gt;department&lt;/code&gt; set to &lt;code&gt;engineering&lt;/code&gt;, this workflow fires immediately. It
+sends a welcome email using the built-in &lt;code&gt;notify-user&lt;/code&gt; step, grants the &lt;code&gt;developer&lt;/code&gt; role, and adds the user to the
+&lt;code&gt;/Engineering&lt;/code&gt; group - all in one go, with zero manual intervention.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Notice the template expressions in the email: &lt;code&gt;${user.firstName}&lt;/code&gt; and &lt;code&gt;${realm.displayName}&lt;/code&gt; are resolved at execution
+time, allowing you to personalize messages without hardcoding names.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;admonitionblock tip&quot;&gt;
+&lt;table&gt;
+&lt;tr&gt;
+&lt;td class=&quot;icon&quot;&gt;
+&lt;i class=&quot;fa icon-tip&quot; title=&quot;Tip&quot;&gt;&lt;/i&gt;
+&lt;/td&gt;
+&lt;td class=&quot;content&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;You can create similar workflows for other departments - &lt;code&gt;has-user-attribute(department=sales)&lt;/code&gt;,
+&lt;code&gt;has-user-attribute(department=support)&lt;/code&gt; - each with their own role and group assignments.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_workflow_2_tracking_inactive_users&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_workflow_2_tracking_inactive_users&quot;&gt;&lt;/a&gt;Workflow 2: Tracking Inactive Users&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Dormant accounts are a security risk. Acme Corp wants to:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;ulist&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Send a reminder after 90 days of inactivity&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Send a final warning 60 days later&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Disable the account after 7 more days&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Notify the user that their account was disabled&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;This one introduces two important concepts: &lt;strong&gt;scheduled steps&lt;/strong&gt; and &lt;strong&gt;concurrency control&lt;/strong&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Track inactive users&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;user-authenticated&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;concurrency&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;restart-in-progress&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;true&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;notify-user&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;after&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;90d&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;subject&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;We miss you!&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Hi ${user.firstName},&amp;lt;/p&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;It has been a while since your last login to ${realm.displayName}.&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;We&#39;d love to see you back!&amp;lt;/p&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;notify-user&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;after&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;60d&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;subject&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Your account will be disabled soon&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Hi ${user.firstName},&amp;lt;/p&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Your account will be disabled in ${workflow.daysUntilNextStep} days&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;due to inactivity. Log in now to keep your account active.&amp;lt;/p&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;disable-user&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;after&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;7d&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;notify-user&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;subject&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Account disabled&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Hi ${user.firstName},&amp;lt;/p&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Your account at ${realm.displayName} has been disabled due to&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;extended inactivity. Contact your administrator if you need to&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;reactivate it.&amp;lt;/p&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;This workflow triggers every time a user authenticates. The first step doesn&amp;#8217;t execute immediately - it waits 90 days.
+If the user doesn&amp;#8217;t log in again during that window, the reminder email goes out. Then the clock starts on the 60-day
+warning, followed by a 7-day countdown to disabling the account.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The key here is &lt;code&gt;restart-in-progress: true&lt;/code&gt;. When a user logs in again while the workflow is already running (for
+example, on day 45), the workflow restarts from the beginning. The 90-day timer resets, and the user gets another full
+cycle before any action is taken. This effectively means: the inactivity clock resets with every login.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;admonitionblock note&quot;&gt;
+&lt;table&gt;
+&lt;tr&gt;
+&lt;td class=&quot;icon&quot;&gt;
+&lt;i class=&quot;fa icon-note&quot; title=&quot;Note&quot;&gt;&lt;/i&gt;
+&lt;/td&gt;
+&lt;td class=&quot;content&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The expression &lt;code&gt;${workflow.daysUntilNextStep}&lt;/code&gt; dynamically resolves to the number of days until the next scheduled step,
+keeping the message accurate without hardcoding values.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_workflow_3_temporary_admin_auto_removal&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_workflow_3_temporary_admin_auto_removal&quot;&gt;&lt;/a&gt;Workflow 3: Temporary Admin Auto-Removal&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;During incidents, Acme Corp sometimes grants the &lt;code&gt;admin&lt;/code&gt; role to engineers for troubleshooting. But once the incident
+is resolved, that elevated access is rarely revoked. This violates the principle of least privilege and creates long-term
+risk.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Here&amp;#8217;s a workflow that enforces a maximum duration for admin access:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Temporary admin auto-removal&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;user-role-granted(admin)&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;not has-user-attribute(permanent-admin=true)&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;notify-user&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;after&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;7d&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;subject&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Admin access expiring soon&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Hi ${user.firstName},&amp;lt;/p&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Your temporary admin access to ${realm.displayName} will be&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;revoked in 24 hours. If you still need admin access, contact&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;your team lead to request an extension.&amp;lt;/p&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;revoke-role&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;after&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;1d&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;role&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;admin&lt;/span&gt;
+  &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;notify-user&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;subject&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Admin access revoked&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Hi ${user.firstName},&amp;lt;/p&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&amp;lt;p&amp;gt;Your temporary admin access to ${realm.displayName} has been&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;revoked as scheduled. Thank you for helping out!&amp;lt;/p&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;When the &lt;code&gt;admin&lt;/code&gt; role is granted to a user, this workflow starts a 7-day countdown. After 7 days, it sends a warning.
+After one more day, it revokes the role and sends a confirmation email.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The condition &lt;code&gt;not has-user-attribute(permanent-admin=true)&lt;/code&gt; ensures that users who are meant to have permanent admin
+access (like the identity team itself) are excluded from the auto-removal workflow.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Notice how the &lt;code&gt;on&lt;/code&gt; setting uses a &lt;strong&gt;parameterized event&lt;/strong&gt;: &lt;code&gt;user-role-granted(admin)&lt;/code&gt; triggers only when the specific
+&lt;code&gt;admin&lt;/code&gt; role is granted, not for any role grant. This is important - you don&amp;#8217;t want this workflow firing when someone
+gets a &lt;code&gt;viewer&lt;/code&gt; role.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_creating_workflows&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_creating_workflows&quot;&gt;&lt;/a&gt;Creating Workflows&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;You can create workflows through the Admin Console or the REST API.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_admin_console&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_admin_console&quot;&gt;&lt;/a&gt;Admin Console&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Navigate to &lt;strong&gt;Workflows&lt;/strong&gt; in the left sidebar menu. Click &lt;strong&gt;Create workflow&lt;/strong&gt; to open the workflow editor. You can type or paste
+your YAML definition directly into the editor.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/workflows/workflows-nav-list.png&quot; alt=&quot;The Workflows section in the Admin Console, showing the list of existing workflows and the Create workflow button&quot;&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;imageblock text-center&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;img src=&quot;https://www.keycloak.org/resources/images/blog/workflows/workflow-editor.png&quot; alt=&quot;The workflow editor with the onboarding new engineers YAML definition&quot;&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect2&quot;&gt;
+&lt;h3 id=&quot;_rest_api&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_rest_api&quot;&gt;&lt;/a&gt;REST API&lt;/h3&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;You can also create workflows programmatically using the Admin REST API:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;curl &lt;span class=&quot;nt&quot;&gt;-X&lt;/span&gt; POST &lt;span class=&quot;s2&quot;&gt;&quot;http://localhost:8080/admin/realms/acme/workflows&quot;&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+  &lt;span class=&quot;nt&quot;&gt;-H&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Authorization: Bearer &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$TOKEN&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+  &lt;span class=&quot;nt&quot;&gt;-H&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Content-Type: application/yaml&quot;&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+  &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&#39;
+name: Onboarding new engineers
+on: user-created
+if: has-user-attribute(department=engineering)
+steps:
+  - uses: notify-user
+    with:
+      subject: Welcome to Acme Corp Engineering!
+      message: Welcome aboard!
+  - uses: grant-role
+    with:
+      role: developer
+  - uses: join-group
+    with:
+      group: /Engineering
+&#39;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The API accepts both YAML (&lt;code&gt;Content-Type: application/yaml&lt;/code&gt;) and JSON (&lt;code&gt;Content-Type: application/json&lt;/code&gt;).&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_built_in_steps_at_a_glance&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_built_in_steps_at_a_glance&quot;&gt;&lt;/a&gt;Built-in Steps at a Glance&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;The three workflows above used only a handful of the built-in steps. Here&amp;#8217;s the full set available for user workflows:&lt;/p&gt;
+&lt;/div&gt;
+&lt;table class=&quot;tableblock frame-all grid-all stretch&quot;&gt;
+&lt;colgroup&gt;
+&lt;col style=&quot;width: 40%;&quot;&gt;
+&lt;col style=&quot;width: 60%;&quot;&gt;
+&lt;/colgroup&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th class=&quot;tableblock halign-left valign-top&quot;&gt;Step&lt;/th&gt;
+&lt;th class=&quot;tableblock halign-left valign-top&quot;&gt;What it does&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;notify-user&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Sends an email to the user (supports HTML, template expressions)&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;grant-role&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Grants one or more roles&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;revoke-role&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Revokes one or more roles&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;join-group&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Adds the user to one or more groups&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;leave-group&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Removes the user from one or more groups&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;set-user-attribute&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Sets one or more user attributes&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;remove-user-attribute&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Removes one or more user attributes&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;add-required-action&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Adds a required action (e.g., UPDATE_PASSWORD)&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;remove-required-action&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Removes a required action&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;disable-user&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Disables the user account&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;logout-user&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Logs the user out of all sessions&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;delete-user&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Deletes the user from the realm&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;unlink-user&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Unlinks the user from one or more identity providers&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;invite-user&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Sends an invitation email with an action token link&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;&lt;code&gt;restart&lt;/code&gt;&lt;/p&gt;&lt;/td&gt;
+&lt;td class=&quot;tableblock halign-left valign-top&quot;&gt;&lt;p class=&quot;tableblock&quot;&gt;Restarts the workflow from a given step position&lt;/p&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Workflows also support client resources with &lt;code&gt;delete-client&lt;/code&gt; and &lt;code&gt;disable-client&lt;/code&gt; steps, triggered by events like
+&lt;code&gt;client-created&lt;/code&gt; and &lt;code&gt;client-authenticated&lt;/code&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_try_it_yourself&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_try_it_yourself&quot;&gt;&lt;/a&gt;Try It Yourself&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;To get started with workflows in your own Keycloak instance:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;olist arabic&quot;&gt;
+&lt;ol class=&quot;arabic&quot;&gt;
+&lt;li&gt;
+&lt;p&gt;Start Keycloak: &lt;code&gt;kc.sh start-dev&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Create a realm, configure its email (SMTP) settings, and navigate to &lt;strong&gt;Workflows&lt;/strong&gt; in the Admin Console - the
+&lt;code&gt;notify-user&lt;/code&gt; step needs a working mail setup to actually send anything&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;While you&amp;#8217;re there, set the realm&amp;#8217;s &lt;strong&gt;Display name&lt;/strong&gt; under &lt;strong&gt;Realm Settings &amp;#8594; General&lt;/strong&gt; - it&amp;#8217;s what &lt;code&gt;${realm.displayName}&lt;/code&gt;
+resolves to in the examples above, and an unset display name renders as the literal, unresolved placeholder text&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Copy one of the YAML definitions from this article and paste it into the workflow editor&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Create a test user that matches the workflow&amp;#8217;s condition and watch the automation kick in&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;div class=&quot;admonitionblock tip&quot;&gt;
+&lt;table&gt;
+&lt;tr&gt;
+&lt;td class=&quot;icon&quot;&gt;
+&lt;i class=&quot;fa icon-tip&quot; title=&quot;Tip&quot;&gt;&lt;/i&gt;
+&lt;/td&gt;
+&lt;td class=&quot;content&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Workflow 2 and Workflow 3 use multi-day delays, which make them hard to observe in a quick test. Temporarily shorten
+the &lt;code&gt;after&lt;/code&gt; values (for example, &lt;code&gt;after: 30s&lt;/code&gt; instead of &lt;code&gt;after: 90d&lt;/code&gt;) while experimenting, then restore the real
+durations before using the workflow for real.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Shortening &lt;code&gt;after&lt;/code&gt; alone isn&amp;#8217;t enough, though: scheduled steps are picked up by a background task that only checks
+for due steps every 12 hours by default. Start Keycloak with a shorter interval so your shortened delays are actually
+observed promptly, for example:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;listingblock&quot;&gt;
+&lt;div class=&quot;content&quot;&gt;
+&lt;pre class=&quot;rouge highlight&quot;&gt;&lt;code data-lang=&quot;bash&quot;&gt;./kc.sh start-dev &lt;span class=&quot;nt&quot;&gt;--spi-events-listener--workflow-event-listener--step-runner-task-interval&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;5s&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;For the full reference on workflow settings, events, conditions, and steps, see the
+&lt;a href=&quot;https://www.keycloak.org/docs/latest/server_admin/#&lt;em&gt;understanding_workflows&lt;/em&gt;&quot;&gt;Keycloak Server Administration Guide&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;sect1&quot;&gt;
+&lt;h2 id=&quot;_whats_next&quot;&gt;&lt;a class=&quot;anchor&quot; href=&quot;#_whats_next&quot;&gt;&lt;/a&gt;What&amp;#8217;s Next&lt;/h2&gt;
+&lt;div class=&quot;sectionbody&quot;&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In this article, we covered the basics: how workflows are structured, how events and conditions control when they
+fire, and how steps define what happens. We built three practical workflows that solve real problems for Acme Corp.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;But we have only scratched the surface. What about combining multiple conditions with boolean logic? How does the
+scheduling engine work under the hood? What happens when the same event fires while a workflow is already running?&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;In &lt;strong&gt;Part 2&lt;/strong&gt;, we will dive deep into the expression language, the scheduling engine, and concurrency control&amp;#8201;&amp;#8212;&amp;#8201;unlocking the full power of the built-in workflow capabilities.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class=&quot;paragraph&quot;&gt;
+&lt;p&gt;Stay tuned!&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description>
+        <guid>https://www.keycloak.org/2026/11/workflows-part-1-automating-identity-lifecycle</guid>
+        <pubDate>Fri, 27 Nov 2026 00:00:00 GMT</pubDate>
+        
+        <author>Stefan Guilhen</author>
+      </item>
+      <item>
         <title>Meet Keycloak at FOSDEM on Jan 30/31!</title>
         <link>https://www.keycloak.org/2026/11/preparing-fosdem-2027</link>
         <description>&lt;div class=&quot;paragraph&quot;&gt;

@@ -1,0 +1,669 @@
+
+<!doctype html>
+<html lang="en" prefix="og: https://ogp.me/ns#">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0J2P9316N6"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-0J2P9316N6');
+</script>
+<meta charset="utf-8"/>
+<title>Keycloak Workflows in Practice, Part 1: Automating Identity Lifecycle - Keycloak</title>
+<meta name="twitter:card" content="summary_large">
+<meta name="twitter:site" content="@keycloak">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Keycloak">
+<meta property="og:title" content="Keycloak Workflows in Practice, Part 1: Automating Identity Lifecycle">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" property="og:description" content="Keycloak Workflows bring Identity Governance and Administration capabilities to your realm with a simple YAML-based engine. In the first article of this series, we explore the core concepts and build three practical workflows for onboarding, inactivity tracking, and temporary admin access.">
+<meta name="author" content="Stefan Guilhen">
+<meta name="keywords" content="sso,idm,openid connect,saml,kerberos,ldap">
+<link href="https://www.keycloak.org/resources/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+<link href="https://www.keycloak.org/resources/css/keycloak.css" rel="stylesheet">
+<link rel="canonical" href="https://www.keycloak.org/2026/11/workflows-part-1-automating-identity-lifecycle">
+<meta property="og:url" content="https://www.keycloak.org/2026/11/workflows-part-1-automating-identity-lifecycle">
+<link rel="icon" type="image/x-icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.keycloak.org/resources/favicon.ico">
+<link rel="icon" type="image/svg+xml" href="https://www.keycloak.org/resources/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="Keycloak's Blog" href="https://www.keycloak.org/rss.xml">
+<script type="application/ld+json">
+{"@context":"https://schema.org/","@type":"BlogPosting","@id":"https://www.keycloak.org/2026/11/workflows-part-1-automating-identity-lifecycle","headline":"Keycloak Workflows in Practice, Part 1: Automating Identity Lifecycle","name":"Keycloak Workflows in Practice, Part 1: Automating Identity Lifecycle","datePublished":"2026-11-27T08:00:00Z","inLanguage":"en","abstract":"Keycloak Workflows bring Identity Governance and Administration capabilities to your realm with a simple YAML-based engine. In the first article of this series, we explore the core concepts and build three practical workflows for onboarding, inactivity tracking, and temporary admin access.","url":"https://www.keycloak.org/2026/11/workflows-part-1-automating-identity-lifecycle","publisher":{"@type":"Organization","@id":"https://keycloak.org","name":"Keycloak"},"author":[{"@type":"Person","name":"Stefan Guilhen"}]}
+</script></head>
+<body>
+
+
+<header class="navbar navbar-expand-md bg-light shadow-sm">
+<nav class="container-xxl flex-wrap flex-md-no-wrap navbar-light" data-nosnippet>
+    <a class="navbar-brand me-3 me-md-4 me-lg-5" href="https://www.keycloak.org/">
+        <img style="aspect-ratio: 730/151" class="img-fluid" src="https://www.keycloak.org/resources/images/logo.svg" width="240" alt="Keycloak"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav nav-underline mx-auto flex-row flex-wrap bd-navbar-nav pt-2 py-md-0 gap-md-3">
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/guides">Guides</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/documentation">Docs</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/downloads">Downloads</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/community">Community</a>
+        </li>
+        <li class="nav-item col-6 col-md-auto">
+          <a class="nav-link " href="https://www.keycloak.org/blog">Blog</a>
+        </li>
+      </ul>
+      <a class="d-none d-lg-block" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+    <div class="d-block d-lg-none text-center vw-100">
+        <a class="nav-link d-inline p-0" href="https://github.com/keycloak/keycloak"><img src="https://www.keycloak.org/resources/images/stars-large.svg" style="height: 25px; aspect-ratio: 136/20" alt="GitHub stars"/></a>
+    </div>
+</nav>
+</header>
+
+
+<div class="container mt-5 kc-article kc-asciidoc">
+    <h1>Keycloak Workflows in Practice, Part 1: Automating Identity Lifecycle</h1>
+    <p class="blog-date text-muted">November 27 2026 by Stefan Guilhen</p>
+
+
+
+<div class="paragraph">
+<p>This is the first article in the <strong>Keycloak Workflows in Practice</strong> series. Over the next few weeks, we will explore
+Keycloak&#8217;s Workflow engine from the basics to advanced customization and integration with other features. Whether you
+are new to workflows or looking to push them further, this series will walk you through real-world scenarios that
+demonstrate what this feature can do for your identity management infrastructure.</p>
+</div>
+<div class="paragraph">
+<p>In this article, we start with the fundamentals and build three practical workflows you can deploy today.</p>
+</div>
+<div class="sect1">
+<h2 id="_why_workflows"><a class="anchor" href="#_why_workflows"></a>Why Workflows?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Managing the lifecycle of users and clients in a realm often involves repetitive, error-prone administrative tasks:
+welcoming new users, tracking inactive accounts, revoking temporary access, enforcing password policies. When done
+manually, these tasks don&#8217;t scale and are easy to forget.</p>
+</div>
+<div class="paragraph">
+<p>Keycloak Workflows automate these tasks by letting you define event-driven automation rules in a simple YAML format.
+When something happens in your realm - a user is created, a role is granted, a group membership changes - a workflow
+can react automatically, executing a chain of actions on your behalf.</p>
+</div>
+<div class="paragraph">
+<p>This brings key Identity Governance and Administration (IGA) capabilities natively into Keycloak:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Automated onboarding and offboarding processes</p>
+</li>
+<li>
+<p>Just-In-Time and Least Privilege access enforcement</p>
+</li>
+<li>
+<p>Proactive inactivity management</p>
+</li>
+<li>
+<p>Recurring compliance checks</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s see how it works.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_meet_acme_corp"><a class="anchor" href="#_meet_acme_corp"></a>Meet Acme Corp</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Throughout this series, we will follow <strong>Acme Corp</strong>, a growing SaaS company that uses Keycloak for managing employees
+and partners. Like many organizations, Acme Corp started with manual identity management and quickly discovered it
+doesn&#8217;t scale. Workflows are their path to automation.</p>
+</div>
+<div class="paragraph">
+<p>Today, Acme Corp&#8217;s identity team faces three immediate challenges:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>New engineers join every week and need to be onboarded with the right roles, groups, and a welcome email.</p>
+</li>
+<li>
+<p>Users go inactive for months, leaving dormant accounts that pose a security risk.</p>
+</li>
+<li>
+<p>Temporary admin access is granted during incidents but rarely revoked after the fact.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s solve all three.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_anatomy_of_a_workflow"><a class="anchor" href="#_anatomy_of_a_workflow"></a>Anatomy of a Workflow</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before we dive into the examples, let&#8217;s understand the structure of a workflow definition. Workflows are defined in
+YAML and consist of a few key sections:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">name</span><span class="pi">:</span> <span class="s">My workflow</span>             <i class="conum" data-value="1"></i><b>(1)</b>
+<span class="na">on</span><span class="pi">:</span> <span class="s">user-created</span>              <i class="conum" data-value="2"></i><b>(2)</b>
+<span class="na">if</span><span class="pi">:</span> <span class="s">has-user-attribute(department=engineering)</span> <i class="conum" data-value="3"></i><b>(3)</b>
+<span class="na">steps</span><span class="pi">:</span>                        <i class="conum" data-value="4"></i><b>(4)</b>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">notify-user</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">message</span><span class="pi">:</span> <span class="s">Hello!</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">grant-role</span>
+    <span class="na">after</span><span class="pi">:</span> <span class="s">1d</span>                 <i class="conum" data-value="5"></i><b>(5)</b>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">role</span><span class="pi">:</span> <span class="s">verified</span></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>A unique name that identifies the workflow in the realm.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The <strong>event</strong> that triggers the workflow. Here, it fires when a new user is added to the realm.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>An optional <strong>condition</strong> that the resource must satisfy for the workflow to activate. In this case, only users with the <code>department</code> attribute set to <code>engineering</code> trigger the workflow.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The <strong>step chain</strong> - one or more actions executed sequentially during the workflow&#8217;s lifetime.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Steps can be <strong>scheduled</strong> to execute after a delay. This step runs one day after the previous step completes.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>That&#8217;s it. The event triggers the workflow, the condition filters which resources qualify, and the steps define what happens.</p>
+</div>
+<div class="paragraph">
+<p>The diagram below shows this flow end to end:</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/workflows/workflow-activation-flow.png" alt="Sequence diagram showing a realm event being matched against a workflow&#8217;s on expression, the if condition being evaluated, and a workflow execution being created and running its first step">
+</div>
+</div>
+<div class="paragraph">
+<p>Now let&#8217;s put this to work.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_workflow_1_onboarding_new_engineers"><a class="anchor" href="#_workflow_1_onboarding_new_engineers"></a>Workflow 1: Onboarding New Engineers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When a new engineer joins Acme Corp, the identity team needs to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Send a welcome email with links to internal resources</p>
+</li>
+<li>
+<p>Grant the <code>developer</code> role</p>
+</li>
+<li>
+<p>Add the user to the <code>/Engineering</code> group</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Here&#8217;s the workflow:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">name</span><span class="pi">:</span> <span class="s">Onboarding new engineers</span>
+<span class="na">on</span><span class="pi">:</span> <span class="s">user-created</span>
+<span class="na">if</span><span class="pi">:</span> <span class="s">has-user-attribute(department=engineering)</span>
+<span class="na">steps</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">notify-user</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">subject</span><span class="pi">:</span> <span class="s">Welcome to Acme Corp Engineering!</span>
+      <span class="na">message</span><span class="pi">:</span> <span class="pi">|</span>
+        <span class="s">&lt;p&gt;Hi ${user.firstName},&lt;/p&gt;</span>
+
+        <span class="s">&lt;p&gt;Welcome to the engineering team at ${realm.displayName}!</span>
+        <span class="s">Your accounts and access are being set up automatically.&lt;/p&gt;</span>
+
+        <span class="s">&lt;p&gt;You can find our internal documentation at</span>
+        <span class="s">&lt;a href="https://docs.acme.example.com"&gt;docs.acme.example.com&lt;/a&gt;.&lt;/p&gt;</span>
+
+        <span class="s">&lt;p&gt;Happy coding!&lt;br/&gt;</span>
+        <span class="s">The ${realm.displayName} Team&lt;/p&gt;</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">grant-role</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">role</span><span class="pi">:</span> <span class="s">developer</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">join-group</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">group</span><span class="pi">:</span> <span class="s">/Engineering</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When a new user is created with the attribute <code>department</code> set to <code>engineering</code>, this workflow fires immediately. It
+sends a welcome email using the built-in <code>notify-user</code> step, grants the <code>developer</code> role, and adds the user to the
+<code>/Engineering</code> group - all in one go, with zero manual intervention.</p>
+</div>
+<div class="paragraph">
+<p>Notice the template expressions in the email: <code>${user.firstName}</code> and <code>${realm.displayName}</code> are resolved at execution
+time, allowing you to personalize messages without hardcoding names.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can create similar workflows for other departments - <code>has-user-attribute(department=sales)</code>,
+<code>has-user-attribute(department=support)</code> - each with their own role and group assignments.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_workflow_2_tracking_inactive_users"><a class="anchor" href="#_workflow_2_tracking_inactive_users"></a>Workflow 2: Tracking Inactive Users</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Dormant accounts are a security risk. Acme Corp wants to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Send a reminder after 90 days of inactivity</p>
+</li>
+<li>
+<p>Send a final warning 60 days later</p>
+</li>
+<li>
+<p>Disable the account after 7 more days</p>
+</li>
+<li>
+<p>Notify the user that their account was disabled</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This one introduces two important concepts: <strong>scheduled steps</strong> and <strong>concurrency control</strong>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">name</span><span class="pi">:</span> <span class="s">Track inactive users</span>
+<span class="na">on</span><span class="pi">:</span> <span class="s">user-authenticated</span>
+<span class="na">concurrency</span><span class="pi">:</span>
+  <span class="na">restart-in-progress</span><span class="pi">:</span> <span class="no">true</span>
+<span class="na">steps</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">notify-user</span>
+    <span class="na">after</span><span class="pi">:</span> <span class="s">90d</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">subject</span><span class="pi">:</span> <span class="s">We miss you!</span>
+      <span class="na">message</span><span class="pi">:</span> <span class="pi">|</span>
+        <span class="s">&lt;p&gt;Hi ${user.firstName},&lt;/p&gt;</span>
+        <span class="s">&lt;p&gt;It has been a while since your last login to ${realm.displayName}.</span>
+        <span class="s">We'd love to see you back!&lt;/p&gt;</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">notify-user</span>
+    <span class="na">after</span><span class="pi">:</span> <span class="s">60d</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">subject</span><span class="pi">:</span> <span class="s">Your account will be disabled soon</span>
+      <span class="na">message</span><span class="pi">:</span> <span class="pi">|</span>
+        <span class="s">&lt;p&gt;Hi ${user.firstName},&lt;/p&gt;</span>
+        <span class="s">&lt;p&gt;Your account will be disabled in ${workflow.daysUntilNextStep} days</span>
+        <span class="s">due to inactivity. Log in now to keep your account active.&lt;/p&gt;</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">disable-user</span>
+    <span class="na">after</span><span class="pi">:</span> <span class="s">7d</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">notify-user</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">subject</span><span class="pi">:</span> <span class="s">Account disabled</span>
+      <span class="na">message</span><span class="pi">:</span> <span class="pi">|</span>
+        <span class="s">&lt;p&gt;Hi ${user.firstName},&lt;/p&gt;</span>
+        <span class="s">&lt;p&gt;Your account at ${realm.displayName} has been disabled due to</span>
+        <span class="s">extended inactivity. Contact your administrator if you need to</span>
+        <span class="s">reactivate it.&lt;/p&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This workflow triggers every time a user authenticates. The first step doesn&#8217;t execute immediately - it waits 90 days.
+If the user doesn&#8217;t log in again during that window, the reminder email goes out. Then the clock starts on the 60-day
+warning, followed by a 7-day countdown to disabling the account.</p>
+</div>
+<div class="paragraph">
+<p>The key here is <code>restart-in-progress: true</code>. When a user logs in again while the workflow is already running (for
+example, on day 45), the workflow restarts from the beginning. The 90-day timer resets, and the user gets another full
+cycle before any action is taken. This effectively means: the inactivity clock resets with every login.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The expression <code>${workflow.daysUntilNextStep}</code> dynamically resolves to the number of days until the next scheduled step,
+keeping the message accurate without hardcoding values.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_workflow_3_temporary_admin_auto_removal"><a class="anchor" href="#_workflow_3_temporary_admin_auto_removal"></a>Workflow 3: Temporary Admin Auto-Removal</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>During incidents, Acme Corp sometimes grants the <code>admin</code> role to engineers for troubleshooting. But once the incident
+is resolved, that elevated access is rarely revoked. This violates the principle of least privilege and creates long-term
+risk.</p>
+</div>
+<div class="paragraph">
+<p>Here&#8217;s a workflow that enforces a maximum duration for admin access:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="yaml"><span class="na">name</span><span class="pi">:</span> <span class="s">Temporary admin auto-removal</span>
+<span class="na">on</span><span class="pi">:</span> <span class="s">user-role-granted(admin)</span>
+<span class="na">if</span><span class="pi">:</span> <span class="s">not has-user-attribute(permanent-admin=true)</span>
+<span class="na">steps</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">notify-user</span>
+    <span class="na">after</span><span class="pi">:</span> <span class="s">7d</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">subject</span><span class="pi">:</span> <span class="s">Admin access expiring soon</span>
+      <span class="na">message</span><span class="pi">:</span> <span class="pi">|</span>
+        <span class="s">&lt;p&gt;Hi ${user.firstName},&lt;/p&gt;</span>
+        <span class="s">&lt;p&gt;Your temporary admin access to ${realm.displayName} will be</span>
+        <span class="s">revoked in 24 hours. If you still need admin access, contact</span>
+        <span class="s">your team lead to request an extension.&lt;/p&gt;</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">revoke-role</span>
+    <span class="na">after</span><span class="pi">:</span> <span class="s">1d</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">role</span><span class="pi">:</span> <span class="s">admin</span>
+  <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">notify-user</span>
+    <span class="na">with</span><span class="pi">:</span>
+      <span class="na">subject</span><span class="pi">:</span> <span class="s">Admin access revoked</span>
+      <span class="na">message</span><span class="pi">:</span> <span class="pi">|</span>
+        <span class="s">&lt;p&gt;Hi ${user.firstName},&lt;/p&gt;</span>
+        <span class="s">&lt;p&gt;Your temporary admin access to ${realm.displayName} has been</span>
+        <span class="s">revoked as scheduled. Thank you for helping out!&lt;/p&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the <code>admin</code> role is granted to a user, this workflow starts a 7-day countdown. After 7 days, it sends a warning.
+After one more day, it revokes the role and sends a confirmation email.</p>
+</div>
+<div class="paragraph">
+<p>The condition <code>not has-user-attribute(permanent-admin=true)</code> ensures that users who are meant to have permanent admin
+access (like the identity team itself) are excluded from the auto-removal workflow.</p>
+</div>
+<div class="paragraph">
+<p>Notice how the <code>on</code> setting uses a <strong>parameterized event</strong>: <code>user-role-granted(admin)</code> triggers only when the specific
+<code>admin</code> role is granted, not for any role grant. This is important - you don&#8217;t want this workflow firing when someone
+gets a <code>viewer</code> role.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_workflows"><a class="anchor" href="#_creating_workflows"></a>Creating Workflows</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can create workflows through the Admin Console or the REST API.</p>
+</div>
+<div class="sect2">
+<h3 id="_admin_console"><a class="anchor" href="#_admin_console"></a>Admin Console</h3>
+<div class="paragraph">
+<p>Navigate to <strong>Workflows</strong> in the left sidebar menu. Click <strong>Create workflow</strong> to open the workflow editor. You can type or paste
+your YAML definition directly into the editor.</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/workflows/workflows-nav-list.png" alt="The Workflows section in the Admin Console, showing the list of existing workflows and the Create workflow button">
+</div>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="https://www.keycloak.org/resources/images/blog/workflows/workflow-editor.png" alt="The workflow editor with the onboarding new engineers YAML definition">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_rest_api"><a class="anchor" href="#_rest_api"></a>REST API</h3>
+<div class="paragraph">
+<p>You can also create workflows programmatically using the Admin REST API:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">curl <span class="nt">-X</span> POST <span class="s2">"http://localhost:8080/admin/realms/acme/workflows"</span> <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span> <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Content-Type: application/yaml"</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'
+name: Onboarding new engineers
+on: user-created
+if: has-user-attribute(department=engineering)
+steps:
+  - uses: notify-user
+    with:
+      subject: Welcome to Acme Corp Engineering!
+      message: Welcome aboard!
+  - uses: grant-role
+    with:
+      role: developer
+  - uses: join-group
+    with:
+      group: /Engineering
+'</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The API accepts both YAML (<code>Content-Type: application/yaml</code>) and JSON (<code>Content-Type: application/json</code>).</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_built_in_steps_at_a_glance"><a class="anchor" href="#_built_in_steps_at_a_glance"></a>Built-in Steps at a Glance</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The three workflows above used only a handful of the built-in steps. Here&#8217;s the full set available for user workflows:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 40%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Step</th>
+<th class="tableblock halign-left valign-top">What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>notify-user</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sends an email to the user (supports HTML, template expressions)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grant-role</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grants one or more roles</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>revoke-role</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Revokes one or more roles</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>join-group</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Adds the user to one or more groups</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>leave-group</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Removes the user from one or more groups</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>set-user-attribute</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sets one or more user attributes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>remove-user-attribute</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Removes one or more user attributes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>add-required-action</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Adds a required action (e.g., UPDATE_PASSWORD)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>remove-required-action</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Removes a required action</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>disable-user</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disables the user account</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>logout-user</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Logs the user out of all sessions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>delete-user</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deletes the user from the realm</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>unlink-user</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unlinks the user from one or more identity providers</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>invite-user</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sends an invitation email with an action token link</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>restart</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Restarts the workflow from a given step position</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Workflows also support client resources with <code>delete-client</code> and <code>disable-client</code> steps, triggered by events like
+<code>client-created</code> and <code>client-authenticated</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_try_it_yourself"><a class="anchor" href="#_try_it_yourself"></a>Try It Yourself</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To get started with workflows in your own Keycloak instance:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Start Keycloak: <code>kc.sh start-dev</code></p>
+</li>
+<li>
+<p>Create a realm, configure its email (SMTP) settings, and navigate to <strong>Workflows</strong> in the Admin Console - the
+<code>notify-user</code> step needs a working mail setup to actually send anything</p>
+</li>
+<li>
+<p>While you&#8217;re there, set the realm&#8217;s <strong>Display name</strong> under <strong>Realm Settings &#8594; General</strong> - it&#8217;s what <code>${realm.displayName}</code>
+resolves to in the examples above, and an unset display name renders as the literal, unresolved placeholder text</p>
+</li>
+<li>
+<p>Copy one of the YAML definitions from this article and paste it into the workflow editor</p>
+</li>
+<li>
+<p>Create a test user that matches the workflow&#8217;s condition and watch the automation kick in</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Workflow 2 and Workflow 3 use multi-day delays, which make them hard to observe in a quick test. Temporarily shorten
+the <code>after</code> values (for example, <code>after: 30s</code> instead of <code>after: 90d</code>) while experimenting, then restore the real
+durations before using the workflow for real.</p>
+</div>
+<div class="paragraph">
+<p>Shortening <code>after</code> alone isn&#8217;t enough, though: scheduled steps are picked up by a background task that only checks
+for due steps every 12 hours by default. Start Keycloak with a shorter interval so your shortened delays are actually
+observed promptly, for example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="rouge highlight"><code data-lang="bash">./kc.sh start-dev <span class="nt">--spi-events-listener--workflow-event-listener--step-runner-task-interval</span><span class="o">=</span>5s</code></pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For the full reference on workflow settings, events, conditions, and steps, see the
+<a href="https://www.keycloak.org/docs/latest/server_admin/#<em>understanding_workflows</em>">Keycloak Server Administration Guide</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_next"><a class="anchor" href="#_whats_next"></a>What&#8217;s Next</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this article, we covered the basics: how workflows are structured, how events and conditions control when they
+fire, and how steps define what happens. We built three practical workflows that solve real problems for Acme Corp.</p>
+</div>
+<div class="paragraph">
+<p>But we have only scratched the surface. What about combining multiple conditions with boolean logic? How does the
+scheduling engine work under the hood? What happens when the same event fires while a workflow is already running?</p>
+</div>
+<div class="paragraph">
+<p>In <strong>Part 2</strong>, we will dive deep into the expression language, the scheduling engine, and concurrency control&#8201;&#8212;&#8201;unlocking the full power of the built-in workflow capabilities.</p>
+</div>
+<div class="paragraph">
+<p>Stay tuned!</p>
+</div>
+</div>
+</div></div>
+
+
+<div class="container mt-5" data-nosnippet>
+    <footer class="py-3 my-4 border-top">
+        <p class="text-center text-muted">Keycloak is a Cloud Native Computing Foundation incubation project</p>
+        <div class="text-center">
+            <img style="aspect-ratio: 300/48" alt="Cloud Native Computing Foundation" src="https://www.keycloak.org/resources/images/cncf_logo.png" loading="lazy"/>
+        </div>
+        <p class="mt-4 text-center small text-muted">&copy; Keycloak Authors 2026. &copy; 2026 The Linux Foundation. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage page</a>.</p>
+    </footer>
+</div>
+
+<script src="https://www.keycloak.org/resources/bootstrap/dist/js/bootstrap.min.js" defer></script>
+
+</body>
+</html>
